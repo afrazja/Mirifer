@@ -1,6 +1,30 @@
 # Mirifer handoff
 
-Updated: 2026-09-09, from the work laptop.
+Updated: 2026-09-23.
+
+## Latest work (2026-09-23): conversation provider chain
+
+- `/proxy/converse` now tries Gemini → DeepSeek → OpenAI instead of OpenAI
+  only. Drafted as `b93f184` on the home machine (which could not push),
+  then rebuilt and reviewed in a Claude Code session and opened as a pull
+  request against `main`. Client contract unchanged: same request shape,
+  same reply JSON, same 503/502 meaning.
+- Every provider's reply is validated with zod. Gemini gets a response
+  schema, and DeepSeek (json_object only) gets the exact key list in its
+  prompt, so neither silently falls through to the paid OpenAI leg.
+- A refused key on every provider returns 503 and hides the card, as the
+  OpenAI-only version did. A network failure during the availability probe
+  is not cached.
+- OpenAI now defaults to `gpt-4o-mini` (was `gpt-4o`).
+- Model IDs verified: `gemini-2.5-flash`, `deepseek-flash` (the old
+  `deepseek-chat` id was retired). Production env vars are set in Vercel:
+  `GEMINI_API_KEY`, `DEEPSEEK_API_KEY`, `GEMINI_MODEL`, `DEEPSEEK_MODEL`,
+  `OPENAI_MODEL`. They take effect once this change is deployed.
+- Privacy: learner sentences now go to Google (Gemini free tier may be used
+  to improve Google's products) and DeepSeek (servers in China). The privacy
+  page should say so.
+
+## Earlier handoff (2026-09-09, work laptop)
 
 ## Where to resume
 

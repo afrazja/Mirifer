@@ -5,21 +5,30 @@
  * were given. This one asks them to compose. See
  * docs/spec-conversation-partner.md for why that is the gap.
  *
- * DORMANT until OPENAI_API_KEY is set: returns 503, the client renders no
- * card, and a learner who has never seen it cannot miss it. Same pattern as
- * /proxy/pronounce.
+ * Provider chain: Gemini (free tier) → DeepSeek (cheap) → OpenAI (last
+ * resort). A provider without a key is skipped; one that errors, times out
+ * or returns a malformed reply yields to the next. DORMANT until at least
+ * one key is set: returns 503, the client renders no card, and a learner
+ * who has never seen it cannot miss it. Same pattern as /proxy/pronounce.
  *
  * Unlike every other proxy here, this one COSTS MONEY PER CALL. It is the
  * first such thing in the app, so it requires a real session and caps each
  * learner per day — an unauthenticated endpoint that spends money is a bill
  * waiting to happen.
+ *
+ * Every provider's reply is validated with zod against the same shape, so
+ * the client contract does not depend on which one answered.
  */
 
 import type { RequestHandler } from './$types';
 import { env } from '$env/dynamic/private';
+import { z } from 'zod';
 
 /** Overridable so the model can change without a deploy. */
-const MODEL = env.OPENAI_MODEL || 'gpt-4o';
+const GEMINI_MODEL = env.GEMINI_MODEL || 'gemini-2.5-flash';
+const DEEPSEEK_MODEL = env.DEEPSEEK_MODEL || 'deepseek-flash';
+/** Never the flagship: a two-turn A1 exchange does not need it. */
+const OPENAI_MODEL = env.OPENAI_MODEL || 'gpt-4o-mini';
 
 /** The spec's hard ceiling: two turns, then the card ends warmly. */
 const MAX_TURNS = 2;
@@ -30,23 +39,30 @@ const MAX_UTTERANCE_CHARS = 400;
 /** Vocabulary the client sends. Capped so the prompt cannot be stuffed. */
 const MAX_VOCAB_LINES = 20;
 const MAX_VOCAB_CHARS = 160;
+/** Per provider. The chain runs in sequence, so the worst case is three of these. */
+const PROVIDER_TIMEOUT_MS = 12_000;
 
-export interface ConverseReply {
+const ConverseReplySchema = z.object({
 	/** Could a German speaker follow what they said? Not "was it perfect". */
-	understood: boolean;
+	understood: z.boolean(),
 	/** The partner's next line. German, always. */
-	reply: string;
-	replyEn: string;
-	replyFa: string;
+	reply: z.string().min(1),
+	replyEn: z.string(),
+	replyFa: z.string(),
 	/** Their sentence rewritten, only when it is worth rewriting. */
-	correction: string | null;
+	correction: z.string().nullable(),
 	/** ONE short thing, in the learner's language. */
-	note: string | null;
-	noteFa: string | null;
+	note: z.string().nullable(),
+	noteFa: z.string().nullable(),
 	/** True when the transcript was noise and we asked them to repeat. */
-	needsRepeat: boolean;
-}
+	needsRepeat: z.boolean()
+});
 
+export type ConverseReply = z.infer<typeof ConverseReplySchema>;
+
+type Turn = { role: 'partner' | 'learner'; text: string };
+
+/** OpenAI's strict json_schema — enforced by the provider. */
 const REPLY_SCHEMA = {
 	type: 'object',
 	additionalProperties: false,
@@ -62,6 +78,47 @@ const REPLY_SCHEMA = {
 		needsRepeat: { type: 'boolean' }
 	}
 } as const;
+
+/**
+ * The same shape in Gemini's schema dialect (OpenAPI subset: uppercase
+ * types, `nullable` instead of a type union). Without it Gemini only
+ * promises "some JSON", and a reply that drops a null key fails validation
+ * and hands the turn to a paid provider.
+ */
+const GEMINI_REPLY_SCHEMA = {
+	type: 'OBJECT',
+	required: ['understood', 'reply', 'replyEn', 'replyFa', 'correction', 'note', 'noteFa', 'needsRepeat'],
+	properties: {
+		understood: { type: 'BOOLEAN' },
+		reply: { type: 'STRING' },
+		replyEn: { type: 'STRING' },
+		replyFa: { type: 'STRING' },
+		correction: { type: 'STRING', nullable: true },
+		note: { type: 'STRING', nullable: true },
+		noteFa: { type: 'STRING', nullable: true },
+		needsRepeat: { type: 'BOOLEAN' }
+	}
+} as const;
+
+/**
+ * Spelled out for providers that cannot enforce a schema (DeepSeek only
+ * offers json_object). The rules above name the fields in passing; this
+ * names every key and which ones may be null.
+ */
+const JSON_SHAPE = `
+
+RESPONSE FORMAT. Answer with ONE JSON object and nothing else. It has exactly these eight keys, all always present:
+{
+  "understood": true or false,
+  "reply": "your German line",
+  "replyEn": "reply translated into English",
+  "replyFa": "reply translated into Persian",
+  "correction": "their sentence corrected" or null,
+  "note": "one short tip in English" or null,
+  "noteFa": "the same tip in Persian" or null,
+  "needsRepeat": true or false
+}
+Use null for an empty field. Never leave a key out.`;
 
 function systemPrompt(scenario: string, vocab: string[], turnsLeft: number): string {
 	return `You are a friendly German speaker talking to someone learning German. Their first language is Persian or English. They are at CEFR level A1 — near-beginner.
@@ -119,37 +176,193 @@ ${vocab.map((v) => `- ${v}`).join('\n') || '- (none)'}`;
  * that way — the key on the dev machine was invalid, and a
  * presence-only probe reported the feature as available.
  *
- * /v1/models generates no tokens, so this costs nothing, and the result
- * is cached per server instance so a lesson page load is not an upstream
- * round-trip.
+ * Model-list endpoints generate no tokens, so the probes cost nothing, and
+ * the result is cached per server instance so a lesson page load is not an
+ * upstream round-trip. The card shows if ANY configured provider works.
  */
-let keyOk: { valid: boolean; at: number } | null = null;
-const KEY_CACHE_MS = 10 * 60 * 1000;
+let probe: { available: boolean; at: number } | null = null;
+const PROBE_CACHE_MS = 10 * 60 * 1000;
 
-async function keyWorks(): Promise<boolean> {
-	if (!env.OPENAI_API_KEY) return false;
-	if (keyOk && Date.now() - keyOk.at < KEY_CACHE_MS) return keyOk.valid;
+function withTimeout(ms: number): { signal: AbortSignal; done: () => void } {
+	const controller = new AbortController();
+	const t = setTimeout(() => controller.abort(), ms);
+	return { signal: controller.signal, done: () => clearTimeout(t) };
+}
+
+/** true = key accepted, false = key rejected, null = could not tell. */
+async function probeKey(name: string, url: string, headers: Record<string, string>): Promise<boolean | null> {
+	const { signal, done } = withTimeout(4000);
 	try {
-		const controller = new AbortController();
-		const t = setTimeout(() => controller.abort(), 4000);
-		const r = await fetch('https://api.openai.com/v1/models', {
-			headers: { Authorization: `Bearer ${env.OPENAI_API_KEY}` },
-			signal: controller.signal
-		});
-		clearTimeout(t);
-		keyOk = { valid: r.ok, at: Date.now() };
-		if (!r.ok) console.error(`OpenAI key rejected: ${r.status}`);
+		const r = await fetch(url, { headers, signal });
+		if (!r.ok) console.error(`Converse: ${name} key rejected: ${r.status}`);
 		return r.ok;
 	} catch {
-		// Network wobble, not a bad key. Do not cache a false negative.
-		return true;
+		return null;
+	} finally {
+		done();
 	}
 }
 
+async function anyProviderAvailable(): Promise<boolean> {
+	if (probe && Date.now() - probe.at < PROBE_CACHE_MS) return probe.available;
+	const checks: Array<Promise<boolean | null>> = [];
+	if (env.GEMINI_API_KEY)
+		checks.push(
+			probeKey('Gemini', 'https://generativelanguage.googleapis.com/v1beta/models', {
+				'x-goog-api-key': env.GEMINI_API_KEY
+			})
+		);
+	if (env.DEEPSEEK_API_KEY)
+		checks.push(
+			probeKey('DeepSeek', 'https://api.deepseek.com/models', {
+				Authorization: `Bearer ${env.DEEPSEEK_API_KEY}`
+			})
+		);
+	if (env.OPENAI_API_KEY)
+		checks.push(
+			probeKey('OpenAI', 'https://api.openai.com/v1/models', {
+				Authorization: `Bearer ${env.OPENAI_API_KEY}`
+			})
+		);
+	const results = await Promise.all(checks);
+	// A network wobble is not a bad key: an unknown counts as available, and
+	// a result that rests on one is not cached either way.
+	const available = results.some((r) => r !== false);
+	if (!results.includes(null)) probe = { available, at: Date.now() };
+	return available;
+}
+
 export const GET: RequestHandler = async () =>
-	new Response(JSON.stringify({ available: await keyWorks() }), {
+	new Response(JSON.stringify({ available: await anyProviderAvailable() }), {
 		headers: { 'Content-Type': 'application/json' }
 	});
+
+/** A reply, 'auth' when the key was refused, or null for anything else. */
+type Attempt = ConverseReply | 'auth' | null;
+
+/**
+ * One provider call: timeout, status handling, JSON parse and validation.
+ * Everything that can go wrong returns null so the chain moves on; only a
+ * refused key is reported separately, because that one never fixes itself.
+ */
+async function callProvider(
+	name: string,
+	url: string,
+	headers: Record<string, string>,
+	body: unknown,
+	extract: (data: any) => string | null | undefined
+): Promise<Attempt> {
+	const { signal, done } = withTimeout(PROVIDER_TIMEOUT_MS);
+	try {
+		const response = await fetch(url, {
+			method: 'POST',
+			headers: { ...headers, 'Content-Type': 'application/json' },
+			body: JSON.stringify(body),
+			signal
+		});
+		if (!response.ok) {
+			console.error(`Converse: ${name} failed: ${response.status}`);
+			return response.status === 401 || response.status === 403 ? 'auth' : null;
+		}
+		const raw = extract(await response.json());
+		if (!raw) {
+			console.error(`Converse: ${name} returned no content`);
+			return null;
+		}
+		const parsed = ConverseReplySchema.safeParse(JSON.parse(raw));
+		if (!parsed.success) {
+			console.error(`Converse: ${name} reply failed validation`);
+			return null;
+		}
+		return parsed.data;
+	} catch (err) {
+		console.error(`Converse: ${name} error: ${(err as Error).message}`);
+		return null;
+	} finally {
+		done();
+	}
+}
+
+/** OpenAI-style message list, shared by DeepSeek and OpenAI. */
+function chatMessages(system: string, history: Turn[], utterance: string) {
+	return [
+		{ role: 'system', content: system },
+		...history.map((h) => ({
+			role: h.role === 'partner' ? ('assistant' as const) : ('user' as const),
+			content: h.text
+		})),
+		{ role: 'user', content: utterance }
+	];
+}
+
+function tryGemini(key: string, system: string, history: Turn[], utterance: string): Promise<Attempt> {
+	const contents = history.map((h) => ({
+		// Gemini calls the assistant role "model".
+		role: h.role === 'partner' ? 'model' : 'user',
+		parts: [{ text: h.text }]
+	}));
+	// The partner speaks first, but Gemini expects a conversation to open
+	// on a user turn.
+	if (contents[0]?.role === 'model') contents.unshift({ role: 'user', parts: [{ text: '(start)' }] });
+	contents.push({ role: 'user', parts: [{ text: utterance }] });
+
+	return callProvider(
+		'Gemini',
+		`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent`,
+		{ 'x-goog-api-key': key },
+		{
+			systemInstruction: { parts: [{ text: system + JSON_SHAPE }] },
+			contents,
+			generationConfig: {
+				temperature: 0.7,
+				maxOutputTokens: 400,
+				responseMimeType: 'application/json',
+				responseSchema: GEMINI_REPLY_SCHEMA,
+				// 2.5 Flash thinks by default, and thinking tokens count against
+				// maxOutputTokens — enough of it truncates the JSON. A two-line
+				// A1 reply does not need it.
+				thinkingConfig: { thinkingBudget: 0 }
+			}
+		},
+		(data) => data?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? '').join('')
+	);
+}
+
+function tryDeepSeek(key: string, system: string, history: Turn[], utterance: string): Promise<Attempt> {
+	return callProvider(
+		'DeepSeek',
+		'https://api.deepseek.com/chat/completions',
+		{ Authorization: `Bearer ${key}` },
+		{
+			model: DEEPSEEK_MODEL,
+			messages: chatMessages(system + JSON_SHAPE, history, utterance),
+			max_tokens: 400,
+			temperature: 0.7,
+			// json_object only: DeepSeek has no strict schema mode.
+			response_format: { type: 'json_object' }
+		},
+		(data) => data?.choices?.[0]?.message?.content
+	);
+}
+
+function tryOpenAI(key: string, system: string, history: Turn[], utterance: string): Promise<Attempt> {
+	return callProvider(
+		'OpenAI',
+		'https://api.openai.com/v1/chat/completions',
+		{ Authorization: `Bearer ${key}` },
+		{
+			model: OPENAI_MODEL,
+			messages: chatMessages(system, history, utterance),
+			max_tokens: 400,
+			temperature: 0.7,
+			response_format: {
+				type: 'json_schema',
+				json_schema: { name: 'converse_reply', strict: true, schema: REPLY_SCHEMA }
+			}
+		},
+		(data) => data?.choices?.[0]?.message?.content
+	);
+}
 
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const json = (body: unknown, status = 200) =>
@@ -158,7 +371,14 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			headers: { 'Content-Type': 'application/json' }
 		});
 
-	if (!env.OPENAI_API_KEY) {
+	// Free first, cheap second, the existing paid key last.
+	const providers = [
+		{ name: `gemini/${GEMINI_MODEL}`, key: env.GEMINI_API_KEY, run: tryGemini },
+		{ name: `deepseek/${DEEPSEEK_MODEL}`, key: env.DEEPSEEK_API_KEY, run: tryDeepSeek },
+		{ name: `openai/${OPENAI_MODEL}`, key: env.OPENAI_API_KEY, run: tryOpenAI }
+	].filter((p): p is typeof p & { key: string } => !!p.key);
+
+	if (providers.length === 0) {
 		// Not an error a learner should ever see. The client treats 503 as
 		// "no conversation available" and renders nothing.
 		return json({ error: 'Conversation not configured' }, 503);
@@ -171,7 +391,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	let body: {
 		scenario?: string;
 		vocab?: string[];
-		history?: Array<{ role: 'partner' | 'learner'; text: string }>;
+		history?: Turn[];
 		utterance?: string;
 	};
 	try {
@@ -183,7 +403,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const utterance = (body.utterance || '').trim().slice(0, MAX_UTTERANCE_CHARS);
 	if (!utterance) return json({ error: 'Nothing said' }, 400);
 
-	const history = (body.history || []).slice(-(MAX_TURNS * 2));
+	const history: Turn[] = (body.history || []).slice(-(MAX_TURNS * 2)).map((h) => ({
+		role: h.role === 'partner' ? 'partner' : 'learner',
+		text: String(h.text).slice(0, MAX_UTTERANCE_CHARS)
+	}));
 	if (history.filter((h) => h.role === 'learner').length >= MAX_TURNS) {
 		return json({ error: 'Conversation complete' }, 409);
 	}
@@ -213,70 +436,30 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		.slice(0, MAX_VOCAB_LINES)
 		.map((v) => String(v).slice(0, MAX_VOCAB_CHARS));
 	const turnsLeft = MAX_TURNS - history.filter((h) => h.role === 'learner').length;
+	const system = systemPrompt(scenario, vocab, turnsLeft);
 
-	const messages = [
-		{ role: 'system', content: systemPrompt(scenario, vocab, turnsLeft) },
-		...history.map((h) => ({
-			role: h.role === 'partner' ? ('assistant' as const) : ('user' as const),
-			content: String(h.text).slice(0, MAX_UTTERANCE_CHARS)
-		})),
-		{ role: 'user', content: utterance }
-	];
-
-	const controller = new AbortController();
-	const timeoutId = setTimeout(() => controller.abort(), 15000);
-	try {
-		const response = await fetch('https://api.openai.com/v1/chat/completions', {
-			method: 'POST',
-			headers: {
-				Authorization: `Bearer ${env.OPENAI_API_KEY}`,
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({
-				model: MODEL,
-				messages,
-				max_tokens: 400,
-				temperature: 0.7,
-				response_format: {
-					type: 'json_schema',
-					json_schema: { name: 'converse_reply', strict: true, schema: REPLY_SCHEMA }
-				}
-			}),
-			signal: controller.signal
-		});
-		clearTimeout(timeoutId);
-
-		if (!response.ok) {
-			console.error(`Converse failed: ${response.status}`);
-			// 401/403 is a configuration problem, not a transient one. Report
-			// it as unconfigured so the client retires the card instead of
-			// showing a learner an error it can never recover from.
-			if (response.status === 401 || response.status === 403) {
-				keyOk = { valid: false, at: Date.now() };
-				return json({ error: 'Conversation not configured' }, 503);
-			}
-			return json({ error: 'Conversation unavailable' }, 502);
+	let refused = 0;
+	for (const p of providers) {
+		const result = await p.run(p.key, system, history, utterance);
+		if (result === 'auth') {
+			refused++;
+			continue;
 		}
-
-		const data = (await response.json()) as {
-			choices?: Array<{ message?: { content?: string } }>;
-		};
-		const raw = data.choices?.[0]?.message?.content;
-		if (!raw) return json({ error: 'Conversation unavailable' }, 502);
-
-		let parsed: ConverseReply;
-		try {
-			parsed = JSON.parse(raw) as ConverseReply;
-		} catch {
-			console.error('Converse returned unparseable JSON despite strict schema');
-			return json({ error: 'Conversation unavailable' }, 502);
+		if (result) {
+			// One line per turn in the function logs, so the fallback rate and
+			// the spend are visible without touching analytics.
+			console.log(`Converse turn served via ${p.name}`);
+			return json(result);
 		}
-
-		if (!parsed.reply) return json({ error: 'Conversation unavailable' }, 502);
-		return json(parsed);
-	} catch (err) {
-		clearTimeout(timeoutId);
-		console.error(`Converse error: ${(err as Error).message}`);
-		return json({ error: 'Conversation unavailable' }, 502);
 	}
+
+	if (refused === providers.length) {
+		// Every key was refused: a configuration problem, not a transient one.
+		// Report it as unconfigured so the client retires the card instead of
+		// showing a learner an error it can never recover from.
+		probe = { available: false, at: Date.now() };
+		return json({ error: 'Conversation not configured' }, 503);
+	}
+	return json({ error: 'Conversation unavailable' }, 502);
 };
+
