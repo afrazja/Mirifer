@@ -44,7 +44,7 @@ A sentence-based language learning application that teaches German through pract
 ## File Structure
 
 ```
-Misiro/
+Mirifer/
 ├── index.html          # Main HTML structure
 ├── styles.css          # Styling and layout
 ├── app.js             # Core application logic

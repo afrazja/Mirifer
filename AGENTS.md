@@ -8,7 +8,7 @@ shared memory. Read `PROJECT_STATUS.md` before making changes, including in a
 resumed conversation after the user switches laptops. Open this repository's
 root as the Codex project so these instructions are discovered.
 
-- Repository: https://github.com/afrazja/Misiro.git
+- Repository: https://github.com/afrazja/Mirifer.git
 - Website: https://www.mirifer.com/
 - Shared integration branch: `main` on `origin`.
 - Vercel watches `main`; pushing there can publish a new site deployment.

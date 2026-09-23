@@ -28,7 +28,7 @@ Updated: 2026-09-23.
 
 ## Where to resume
 
-- Shared repository: https://github.com/afrazja/Misiro.git
+- Shared repository: https://github.com/afrazja/Mirifer.git
 - Integration branch: `origin/main`.
 - This handoff was prepared on `codex/project-handoff` for integration into
   `main`. Fetch GitHub and inspect the actual branch history before starting.
@@ -115,7 +115,7 @@ Before leaving, say: **"Save a handoff for my other laptop."** Codex should
 update these notes, commit intended work, push it to the appropriate branch,
 and identify that branch. Unfinished work should stay off production `main`.
 
-On the other laptop, open the Misiro repository folder as the Codex project and
+On the other laptop, open the Mirifer repository folder (named `Misiro` in clones made before the rename) as the Codex project and
 say: **"Check for local changes, safely sync Mirifer from GitHub, and read
 AGENTS.md and PROJECT_STATUS.md before continuing."**
 

@@ -129,4 +129,4 @@ Deployed to **Vercel** via GitHub (`main` branch). The Vercel adapter is configu
 2. Commit: `git add <files> && git commit -m "your message"`
 3. Push to GitHub to trigger Vercel: `git push origin master:main`
 
-The local branch is `master`; Vercel watches the `main` branch on GitHub (`https://github.com/afrazja/Misiro`). Always push with `master:main` — pushing to `master` alone will **not** trigger a deploy.
+The local branch is `master`; Vercel watches the `main` branch on GitHub (`https://github.com/afrazja/Mirifer`). Always push with `master:main` — pushing to `master` alone will **not** trigger a deploy.
