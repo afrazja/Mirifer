@@ -8,7 +8,7 @@ shared memory. Read `PROJECT_STATUS.md` before making changes, including in a
 resumed conversation after the user switches laptops. Open this repository's
 root as the Codex project so these instructions are discovered.
 
-- Repository: https://github.com/afrazja/Misiro.git
+- Repository: https://github.com/afrazja/Mirifer.git
 - Website: https://www.mirifer.com/
 - Shared integration branch: `main` on `origin`.
 - Vercel watches `main`; pushing there can publish a new site deployment.
@@ -66,9 +66,8 @@ is synchronized until it has fetched and integrated those changes itself.
   changing course routing or the English pilot. Keep English and German
   progress isolated. French is unavailable until its implementation is ready.
 - `README.md` contains legacy prototype instructions. `CLAUDE.md` contains
-  useful architecture notes but outdated palette, worktree, and `master:main`
-  deployment directions. Use current source and actual Git state instead of
-  those obsolete assumptions.
+  useful architecture notes but some palette and worktree details are outdated.
+  Use current source and actual Git state instead of those obsolete assumptions.
 
 ## Validation and environment
 

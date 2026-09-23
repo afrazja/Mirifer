@@ -2,12 +2,22 @@
 
 Updated: 2026-09-23.
 
-## Latest work (2026-09-23): conversation provider chain
+## Latest work (2026-09-23): GitHub repository rename
+
+- The repository is now `afrazja/Mirifer`: https://github.com/afrazja/Mirifer.git.
+  This checkout's `origin` fetch and push URLs were changed to that address and
+  verified against GitHub. Its clean `main` fast-forwarded to `053c7cf` before
+  this documentation update. Local Git remotes are per laptop; the other laptop
+  must update its own remote and fetch.
+- Shared project instructions and deployment notes now use the renamed repo.
+  No application behavior changed in this update.
+
+## Earlier work (2026-09-23): conversation provider chain
 
 - `/proxy/converse` now tries Gemini → DeepSeek → OpenAI instead of OpenAI
   only. Drafted as `b93f184` on the home machine (which could not push),
-  then rebuilt and reviewed in a Claude Code session and opened as a pull
-  request against `main`. Client contract unchanged: same request shape,
+  then rebuilt and reviewed in a Claude Code session and merged as pull
+  request #15 into `main` at `053c7cf`. Client contract unchanged: same request shape,
   same reply JSON, same 503/502 meaning.
 - Every provider's reply is validated with zod. Gemini gets a response
   schema, and DeepSeek (json_object only) gets the exact key list in its
@@ -19,7 +29,7 @@ Updated: 2026-09-23.
 - Model IDs verified: `gemini-2.5-flash`, `deepseek-flash` (the old
   `deepseek-chat` id was retired). Production env vars are set in Vercel:
   `GEMINI_API_KEY`, `DEEPSEEK_API_KEY`, `GEMINI_MODEL`, `DEEPSEEK_MODEL`,
-  `OPENAI_MODEL`. They take effect once this change is deployed.
+  `OPENAI_MODEL`. Check Vercel's current deployment before assuming the change is live.
 - Privacy: learner sentences now go to Google (Gemini free tier may be used
   to improve Google's products) and DeepSeek (servers in China). The privacy
   page should say so.
@@ -28,9 +38,9 @@ Updated: 2026-09-23.
 
 ## Where to resume
 
-- Shared repository: https://github.com/afrazja/Misiro.git
+- Shared repository: https://github.com/afrazja/Mirifer.git
 - Integration branch: `origin/main`.
-- This handoff was prepared on `codex/project-handoff` for integration into
+- The earlier handoff branch `codex/project-handoff` has been integrated into
   `main`. Fetch GitHub and inspect the actual branch history before starting.
 - Application baseline reviewed for this handoff: `a675e4e` (English hotel
   pilot). This laptop was fast-forwarded from `954da80` to that baseline.
@@ -115,7 +125,7 @@ Before leaving, say: **"Save a handoff for my other laptop."** Codex should
 update these notes, commit intended work, push it to the appropriate branch,
 and identify that branch. Unfinished work should stay off production `main`.
 
-On the other laptop, open the Misiro repository folder as the Codex project and
+On the other laptop, open its local Mirifer repository folder as the Codex project and
 say: **"Check for local changes, safely sync Mirifer from GitHub, and read
 AGENTS.md and PROJECT_STATUS.md before continuing."**
 
