@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <path id="half" d="M111 190 C111 164 131 144 158 144 C206 144 266 206 300 274 L256 306 L201 266 Q193 260 193 270 L193 330 C193 349 185 358 171 365 L137 381 Q127 386 130 377 L136 365 C120 357 111 346 111 328 Z"/>
+    <clipPath id="mintClip"><use href="#half" transform="translate(512 0) scale(-1 1)"/></clipPath>
+  </defs>
+  <rect width="512" height="512" fill="#0B4B39"/>
+  <use href="#half" fill="#F66E58"/>
+  <use href="#half" transform="translate(512 0) scale(-1 1)" fill="#55D9C1"/>
+  <use href="#half" fill="#F3B52F" clip-path="url(#mintClip)"/>
+</svg>
