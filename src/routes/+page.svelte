@@ -184,11 +184,11 @@
 
 <svelte:head>
 	<title
-		>Learn German Online Free – Voice Practice & Daily Lessons | Mirifer</title
+		>Learn German Through Real Conversations – Voice Practice & Daily Lessons | Mirifer</title
 	>
 	<meta
 		name="description"
-		content="Learn German free with 120 daily lessons, natural audio, and voice practice. No grammar drills — just real conversations. Start today, no credit card needed."
+		content="120 daily German lessons built from real conversations, with native audio, voice practice and spaced repetition. Try a lesson free — no signup."
 	/>
 	<link rel="canonical" href="https://www.mirifer.com/" />
 	<!-- Must mirror the annotations on /fa. Google discards hreflang that is
@@ -204,7 +204,7 @@
 	/>
 	<meta
 		property="og:description"
-		content="Master German with voice recognition, spaced repetition, and 120 real-life daily lessons. Free to start — no grammar drills."
+		content="Master German with voice recognition, spaced repetition, and 120 real-life daily lessons. Try a lesson free — no signup."
 	/>
 	<meta property="og:image" content="https://www.mirifer.com/og-image.jpg" />
 	<meta property="og:url" content="https://www.mirifer.com/" />
@@ -219,7 +219,7 @@
 	/>
 	<meta
 		name="twitter:description"
-		content="120 daily lessons. Voice practice. Spaced repetition. Free access."
+		content="120 daily lessons. Voice practice. Spaced repetition. Try a lesson free."
 	/>
 	<meta name="twitter:image" content="https://www.mirifer.com/og-image.jpg" />
 
@@ -244,7 +244,7 @@
 				name: "How should I work through the lessons?",
 				acceptedAnswer: {
 					"@type": "Answer",
-					text: "Mirifer offers a sequence of German conversation lessons from beginner topics to more advanced situations. Work at your own pace and practise speaking from day one.",
+					text: "One lesson a day, in order. Completing a lesson unlocks the next, and you can revisit any finished lesson whenever you want. Missed a day? Pick up where you left off — there is no streak to lose.",
 				},
 			},
 			{
@@ -252,7 +252,7 @@
 				name: "Can I learn German for free?",
 				acceptedAnswer: {
 					"@type": "Answer",
-					text: "Yes. Mirifer is completely free during early access — no credit card, no trial period, no hidden fees. You get full access to all 120 lessons, voice practice, and spaced repetition flashcards.",
+					text: "Yes, during early access. You can try a lesson without signing up, and a free account gives you all 120 lessons, voice practice and spaced repetition flashcards — no credit card. If pricing ever changes, early-access users will be told well before anything changes.",
 				},
 			},
 			{
@@ -268,7 +268,7 @@
 				name: "What level of German does Mirifer teach?",
 				acceptedAnswer: {
 					"@type": "Answer",
-					text: "Mirifer covers A1 (complete beginner) through B1+ (intermediate). You'll progress from basic greetings and numbers through shopping and travel scenarios to complex conversations and expressing opinions.",
+					text: "The 120-day path runs from A1 (complete beginner) through A2 and on toward B1. The readiness estimate covers the Goethe A1 exam; the later lessons build toward B1 but are not a B1 exam guarantee.",
 				},
 			},
 		],
@@ -586,7 +586,7 @@
 	<section class="band">
 		<div class="trio">
 			<div class="trio-card">
-				<span class="trio-icon" aria-hidden="true">🎧</span>
+				<svg class="trio-icon" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></svg>
 				<h3>Hear natural audio</h3>
 				<p>
 					Native speakers at a natural pace, slowed to 0.75× whenever
@@ -594,7 +594,7 @@
 				</p>
 			</div>
 			<div class="trio-card">
-				<span class="trio-icon" aria-hidden="true">🎙️</span>
+				<svg class="trio-icon" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
 				<h3>Say it out loud</h3>
 				<p>
 					The mic hears every attempt and tells you which word slipped, so you
@@ -602,7 +602,7 @@
 				</p>
 			</div>
 			<div class="trio-card">
-				<span class="trio-icon" aria-hidden="true">🔄</span>
+				<svg class="trio-icon" aria-hidden="true" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
 				<h3>Review at the right time</h3>
 				<p>
 					Spaced repetition schedules each sentence to return at the edge of
@@ -615,14 +615,16 @@
 	<!-- ══ PROGRESS ══════════════════════════════════════ -->
 	<section class="band split">
 		<div>
-			<p class="label">Progress you can defend</p>
-			<h2>You always know where you stand.</h2>
+			<p class="label">Know exactly where you stand</p>
+			<h2>See which skill is holding you back.</h2>
 		</div>
 		<div class="split-body">
 			<p>
-				A Goethe readiness score estimated from your own lesson history —
-				listening, reading, writing and speaking scored separately, so you can
-				see which one is holding you back.
+				A Goethe A1 readiness estimate built from your own lesson history —
+				listening, reading, writing and speaking scored separately. Listening
+				and speaking come from the lessons; reading and writing come from the
+				review questions, where you pick the meaning or type the missing word.
+				Until you have answered those, the app labels the score an estimate.
 			</p>
 			<p>
 				The sentences
@@ -666,10 +668,10 @@
 				</p>
 			</div>
 			<div>
-				<h3>Regular practice helps you keep moving.</h3>
+				<h3>Daily beats intense.</h3>
 				<p>
-					Work through a lesson at your own pace. Listen again when you need
-					to, practise the sentences, and return when you are ready.
+					Fifteen minutes today does more than two hours on Sunday. Missed a
+					day? Just pick up where you left off — no penalty, no lost streak.
 				</p>
 			</div>
 			<div>
@@ -695,7 +697,7 @@
 	<section class="bleed bleed-navy" id="path">
 		<div class="bleed-inner">
 			<p class="label">Your learning path</p>
-			<h2>One hundred and twenty days from zero to holding a conversation.</h2>
+			<h2>One hundred and twenty days, from your first sentence toward real conversation.</h2>
 			<p class="lede">
 				No more wondering what to do today. Each day has a name, a scene, and
 				sentences that build on everything before it.
@@ -719,10 +721,10 @@
 				</div>
 				<div class="level">
 					<span class="level-days">Days 66 — 120</span>
-					<h3>B1 · Opinions</h3>
+					<h3>Toward B1 · Opinions</h3>
 					<p>
-						Explaining, disagreeing, telling a story that happened last year,
-						and handling the conversation when it turns.
+						Opinions, stories, and handling the conversation when it turns —
+						the groundwork for B1, not a finish line.
 					</p>
 				</div>
 			</div>
@@ -778,9 +780,9 @@
 		<details>
 			<summary>How should I work through the lessons?</summary>
 			<p>
-				Start with the first lesson and work through the course at your own
-				pace. Completing a lesson unlocks the next one, and you can revisit
-				completed lessons whenever you want.
+				One lesson a day, in order. Completing a lesson unlocks the next one,
+				and you can revisit any finished lesson whenever you want. Missed a
+				day? Pick up where you left off.
 			</p>
 		</details>
 		<details>
@@ -788,6 +790,14 @@
 			<p>
 				Yes. You can try a lesson without signing up or entering a card.
 				Create a free account to save your progress.
+			</p>
+		</details>
+		<details>
+			<summary>Will it stay free?</summary>
+			<p>
+				Mirifer is free during early access. If that ever changes, early-access
+				users will hear about it well before anything changes — no surprise
+				charges, and no card on file to charge.
 			</p>
 		</details>
 		<details>
@@ -801,8 +811,9 @@
 		<details>
 			<summary>What level of German does Mirifer teach?</summary>
 			<p>
-				A1 through B1 and a little beyond, with a readiness estimate for the
-				Goethe A1 exam scored per skill.
+				The path runs from A1 through A2 and on toward B1. The readiness
+				estimate covers the Goethe A1 exam, scored per skill; it does not yet
+				benchmark A2 or B1.
 			</p>
 		</details>
 		<details>
@@ -1363,8 +1374,8 @@
 	}
 
 	.trio-icon {
-		font-size: 1.6rem;
 		display: block;
+		color: var(--accent);
 		margin-bottom: 12px;
 	}
 
