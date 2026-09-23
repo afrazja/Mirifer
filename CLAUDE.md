@@ -125,8 +125,8 @@ Tests use **Vitest + jsdom**. The setup file (`src/test/setup.ts`) stubs `Speech
 Deployed to **Vercel** via GitHub (`main` branch). The Vercel adapter is configured in `svelte.config.js`.
 
 **How to deploy:**
-1. Make changes in the worktree at `.claude/worktrees/affectionate-newton/` (this directory).
-2. Commit: `git add <files> && git commit -m "your message"`
-3. Push to GitHub to trigger Vercel: `git push origin master:main`
+1. Read `AGENTS.md` and `PROJECT_STATUS.md`, then inspect the current branch, working tree, and remote.
+2. Commit intended changes on a working branch and integrate them into `main` after verification.
+3. Push `main` to `https://github.com/afrazja/Mirifer.git` to trigger Vercel, then confirm the deployment succeeds.
 
-The local branch is `master`; Vercel watches the `main` branch on GitHub (`https://github.com/afrazja/Mirifer`). Always push with `master:main` — pushing to `master` alone will **not** trigger a deploy.
+The shared integration branch is `main` on `origin`; do not assume another laptop has the same local branch or directory name.

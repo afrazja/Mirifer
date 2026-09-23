@@ -66,9 +66,8 @@ is synchronized until it has fetched and integrated those changes itself.
   changing course routing or the English pilot. Keep English and German
   progress isolated. French is unavailable until its implementation is ready.
 - `README.md` contains legacy prototype instructions. `CLAUDE.md` contains
-  useful architecture notes but outdated palette, worktree, and `master:main`
-  deployment directions. Use current source and actual Git state instead of
-  those obsolete assumptions.
+  useful architecture notes but some palette and worktree details are outdated.
+  Use current source and actual Git state instead of those obsolete assumptions.
 
 ## Validation and environment
 
