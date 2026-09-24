@@ -171,9 +171,10 @@ async function tryEdge(text: string, voiceName: string, rate: number): Promise<A
 	try {
 		const tts = new MsEdgeTTS();
 		await tts.setMetadata(voiceName, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3);
-		// Prosody rate as a multiplier (1 = normal), same 0.7–1.2 window as the
-		// other engines so cache variants stay bounded.
-		const clamped = Math.round(Math.min(1.2, Math.max(0.7, rate)) * 100) / 100;
+		// Prosody rate as a multiplier (1 = normal). Edge voices accept down to
+		// 0.5, below ElevenLabs' 0.7 floor, which the app's slower English base
+		// pace needs. Quantized so cache variants stay bounded.
+		const clamped = Math.round(Math.min(1.2, Math.max(0.5, rate)) * 100) / 100;
 		const { audioStream } = tts.toStream(text, { rate: clamped });
 
 		const audio = await new Promise<Uint8Array | null>((resolve) => {

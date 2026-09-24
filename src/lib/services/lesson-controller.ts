@@ -398,7 +398,7 @@ export async function processNextStep(skipAudio = false): Promise<void> {
 
 	if (!skipAudio) {
 		// Audio sequence: translation → pause → German
-		await playAudioPromise(translationText, 1.1, getTranslationLang(prefs.language));
+		await playAudioPromise(translationText, 1, getTranslationLang(prefs.language));
 		if (getSessionID() !== mySessionID) return;
 		await wait(300);
 		if (getSessionID() !== mySessionID) return;

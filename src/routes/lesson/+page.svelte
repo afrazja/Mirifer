@@ -39,7 +39,7 @@
 		hasLesson,
 		type LessonMeta,
 	} from "$services/lesson-loader";
-	import { stopAllAudio, playAudioPromise } from "$services/tts";
+	import { stopAllAudio, playAudioPromise, setLessonActive } from "$services/tts";
 	import { tipFor } from "$services/pronunciation";
 	import {
 		recordMiss,
@@ -711,6 +711,8 @@
 	});
 
 	onMount(async () => {
+		// German speaking pace follows the open lesson while this page is up.
+		setLessonActive(true);
 		setupCallbacks();
 		initSyncListeners();
 		micSupported = initSpeechRecognition() && isSpeechSupported();
@@ -771,6 +773,7 @@
 	});
 
 	onDestroy(() => {
+		setLessonActive(false);
 		if (typeof window !== "undefined") {
 			stopAllAudio();
 			stopListening();
