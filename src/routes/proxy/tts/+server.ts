@@ -1,17 +1,18 @@
 /**
  * TTS Proxy.
- * Usage: GET /proxy/tts?q=Hallo&tl=de[&voice=a|b][&rate=0.7..1.2]
+ * Usage: GET /proxy/tts?q=Hallo&tl=de[&voice=a|b][&rate=0.5..1.5]
  *
  * voice=a (default) → learner-side voice; voice=b → conversation partner.
- * rate → ElevenLabs native speaking speed: the voice articulates slower,
+ * rate → the engine's native speaking speed: the voice articulates slower,
  * instead of the client time-stretching the audio (which mostly lengthens
- * the gaps between words). Clamped to the supported 0.7–1.2 range.
+ * the gaps between words). Clamped to what each engine supports.
  * Both params are part of the URL, so changes also bust old cached audio.
  *
  * Strategy:
- * - German (tl=de): try ElevenLabs first (if ELEVENLABS_API_KEY is set) for a
- *   more natural voice, then fall back to Google Translate TTS if ElevenLabs
- *   fails or its quota is exhausted.
+ * - German (tl=de): Edge read-aloud with native German-only voices first
+ *   (free, and cannot drift into English on words like "Chef" or "Gift" the
+ *   way English voices reading German can), then ElevenLabs if Edge fails,
+ *   then Google Translate TTS.
  * - All other languages: Google Translate TTS (avoids burning the ElevenLabs
  *   free-tier character quota on translation audio).
  *
@@ -154,12 +155,13 @@ async function tryAzureFa(text: string, voiceName: string, rate: number): Promis
 
 // Edge read-aloud voices per language. English: Andrew/Ava Multilingual are
 // Microsoft's most natural pair (browser speechSynthesis and the Google scrape
-// both sound robotic). German: Edge is the FALLBACK tier — used only when the
-// ElevenLabs quota is exhausted, still far better than the Google scrape.
+// both sound robotic). German: Edge is the PRIMARY tier, with German-only
+// voices (Conrad, Katja) rather than the Multilingual ones, which like any
+// voice built to switch languages can read an English-looking word in English.
 const EDGE_VOICE_EN_A = env.EDGE_TTS_VOICE_EN || 'en-US-AndrewMultilingualNeural';
 const EDGE_VOICE_EN_B = env.EDGE_TTS_VOICE_EN_B || 'en-US-AvaMultilingualNeural';
-const EDGE_VOICE_DE_A = env.EDGE_TTS_VOICE_DE || 'de-DE-FlorianMultilingualNeural';
-const EDGE_VOICE_DE_B = env.EDGE_TTS_VOICE_DE_B || 'de-DE-SeraphinaMultilingualNeural';
+const EDGE_VOICE_DE_A = env.EDGE_TTS_VOICE_DE || 'de-DE-ConradNeural';
+const EDGE_VOICE_DE_B = env.EDGE_TTS_VOICE_DE_B || 'de-DE-KatjaNeural';
 
 /**
  * Generate audio via Microsoft Edge's read-aloud service — the same neural
@@ -171,10 +173,10 @@ async function tryEdge(text: string, voiceName: string, rate: number): Promise<A
 	try {
 		const tts = new MsEdgeTTS();
 		await tts.setMetadata(voiceName, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3);
-		// Prosody rate as a multiplier (1 = normal). Edge voices accept down to
-		// 0.5, below ElevenLabs' 0.7 floor, which the app's slower English base
-		// pace needs. Quantized so cache variants stay bounded.
-		const clamped = Math.round(Math.min(1.2, Math.max(0.5, rate)) * 100) / 100;
+		// Prosody rate as a multiplier (1 = normal), 0.5–1.5: wider than
+		// ElevenLabs' 0.7–1.2, which the slow English pace and the faster late
+		// German lessons both use. Quantized so cache variants stay bounded.
+		const clamped = Math.round(Math.min(1.5, Math.max(0.5, rate)) * 100) / 100;
 		const { audioStream } = tts.toStream(text, { rate: clamped });
 
 		const audio = await new Promise<Uint8Array | null>((resolve) => {
@@ -364,35 +366,12 @@ export const GET: RequestHandler = async ({ url, request }) => {
 		});
 	}
 
-	// German → try ElevenLabs first for a more natural voice.
+	// German → Edge's native German voices first, ElevenLabs only as a fallback.
 	if (lang === 'de') {
-		const voiceId = url.searchParams.get('voice') === 'b' ? ELEVEN_VOICE_B : ELEVEN_VOICE_A;
-		// Native speaking speed — clamp to the supported range and quantize to
-		// 2 decimals so cache variants stay bounded.
+		const isB = url.searchParams.get('voice') === 'b';
 		const rawRate = parseFloat(url.searchParams.get('rate') || '1');
-		const speed = isFinite(rawRate)
-			? Math.round(Math.min(1.2, Math.max(0.7, rawRate)) * 100) / 100
-			: 1;
-		const elevenAudio = await tryElevenLabs(text, voiceId, speed);
-		if (elevenAudio) {
-			return new Response(elevenAudio, {
-				status: 200,
-				headers: {
-					'Content-Type': 'audio/mpeg',
-					'Content-Length': elevenAudio.byteLength.toString(),
-					'Cache-Control': AUDIO_CACHE_CONTROL,
-					'X-TTS-Source': 'elevenlabs',
-					...corsHeaders(origin)
-				}
-			});
-		}
-		// ElevenLabs unavailable (no key / quota / error) → Edge neural German
-		// before the Google scrape.
-		const edgeDe = await tryEdge(
-			text,
-			url.searchParams.get('voice') === 'b' ? EDGE_VOICE_DE_B : EDGE_VOICE_DE_A,
-			speed
-		);
+		const rate = isFinite(rawRate) ? rawRate : 1;
+		const edgeDe = await tryEdge(text, isB ? EDGE_VOICE_DE_B : EDGE_VOICE_DE_A, rate);
 		if (edgeDe) {
 			return new Response(edgeDe, {
 				status: 200,
@@ -401,6 +380,24 @@ export const GET: RequestHandler = async ({ url, request }) => {
 					'Content-Length': edgeDe.byteLength.toString(),
 					'Cache-Control': AUDIO_CACHE_CONTROL,
 					'X-TTS-Source': 'edge',
+					...corsHeaders(origin)
+				}
+			});
+		}
+		// Edge unavailable → ElevenLabs. The rate is calibrated for Edge, whose
+		// German at 1.0 (~156 wpm) matches ElevenLabs at about 0.8, so scale it
+		// down, then clamp to ElevenLabs' 0.7–1.2 and quantize so cache
+		// variants stay bounded.
+		const speed = Math.round(Math.min(1.2, Math.max(0.7, rate * 0.8)) * 100) / 100;
+		const elevenAudio = await tryElevenLabs(text, isB ? ELEVEN_VOICE_B : ELEVEN_VOICE_A, speed);
+		if (elevenAudio) {
+			return new Response(elevenAudio, {
+				status: 200,
+				headers: {
+					'Content-Type': 'audio/mpeg',
+					'Content-Length': elevenAudio.byteLength.toString(),
+					'Cache-Control': AUDIO_CACHE_CONTROL,
+					'X-TTS-Source': 'elevenlabs',
 					...corsHeaders(origin)
 				}
 			});

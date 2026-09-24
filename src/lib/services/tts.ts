@@ -41,33 +41,32 @@ export function stopAllAudio(): void {
 /**
  * Engine speed that 1.0× in the app maps to.
  *
- * The engines' own 1.0 is native conversational pace, measured on the live
- * voices at ~195 wpm for German (ElevenLabs) and ~225 wpm for English (Edge
- * multilingual voices). That is too fast for a beginner, so "normal" in the
- * app felt like a sped-up setting.
+ * Measured on the voices in use: German (Edge Conrad/Katja) speaks ~156 wpm
+ * at the engine's 1.0, a clear learner pace; English (Edge Andrew/Ava
+ * Multilingual) speaks ~225 wpm at 1.0, far too fast to follow.
  *
- * German — the language being learned — starts slow and grows with the
- * course: 0.8 (~150 wpm) for lessons 1–5, then a little faster each lesson
- * until native pace at lesson 30. A learner meets ordinary German speed
- * gradually instead of in one jump.
+ * German — the language being learned — starts at 1.0 (~156 wpm) for
+ * lessons 1–5, then steps up until about 1.2 (~190 wpm, close to ordinary
+ * native speech) by lesson 30. A learner meets native speed gradually
+ * instead of in one jump.
  *
  * English is the learner's own language (translations, narration), so it
  * stays at 0.7 (~155 wpm) throughout. Other languages play at the engine's
  * own pace. The learner's speed setting and slow replays multiply on top.
  */
-export const GERMAN_PACE = { start: 0.8, slowUntil: 5, nativeFrom: 30 } as const;
+export const GERMAN_PACE = { start: 1, native: 1.2, slowUntil: 5, nativeFrom: 30 } as const;
 const ENGLISH_PACE = 0.7;
 
 export function basePace(shortLang: string, lessonDay: number): number {
 	if (shortLang === 'en') return ENGLISH_PACE;
 	if (shortLang !== 'de') return 1;
-	const { start, slowUntil, nativeFrom } = GERMAN_PACE;
+	const { start, native, slowUntil, nativeFrom } = GERMAN_PACE;
 	if (lessonDay <= slowUntil) return start;
-	if (lessonDay >= nativeFrom) return 1;
+	if (lessonDay >= nativeFrom) return native;
 	const t = (lessonDay - slowUntil) / (nativeFrom - slowUntil);
 	// Steps of 0.05, not a new speed per lesson: the speed is part of the
 	// audio URL, so every distinct value is another paid ElevenLabs render.
-	return Math.round((start + (1 - start) * t) * 20) / 20;
+	return Math.round((start + (native - start) * t) * 20) / 20;
 }
 
 /**
@@ -96,14 +95,12 @@ function paceDay(): number {
 }
 
 /**
- * Slowest native speed each engine accepts: ElevenLabs (German) stops at
- * 0.7, the Edge/Azure voices go down to 0.5. Anything slower than this is
- * made up with playbackRate, which stretches the audio instead of having
- * the voice speak slower, so it is the last resort.
+ * Native speed range of the Edge voices (the server's clamp). Anything
+ * outside it is made up with playbackRate, which stretches the audio instead
+ * of having the voice speak slower or faster, so it is the last resort.
  */
-const ENGINE_MIN: Record<string, number> = { de: 0.7 };
-const ENGINE_MIN_DEFAULT = 0.5;
-const ENGINE_MAX = 1.2;
+const ENGINE_MIN = 0.5;
+const ENGINE_MAX = 1.5;
 
 /**
  * Split an app-level rate into the speed to request from the TTS engine
@@ -115,8 +112,7 @@ export function engineRate(
 	lessonDay: number = 1
 ): { engine: number; playback: number } {
 	const target = rate * basePace(shortLang, lessonDay);
-	const min = ENGINE_MIN[shortLang] ?? ENGINE_MIN_DEFAULT;
-	const engine = Math.round(Math.min(ENGINE_MAX, Math.max(min, target)) * 100) / 100;
+	const engine = Math.round(Math.min(ENGINE_MAX, Math.max(ENGINE_MIN, target)) * 100) / 100;
 	return { engine, playback: target / engine };
 }
 
@@ -191,7 +187,10 @@ function playWebAudio(
 		// instead of time-stretching the audio client-side, which mostly widens
 		// the gaps between words. See engineRate for the pace and range.
 		const { engine, playback } = engineRate(shortLang, requestedRate, day);
-		deParams = `&voice=${voice}&rate=${engine}`;
+		// `v` changes whenever the voice behind a URL changes, so audio cached
+		// for a year under the old voice is not replayed. v=2: German moved
+		// from ElevenLabs to Edge's German-only voices.
+		deParams = `&voice=${voice}&rate=${engine}${shortLang === 'de' ? '&v=2' : ''}`;
 		safeRate = playback;
 	}
 	const url = `/proxy/tts?q=${encodeURIComponent(text)}&tl=${shortLang}${deParams}`;
