@@ -99,6 +99,40 @@ describe('getUser', () => {
 	});
 });
 
+describe('getUser caching', () => {
+	const session = (token: string) => ({ data: { session: { access_token: token } } });
+
+	it('verifies once for concurrent and repeated calls in the same session', async () => {
+		const getUserMock = vi.fn().mockResolvedValue({ data: { user: { id: 'u1' } } });
+		mockClient({ getUser: getUserMock, getSession: vi.fn().mockResolvedValue(session('tok-a')) });
+		const users = await Promise.all([getUser(), getUser(), getUser()]);
+		expect(users.map((u) => u?.id)).toEqual(['u1', 'u1', 'u1']);
+		expect(await getUser()).toEqual({ id: 'u1' });
+		expect(getUserMock).toHaveBeenCalledTimes(1);
+	});
+
+	it('never returns a cached user for a different session', async () => {
+		mockClient({
+			getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'first' } } }),
+			getSession: vi.fn().mockResolvedValue(session('tok-b'))
+		});
+		expect((await getUser())?.id).toBe('first');
+		mockClient({
+			getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'second' } } }),
+			getSession: vi.fn().mockResolvedValue(session('tok-c'))
+		});
+		expect((await getUser())?.id).toBe('second');
+	});
+
+	it('does not cache a missing user', async () => {
+		const getUserMock = vi.fn().mockResolvedValue({ data: { user: null } });
+		mockClient({ getUser: getUserMock, getSession: vi.fn().mockResolvedValue(session('tok-d')) });
+		await getUser();
+		await getUser();
+		expect(getUserMock).toHaveBeenCalledTimes(2);
+	});
+});
+
 describe('getSession / isAuthenticated', () => {
 	it('returns the session when present', async () => {
 		mockClient({ getSession: vi.fn().mockResolvedValue({ data: { session: { access_token: 'x' } } }) });
