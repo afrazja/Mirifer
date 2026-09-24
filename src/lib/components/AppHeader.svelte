@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from "svelte";
 	import BrandLogo from "./BrandLogo.svelte";
-	import { toggleTheme, resolvedTheme } from "$services/theme";
 
 	let {
 		title,
@@ -77,17 +76,6 @@
 
 		<div class="actions">
 			{#if actions}{@render actions()}{/if}
-			<button
-				class="theme-toggle"
-				type="button"
-				onclick={toggleTheme}
-				aria-label={$resolvedTheme === "dark"
-					? "Switch to light theme"
-					: "Switch to dark theme"}
-				title={$resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
-			>
-				<span aria-hidden="true">{$resolvedTheme === "dark" ? "☀" : "☾"}</span>
-			</button>
 		</div>
 	</header>
 
@@ -284,17 +272,6 @@
 		color: var(--on-brand);
 	}
 
-	.brand-variant .theme-toggle {
-		background: rgba(255, 255, 255, 0.14);
-		border-color: rgba(255, 255, 255, 0.45);
-		color: var(--on-brand);
-	}
-
-	.brand-variant .theme-toggle:hover {
-		background: rgba(255, 255, 255, 0.24);
-		border-color: #ffffff;
-	}
-
 	/* Page controls dropped into the toolbar slot (selects, toggles). These
 	   sit on their own light pill, so they take ink rather than the band's
 	   white. */
@@ -328,8 +305,7 @@
 	}
 
 	.dark-variant .back-control,
-	.dark-variant .brand,
-	.dark-variant .theme-toggle {
+	.dark-variant .brand {
 		background: rgba(255, 255, 255, 0.06);
 		border: 1.5px solid var(--leaf);
 		color: var(--on-brand);
@@ -339,8 +315,7 @@
 	}
 
 	.dark-variant .back-control:hover,
-	.dark-variant .brand:hover,
-	.dark-variant .theme-toggle:hover {
+	.dark-variant .brand:hover {
 		background: var(--leaf);
 		border-color: var(--leaf);
 		color: var(--on-accent);
@@ -359,28 +334,6 @@
 
 	.dark-variant .secondary-toolbar :global(label) {
 		color: var(--on-brand-soft);
-	}
-
-	.theme-toggle {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		flex-shrink: 0;
-		width: 44px;
-		height: 44px;
-		border: 1px solid var(--control-border);
-		border-radius: 999px;
-		background: var(--control);
-		color: var(--ink);
-		font-size: 1.05rem;
-		line-height: 1;
-		cursor: pointer;
-		transition: background 0.15s, border-color 0.15s;
-	}
-
-	.theme-toggle:hover {
-		background: var(--control-hover);
-		border-color: var(--accent);
 	}
 
 

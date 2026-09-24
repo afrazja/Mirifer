@@ -3,6 +3,7 @@
 	import { goto } from "$app/navigation";
 	import AppHeader from "$lib/components/AppHeader.svelte";
 	import CourseSwitcher from "$lib/components/CourseSwitcher.svelte";
+	import { themeChoice, setTheme, type ThemeChoice } from "$services/theme";
 	import {
 		isAuthenticated,
 		getUser,
@@ -506,6 +507,21 @@
 				</div>
 			</div>
 
+			<div class="pref-row theme-row">
+				<span class="pref-label" id="pref-theme-label">Theme</span>
+				<div class="target-lang-select" role="radiogroup" aria-labelledby="pref-theme-label">
+					{#each [["light", "☀ Light"], ["dark", "☾ Dark"], ["system", "Match device"]] as [value, label] (value)}
+						<button
+							type="button"
+							role="radio"
+							aria-checked={$themeChoice === value}
+							class="target-btn {$themeChoice === value ? 'active' : ''}"
+							onclick={() => setTheme(value as ThemeChoice)}>{label}</button
+						>
+					{/each}
+				</div>
+			</div>
+
 			<button
 				class="btn-primary"
 				onclick={handleLanguageSave}
@@ -903,7 +919,8 @@
 		border-bottom: none;
 	}
 
-	.pref-row label {
+	.pref-row label,
+	.pref-row .pref-label {
 		font-size: 1rem;
 		color: var(--ink);
 	}
@@ -945,6 +962,17 @@
 	.target-lang-select {
 		display: flex;
 		gap: 8px;
+	}
+
+	/* Three choices need more room than one select: on narrow screens the
+	   buttons move under the label instead of squeezing it. */
+	.theme-row {
+		flex-wrap: wrap;
+		gap: 10px;
+	}
+
+	.theme-row .target-btn {
+		white-space: nowrap;
 	}
 
 	.exam-date-input {
