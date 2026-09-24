@@ -20,13 +20,43 @@ export function isConfigured(): boolean {
 	return !!sb();
 }
 
+/**
+ * The verified user, remembered briefly. Almost every data-layer call starts
+ * with getUser(), which is a network round trip to Supabase Auth, and the
+ * Supabase client runs those one at a time behind a lock, so a page that
+ * loads six things waited on six verifications in a row before loading any
+ * of them. Remembering the answer for a minute, tied to the session's access
+ * token, turns that into one check. A sign-out or a different account means
+ * a different token (or none), so it can never return someone else. The
+ * database's row-level security still checks every query on the server.
+ */
+const USER_CACHE_MS = 60_000;
+let userCache: { token: string; user: User; at: number } | null = null;
+let userInflight: { token: string; promise: Promise<User | null> } | null = null;
+
 /** Get current user or null */
 export async function getUser(): Promise<User | null> {
 	const client = sb();
 	if (!client) return null;
 	try {
-		const { data: { user } } = await client.auth.getUser();
-		return user;
+		const token = (await client.auth.getSession()).data.session?.access_token;
+		if (token) {
+			if (userCache?.token === token && Date.now() - userCache.at < USER_CACHE_MS) {
+				return userCache.user;
+			}
+			// Concurrent callers share one request instead of queueing behind it.
+			if (userInflight?.token === token) return userInflight.promise;
+		}
+		const promise = client.auth.getUser().then(({ data: { user } }) => {
+			if (token && user) userCache = { token, user, at: Date.now() };
+			return user;
+		});
+		if (token) userInflight = { token, promise };
+		try {
+			return await promise;
+		} finally {
+			if (userInflight?.promise === promise) userInflight = null;
+		}
 	} catch {
 		return null;
 	}

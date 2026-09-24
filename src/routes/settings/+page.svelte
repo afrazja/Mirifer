@@ -331,36 +331,29 @@
 			return;
 		}
 
-		// Load user info
-		const user = await getUser();
-		if (user) {
-			email = user.email || "";
-		}
+		// Everything below is independent, and each call is its own round trip
+		// (most re-check the user with Supabase first), so load in parallel.
+		// Awaited one by one they added up to seconds before the page showed.
+		const [user, name, avatar, savedLang, savedTargetLang, savedSpeed, savedExam] =
+			await Promise.all([
+				getUser(),
+				getDisplayName(),
+				getAvatarUrl(),
+				getLanguage(),
+				getTargetLanguage(),
+				getVoiceSpeed(),
+				getExamSettings(),
+			]);
 
-
-		// Load display name
-		const name = await getDisplayName();
+		if (user) email = user.email || "";
 		displayName = name;
-
-		// Load avatar
-		const avatar = await getAvatarUrl();
 		if (avatar) {
 			avatarUrl = avatar;
 			setLocalAvatarUrl(avatar);
 		}
-
-		// Load preferences
-		const savedLang = await getLanguage();
 		if (savedLang) currentLang = savedLang;
-
-		const savedTargetLang = await getTargetLanguage();
-		if (savedTargetLang)
-			currentTargetLang = savedTargetLang;
-
-		const savedSpeed = await getVoiceSpeed();
+		if (savedTargetLang) currentTargetLang = savedTargetLang;
 		if (savedSpeed !== null && !isNaN(savedSpeed)) voiceSpeed = savedSpeed;
-
-		const savedExam = await getExamSettings();
 		if (savedExam) {
 			examGoal = savedExam.goal;
 			examDate = savedExam.examDate ?? "";
