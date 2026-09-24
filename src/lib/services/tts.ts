@@ -37,6 +37,39 @@ export function stopAllAudio(): void {
 	}
 }
 
+/**
+ * Engine speed that 1.0× in the app maps to, per language.
+ *
+ * The engines' own 1.0 is native conversational pace, measured on the live
+ * voices at ~195 wpm for German (ElevenLabs) and ~225 wpm for English (Edge
+ * multilingual voices) — too fast for a learner, so "normal" in the app
+ * felt like a sped-up setting. These bring 1.0× to roughly 150 wpm; the
+ * learner's speed setting and any slow-replay rate multiply on top.
+ * Languages not listed play at the engine's own pace.
+ */
+export const BASE_PACE: Record<string, number> = { de: 0.8, en: 0.7 };
+
+/**
+ * Slowest native speed each engine accepts: ElevenLabs (German) stops at
+ * 0.7, the Edge/Azure voices go down to 0.5. Anything slower than this is
+ * made up with playbackRate, which stretches the audio instead of having
+ * the voice speak slower, so it is the last resort.
+ */
+const ENGINE_MIN: Record<string, number> = { de: 0.7 };
+const ENGINE_MIN_DEFAULT = 0.5;
+const ENGINE_MAX = 1.2;
+
+/**
+ * Split an app-level rate into the speed to request from the TTS engine
+ * and the playbackRate that makes up any remainder outside its range.
+ */
+export function engineRate(shortLang: string, rate: number): { engine: number; playback: number } {
+	const target = rate * (BASE_PACE[shortLang] ?? 1);
+	const min = ENGINE_MIN[shortLang] ?? ENGINE_MIN_DEFAULT;
+	const engine = Math.round(Math.min(ENGINE_MAX, Math.max(min, target)) * 100) / 100;
+	return { engine, playback: target / engine };
+}
+
 /** Browser speech synthesis fallback */
 function _browserTTS(text: string, lang: string, rate?: number): Promise<void> {
 	if (!window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') {
@@ -105,11 +138,10 @@ function playWebAudio(
 	if (shortLang === 'de' || shortLang === 'fa' || shortLang === 'en') {
 		// Ask the TTS engine to actually speak slower (natural slow articulation)
 		// instead of time-stretching the audio client-side, which mostly widens
-		// the gaps between words. Both engines support 0.7–1.2; any remainder
-		// outside that range is still applied via playbackRate.
-		const engineSpeed = Math.round(Math.min(1.2, Math.max(0.7, requestedRate)) * 100) / 100;
-		deParams = `&voice=${voice}&rate=${engineSpeed}`;
-		safeRate = requestedRate / engineSpeed;
+		// the gaps between words. See engineRate for the pace and range.
+		const { engine, playback } = engineRate(shortLang, requestedRate);
+		deParams = `&voice=${voice}&rate=${engine}`;
+		safeRate = playback;
 	}
 	const url = `/proxy/tts?q=${encodeURIComponent(text)}&tl=${shortLang}${deParams}`;
 	const myGen = ttsGeneration; // snapshot — if it changes, we were cancelled
@@ -151,8 +183,8 @@ function playWebAudio(
 				currentAudio = null;
 			}
 			// Browser TTS does its own rate handling — give it the full
-			// requested rate, not the residual left over after engine speed.
-			_browserTTS(text, lang, requestedRate).then(resolve);
+			// paced rate, not the residual left over after engine speed.
+			_browserTTS(text, lang, requestedRate * (BASE_PACE[shortLang] ?? 1)).then(resolve);
 		};
 
 		const audio = new Audio(url);
