@@ -115,7 +115,9 @@
 					} else if (!localResult.understood) {
 						result = { ...localResult, feedback: { en: 'That does not answer Jamie’s question yet. Try a short reply about this hotel situation or open the examples.', fa: 'این پاسخ هنوز جواب پرسش جیمی نیست. پاسخی کوتاه دربارهٔ موقعیت هتل بده یا مثال‌ها را باز کن.' } };
 					}
-				} else if (!localResult.understood && (response.status >= 500 || response.status === 429)) {
+				} else if (!localResult.understood && response.status === 429) {
+					result = { ...result, feedback: { en: 'Today’s AI checks are used up. Prepared examples still work; the limit resets at 00:00 UTC.', fa: 'سهمیهٔ بررسی هوش مصنوعی امروز تمام شده است. مثال‌های آماده همچنان کار می‌کنند؛ سهمیه ساعت ۰۰:۰۰ به وقت UTC تازه می‌شود.' } };
+				} else if (!localResult.understood && response.status >= 500) {
 					result = { ...result, feedback: { en: 'I can’t check that wording right now. Try a short reply or open the examples.', fa: 'الان نمی‌توانم این جمله را بررسی کنم. پاسخ کوتاه‌تری بنویس یا مثال‌ها را باز کن.' } };
 				}
 			} catch {

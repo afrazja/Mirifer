@@ -54,7 +54,7 @@ describe('English hotel semantic checking', () => {
 		expect((await POST(fixture({ user: false }).event)).status).toBe(401);
 		expect((await POST(fixture({ target: 'de' }).event)).status).toBe(409);
 		expect(await (await POST(fixture({ utterance: 'My room is not noisy.' }).event)).json()).toEqual({ choiceId: null, correction: null });
-		expect((await POST(fixture({ count: 12 }).event)).status).toBe(429);
+		expect((await POST(fixture({ count: 18 }).event)).status).toBe(429);
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 	it('returns unavailable when configured providers fail', async () => {

@@ -25,7 +25,7 @@ const geminiSchema = { type: 'OBJECT', required: fields, properties: {
 	choiceId: { type: 'STRING', nullable: true }, related: { type: 'BOOLEAN' }, improved: { type: 'STRING', nullable: true },
 	noteEn: { type: 'STRING', nullable: true }, noteFa: { type: 'STRING', nullable: true }
 } };
-const MAX_DAILY_REQUESTS = 12;
+const MAX_DAILY_REQUESTS = 18;
 const intentMeaning: Record<string, string> = {
 	noise: 'describes noise in the current room or being unable to sleep because of it',
 	change: 'asks to move to a quieter room',
