@@ -13,7 +13,7 @@
 
 	<article class="legal-content">
 		<h1>Privacy Policy</h1>
-		<p class="legal-date">Last updated: September 6, 2026</p>
+		<p class="legal-date">Last updated: September 25, 2026</p>
 
 		<h2>1. What We Collect</h2>
 		<p>When you create an account, we collect your <strong>email address</strong>, <strong>display name</strong>, and <strong>password</strong> (stored securely via Supabase Auth). We also store your lesson progress, vocabulary review data, and app preferences.</p>
@@ -22,6 +22,7 @@
 		<p>Mirifer uses your browser's built-in Web Speech API for voice recognition. <strong>Your voice audio is processed locally by your browser and sent to your browser's speech recognition service (e.g. Google for Chrome).</strong> We do not record, store, or transmit your voice audio to our servers. We only receive the text transcript to compare against the target sentence.</p>
 
 		<h2>3. How We Use Your Data</h2>
+		<p>Some conversation practice uses AI. For an unrecognized reply in the English hotel lesson, we send the text you typed and the current lesson step to Google Gemini, DeepSeek, or OpenAI, in that order when available, to interpret your meaning and suggest a short correction. German free conversation also sends the text of your exchange and lesson context to an AI provider. These providers process the text under their own policies; DeepSeek may process data in China. We do not send your account identifier or voice recording in those AI requests. You can use prepared examples in the English lesson instead of typing an unrecognized reply.</p>
 		<ul>
 			<li>To provide and improve the learning experience</li>
 			<li>To track your lesson progress and spaced repetition schedule</li>

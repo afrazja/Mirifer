@@ -5,7 +5,7 @@
 	import AppHeader from '$lib/components/AppHeader.svelte';
 	import CourseSwitcher from '$lib/components/CourseSwitcher.svelte';
 	import PracticeVoice from '$lib/components/PracticeVoice.svelte';
-	import { startHotel, replyToHotel, hotelChoices, stageHelp, STAGES, HOTEL_ID, type Stage, type DisplayText, type Variant } from '$lib/practice/hotel';
+	import { startHotel, replyToHotel, applyHotelChoice, isHotelAiEligible, hotelChoices, stageHelp, STAGES, HOTEL_ID, type Stage, type DisplayText, type Variant } from '$lib/practice/hotel';
 	import { getLanguage, setLanguage, loadPracticeDraft, savePracticeDraft, clearPracticeDraft } from '$services/data-layer';
 	import { trackEvent } from '$services/analytics';
 
@@ -14,9 +14,10 @@
 	const isFa = $derived(language === 'fa');
 	const text = (value: DisplayText) => value[language];
 	let scene = $state(startHotel());
-	let started = $state(false), ready = $state(false), examples = $state(false), saving = $state(false), saved = $state(false);
+	let started = $state(false), ready = $state(false), examples = $state(false), saving = $state(false), saved = $state(false), checking = $state(false);
 	let draft = $state(''), feedback = $state<DisplayText | null>(null);
-	let replies = $state<string[]>([]), hints = $state<Stage[]>([]);
+	let replies = $state<string[]>([]), resolved = $state<(string | null)[]>([]), hints = $state<Stage[]>([]);
+	let generation = 0;
 	let input: HTMLTextAreaElement | undefined = $state();
 	let conversation: HTMLDivElement | undefined = $state();
 	let saveForm: HTMLFormElement | undefined = $state();
@@ -28,20 +29,20 @@
 	function event(name: Parameters<typeof trackEvent>[0], metadata: Record<string, string | number | boolean> = {}) {
 		void trackEvent(name, { metadata: { mode: 'conversation', course: 'en', scenario: HOTEL_ID, ...metadata } });
 	}
-	function remember() { savePracticeDraft(data.learnerId, scene.variant, replies, hints); }
+	function remember() { savePracticeDraft(data.learnerId, scene.variant, replies, hints, resolved); }
 	onMount(() => {
 		void getLanguage().then(value => { if (value === 'fa' || value === 'en') language = value; });
 		const previous = loadPracticeDraft(data.learnerId);
 		if (previous) {
 			scene = startHotel(previous.variant);
-			for (const reply of previous.replies) scene = replyToHotel(scene, reply).state;
-			replies = previous.replies; hints = previous.hints; started = true;
+			for (const [index, reply] of previous.replies.entries()) scene = (previous.resolved?.[index] ? applyHotelChoice(scene, previous.resolved[index]!, reply) : replyToHotel(scene, reply)).state;
+			replies = previous.replies; resolved = previous.replies.map((_, index) => previous.resolved?.[index] ?? null); hints = previous.hints; started = true;
 		}
 		ready = true;
 	});
 	async function changeDisplay(value: 'en' | 'fa') { language = value; await setLanguage(value); }
 	async function start(variant: Variant = 'lift') {
-		scene = startHotel(variant); replies = []; hints = []; feedback = null; draft = ''; examples = false;
+		generation++; checking = false; scene = startHotel(variant); replies = []; resolved = []; hints = []; feedback = null; draft = ''; examples = false;
 		form = null; saved = false; started = true; remember();
 		event('conversation_started', { replay: !!data.completed });
 		await tick(); input?.focus();
@@ -54,16 +55,40 @@
 	}
 	async function fillExample(value: string) { draft = value; await tick(); input?.focus(); }
 	async function send() {
-		if (complete) return;
+		if (complete || checking) return;
 		if (scene.trail.length >= 40) {
 			feedback = { en: 'This practice round has reached its turn limit. Start again to try a shorter conversation.', fa: 'این دور به پایان ظرفیت گفت‌وگو رسیده است. دوباره شروع کن و یک گفت‌وگوی کوتاه‌تر را امتحان کن.' }; return;
 		}
-		const result = replyToHotel(scene, draft);
+		const reply = draft.trim();
+		let result = replyToHotel(scene, reply);
+		let aiChoice: string | null = null;
+		if (!result.understood && isHotelAiEligible(scene, reply)) {
+			checking = true;
+			const current = generation;
+			try {
+				const response = await fetch('/api/english/interpret', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stage: scene.stage, variant: scene.variant, utterance: reply }) });
+				if (current !== generation) return;
+				if (response.ok) {
+					const interpretation = await response.json();
+					if (current !== generation) return;
+					if (typeof interpretation.choiceId === 'string') {
+						const correction = interpretation.correction;
+						result = applyHotelChoice(scene, interpretation.choiceId, reply, correction && typeof correction.improved === 'string' && typeof correction.note?.en === 'string' && typeof correction.note?.fa === 'string' ? correction : null);
+						if (result.understood) aiChoice = interpretation.choiceId;
+					}
+				} else if (response.status >= 500 || response.status === 429) {
+					result = { ...result, feedback: { en: 'I can’t check that wording right now. Try a short reply or open the examples.', fa: 'الان نمی‌توانم این جمله را بررسی کنم. پاسخ کوتاه‌تری بنویس یا مثال‌ها را باز کن.' } };
+				}
+			} catch {
+				if (current !== generation) return;
+				result = { ...result, feedback: { en: 'I can’t check that wording right now. Try a short reply or open the examples.', fa: 'الان نمی‌توانم این جمله را بررسی کنم. پاسخ کوتاه‌تری بنویس یا مثال‌ها را باز کن.' } };
+			} finally { if (current === generation) checking = false; }
+		}
 		feedback = result.feedback;
-		if (!draft.trim()) return;
-		event('answer_submitted', { index: stepIndex, correct: result.understood });
+		if (!reply) return;
+		event('answer_submitted', { index: stepIndex, correct: result.understood, ai_rescued: !!aiChoice });
 		if (result.understood) {
-			replies = [...replies, draft.trim()]; scene = result.state; draft = ''; examples = false; remember();
+			replies = [...replies, reply]; resolved = [...resolved, aiChoice]; scene = result.state; draft = ''; examples = false; remember();
 			await tick();
 			if (conversation) conversation.scrollTop = conversation.scrollHeight;
 			if (complete) { event('conversation_completed', { count: replies.length }); saveForm?.requestSubmit(); }
@@ -71,7 +96,7 @@
 		}
 	}
 	function returnToIntro() {
-		clearPracticeDraft(data.learnerId); started = false; feedback = null; draft = ''; form = null;
+		generation++; checking = false; clearPracticeDraft(data.learnerId); started = false; feedback = null; draft = ''; form = null;
 	}
 </script>
 
@@ -159,11 +184,11 @@
 					{#if feedback}<div class="feedback" role="status">{text(feedback)}</div>{/if}
 					<form onsubmit={e => { e.preventDefault(); void send(); }}>
 						<label for="reply">{isFa ? 'پاسخ تو به انگلیسی' : 'Your reply in English'}</label>
-						<textarea id="reply" bind:this={input} bind:value={draft} lang="en" dir="ltr" rows="2" maxlength="300" placeholder={isFa ? 'پاسخ انگلیسی را اینجا بنویس…' : 'Type a short reply…'} aria-describedby="reply-help" onkeydown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); void send(); } }}></textarea>
-						<div class="send-row"><button type="button" class="text-button" aria-expanded={examples} aria-controls="reply-examples" onclick={openExamples}>{examples ? (isFa ? 'پنهان کردن مثال‌ها' : 'Hide examples') : (isFa ? 'کمک با مثال' : 'Show examples')}</button><button class="primary" disabled={!draft.trim()}>{isFa ? 'ارسال پاسخ' : 'Send reply'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button></div>
+						<textarea id="reply" bind:this={input} bind:value={draft} lang="en" dir="ltr" rows="2" maxlength="300" disabled={checking} placeholder={isFa ? 'پاسخ انگلیسی را اینجا بنویس…' : 'Type a short reply…'} aria-describedby="reply-help" onkeydown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); void send(); } }}></textarea>
+						<div class="send-row"><button type="button" class="text-button" aria-expanded={examples} aria-controls="reply-examples" onclick={openExamples}>{examples ? (isFa ? 'پنهان کردن مثال‌ها' : 'Hide examples') : (isFa ? 'کمک با مثال' : 'Show examples')}</button><button class="primary" disabled={!draft.trim() || checking}>{checking ? (isFa ? 'در حال بررسی…' : 'Checking…') : (isFa ? 'ارسال پاسخ' : 'Send reply')} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button></div>
 					</form>
 					{#if examples}<div id="reply-examples" class="examples"><p>{isFa ? 'یک مثال را برای ویرایش انتخاب کن، سپس ارسال کن.' : 'Choose an example to edit, then send it.'}</p>{#each hotelChoices(scene) as option}<button type="button" lang="en" dir="ltr" onclick={() => fillExample(option.text)}>{option.text}</button>{/each}</div>{/if}
-					<p id="reply-help" class="small-note">{isFa ? 'پاسخ‌ها با الگوهای آماده بررسی می‌شوند. پاسخ ناشناخته لزوماً اشتباه نیست.' : 'Replies are matched against prepared patterns. An unrecognized reply is not necessarily wrong.'}</p>
+					<p id="reply-help" class="small-note">{isFa ? 'پاسخ‌های ناشناخته ممکن است با هوش مصنوعی بررسی شوند. متن پاسخ به ارائه‌دهندهٔ هوش مصنوعی فرستاده می‌شود؛ اگر در دسترس نباشد، از مثال‌ها کمک بگیر.' : 'Unrecognized replies may be checked by AI. Your reply text is sent to an AI provider; if it is unavailable, use the examples.'}</p>
 					{#key scene.trail.length}<PracticeVoice text={latestLine} {isFa} />{/key}
 				</div>
 			</section>

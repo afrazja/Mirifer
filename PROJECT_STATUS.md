@@ -1,6 +1,32 @@
 # Mirifer handoff
 
-Updated: 2026-09-23.
+Updated: 2026-09-25.
+
+## Latest work (2026-09-25): English hotel AI fallback
+
+- Working branch `codex/english-ai-fallback` starts from `origin/main` at
+  `300257d`. The English hotel pilot now uses its authored matcher first and
+  asks the existing Gemini → DeepSeek → OpenAI chain only for unmatched short
+  replies. The model can select only a choice from the current authored step;
+  known mission conflicts and completion checks stay deterministic.
+- AI-resolved choice IDs survive tab refresh, while no raw learner text is
+  stored in server analytics. A verified English-course account may make up to
+  12 fallback requests per UTC day. Answer events include an `ai_rescued`
+  flag. No SQL migration or new environment variables are required.
+- English/Persian help and the privacy policy disclose AI processing; the
+  English pilot guide documents the new behavior and cost boundary.
+- Commit `78371c8` is pushed to `origin/codex/english-ai-fallback` and proposed
+  in [PR #21](https://github.com/afrazja/Mirifer/pull/21). `origin/main` is
+  still `300257d`; this feature is not published on `www.mirifer.com`.
+- Validation: `npm run check` passed; 19 focused tests passed. GitHub reported
+  4/4 passing PR checks. Vercel's preview build is Ready, and its public landing
+  page loaded in the browser. The authenticated English practice flow still
+  needs browser verification. Windows blocked the Vercel adapter's symlink
+  during final local packaging; this laptop lacks local Supabase public settings.
+- Publication is waiting for explicit approval to merge PR #21 into `main`;
+  that merge triggers a production Vercel deployment. After approval, verify
+  deployment status and the live English practice flow before calling it live.
+- The local `docs/design/` icon drafts remain untracked and were not changed.
 
 ## Latest work (2026-09-23): GitHub repository rename
 
