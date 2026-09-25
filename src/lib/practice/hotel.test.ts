@@ -56,6 +56,17 @@ describe('authored hotel conversation', () => {
 		state = say(state, 'Yes, thank you.');
 		expect(state.turns.at(-2)?.text).toContain('All arranged');
 	});
+	it('recognizes an explicit courtyard choice without treating a comparison question as a choice', () => {
+		let state = say(startHotel(), 'My room is too noisy.');
+		state = say(state, '204');
+		const chosen = say(state, "I'd really prefer the courtyard-facing option so I can actually sleep.");
+		expect(chosen.stage).toBe('alternative');
+		expect(chosen.trail.at(-1)).toBe('quieter');
+		expect(replyToHotel(state, 'Does the courtyard-facing option have a window?').understood).toBe(false);
+		expect(replyToHotel(state, 'I would prefer to know if room 512 has a window.').understood).toBe(false);
+		expect(replyToHotel(state, 'I do not want room 512.').understood).toBe(false);
+		expect(replyToHotel(state, 'I prefer room 310 rather than 512.').understood).toBe(false);
+	});
 	it('every displayed example works at its reachable stage', () => {
 		for (const variant of ['lift', 'street'] as const) {
 			let state = startHotel(variant);
@@ -70,12 +81,17 @@ describe('authored hotel conversation', () => {
 		expect(completedHotelTrail('lift', ['noise', 'room204', 'quieter', 'price', 'accept', 'recall-price', 'recall-price'])).toBe(false);
 		expect(replyToHotel(startHotel(), 'a'.repeat(301)).understood).toBe(false);
 	});
-	it('lets AI select only a current authored intent while preserving the learner wording', () => {
+	it('lets AI select a current intent or acknowledge a relevant question without skipping goals', () => {
 		const state = startHotel();
 		const accepted = applyHotelChoice(state, 'noise', 'The music kept me awake all night.');
 		expect(accepted.understood).toBe(true);
 		expect(accepted.state.stage).toBe('room');
 		expect(accepted.state.turns[1].text).toBe('The music kept me awake all night.');
+		const related = applyHotelChoice(accepted.state, 'related', 'Where is my key card?');
+		expect(related.understood).toBe(true);
+		expect(related.state.stage).toBe('room');
+		expect(related.state.turns.at(-1)?.text).toContain('room number');
+		expect(completedHotelTrail('lift', [...related.state.trail, 'quieter'])).toBe(false);
 		expect(applyHotelChoice(state, 'accept', 'yes').understood).toBe(false);
 		expect(isHotelAiEligible(state, 'My room is not noisy.')).toBe(false);
 		expect(isHotelAiEligible(accepted.state, '999')).toBe(false);

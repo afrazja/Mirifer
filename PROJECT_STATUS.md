@@ -2,6 +2,27 @@
 
 Updated: 2026-09-25.
 
+## Current work (2026-09-25): meaning-based English feedback
+
+- Branch `codex/english-semantic-feedback`, [PR #23](https://github.com/afrazja/Mirifer/pull/23)
+  (draft; not merged or live). English hotel replies now go through the existing
+  Gemini → DeepSeek → OpenAI chain for meaning and short grammar feedback.
+  Natural relevant replies can advance the authored scene, while a related
+  question stays at the current step. Prepared answers remain available when
+  AI is unavailable. A clear choice of the courtyard room is also recognized
+  deterministically if the model treats it as an open question.
+- AI checks are capped at 18 per signed-in English learner per UTC day. The UI
+  names a reached limit separately from a provider failure. The privacy page
+  and English pilot guide explain the expanded text processing and cost guard.
+  No SQL migration or new environment variables are required.
+- `npm run check` passed with 0 errors/warnings; 24 focused tests passed;
+  all four PR checks passed. Signed-in preview QA confirmed corrections and
+  progression for “My room too noisy” and “I staying in room 204 now.” The
+  [corrected preview](https://mirifer-ma9pnwto0-afzjavan-7827s-projects.vercel.app/practice/english)
+  advanced “I'd really prefer the courtyard-facing option so I can actually
+  sleep” to room 512 and the price question. Publication still needs approval.
+  The untracked `docs/design/` drafts remain untouched.
+
 ## Latest work (2026-09-25): English conversation and voice follow-up
 
 - [PR #22](https://github.com/afrazja/Mirifer/pull/22) merged into `main` as

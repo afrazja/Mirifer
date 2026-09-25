@@ -17,6 +17,7 @@
 	let scene = $state(startHotel());
 	let started = $state(false), ready = $state(false), examples = $state(false), saving = $state(false), saved = $state(false), checking = $state(false);
 	let draft = $state(''), feedback = $state<DisplayText | null>(null);
+	let latestCorrection = $state<{ improved: string; note: DisplayText } | null>(null);
 	let replies = $state<string[]>([]), resolved = $state<(string | null)[]>([]), hints = $state<Stage[]>([]);
 	let voiceAvailable = $state(false), voiceOn = $state(true), voiceMessage = $state('');
 	let englishVoice: SpeechSynthesisVoice | null = null;
@@ -73,7 +74,7 @@
 	});
 	async function changeDisplay(value: 'en' | 'fa') { language = value; await setLanguage(value); }
 	async function start(variant: Variant = 'lift') {
-		generation++; checking = false; stopReceptionVoice(); scene = startHotel(variant); replies = []; resolved = []; hints = []; feedback = null; draft = ''; examples = false; voiceMessage = '';
+		generation++; checking = false; stopReceptionVoice(); scene = startHotel(variant); replies = []; resolved = []; hints = []; feedback = null; latestCorrection = null; draft = ''; examples = false; voiceMessage = '';
 		form = null; saved = false; started = true; remember();
 		event('conversation_started', { replay: !!data.completed });
 		await tick(); input?.focus();
@@ -92,9 +93,11 @@
 			feedback = { en: 'This practice round has reached its turn limit. Start again to try a shorter conversation.', fa: 'این دور به پایان ظرفیت گفت‌وگو رسیده است. دوباره شروع کن و یک گفت‌وگوی کوتاه‌تر را امتحان کن.' }; return;
 		}
 		const reply = draft.trim();
-		let result = replyToHotel(scene, reply);
+		latestCorrection = null;
+		const localResult = replyToHotel(scene, reply);
+		let result = localResult;
 		let aiChoice: string | null = null;
-		if (!result.understood && isHotelAiEligible(scene, reply)) {
+		if (isHotelAiEligible(scene, reply)) {
 			checking = true;
 			const current = generation;
 			try {
@@ -105,21 +108,28 @@
 					if (current !== generation) return;
 					if (typeof interpretation.choiceId === 'string') {
 						const correction = interpretation.correction;
-						result = applyHotelChoice(scene, interpretation.choiceId, reply, correction && typeof correction.improved === 'string' && typeof correction.note?.en === 'string' && typeof correction.note?.fa === 'string' ? correction : null);
-						if (result.understood) aiChoice = interpretation.choiceId;
+						const known = localResult.understood && localResult.state.trail.at(-1) === interpretation.choiceId && localResult.state.corrections.length > scene.corrections.length ? localResult.state.corrections.at(-1) : null;
+						const suggested = correction && typeof correction.improved === 'string' && typeof correction.note?.en === 'string' && typeof correction.note?.fa === 'string' ? correction : known ? { improved: known.improved, note: known.note } : null;
+						const evaluated = applyHotelChoice(scene, interpretation.choiceId, reply, suggested);
+						if (evaluated.understood) { result = evaluated; aiChoice = interpretation.choiceId; }
+					} else if (!localResult.understood) {
+						result = { ...localResult, feedback: { en: 'That does not answer Jamie’s question yet. Try a short reply about this hotel situation or open the examples.', fa: 'این پاسخ هنوز جواب پرسش جیمی نیست. پاسخی کوتاه دربارهٔ موقعیت هتل بده یا مثال‌ها را باز کن.' } };
 					}
-				} else if (response.status >= 500 || response.status === 429) {
+				} else if (!localResult.understood && response.status === 429) {
+					result = { ...result, feedback: { en: 'Today’s AI checks are used up. Prepared examples still work; the limit resets at 00:00 UTC.', fa: 'سهمیهٔ بررسی هوش مصنوعی امروز تمام شده است. مثال‌های آماده همچنان کار می‌کنند؛ سهمیه ساعت ۰۰:۰۰ به وقت UTC تازه می‌شود.' } };
+				} else if (!localResult.understood && response.status >= 500) {
 					result = { ...result, feedback: { en: 'I can’t check that wording right now. Try a short reply or open the examples.', fa: 'الان نمی‌توانم این جمله را بررسی کنم. پاسخ کوتاه‌تری بنویس یا مثال‌ها را باز کن.' } };
 				}
 			} catch {
 				if (current !== generation) return;
-				result = { ...result, feedback: { en: 'I can’t check that wording right now. Try a short reply or open the examples.', fa: 'الان نمی‌توانم این جمله را بررسی کنم. پاسخ کوتاه‌تری بنویس یا مثال‌ها را باز کن.' } };
+				if (!localResult.understood) result = { ...result, feedback: { en: 'I can’t check that wording right now. Try a short reply or open the examples.', fa: 'الان نمی‌توانم این جمله را بررسی کنم. پاسخ کوتاه‌تری بنویس یا مثال‌ها را باز کن.' } };
 			} finally { if (current === generation) checking = false; }
 		}
-		feedback = result.feedback;
+		feedback = result.understood ? null : result.feedback;
 		if (!reply) return;
-		event('answer_submitted', { index: stepIndex, correct: result.understood, ai_rescued: !!aiChoice });
+		event('answer_submitted', { index: stepIndex, correct: result.understood, ai_rescued: !!aiChoice && !localResult.understood });
 		if (result.understood) {
+			latestCorrection = result.state.corrections.length > scene.corrections.length ? result.state.corrections.at(-1) ?? null : null;
 			replies = [...replies, reply]; resolved = [...resolved, aiChoice]; scene = result.state; draft = ''; examples = false; remember();
 			await tick();
 			if (conversation) conversation.scrollTop = conversation.scrollHeight;
@@ -130,7 +140,7 @@
 		}
 	}
 	function returnToIntro() {
-		generation++; checking = false; stopReceptionVoice(); clearPracticeDraft(data.learnerId); started = false; feedback = null; draft = ''; form = null;
+		generation++; checking = false; stopReceptionVoice(); clearPracticeDraft(data.learnerId); started = false; feedback = null; latestCorrection = null; draft = ''; form = null;
 	}
 </script>
 
@@ -216,6 +226,7 @@
 				<div class="composer">
 					<p class="step-guide"><span>{isFa ? 'نوبت تو' : 'Your turn'}</span>{text(stageHelp[scene.stage])}</p>
 					{#if feedback}<div class="feedback" role="status">{text(feedback)}</div>{/if}
+					{#if latestCorrection}<div class="feedback" role="status"><strong>{isFa ? 'شکل طبیعی‌تر:' : 'A clearer way to say it:'}</strong> <span lang="en" dir="ltr">{latestCorrection.improved}</span><br />{text(latestCorrection.note)}</div>{/if}
 					{#if voiceMessage}<div class="voice-message" role="status">{voiceMessage}</div>{/if}
 					<form onsubmit={e => { e.preventDefault(); void send(); }}>
 						<label for="reply">{isFa ? 'پاسخ تو به انگلیسی' : 'Your reply in English'}</label>
@@ -223,8 +234,8 @@
 						{#key scene.trail.length}<EnglishSpeechInput {isFa} disabled={checking} onTranscript={value => { draft = value; void tick().then(() => input?.focus()); }} />{/key}
 						<div class="send-row"><button type="button" class="text-button" aria-expanded={examples} aria-controls="reply-examples" onclick={openExamples}>{examples ? (isFa ? 'پنهان کردن مثال‌ها' : 'Hide examples') : (isFa ? 'کمک با مثال' : 'Show examples')}</button><button class="primary" disabled={!draft.trim() || checking}>{checking ? (isFa ? 'در حال بررسی…' : 'Checking…') : (isFa ? 'ارسال پاسخ' : 'Send reply')} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button></div>
 					</form>
-					{#if examples}<div id="reply-examples" class="examples"><p>{isFa ? 'یک مثال را برای ویرایش انتخاب کن، سپس ارسال کن.' : 'Choose an example to edit, then send it.'}</p>{#each hotelChoices(scene) as option}<button type="button" lang="en" dir="ltr" onclick={() => fillExample(option.text)}>{option.text}</button>{/each}</div>{/if}
-					<p id="reply-help" class="small-note">{isFa ? 'پاسخ‌های ناشناخته ممکن است با هوش مصنوعی بررسی شوند. متن پاسخ به ارائه‌دهندهٔ هوش مصنوعی فرستاده می‌شود؛ اگر در دسترس نباشد، از مثال‌ها کمک بگیر.' : 'Unrecognized replies may be checked by AI. Your reply text is sent to an AI provider; if it is unavailable, use the examples.'}</p>
+						{#if examples}<div id="reply-examples" class="examples"><p>{isFa ? 'یک مثال را برای ویرایش انتخاب کن، سپس ارسال کن.' : 'Choose an example to edit, then send it.'}</p>{#each hotelChoices(scene).filter(option => option.id !== 'related') as option}<button type="button" lang="en" dir="ltr" onclick={() => fillExample(option.text)}>{option.text}</button>{/each}</div>{/if}
+						<p id="reply-help" class="small-note">{isFa ? 'پاسخت معمولاً با هوش مصنوعی از نظر ارتباط با گفت‌وگو و نکته‌های زبانی بررسی می‌شود. متن به ارائه‌دهندهٔ هوش مصنوعی فرستاده می‌شود؛ اگر در دسترس نباشد، مثال‌های آماده هم کار می‌کنند.' : 'AI usually checks whether your reply fits the conversation and suggests a clearer sentence when useful. Your reply text is sent to an AI provider; prepared examples still work if AI is unavailable.'}</p>
 				{#key scene.trail.length}<PracticeVoice {isFa} />{/key}
 				</div>
 			</section>

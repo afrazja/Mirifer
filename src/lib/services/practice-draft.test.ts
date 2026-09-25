@@ -18,6 +18,8 @@ describe('English practice draft', () => {
 	it('resumes a valid AI-classified paraphrase at the same authored step', () => {
 		savePracticeDraft('one', 'lift', ['The music kept me awake all night.', '204'], [], ['noise', null]);
 		expect(loadPracticeDraft('one')?.resolved).toEqual(['noise', null]);
+		savePracticeDraft('one', 'lift', ['The music kept me awake all night.', 'Where is my key card?', '204'], [], ['noise', 'related', null]);
+		expect(loadPracticeDraft('one')?.resolved).toEqual(['noise', 'related', null]);
 		savePracticeDraft('one', 'lift', ['The music kept me awake all night.'], [], ['accept']);
 		expect(loadPracticeDraft('one')).toBeNull();
 	});
