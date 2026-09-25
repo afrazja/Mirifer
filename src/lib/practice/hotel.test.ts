@@ -41,6 +41,21 @@ describe('authored hotel conversation', () => {
 		state = say(state, 'Is it free?'); state = say(state, 'No, thank you.');
 		expect(state.stage).toBe('alternative');
 	});
+	it.each([['lift', '310'], ['street', '318']] as const)('offers two rooms and confirms the learner’s choice in the %s scene', (variant, noisyRoom) => {
+		let state = say(startHotel(variant), 'My room is too noisy.');
+		state = say(state, '204');
+		expect(state.turns.at(-1)?.text).toContain(`room ${noisyRoom}`);
+		expect(state.turns.at(-1)?.text).toContain('512');
+		state = say(state, `What about room ${noisyRoom}?`);
+		expect(state.stage).toBe('offer');
+		expect(state.turns.at(-1)?.text).toContain('may still be noisy');
+		state = say(state, 'Room 512, please.');
+		expect(state.turns.at(-1)?.text).toContain('Room 512, certainly');
+		state = say(state, 'Does it cost extra?');
+		expect(state.turns.at(-1)?.text).toContain('no extra charge');
+		state = say(state, 'Yes, thank you.');
+		expect(state.turns.at(-2)?.text).toContain('All arranged');
+	});
 	it('every displayed example works at its reachable stage', () => {
 		for (const variant of ['lift', 'street'] as const) {
 			let state = startHotel(variant);

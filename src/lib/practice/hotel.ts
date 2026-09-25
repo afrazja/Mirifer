@@ -26,17 +26,22 @@ export function hotelChoices(state: Pick<HotelState, 'stage' | 'variant'>): Choi
 			choice('change', 'Could I have a quieter room, please?', change, 'room', 'Of course. Let me check your booking. What is your room number?')
 		];
 		case 'room': return [choice('room204', 'I’m in room 204.', ['204', 'room 204', 'my room number is 204', 'my room is 204', 'it is 204', 'i am in 204', 'two hundred and four', 'two oh four'], 'offer', state.variant === 'lift'
-			? 'Thank you. I can offer room 310. It is next to the lift. Would that work for you?'
-			: 'Thank you. I can offer room 318. It faces the busy main street. Would that work for you?')];
+			? 'Thank you. I can offer two rooms: room 310 beside the lift, or room 512 facing the quiet courtyard. Which would you prefer?'
+			: 'Thank you. I can offer two rooms: room 318 facing the busy street, or room 512 facing the quiet courtyard. Which would you prefer?')];
 		case 'offer': return [
-			choice('quieter', 'Could I have a quieter room, please?', [...change, 'no thank you i need a quieter room', 'that sounds noisy', 'no that is too noisy', 'i would prefer a room away from the lift', 'could i have a room away from the lift', 'i would prefer a room away from the street', 'could i have a room away from the street', 'do you have a room away from the lift', 'do you have a room away from the street'], 'alternative', 'Let me check again. Room 512 faces the courtyard and is away from the lift. It should be quieter. What would you like to know before we arrange the move?'),
-			choice('location', 'Is it quiet?', ['is the room quiet', 'where is it', 'where is the room', 'is it near the lift', 'is it near the street'], 'offer', state.variant === 'lift'
-				? 'Room 310 is beside the lift, so you may hear people coming and going. You can ask me for a quieter option.'
-				: 'Room 318 faces the main street, so you may hear traffic. You can ask me for a quieter option.')
+			choice('quieter', 'Room 512, please.', [...change, '512', 'room 512', 'i would like room 512', 'i will take room 512', 'the courtyard room', 'the quiet room', 'the quieter room', 'no thank you i need a quieter room', 'that sounds noisy', 'no that is too noisy', 'i would prefer a room away from the lift', 'could i have a room away from the lift', 'i would prefer a room away from the street', 'could i have a room away from the street', 'do you have a room away from the lift', 'do you have a room away from the street'], 'alternative', 'Room 512, certainly. It faces the courtyard and should be much quieter. Is there anything you would like to check before I arrange the move?'),
+			choice('noisy-room', state.variant === 'lift' ? 'What about room 310?' : 'What about room 318?', state.variant === 'lift'
+				? ['room 310', '310', 'i would like room 310', 'i will take room 310']
+				: ['room 318', '318', 'i would like room 318', 'i will take room 318'], 'offer', state.variant === 'lift'
+				? 'I can hold room 310, but it is beside the lift and may still be noisy. Would you prefer room 512 by the courtyard?'
+				: 'I can hold room 318, but it faces the busy street and may still be noisy. Would you prefer room 512 by the courtyard?'),
+			choice('location', 'Which room is quieter?', ['is it quiet', 'is the room quiet', 'where is it', 'where is the room', 'is it near the lift', 'is it near the street'], 'offer', state.variant === 'lift'
+				? 'Room 512 faces the courtyard. Room 310 is beside the lift, where you may hear people coming and going. Which would you prefer?'
+				: 'Room 512 faces the courtyard. Room 318 faces the street, where you may hear traffic. Which would you prefer?')
 		];
 		case 'alternative': return [
-			choice('price', 'Is there an extra charge?', price, 'confirm', 'There is no extra charge. Shall I arrange the move to room 512?'),
-			choice('courtyard', 'What does it face?', ['is it quiet', 'where is the room', 'where is it', 'is it away from the lift'], 'alternative', 'It faces the quiet courtyard and is away from the lift. Before you agree, you can ask about the price.')
+			choice('price', 'Is there an extra charge?', price, 'confirm', 'There is no extra charge for room 512. Shall I confirm your move?'),
+			choice('courtyard', 'What does it face?', ['is it quiet', 'where is the room', 'where is it', 'is it away from the lift'], 'alternative', 'It faces the quiet courtyard and is away from the lift. Is there anything else you would like to ask before I reserve it?')
 		];
 		case 'confirm': return [
 			choice('accept', 'Yes, that would be great. Thank you.', ['yes', 'yes please', 'yes thank you', 'that would be great', 'that sounds good', 'i will take it', 'i would like room 512', 'room 512 please', 'yes room 512 please'], 'recall', 'All arranged. Here is your key to room 512, on the fifth floor. I hope you sleep well.'),
@@ -112,8 +117,8 @@ export function completedHotelTrail(variant: Variant, trail: string[]): boolean 
 export const stageHelp: Record<Stage, DisplayText> = {
 	problem: { en: 'Explain the noise or ask for a quieter room.', fa: 'از سروصدای اتاق بگو یا یک اتاق آرام‌تر بخواه.' },
 	room: { en: 'Give the room number on your key card: 204.', fa: 'شمارهٔ روی کارت اتاقت را بگو: ۲۰۴.' },
-	offer: { en: 'Check the location, then ask for a quieter option.', fa: 'موقعیت اتاق را بررسی کن، بعد یک گزینهٔ آرام‌تر بخواه.' },
-	alternative: { en: 'Check whether room 512 costs extra.', fa: 'بپرس آیا اتاق ۵۱۲ هزینهٔ اضافه دارد.' },
+	offer: { en: 'Choose one of Jamie’s rooms, or ask which is quieter.', fa: 'یکی از اتاق‌های پیشنهادی جیمی را انتخاب کن یا بپرس کدام آرام‌تر است.' },
+	alternative: { en: 'Ask about room 512’s price or location before confirming.', fa: 'پیش از تأیید اتاق ۵۱۲، دربارهٔ هزینه یا موقعیت آن بپرس.' },
 	confirm: { en: 'Agree to the move. You can ask for directions first.', fa: 'با جابه‌جایی موافقت کن. می‌توانی اول مسیر را بپرسی.' },
 	recall: { en: 'Ask about an extra charge from memory.', fa: 'از حافظه‌ات کمک بگیر و دربارهٔ هزینهٔ اضافه بپرس.' },
 	complete: { en: 'You arranged a quieter room and checked the price.', fa: 'یک اتاق آرام‌تر گرفتی و قیمت را بررسی کردی.' }

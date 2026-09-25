@@ -1,33 +1,17 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	let { text, isFa = false }: { text: string; isFa?: boolean } = $props();
-	let voice = $state<SpeechSynthesisVoice | null>(null);
+	let { isFa = false }: { isFa?: boolean } = $props();
 	let recording = $state(false), requesting = $state(false), playback = $state(''), message = $state('');
 	let recorder: MediaRecorder | null = null, stream: MediaStream | null = null;
 	let panel: HTMLDetailsElement | undefined = $state();
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	let disposed = false;
-	function voices() {
-		voice = window.speechSynthesis?.getVoices().find(v => v.localService && v.lang.startsWith('en')) ?? null;
-	}
 	onMount(() => {
-		voices();
-		window.speechSynthesis?.addEventListener('voiceschanged', voices);
 		return () => {
 			disposed = true; stop();
-			window.speechSynthesis?.cancel();
-			window.speechSynthesis?.removeEventListener('voiceschanged', voices);
 			if (playback) URL.revokeObjectURL(playback);
 		};
 	});
-	function listen() {
-		if (!voice) return;
-		window.speechSynthesis.cancel();
-		const utterance = new SpeechSynthesisUtterance(text);
-		utterance.voice = voice; utterance.lang = voice.lang; utterance.rate = .88;
-		utterance.onerror = () => { message = isFa ? 'پخش صدا ممکن نشد. متن را بخوان و ادامه بده.' : 'Audio could not play. You can read the text and continue.'; };
-		window.speechSynthesis.speak(utterance);
-	}
 	function stop() {
 		clearTimeout(timer);
 		if (recorder && recorder.state !== 'inactive') recorder.stop();
@@ -59,11 +43,10 @@
 </script>
 
 <details class="voice-tools" bind:this={panel} ontoggle={e => { if (!e.currentTarget.open) stop(); }}>
-	<summary>{isFa ? 'تمرین گفتاری (اختیاری)' : 'Practise out loud (optional)'}</summary>
-	<p>{isFa ? 'اول پاسخ را بگو، بعد آن را تایپ کن. صدایت فقط در همین صفحه می‌ماند؛ ارسال یا نمره‌گذاری نمی‌شود.' : 'Say your answer, then type it below. Your recording stays on this page; it is never uploaded or graded.'}</p>
+	<summary>{isFa ? 'ضبط و بازشنیدن صدای خودت (اختیاری)' : 'Record and replay your voice (optional)'}</summary>
+	<p>{isFa ? 'این فایل فقط برای تمرین خودت است و به‌عنوان پاسخ ارسال نمی‌شود. برای گفتن پاسخ، از «ضبط پاسخ» در بالا استفاده کن. صدا از این صفحه خارج نمی‌شود.' : 'This clip is for your own practice and is not sent as an answer. Use “Record answer” above to speak into the reply box. The clip stays on this page.'}</p>
 	<div class="tools">
-		{#if voice}<button type="button" onclick={listen} disabled={recording || requesting}>{isFa ? 'شنیدن آخرین جمله' : 'Listen to the latest line'}</button>{/if}
-		<button type="button" onclick={record} disabled={requesting}>{requesting ? (isFa ? 'در انتظار میکروفون…' : 'Opening microphone…') : recording ? (isFa ? 'توقف ضبط' : 'Stop recording') : (isFa ? 'ضبط پاسخ من' : 'Record my reply')}</button>
+		<button type="button" onclick={record} disabled={requesting}>{requesting ? (isFa ? 'در انتظار میکروفون…' : 'Opening microphone…') : recording ? (isFa ? 'توقف ضبط' : 'Stop recording') : (isFa ? 'ضبط برای تمرین' : 'Record practice clip')}</button>
 	</div>
 	{#if recording}<p role="status">{isFa ? 'در حال ضبط… حداکثر ۴۵ ثانیه.' : 'Recording… up to 45 seconds.'}</p>{/if}
 	{#if playback}<audio controls src={playback} aria-label={isFa ? 'پخش پاسخ ضبط‌شدهٔ تو' : 'Listen to your recorded reply'}></audio>{/if}
