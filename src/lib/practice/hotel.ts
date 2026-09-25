@@ -19,15 +19,20 @@ const price = ['is there an extra charge', 'does it cost extra', 'will it cost e
 function choice(id: string, text: string, aliases: string[], next: Stage, reply: string): Choice {
 	return { id, text, aliases: [text, ...aliases], next, reply };
 }
+function related(next: Stage, reply: string): Choice {
+	return choice('related', 'Could you clarify that?', [], next, reply);
+}
 export function hotelChoices(state: Pick<HotelState, 'stage' | 'variant'>): Choice[] {
 	switch (state.stage) {
 		case 'problem': return [
 			choice('noise', 'My room is too noisy.', ['my room is noisy', 'it is too noisy in my room', 'there is too much noise', 'i cannot sleep because of the noise', 'i could not sleep because of the noise', 'i did not sleep because of the noise', 'i could not sleep because of the music downstairs', 'the music is too loud', 'i cannot sleep', 'it is too loud', 'my room is very noisy'], 'room', 'I’m sorry about that. What is your room number?'),
-			choice('change', 'Could I have a quieter room, please?', change, 'room', 'Of course. Let me check your booking. What is your room number?')
+			choice('change', 'Could I have a quieter room, please?', change, 'room', 'Of course. Let me check your booking. What is your room number?'),
+			related('problem', 'I can help with your stay. Is your room too noisy, or would you like a quieter room?')
 		];
 		case 'room': return [choice('room204', 'I’m in room 204.', ['204', 'room 204', 'my room number is 204', 'my room is 204', 'it is 204', 'i am in 204', 'two hundred and four', 'two oh four'], 'offer', state.variant === 'lift'
 			? 'Thank you. I can offer two rooms: room 310 beside the lift, or room 512 facing the quiet courtyard. Which would you prefer?'
-			: 'Thank you. I can offer two rooms: room 318 facing the busy street, or room 512 facing the quiet courtyard. Which would you prefer?')];
+			: 'Thank you. I can offer two rooms: room 318 facing the busy street, or room 512 facing the quiet courtyard. Which would you prefer?'),
+			related('room', 'Of course. Could you tell me the room number on your key card?')];
 		case 'offer': return [
 			choice('quieter', 'Room 512, please.', [...change, '512', 'room 512', 'i would like room 512', 'i will take room 512', 'the courtyard room', 'the quiet room', 'the quieter room', 'no thank you i need a quieter room', 'that sounds noisy', 'no that is too noisy', 'i would prefer a room away from the lift', 'could i have a room away from the lift', 'i would prefer a room away from the street', 'could i have a room away from the street', 'do you have a room away from the lift', 'do you have a room away from the street'], 'alternative', 'Room 512, certainly. It faces the courtyard and should be much quieter. Is there anything you would like to check before I arrange the move?'),
 			choice('noisy-room', state.variant === 'lift' ? 'What about room 310?' : 'What about room 318?', state.variant === 'lift'
@@ -37,18 +42,24 @@ export function hotelChoices(state: Pick<HotelState, 'stage' | 'variant'>): Choi
 				: 'I can hold room 318, but it faces the busy street and may still be noisy. Would you prefer room 512 by the courtyard?'),
 			choice('location', 'Which room is quieter?', ['is it quiet', 'is the room quiet', 'where is it', 'where is the room', 'is it near the lift', 'is it near the street'], 'offer', state.variant === 'lift'
 				? 'Room 512 faces the courtyard. Room 310 is beside the lift, where you may hear people coming and going. Which would you prefer?'
-				: 'Room 512 faces the courtyard. Room 318 faces the street, where you may hear traffic. Which would you prefer?')
+				: 'Room 512 faces the courtyard. Room 318 faces the street, where you may hear traffic. Which would you prefer?'),
+			related('offer', state.variant === 'lift'
+				? 'I can help you compare them. Room 310 is beside the lift; room 512 faces the quiet courtyard. Which would you prefer?'
+				: 'I can help you compare them. Room 318 faces the street; room 512 faces the quiet courtyard. Which would you prefer?')
 		];
 		case 'alternative': return [
 			choice('price', 'Is there an extra charge?', price, 'confirm', 'There is no extra charge for room 512. Shall I confirm your move?'),
-			choice('courtyard', 'What does it face?', ['is it quiet', 'where is the room', 'where is it', 'is it away from the lift'], 'alternative', 'It faces the quiet courtyard and is away from the lift. Is there anything else you would like to ask before I reserve it?')
+			choice('courtyard', 'What does it face?', ['is it quiet', 'where is the room', 'where is it', 'is it away from the lift'], 'alternative', 'It faces the quiet courtyard and is away from the lift. Is there anything else you would like to ask before I reserve it?'),
+			related('alternative', 'I understand. Room 512 faces the quiet courtyard. Would you like to check whether it costs extra before I arrange the move?')
 		];
 		case 'confirm': return [
 			choice('accept', 'Yes, that would be great. Thank you.', ['yes', 'yes please', 'yes thank you', 'that would be great', 'that sounds good', 'i will take it', 'i would like room 512', 'room 512 please', 'yes room 512 please'], 'recall', 'All arranged. Here is your key to room 512, on the fifth floor. I hope you sleep well.'),
 			choice('directions', 'How do I get there?', ['where is room 512', 'which floor is it on', 'what floor is it on'], 'confirm', 'Take the lift to the fifth floor and turn left. Shall I arrange the move?'),
-			choice('decline', 'No, thank you.', ['no', 'i am not sure', 'not yet'], 'alternative', 'No problem. Room 512 is still available. Let’s check what you need to know before deciding.')
+			choice('decline', 'No, thank you.', ['no', 'i am not sure', 'not yet'], 'alternative', 'No problem. Room 512 is still available. Let’s check what you need to know before deciding.'),
+			related('confirm', 'Of course. Shall I confirm your move to room 512?')
 		];
-		case 'recall': return [choice('recall-price', 'Does it cost extra?', price, 'complete', 'You asked about an extra charge. Keep that question ready for your next trip.')];
+		case 'recall': return [choice('recall-price', 'Does it cost extra?', price, 'complete', 'You asked about an extra charge. Keep that question ready for your next trip.'),
+			related('recall', 'Think back to the price question. How would you ask whether the upgrade costs extra?')];
 		case 'complete': return [];
 	}
 }
