@@ -4,7 +4,7 @@ Updated: 2026-09-25.
 
 ## Latest work (2026-09-25): English conversation and voice follow-up
 
-- Branch `codex/english-conversation-voice` at `26331b3` is pushed to GitHub
+- Branch `codex/english-conversation-voice` is pushed to GitHub
   and proposed in draft [PR #22](https://github.com/afrazja/Mirifer/pull/22).
   Vercel preview `6BVrGQnt3VZctJSiWir7EAoofMtW` is Ready; all four PR checks
   passed. This change is not on `main` or live at `www.mirifer.com`.
@@ -15,10 +15,13 @@ Updated: 2026-09-25.
   lines use browser speech synthesis, with automatic playback and per-line
   replay. The separate local practice clip remains optional and is not sent.
 - Validation: `npm run check` had 0 errors/warnings; 21 focused tests passed;
-  preview privacy disclosure loaded. The protected preview lesson still needs
-  signed-in browser verification, including room-choice flow, mobile layout,
-  Persian interface and microphone/voice behavior. The preview address has a
-  separate sign-in session; user sign-in was requested. No SQL or new env vars.
+  preview privacy disclosure loaded. Signed-in preview browser QA covered the
+  complete room-choice path through the confirmation prompt, the Persian RTL
+  interface, and a phone-width layout without horizontal overflow. Jamie's
+  replay control clicked without a browser error. With user consent, Record
+  answer started and stopped, then showed the expected no-speech message;
+  actual speech transcription and audible output still need a person to test.
+  No SQL or new env vars. PR remains unmerged, so the new flow is not live.
 - The local untracked `docs/design/` icon drafts were not touched.
 
 ## Latest work (2026-09-25): English hotel AI fallback
