@@ -3,6 +3,7 @@ import { env } from '$env/dynamic/private';
 import { z } from 'zod';
 import type { RequestHandler } from './$types';
 import { explicitQuietRoomChoice, hotelChoices, isHotelAiEligible, stageHelp, type Stage } from '$lib/practice/hotel';
+import { isAdminEmail } from '$lib/server/admin-auth';
 
 const RequestSchema = z.object({
 	stage: z.enum(['problem', 'room', 'offer', 'alternative', 'confirm', 'recall']),
@@ -26,6 +27,7 @@ const geminiSchema = { type: 'OBJECT', required: fields, properties: {
 	noteEn: { type: 'STRING', nullable: true }, noteFa: { type: 'STRING', nullable: true }
 } };
 const MAX_DAILY_REQUESTS = 18;
+const MAX_ADMIN_DAILY_REQUESTS = 60;
 const intentMeaning: Record<string, string> = {
 	noise: 'describes noise in the current room or being unable to sleep because of it',
 	change: 'asks to move to a quieter room',
@@ -98,7 +100,14 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const { count, error: countError } = await locals.supabase.from('events').select('id', { count: 'exact', head: true })
 		.eq('user_id', user.id).eq('event_name', 'english_ai_requested').gte('created_at', today.toISOString());
 	if (countError || count === null) return json({ error: 'AI temporarily unavailable' }, { status: 503 });
-	if (count >= MAX_DAILY_REQUESTS) return json({ error: 'Daily AI limit reached' }, { status: 429 });
+	if (count >= MAX_DAILY_REQUESTS) {
+		let adminTester = !!user.email_confirmed_at && isAdminEmail(user.email);
+		if (!adminTester) {
+			const { data: profile } = await locals.supabase.from('user_profiles').select('is_admin').eq('id', user.id).maybeSingle();
+			adminTester = profile?.is_admin === true;
+		}
+		if (!adminTester || count >= MAX_ADMIN_DAILY_REQUESTS) return json({ error: 'Daily AI limit reached' }, { status: 429 });
+	}
 	const now = new Date().toISOString();
 	const { error: insertError } = await locals.supabase.from('events').insert({
 		user_id: user.id, event_id: crypto.randomUUID(), session_id: crypto.randomUUID(), attempt_id: null,

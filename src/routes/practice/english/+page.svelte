@@ -97,7 +97,7 @@
 		const localResult = replyToHotel(scene, reply);
 		let result = localResult;
 		let aiChoice: string | null = null;
-		if (isHotelAiEligible(scene, reply)) {
+		if (!localResult.understood && isHotelAiEligible(scene, reply)) {
 			checking = true;
 			const current = generation;
 			try {
@@ -235,7 +235,7 @@
 						<div class="send-row"><button type="button" class="text-button" aria-expanded={examples} aria-controls="reply-examples" onclick={openExamples}>{examples ? (isFa ? 'پنهان کردن مثال‌ها' : 'Hide examples') : (isFa ? 'کمک با مثال' : 'Show examples')}</button><button class="primary" disabled={!draft.trim() || checking}>{checking ? (isFa ? 'در حال بررسی…' : 'Checking…') : (isFa ? 'ارسال پاسخ' : 'Send reply')} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button></div>
 					</form>
 						{#if examples}<div id="reply-examples" class="examples"><p>{isFa ? 'یک مثال را برای ویرایش انتخاب کن، سپس ارسال کن.' : 'Choose an example to edit, then send it.'}</p>{#each hotelChoices(scene).filter(option => option.id !== 'related') as option}<button type="button" lang="en" dir="ltr" onclick={() => fillExample(option.text)}>{option.text}</button>{/each}</div>{/if}
-						<p id="reply-help" class="small-note">{isFa ? 'پاسخت معمولاً با هوش مصنوعی از نظر ارتباط با گفت‌وگو و نکته‌های زبانی بررسی می‌شود. متن به ارائه‌دهندهٔ هوش مصنوعی فرستاده می‌شود؛ اگر در دسترس نباشد، مثال‌های آماده هم کار می‌کنند.' : 'AI usually checks whether your reply fits the conversation and suggests a clearer sentence when useful. Your reply text is sent to an AI provider; prepared examples still work if AI is unavailable.'}</p>
+						<p id="reply-help" class="small-note">{isFa ? 'اگر پاسخ با مسیر آمادهٔ گفت‌وگو شناخته نشود، هوش مصنوعی ارتباط آن را بررسی می‌کند و در صورت نیاز جملهٔ بهتری پیشنهاد می‌دهد. فقط این پاسخ‌ها به ارائه‌دهندهٔ هوش مصنوعی فرستاده می‌شوند؛ مثال‌های آماده بدون آن کار می‌کنند.' : 'If the prepared conversation does not recognize your reply, AI checks whether it fits and may suggest a clearer sentence. Only those replies are sent to an AI provider; prepared examples work without it.'}</p>
 				{#key scene.trail.length}<PracticeVoice {isFa} />{/key}
 				</div>
 			</section>

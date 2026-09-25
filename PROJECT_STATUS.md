@@ -2,6 +2,20 @@
 
 Updated: 2026-09-25.
 
+## Current work (2026-09-25): English AI quota efficiency
+
+- Branch `codex/english-ai-quota-efficiency` (not merged or live). The earlier
+  AI-first lesson spent an AI request even when the authored engine already
+  recognized a prepared answer. Recognized replies and known corrections now
+  stay local; only other eligible replies go to the existing provider chain.
+- Regular learners retain the 18-attempt UTC-day guard. A verified admin
+  tester (configured admin email or protected admin profile) has a bounded
+  60-attempt guard so preview testing does not immediately exhaust the pilot.
+  The privacy/help copy and pilot guide describe the narrower transmission.
+- `npm run check` passed with 0 errors/warnings; 42 focused tests passed.
+  Preview browser verification and publication approval remain. No SQL or new
+  environment variables. The untracked `docs/design/` drafts were untouched.
+
 ## Latest release (2026-09-25): meaning-based English feedback
 
 - [PR #23](https://github.com/afrazja/Mirifer/pull/23) merged into `main` as

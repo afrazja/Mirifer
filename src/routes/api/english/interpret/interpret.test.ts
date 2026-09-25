@@ -4,10 +4,11 @@ const env: Record<string, string | undefined> = {};
 vi.mock('$env/dynamic/private', () => ({ env }));
 const fetchMock = vi.fn();
 
-function fixture({ target = 'en', user = true, count = 0, stage = 'problem', utterance = 'The music kept me awake all night.' } = {}) {
+function fixture({ target = 'en', user = true, count = 0, stage = 'problem', utterance = 'The music kept me awake all night.', email = 'learner@example.com', isAdmin = false } = {}) {
 	const insert = vi.fn().mockResolvedValue({ error: null });
 	const query: any = { select: () => query, eq: () => query, gte: () => Promise.resolve({ count, error: null }), insert };
-	const supabase = { auth: { getUser: vi.fn().mockResolvedValue({ data: { user: user ? { id: 'u1', user_metadata: { target_language: target } } : null }, error: null }) }, from: vi.fn().mockReturnValue(query) };
+	const profileQuery: any = { select: () => profileQuery, eq: () => profileQuery, maybeSingle: () => Promise.resolve({ data: { is_admin: isAdmin }, error: null }) };
+	const supabase = { auth: { getUser: vi.fn().mockResolvedValue({ data: { user: user ? { id: 'u1', email, email_confirmed_at: '2026-09-01T00:00:00Z', user_metadata: { target_language: target } } : null }, error: null }) }, from: vi.fn((table: string) => table === 'events' ? query : profileQuery) };
 	const request = new Request('http://localhost/api/english/interpret', { method: 'POST', headers: { Origin: 'http://localhost' }, body: JSON.stringify({ stage, variant: 'lift', utterance }) });
 	return { event: { request, locals: { supabase } } as any, insert };
 }
@@ -57,6 +58,20 @@ describe('English hotel semantic checking', () => {
 		expect(await (await POST(fixture({ utterance: 'My room is not noisy.' }).event)).json()).toEqual({ choiceId: null, correction: null });
 		expect((await POST(fixture({ count: 18 }).event)).status).toBe(429);
 		expect(fetchMock).not.toHaveBeenCalled();
+	});
+	it('gives verified admin testers a bounded allowance without raising the learner limit', async () => {
+		Object.assign(env, { OPENAI_API_KEY: 'o', ADMIN_EMAIL: 'admin@example.com' });
+		fetchMock.mockImplementation(() => Promise.resolve(new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ choiceId: 'noise', related: true, improved: null, noteEn: null, noteFa: null }) } }] }), { status: 200 })));
+		const { POST } = await import('./+server');
+		const byEmail = fixture({ count: 18, email: 'admin@example.com' });
+		expect((await POST(byEmail.event)).status).toBe(200);
+		expect(byEmail.insert).toHaveBeenCalledOnce();
+		const byProfile = fixture({ count: 18, isAdmin: true });
+		expect((await POST(byProfile.event)).status).toBe(200);
+		expect(byProfile.insert).toHaveBeenCalledOnce();
+		const atAdminLimit = fixture({ count: 60, email: 'admin@example.com' });
+		expect((await POST(atAdminLimit.event)).status).toBe(429);
+		expect(atAdminLimit.insert).not.toHaveBeenCalled();
 	});
 	it('returns unavailable when configured providers fail', async () => {
 		Object.assign(env, { GEMINI_API_KEY: 'g', DEEPSEEK_API_KEY: 'd' });
