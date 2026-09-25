@@ -4,11 +4,11 @@ const env: Record<string, string | undefined> = {};
 vi.mock('$env/dynamic/private', () => ({ env }));
 const fetchMock = vi.fn();
 
-function fixture({ target = 'en', user = true, count = 0, utterance = 'The music kept me awake all night.' } = {}) {
+function fixture({ target = 'en', user = true, count = 0, stage = 'problem', utterance = 'The music kept me awake all night.' } = {}) {
 	const insert = vi.fn().mockResolvedValue({ error: null });
 	const query: any = { select: () => query, eq: () => query, gte: () => Promise.resolve({ count, error: null }), insert };
 	const supabase = { auth: { getUser: vi.fn().mockResolvedValue({ data: { user: user ? { id: 'u1', user_metadata: { target_language: target } } : null }, error: null }) }, from: vi.fn().mockReturnValue(query) };
-	const request = new Request('http://localhost/api/english/interpret', { method: 'POST', headers: { Origin: 'http://localhost' }, body: JSON.stringify({ stage: 'problem', variant: 'lift', utterance }) });
+	const request = new Request('http://localhost/api/english/interpret', { method: 'POST', headers: { Origin: 'http://localhost' }, body: JSON.stringify({ stage, variant: 'lift', utterance }) });
 	return { event: { request, locals: { supabase } } as any, insert };
 }
 
@@ -33,6 +33,13 @@ describe('English hotel semantic checking', () => {
 		fetchMock.mockResolvedValue(new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ choiceId: null, related: true, improved: null, noteEn: null, noteFa: null }) } }] }), { status: 200 }));
 		const { POST } = await import('./+server');
 		expect(await (await POST(fixture().event)).json()).toEqual({ choiceId: 'related', correction: null });
+	});
+	it('describes room choices by meaning, not only their sample phrase', async () => {
+		env.OPENAI_API_KEY = 'o';
+		fetchMock.mockResolvedValue(new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ choiceId: 'quieter', related: true, improved: null, noteEn: null, noteFa: null }) } }] }), { status: 200 }));
+		const { POST } = await import('./+server');
+		expect(await (await POST(fixture({ stage: 'offer', utterance: "I'd prefer the courtyard-facing option so I can sleep." }).event)).json()).toEqual({ choiceId: 'quieter', correction: null });
+		expect(JSON.stringify(fetchMock.mock.calls[0][1].body)).toContain('the courtyard-facing option');
 	});
 	it('rejects model choices outside the current step and off-topic replies', async () => {
 		env.OPENAI_API_KEY = 'o';
