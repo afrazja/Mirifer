@@ -2,6 +2,25 @@
 
 Updated: 2026-09-25.
 
+## Latest work (2026-09-25): English conversation and voice follow-up
+
+- Branch `codex/english-conversation-voice` at `26331b3` is pushed to GitHub
+  and proposed in draft [PR #22](https://github.com/afrazja/Mirifer/pull/22).
+  Vercel preview `6BVrGQnt3VZctJSiWir7EAoofMtW` is Ready; all four PR checks
+  passed. This change is not on `main` or live at `www.mirifer.com`.
+- In the hotel pilot, Jamie now presents two room options, responds to the
+  learner's choice, invites a question and confirms the move one turn at a
+  time. The visible Record answer control uses browser English speech
+  recognition to fill editable text; the learner sends it explicitly. Jamie's
+  lines use browser speech synthesis, with automatic playback and per-line
+  replay. The separate local practice clip remains optional and is not sent.
+- Validation: `npm run check` had 0 errors/warnings; 21 focused tests passed;
+  preview privacy disclosure loaded. The protected preview lesson still needs
+  signed-in browser verification, including room-choice flow, mobile layout,
+  Persian interface and microphone/voice behavior. The preview address has a
+  separate sign-in session; user sign-in was requested. No SQL or new env vars.
+- The local untracked `docs/design/` icon drafts were not touched.
+
 ## Latest work (2026-09-25): English hotel AI fallback
 
 - PR #21 merged into `main` as `80660d5` on 2026-09-25. The English hotel
