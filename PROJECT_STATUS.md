@@ -2,10 +2,10 @@
 
 Updated: 2026-09-25.
 
-## Current work (2026-09-25): English AI quota efficiency
+## Latest release (2026-09-25): English AI quota efficiency
 
-- Branch `codex/english-ai-quota-efficiency`, [PR #24](https://github.com/afrazja/Mirifer/pull/24)
-  (draft; not merged or live). The earlier
+- [PR #24](https://github.com/afrazja/Mirifer/pull/24) merged into `main` as
+  `688a0c7`. The earlier
   AI-first lesson spent an AI request even when the authored engine already
   recognized a prepared answer. Recognized replies and known corrections now
   stay local; only other eligible replies go to the existing provider chain.
@@ -17,11 +17,13 @@ Updated: 2026-09-25.
   PR checks passed. In the signed-in preview, a prepared answer advanced
   immediately, a known grammar correction stayed visible, and an unfamiliar
   room-number reply received an AI check and advanced on the owner's account
-  after the regular limit had been reached. Publication approval remains.
-  No SQL or new environment variables. The untracked `docs/design/` drafts
-  were untouched.
+  after the regular limit had been reached. GitHub records production
+  deployment `6667831380` as successful. Signed-in `www.mirifer.com` QA again
+  confirmed immediate local correction and a successful AI-checked unfamiliar
+  room-number reply. No SQL or new environment variables. The untracked
+  `docs/design/` drafts were untouched.
 
-## Latest release (2026-09-25): meaning-based English feedback
+## Earlier release (2026-09-25): meaning-based English feedback
 
 - [PR #23](https://github.com/afrazja/Mirifer/pull/23) merged into `main` as
   `6fdf569`. English hotel replies now go through the existing
