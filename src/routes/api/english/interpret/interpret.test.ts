@@ -36,9 +36,10 @@ describe('English hotel semantic checking', () => {
 	});
 	it('describes room choices by meaning, not only their sample phrase', async () => {
 		env.OPENAI_API_KEY = 'o';
-		fetchMock.mockResolvedValue(new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ choiceId: 'quieter', related: true, improved: null, noteEn: null, noteFa: null }) } }] }), { status: 200 }));
+		fetchMock.mockImplementation(() => Promise.resolve(new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ choiceId: null, related: true, improved: null, noteEn: null, noteFa: null }) } }] }), { status: 200 })));
 		const { POST } = await import('./+server');
 		expect(await (await POST(fixture({ stage: 'offer', utterance: "I'd prefer the courtyard-facing option so I can sleep." }).event)).json()).toEqual({ choiceId: 'quieter', correction: null });
+		expect(await (await POST(fixture({ stage: 'offer', utterance: 'Does the courtyard-facing room have a window?' }).event)).json()).toEqual({ choiceId: 'related', correction: null });
 		expect(JSON.stringify(fetchMock.mock.calls[0][1].body)).toContain('the courtyard-facing option');
 	});
 	it('rejects model choices outside the current step and off-topic replies', async () => {

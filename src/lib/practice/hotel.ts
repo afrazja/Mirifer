@@ -71,6 +71,17 @@ export function normalizeReply(text: string): string {
 		.replace(/[.,!?;:]/g, ' ').replace(/\s+/g, ' ').trim()
 		.replace(/^(?:hello|hi|good evening|excuse me)\s+/, '').replace(/\s+please$/, '').trim();
 }
+/** A clear selection of the uniquely described quiet room should not depend on model wording. */
+export function explicitQuietRoomChoice(state: Pick<HotelState, 'stage'>, input: string): boolean {
+	if (state.stage !== 'offer') return false;
+	const value = normalizeReply(input).replace(/-/g, ' ');
+	if (/\b(?:not|never|dont|do not|would not|cannot)\b/.test(value)) return false;
+	if (/\b(?:310|318|lift|street)\b|\b(?:other than|different from|instead of|rather than|except)\b/.test(value)) return false;
+	if (/\b(?:prefer|want|like) to (?:know|ask|check|find out)\b/.test(value)) return false;
+	const namesQuietRoom = /\b(?:512|courtyard(?: facing)?|quiet(?:er|est)?(?: room| one| option)?)\b/.test(value);
+	const selectsIt = /\b(?:i (?:(?:would|will|really|do) )*(?:prefer|choose|pick|take|want|like)|(?:can|could) i (?:have|get|take)|(?:please )?(?:give|book|reserve) me|(?:let us|lets) (?:take|choose))\b/.test(value);
+	return namesQuietRoom && selectsIt;
+}
 const knownCorrections = [
 	{ from: 'my room too noisy', to: 'My room is too noisy.', note: { en: 'Use “is” between “my room” and “too noisy”.', fa: 'بین «my room» و «too noisy» از «is» استفاده کن.' } },
 	{ from: 'i did not slept because of the noise', to: 'I did not sleep because of the noise.', note: { en: 'After “did not”, use the base verb “sleep”.', fa: 'بعد از «did not» از شکل سادهٔ فعل، «sleep»، استفاده کن.' } },
@@ -105,7 +116,8 @@ export function replyToHotel(state: HotelState, input: string): HotelReply {
 	if (!input.trim() || input.length > 300) return { state, understood: false, feedback: { en: 'Write a short reply first (up to 300 characters).', fa: 'اول یک پاسخ کوتاه بنویس (حداکثر ۳۰۰ نویسه).' } };
 	const normalized = normalizeReply(input);
 	const correction = knownCorrections.find(rule => rule.from === normalized);
-	const matched = hotelChoices(state).find(option => option.aliases.some(alias => normalizeReply(alias) === normalizeReply(correction?.to ?? input)));
+	const matched = hotelChoices(state).find(option => option.aliases.some(alias => normalizeReply(alias) === normalizeReply(correction?.to ?? input)))
+		?? (explicitQuietRoomChoice(state, input) ? hotelChoices(state).find(option => option.id === 'quieter') : undefined);
 	if (!matched) {
 		let feedback: DisplayText = { en: 'I couldn’t match that reply in this guided scene. It may still be good English. Try a short reply or open the examples.', fa: 'این پاسخ در گفت‌وگوی هدایت‌شده شناخته نشد؛ ممکن است انگلیسیِ درستی باشد. یک پاسخ کوتاه‌تر بنویس یا مثال‌ها را باز کن.' };
 		if (state.stage === 'room' && /\d/.test(input)) feedback = { en: 'For this scene, your room number is 204. Check your room card and try again.', fa: 'در این داستان شمارهٔ اتاقت ۲۰۴ است. کارت اتاق را ببین و دوباره تلاش کن.' };

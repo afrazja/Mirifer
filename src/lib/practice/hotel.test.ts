@@ -56,6 +56,17 @@ describe('authored hotel conversation', () => {
 		state = say(state, 'Yes, thank you.');
 		expect(state.turns.at(-2)?.text).toContain('All arranged');
 	});
+	it('recognizes an explicit courtyard choice without treating a comparison question as a choice', () => {
+		let state = say(startHotel(), 'My room is too noisy.');
+		state = say(state, '204');
+		const chosen = say(state, "I'd really prefer the courtyard-facing option so I can actually sleep.");
+		expect(chosen.stage).toBe('alternative');
+		expect(chosen.trail.at(-1)).toBe('quieter');
+		expect(replyToHotel(state, 'Does the courtyard-facing option have a window?').understood).toBe(false);
+		expect(replyToHotel(state, 'I would prefer to know if room 512 has a window.').understood).toBe(false);
+		expect(replyToHotel(state, 'I do not want room 512.').understood).toBe(false);
+		expect(replyToHotel(state, 'I prefer room 310 rather than 512.').understood).toBe(false);
+	});
 	it('every displayed example works at its reachable stage', () => {
 		for (const variant of ['lift', 'street'] as const) {
 			let state = startHotel(variant);
