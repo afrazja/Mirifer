@@ -5,6 +5,7 @@
 	import AppHeader from '$lib/components/AppHeader.svelte';
 	import CourseSwitcher from '$lib/components/CourseSwitcher.svelte';
 	import PracticeVoice from '$lib/components/PracticeVoice.svelte';
+	import EnglishSpeechInput from '$lib/components/EnglishSpeechInput.svelte';
 	import { startHotel, replyToHotel, applyHotelChoice, isHotelAiEligible, hotelChoices, stageHelp, STAGES, HOTEL_ID, type Stage, type DisplayText, type Variant } from '$lib/practice/hotel';
 	import { getLanguage, setLanguage, loadPracticeDraft, savePracticeDraft, clearPracticeDraft } from '$services/data-layer';
 	import { trackEvent } from '$services/analytics';
@@ -17,20 +18,49 @@
 	let started = $state(false), ready = $state(false), examples = $state(false), saving = $state(false), saved = $state(false), checking = $state(false);
 	let draft = $state(''), feedback = $state<DisplayText | null>(null);
 	let replies = $state<string[]>([]), resolved = $state<(string | null)[]>([]), hints = $state<Stage[]>([]);
+	let voiceAvailable = $state(false), voiceOn = $state(true), voiceMessage = $state('');
+	let englishVoice: SpeechSynthesisVoice | null = null;
 	let generation = 0;
 	let input: HTMLTextAreaElement | undefined = $state();
 	let conversation: HTMLDivElement | undefined = $state();
 	let saveForm: HTMLFormElement | undefined = $state();
 	const complete = $derived(scene.stage === 'complete');
 	const stepIndex = $derived(complete ? 6 : STAGES.indexOf(scene.stage));
-	const latestLine = $derived(scene.turns.at(-1)?.text ?? '');
 	const payload = $derived(JSON.stringify({ variant: scene.variant, trail: scene.trail, hints: hints.length }));
+	function refreshVoices() {
+		voiceAvailable = !!window.speechSynthesis;
+		const english = window.speechSynthesis?.getVoices().filter(voice => voice.lang.toLowerCase().startsWith('en')) ?? [];
+		englishVoice = english.find(voice => voice.localService) ?? english[0] ?? null;
+	}
+	function stopReceptionVoice() { window.speechSynthesis?.cancel(); }
+	function speakReception(line: string) {
+		if (!voiceAvailable || !line) return;
+		stopReceptionVoice(); voiceMessage = '';
+		const utterance = new SpeechSynthesisUtterance(line);
+		if (englishVoice) utterance.voice = englishVoice;
+		utterance.lang = englishVoice?.lang ?? 'en-US'; utterance.rate = .88;
+		utterance.onerror = event => {
+			if (event.error === 'interrupted' || event.error === 'canceled') return;
+			voiceMessage = isFa ? 'صدای پذیرش پخش نشد. می‌توانی متن را بخوانی و ادامه بدهی.' : 'Reception audio could not play. You can read the line and continue.';
+		};
+		window.speechSynthesis.speak(utterance);
+	}
+	function toggleReceptionVoice() {
+		voiceOn = !voiceOn;
+		if (!voiceOn) stopReceptionVoice();
+		else {
+			const last = [...scene.turns].reverse().find(turn => turn.speaker === 'reception');
+			if (last) speakReception(last.text);
+		}
+	}
 
 	function event(name: Parameters<typeof trackEvent>[0], metadata: Record<string, string | number | boolean> = {}) {
 		void trackEvent(name, { metadata: { mode: 'conversation', course: 'en', scenario: HOTEL_ID, ...metadata } });
 	}
 	function remember() { savePracticeDraft(data.learnerId, scene.variant, replies, hints, resolved); }
 	onMount(() => {
+		refreshVoices();
+		window.speechSynthesis?.addEventListener('voiceschanged', refreshVoices);
 		void getLanguage().then(value => { if (value === 'fa' || value === 'en') language = value; });
 		const previous = loadPracticeDraft(data.learnerId);
 		if (previous) {
@@ -39,13 +69,15 @@
 			replies = previous.replies; resolved = previous.replies.map((_, index) => previous.resolved?.[index] ?? null); hints = previous.hints; started = true;
 		}
 		ready = true;
+		return () => { stopReceptionVoice(); window.speechSynthesis?.removeEventListener('voiceschanged', refreshVoices); };
 	});
 	async function changeDisplay(value: 'en' | 'fa') { language = value; await setLanguage(value); }
 	async function start(variant: Variant = 'lift') {
-		generation++; checking = false; scene = startHotel(variant); replies = []; resolved = []; hints = []; feedback = null; draft = ''; examples = false;
+		generation++; checking = false; stopReceptionVoice(); scene = startHotel(variant); replies = []; resolved = []; hints = []; feedback = null; draft = ''; examples = false; voiceMessage = '';
 		form = null; saved = false; started = true; remember();
 		event('conversation_started', { replay: !!data.completed });
 		await tick(); input?.focus();
+		if (voiceOn) speakReception(scene.turns[0].text);
 	}
 	function openExamples() {
 		examples = !examples;
@@ -91,12 +123,14 @@
 			replies = [...replies, reply]; resolved = [...resolved, aiChoice]; scene = result.state; draft = ''; examples = false; remember();
 			await tick();
 			if (conversation) conversation.scrollTop = conversation.scrollHeight;
+			const lastReception = [...scene.turns].reverse().find(turn => turn.speaker === 'reception');
+			if (voiceOn && lastReception) speakReception(lastReception.text);
 			if (complete) { event('conversation_completed', { count: replies.length }); saveForm?.requestSubmit(); }
 			else input?.focus();
 		}
 	}
 	function returnToIntro() {
-		generation++; checking = false; clearPracticeDraft(data.learnerId); started = false; feedback = null; draft = ''; form = null;
+		generation++; checking = false; stopReceptionVoice(); clearPracticeDraft(data.learnerId); started = false; feedback = null; draft = ''; form = null;
 	}
 </script>
 
@@ -124,7 +158,7 @@
 				<h1 id="lesson-title">{isFa ? 'یک اتاق آرام‌تر، لطفاً.' : 'A quieter room, please.'}</h1>
 				<p class="lead">{isFa ? 'ساعت ۱۰ شب است و اتاقت پر از سروصداست. به پذیرش برو و برای یک خواب راحت، اتاقت را عوض کن.' : 'It’s 10 pm and your room is too noisy. Visit reception and arrange a move so you can get some sleep.'}</p>
 				<div class="tags"><span>{isFa ? 'حدود ۵ تا ۸ دقیقه' : 'About 5–8 minutes'}</span><span>{isFa ? 'مکالمهٔ روزمره' : 'Everyday conversation'}</span></div>
-				<p class="instructions">{isFa ? 'این یک گفت‌وگوی هدایت‌شده است. پاسخ کوتاه انگلیسی بنویس یا از مثال‌ها کمک بگیر. برای تمرین گفتاری، اول پاسخ را بلند بگو. موضوع‌ها و پاسخ‌های قابل تشخیص محدودند.' : 'This is a guided conversation. Type a short English reply or use the examples. For speaking practice, say your answer aloud first. The scene supports a limited set of topics and replies.'}</p>
+				<p class="instructions">{isFa ? 'با پذیرش یک نوبت در میان گفت‌وگو کن. پاسخ انگلیسی‌ات را بگو یا بنویس، سپس به سؤال بعدی جیمی گوش بده. اگر لازم بود از مثال‌ها کمک بگیر.' : 'Talk with reception one turn at a time. Speak or type your English reply, then listen to Jamie’s next question. Open the examples if you need help.'}</p>
 				{#if data.completed || saved}<p class="completed-label">✓ {isFa ? 'این درس را قبلاً تمام کرده‌ای. دوباره تمرین کن.' : 'You’ve completed this lesson. You can practise again.'}</p>{/if}
 				<button class="primary start" disabled={!ready} onclick={() => start(data.completed?.variant === 'lift' ? 'street' : 'lift')}>{data.completed || saved ? (isFa ? 'تمرین دوباره' : 'Practise again') : (isFa ? 'شروع گفت‌وگو' : 'Start the conversation')} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
 			</div>
@@ -172,27 +206,29 @@
 		<div class="session-heading"><div><p class="eyebrow">{isFa ? 'درس ۰۱ · یک اتاق آرام‌تر' : 'LESSON 01 · A QUIETER ROOM'}</p><h1>{isFa ? 'در پذیرش هتل' : 'At the reception desk'}</h1></div><button class="text-button" onclick={() => start(scene.variant)}>{isFa ? 'شروع دوباره' : 'Start again'}</button></div>
 		<div class="session-grid">
 			<section class="conversation-panel" aria-label={isFa ? 'گفت‌وگوی هتل' : 'Hotel conversation'}>
-				<div class="reception-bar"><div class="avatar" aria-hidden="true">J</div><div><strong>Jamie</strong><small>{isFa ? 'پذیرش · Willow Hotel' : 'Reception · Willow Hotel'}</small></div><span class="guided">{isFa ? 'هدایت‌شده' : 'Guided scene'}</span></div>
+				<div class="reception-bar"><div class="avatar" aria-hidden="true">J</div><div><strong>Jamie</strong><small>{isFa ? 'پذیرش · Willow Hotel' : 'Reception · Willow Hotel'}</small></div>{#if voiceAvailable}<button type="button" class="voice-toggle" aria-pressed={voiceOn} onclick={toggleReceptionVoice}>{voiceOn ? (isFa ? 'صدای جیمی روشن' : 'Jamie’s voice on') : (isFa ? 'صدای جیمی خاموش' : 'Jamie’s voice off')}</button>{/if}</div>
 				<!-- svelte-ignore a11y_no_noninteractive_tabindex (The scrollable conversation history must be reachable for keyboard scrolling.) -->
 				<div class="transcript" bind:this={conversation} role="region" aria-label={isFa ? 'تاریخچهٔ گفت‌وگو' : 'Conversation history'} tabindex="0" dir="ltr">
 					<div class="turns" role="log" aria-live="polite" aria-relevant="additions">
-					{#each scene.turns as turn}<div class="turn" class:learner={turn.speaker === 'learner'} class:coach={turn.speaker === 'coach'}><small>{turn.speaker === 'learner' ? 'You' : turn.speaker === 'coach' ? 'Practice coach' : 'Jamie'}</small><p lang="en">{turn.text}</p></div>{/each}
+					{#each scene.turns as turn, index (index)}<div class="turn" class:learner={turn.speaker === 'learner'} class:coach={turn.speaker === 'coach'}><small>{turn.speaker === 'learner' ? 'You' : turn.speaker === 'coach' ? 'Practice coach' : 'Jamie'}</small><p lang="en">{turn.text}</p>{#if turn.speaker === 'reception' && voiceAvailable}<button type="button" class="listen-line" onclick={() => speakReception(turn.text)}>{isFa ? 'شنیدن جیمی' : 'Listen to Jamie'}</button>{/if}</div>{/each}
 					</div>
 				</div>
 				<div class="composer">
-					<p class="step-guide"><span dir="ltr">{stepIndex + 1} / 6</span>{text(stageHelp[scene.stage])}</p>
+					<p class="step-guide"><span>{isFa ? 'نوبت تو' : 'Your turn'}</span>{text(stageHelp[scene.stage])}</p>
 					{#if feedback}<div class="feedback" role="status">{text(feedback)}</div>{/if}
+					{#if voiceMessage}<div class="voice-message" role="status">{voiceMessage}</div>{/if}
 					<form onsubmit={e => { e.preventDefault(); void send(); }}>
 						<label for="reply">{isFa ? 'پاسخ تو به انگلیسی' : 'Your reply in English'}</label>
 						<textarea id="reply" bind:this={input} bind:value={draft} lang="en" dir="ltr" rows="2" maxlength="300" disabled={checking} placeholder={isFa ? 'پاسخ انگلیسی را اینجا بنویس…' : 'Type a short reply…'} aria-describedby="reply-help" onkeydown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); void send(); } }}></textarea>
+						{#key scene.trail.length}<EnglishSpeechInput {isFa} disabled={checking} onTranscript={value => { draft = value; void tick().then(() => input?.focus()); }} />{/key}
 						<div class="send-row"><button type="button" class="text-button" aria-expanded={examples} aria-controls="reply-examples" onclick={openExamples}>{examples ? (isFa ? 'پنهان کردن مثال‌ها' : 'Hide examples') : (isFa ? 'کمک با مثال' : 'Show examples')}</button><button class="primary" disabled={!draft.trim() || checking}>{checking ? (isFa ? 'در حال بررسی…' : 'Checking…') : (isFa ? 'ارسال پاسخ' : 'Send reply')} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button></div>
 					</form>
 					{#if examples}<div id="reply-examples" class="examples"><p>{isFa ? 'یک مثال را برای ویرایش انتخاب کن، سپس ارسال کن.' : 'Choose an example to edit, then send it.'}</p>{#each hotelChoices(scene) as option}<button type="button" lang="en" dir="ltr" onclick={() => fillExample(option.text)}>{option.text}</button>{/each}</div>{/if}
 					<p id="reply-help" class="small-note">{isFa ? 'پاسخ‌های ناشناخته ممکن است با هوش مصنوعی بررسی شوند. متن پاسخ به ارائه‌دهندهٔ هوش مصنوعی فرستاده می‌شود؛ اگر در دسترس نباشد، از مثال‌ها کمک بگیر.' : 'Unrecognized replies may be checked by AI. Your reply text is sent to an AI provider; if it is unavailable, use the examples.'}</p>
-					{#key scene.trail.length}<PracticeVoice text={latestLine} {isFa} />{/key}
+				{#key scene.trail.length}<PracticeVoice {isFa} />{/key}
 				</div>
 			</section>
-			<aside class="mission-sidebar"><p class="eyebrow">{isFa ? 'کارت اتاق تو' : 'YOUR ROOM CARD'}</p><div class="key-card"><span>WILLOW HOTEL<br /><small>{isFa ? 'اتاق فعلی' : 'Current room'}</small></span><strong>204</strong></div><h2>{isFa ? 'به یاد داشته باش' : 'Keep in mind'}</h2><p>{isFa ? 'اتاقت پرسر‌وصداست. یک اتاق آرام‌تر می‌خواهی و ترجیح می‌دهی هزینهٔ اضافه ندهی.' : 'Your room is noisy. You want a quieter room, ideally without paying extra.'}</p><ol class="goals"><li class:done={stepIndex > 0}>{isFa ? 'مشکل را توضیح بده' : 'Explain the problem'}</li><li class:done={stepIndex > 2}>{isFa ? 'یک اتاق آرام‌تر پیدا کن' : 'Find a quieter option'}</li><li class:done={stepIndex > 3}>{isFa ? 'هزینه را بررسی کن' : 'Check the price'}</li><li class:done={stepIndex > 4}>{isFa ? 'جابه‌جایی را تأیید کن' : 'Confirm the move'}</li></ol><p class="small-note">{isFa ? 'یک پاسخ کوتاه کافی است. هر وقت لازم بود مثال‌ها را باز کن.' : 'A short reply is enough. Open the examples whenever you need support.'}</p></aside>
+			<aside class="mission-sidebar"><p class="eyebrow">{isFa ? 'کارت اتاق تو' : 'YOUR ROOM CARD'}</p><div class="key-card"><span>WILLOW HOTEL<br /><small>{isFa ? 'اتاق فعلی' : 'Current room'}</small></span><strong>204</strong></div><h2>{isFa ? 'موقعیت تو' : 'Your situation'}</h2><p>{isFa ? 'اتاقت پرسر‌وصداست. با جیمی گفت‌وگو کن و برای امشب یک اتاق آرام پیدا کن. می‌توانی پیش از تصمیم گرفتن سؤال بپرسی.' : 'Your room is noisy. Talk with Jamie and find a quiet room for tonight. You can ask questions before deciding.'}</p><p class="small-note">{isFa ? 'پذیرش پس از هر پاسخ تو جواب می‌دهد. هر وقت لازم بود مثال‌ها را باز کن.' : 'Reception replies after each of your turns. Open the examples whenever you need support.'}</p></aside>
 		</div>
 	{/if}
 </main>
@@ -209,7 +245,7 @@
 	.welcome { display: grid; grid-template-columns: 1.2fr 1fr; gap: 64px; align-items: center; padding: 44px 0; }
 	.lead { font-size: 1.1rem; color: var(--ink-soft); max-width: 620px; }
 	.tags { display: flex; flex-wrap: wrap; gap: 10px; margin-block: 24px; }
-	.tags span, .guided { font-size: .75rem; padding: 6px 10px; border: 1px solid var(--line); border-radius: 30px; }
+	.tags span { font-size: .75rem; padding: 6px 10px; border: 1px solid var(--line); border-radius: 30px; }
 	.instructions, .small-note { font-size: .85rem; color: var(--ink-soft); }
 	.instructions { margin-bottom: 26px; }
 	button { font: inherit; cursor: pointer; }
@@ -240,17 +276,19 @@
 	.reception-bar { display: flex; align-items: center; gap: 12px; padding: 18px 24px; border-bottom: 1px solid var(--line); }
 	.avatar { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-wash); color: var(--accent-deep); font-family: var(--font-display); font-size: 1.4rem; }
 	.reception-bar small { display: block; color: var(--ink-soft); font-size: .75rem; margin-top: 3px; }
-	.guided { margin-inline-start: auto; color: var(--ink-soft); }
+	.voice-toggle { margin-inline-start: auto; min-height: 44px; padding: 7px 10px; border: 1px solid var(--control-border); border-radius: 9px; background: var(--paper-raised); color: var(--accent-deep); font-size: .75rem; font-weight: 600; }
 	.transcript { max-height: 370px; min-height: 175px; overflow-y: auto; padding: 24px; background: var(--paper-sunken); }
 	.turns { display: flex; flex-direction: column; gap: 18px; }
 	.turn { width: fit-content; max-width: 90%; border: 1px solid var(--line); border-radius: 12px 12px 12px 3px; background: var(--paper-raised); padding: 12px 16px; }
 	.turn small { display: block; color: var(--ink-soft); font-size: .7rem; margin-bottom: 5px; }
 	.turn p { margin: 0; font-size: 1rem; }
+	.listen-line { min-height: 36px; margin-top: 7px; padding: 2px 0; border: 0; background: none; color: var(--accent-deep); font-size: .78rem; font-weight: 600; }
 	.turn.learner { align-self: flex-end; background: var(--accent-wash); border-radius: 12px 12px 3px 12px; }
 	.turn.coach { border-style: dashed; background: transparent; }
 	.composer { padding: 20px 24px 0; }
 	.step-guide { display: flex; align-items: baseline; gap: 10px; color: var(--ink-soft); font-size: .88rem; margin-bottom: 16px; }
 	.step-guide span { white-space: nowrap; font-weight: 600; color: var(--accent-deep); }
+	.voice-message { padding: 10px 12px; margin-bottom: 14px; border-radius: 9px; background: var(--attention-wash); color: var(--attention); font-size: .85rem; }
 	label { display: block; margin-bottom: 8px; font-size: .85rem; font-weight: 600; }
 	textarea { width: 100%; resize: vertical; min-height: 80px; padding: 12px; border: 1px solid var(--control-border); border-radius: 10px; background: var(--paper); color: var(--ink); font: inherit; }
 	.send-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 10px; }
@@ -263,8 +301,6 @@
 	.mission-sidebar .key-card { margin: 0 0 24px; }
 	.mission-sidebar h2 { font-size: 1.3rem; }
 	.mission-sidebar > p:not(.eyebrow) { color: var(--ink-soft); font-size: .88rem; }
-	.goals { margin: 20px 0; font-size: .9rem; }
-	.goals .done { color: var(--accent-deep); text-decoration: line-through; }
 	.result { max-width: 710px; margin: 40px auto; text-align: center; }
 	.success-mark { display: grid; place-items: center; margin: 24px auto; width: 64px; height: 64px; border-radius: 50%; background: var(--accent-wash); color: var(--accent-deep); font-size: 2rem; }
 	.result .lead { margin: 0 auto 20px; }
@@ -279,5 +315,5 @@
 	.save-status, .completed-label { color: var(--accent-deep); margin-block: 16px; }
 	.error { color: var(--miss); margin-bottom: 16px; }
 	@media (max-width: 960px) { .welcome { gap: 28px; } .session-grid { grid-template-columns: minmax(0, 1fr) 230px; gap: 20px; } }
-	@media (max-width: 720px) { .practice-page { padding: 16px 16px 40px; } .welcome { grid-template-columns: 1fr; padding-top: 24px; } .briefing { max-width: 520px; } .session-grid { grid-template-columns: 1fr; } .mission-sidebar { display: none; } .session-heading { margin-top: 24px; } .session-heading h1 { font-size: 1.65rem; } .reception-bar, .composer { padding-inline: 16px; } .transcript { padding: 16px; max-height: 290px; } .display-control { font-size: 0; } .display-control select { font-size: .85rem; } .guided { font-size: .65rem; } .primary { padding-inline: 16px; } .result { margin-top: 30px; } }
+	@media (max-width: 720px) { .practice-page { padding: 16px 16px 40px; } .welcome { grid-template-columns: 1fr; padding-top: 24px; } .briefing { max-width: 520px; } .session-grid { grid-template-columns: 1fr; } .mission-sidebar { display: none; } .session-heading { margin-top: 24px; } .session-heading h1 { font-size: 1.65rem; } .reception-bar, .composer { padding-inline: 16px; } .reception-bar { flex-wrap: wrap; } .voice-toggle { margin-inline-start: 0; } .transcript { padding: 16px; max-height: 290px; } .display-control { font-size: 0; } .display-control select { font-size: .85rem; } .primary { padding-inline: 16px; } .result { margin-top: 30px; } }
 </style>
