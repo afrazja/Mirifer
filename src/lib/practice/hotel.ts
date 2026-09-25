@@ -1,4 +1,4 @@
-/** A finite, authored conversation. No model, network request or fuzzy grading. */
+/** A finite, authored conversation. AI may classify unmatched replies, but cannot change its path. */
 export const HOTEL_ID = 'hotel-quiet-room-v1';
 export type DisplayText = { en: string; fa: string };
 export type Stage = 'problem' | 'room' | 'offer' | 'alternative' | 'confirm' | 'recall' | 'complete';
@@ -62,6 +62,28 @@ const knownCorrections = [
 	{ from: 'is there a extra charge', to: 'Is there an extra charge?', note: { en: 'Use “an” before the vowel sound at the start of “extra”.', fa: 'قبل از صدای مصوت ابتدای «extra» از «an» استفاده کن.' } }
 ] as const;
 export interface HotelReply { state: HotelState; understood: boolean; feedback: DisplayText | null; }
+/** Applies only a choice authored for the current stage. Used after server-side AI classification. */
+export function applyHotelChoice(state: HotelState, id: string, input: string, correction?: { improved: string; note: DisplayText } | null): HotelReply {
+	if (!input.trim() || input.length > 300) return { state, understood: false, feedback: null };
+	const matched = hotelChoices(state).find(option => option.id === id);
+	if (!matched) return { state, understood: false, feedback: null };
+	const turns: Turn[] = [...state.turns, { speaker: 'learner', text: input.trim() }, { speaker: state.stage === 'recall' ? 'coach' : 'reception', text: matched.reply }];
+	if (matched.next === 'recall') turns.push({ speaker: 'coach', text: 'Quick recall: at a different hotel, you are offered an upgrade. Ask whether it costs extra. Try without the examples first.' });
+	return { understood: true, feedback: correction?.note ?? null, state: {
+		...state, stage: matched.next, turns, trail: [...state.trail, matched.id],
+		corrections: correction ? [...state.corrections, { original: input.trim(), improved: correction.improved, note: correction.note }] : state.corrections
+	} };
+}
+
+/** Keep clear mission conflicts with the authored coach, without spending an AI call. */
+export function isHotelAiEligible(state: HotelState, input: string): boolean {
+	const value = normalizeReply(input);
+	if (!value || input.length > 300 || state.stage === 'complete') return false;
+	if (state.stage === 'room' && /\d/.test(value) && !/\b204\b/.test(value)) return false;
+	if (state.stage === 'problem' && /\b(?:not|no|isnt|isn't)\b.*\b(?:noisy|noise|loud)\b/.test(value)) return false;
+	if (['offer', 'alternative'].includes(state.stage) && /^(?:yes|yes please|i will take it|that sounds good)$/.test(value)) return false;
+	return true;
+}
 export function replyToHotel(state: HotelState, input: string): HotelReply {
 	if (state.stage === 'complete') return { state, understood: false, feedback: null };
 	if (!input.trim() || input.length > 300) return { state, understood: false, feedback: { en: 'Write a short reply first (up to 300 characters).', fa: 'اول یک پاسخ کوتاه بنویس (حداکثر ۳۰۰ نویسه).' } };
@@ -75,12 +97,7 @@ export function replyToHotel(state: HotelState, input: string): HotelReply {
 		if (state.stage === 'alternative' && /^(yes|yes please|i will take it)$/.test(normalized)) feedback = { en: 'Before agreeing, check whether the quieter room costs extra.', fa: 'قبل از قبول کردن، بپرس آیا اتاق آرام‌تر هزینهٔ اضافه دارد.' };
 		return { state, understood: false, feedback };
 	}
-	const turns: Turn[] = [...state.turns, { speaker: 'learner', text: input.trim() }, { speaker: state.stage === 'recall' ? 'coach' : 'reception', text: matched.reply }];
-	if (matched.next === 'recall') turns.push({ speaker: 'coach', text: 'Quick recall: at a different hotel, you are offered an upgrade. Ask whether it costs extra. Try without the examples first.' });
-	return { understood: true, feedback: correction?.note ?? null, state: {
-		...state, stage: matched.next, turns, trail: [...state.trail, matched.id],
-		corrections: correction ? [...state.corrections, { original: input.trim(), improved: correction.to, note: correction.note }] : state.corrections
-	} };
+	return applyHotelChoice(state, matched.id, input, correction ? { improved: correction.to, note: correction.note } : null);
 }
 /** Validate completion without transmitting learner-written text to the server. */
 export function completedHotelTrail(variant: Variant, trail: string[]): boolean {

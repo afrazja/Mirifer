@@ -15,4 +15,10 @@ describe('English practice draft', () => {
 		sessionStorage.setItem('mirifer_practice:one:en:hotel-v1', '{broken');
 		expect(loadPracticeDraft('one')).toBeNull();
 	});
+	it('resumes a valid AI-classified paraphrase at the same authored step', () => {
+		savePracticeDraft('one', 'lift', ['The music kept me awake all night.', '204'], [], ['noise', null]);
+		expect(loadPracticeDraft('one')?.resolved).toEqual(['noise', null]);
+		savePracticeDraft('one', 'lift', ['The music kept me awake all night.'], [], ['accept']);
+		expect(loadPracticeDraft('one')).toBeNull();
+	});
 });

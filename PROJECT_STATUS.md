@@ -1,6 +1,26 @@
 # Mirifer handoff
 
-Updated: 2026-09-23.
+Updated: 2026-09-25.
+
+## Latest work (2026-09-25): English hotel AI fallback
+
+- Working branch `codex/english-ai-fallback` starts from `origin/main` at
+  `300257d`. The English hotel pilot now uses its authored matcher first and
+  asks the existing Gemini → DeepSeek → OpenAI chain only for unmatched short
+  replies. The model can select only a choice from the current authored step;
+  known mission conflicts and completion checks stay deterministic.
+- AI-resolved choice IDs survive tab refresh, while no raw learner text is
+  stored in server analytics. A verified English-course account may make up to
+  12 fallback requests per UTC day. Answer events include an `ai_rescued`
+  flag. No SQL migration or new environment variables are required.
+- English/Persian help and the privacy policy disclose AI processing; the
+  English pilot guide documents the new behavior and cost boundary.
+- Validation: `npm run check` passed; 19 focused tests passed. Vite compiled
+  client/server successfully, but Windows blocked the Vercel adapter's symlink
+  during final local packaging. Browser verification needs hosted preview or
+  local Supabase public settings, which this laptop lacks. Deployment and live
+  behavior are not yet confirmed.
+- The local `docs/design/` icon drafts remain untracked and were not changed.
 
 ## Latest work (2026-09-23): GitHub repository rename
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { startHotel, replyToHotel, completedHotelTrail, hotelChoices, type HotelState } from './hotel';
+import { startHotel, replyToHotel, applyHotelChoice, isHotelAiEligible, completedHotelTrail, hotelChoices, type HotelState } from './hotel';
 
 function say(state: HotelState, input: string) {
 	const result = replyToHotel(state, input);
@@ -54,5 +54,15 @@ describe('authored hotel conversation', () => {
 		expect(completedHotelTrail('lift', ['accept', 'recall-price'])).toBe(false);
 		expect(completedHotelTrail('lift', ['noise', 'room204', 'quieter', 'price', 'accept', 'recall-price', 'recall-price'])).toBe(false);
 		expect(replyToHotel(startHotel(), 'a'.repeat(301)).understood).toBe(false);
+	});
+	it('lets AI select only a current authored intent while preserving the learner wording', () => {
+		const state = startHotel();
+		const accepted = applyHotelChoice(state, 'noise', 'The music kept me awake all night.');
+		expect(accepted.understood).toBe(true);
+		expect(accepted.state.stage).toBe('room');
+		expect(accepted.state.turns[1].text).toBe('The music kept me awake all night.');
+		expect(applyHotelChoice(state, 'accept', 'yes').understood).toBe(false);
+		expect(isHotelAiEligible(state, 'My room is not noisy.')).toBe(false);
+		expect(isHotelAiEligible(accepted.state, '999')).toBe(false);
 	});
 });
