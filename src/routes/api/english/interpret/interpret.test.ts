@@ -26,6 +26,7 @@ describe('English hotel semantic checking', () => {
 		expect(f.insert).toHaveBeenCalledOnce();
 		expect(JSON.stringify(f.insert.mock.calls[0][0])).not.toContain('music');
 		expect(JSON.stringify(fetchMock.mock.calls[0][1].body)).toContain('meaning, not similarity');
+		expect(JSON.stringify(fetchMock.mock.calls[0][1].body)).toContain('Do not omit a correction merely because the meaning is clear');
 	});
 	it('acknowledges a relevant reply outside the prepared choices without advancing', async () => {
 		env.OPENAI_API_KEY = 'o';

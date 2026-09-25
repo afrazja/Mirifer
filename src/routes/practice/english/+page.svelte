@@ -108,7 +108,9 @@
 					if (current !== generation) return;
 					if (typeof interpretation.choiceId === 'string') {
 						const correction = interpretation.correction;
-						const evaluated = applyHotelChoice(scene, interpretation.choiceId, reply, correction && typeof correction.improved === 'string' && typeof correction.note?.en === 'string' && typeof correction.note?.fa === 'string' ? correction : null);
+						const known = localResult.understood && localResult.state.trail.at(-1) === interpretation.choiceId && localResult.state.corrections.length > scene.corrections.length ? localResult.state.corrections.at(-1) : null;
+						const suggested = correction && typeof correction.improved === 'string' && typeof correction.note?.en === 'string' && typeof correction.note?.fa === 'string' ? correction : known ? { improved: known.improved, note: known.note } : null;
+						const evaluated = applyHotelChoice(scene, interpretation.choiceId, reply, suggested);
 						if (evaluated.understood) { result = evaluated; aiChoice = interpretation.choiceId; }
 					} else if (!localResult.understood) {
 						result = { ...localResult, feedback: { en: 'That does not answer Jamie’s question yet. Try a short reply about this hotel situation or open the examples.', fa: 'این پاسخ هنوز جواب پرسش جیمی نیست. پاسخی کوتاه دربارهٔ موقعیت هتل بده یا مثال‌ها را باز کن.' } };
