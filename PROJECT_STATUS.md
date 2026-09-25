@@ -5,7 +5,7 @@ Updated: 2026-09-25.
 ## Latest work (2026-09-25): English conversation and voice follow-up
 
 - Branch `codex/english-conversation-voice` is pushed to GitHub
-  and proposed in draft [PR #22](https://github.com/afrazja/Mirifer/pull/22).
+  and proposed in ready-for-review [PR #22](https://github.com/afrazja/Mirifer/pull/22).
   Vercel preview `6BVrGQnt3VZctJSiWir7EAoofMtW` is Ready; all four PR checks
   passed. This change is not on `main` or live at `www.mirifer.com`.
 - In the hotel pilot, Jamie now presents two room options, responds to the
