@@ -1,18 +1,16 @@
 /**
- * Jamie's voice — expressive speech for the authored English hotel lines.
+ * Jamie's voice — expressive speech for the English hotel role-play.
  *
  * The free Edge voices read neutrally (speaking styles are rejected on that
  * route), so a receptionist sounded like an announcer. OpenAI's
  * gpt-4o-mini-tts takes a plain-language direction for how to speak, which
  * is what a role-play needs.
  *
- * Only the lesson's own receptionist lines are accepted, plus Jamie's
- * AI-written replies carrying a server signature from /api/english/interpret.
- * Any other text is refused, so this endpoint cannot be used to run up the
- * OpenAI bill. The
+ * Only Jamie's prepared lines are accepted, plus his AI-written replies
+ * carrying a server signature from /api/english/converse. Any other text is
+ * refused, so this endpoint cannot be used to run up the OpenAI bill. The
  * audio for a given line never changes, so responses are cached for a year
- * by browsers and Vercel's CDN; a line is generated roughly once per CDN
- * region and voice, not once per learner.
+ * by browsers and Vercel's CDN.
  *
  * Usage: GET /api/english/voice?text=<line>&voice=a|b|c|d[&sig=<signature>]
  * 503 without OPENAI_API_KEY, 502 on a provider error: the client then falls
@@ -22,7 +20,7 @@
 import type { RequestHandler } from './$types';
 import { env } from '$env/dynamic/private';
 import { verifyJamieLine } from '$lib/server/jamie-line';
-import { STAGES, hotelChoices, startHotel, type Variant } from '$lib/practice/hotel';
+import { FALLBACK_LINES, GREETING } from '$lib/practice/hotel';
 
 const MODEL = env.OPENAI_TTS_MODEL || 'gpt-4o-mini-tts';
 
@@ -36,20 +34,15 @@ const DIRECTION =
 	'Speak clearly and slightly slower than normal conversation so a learner can follow, ' +
 	'but never robotic or like an announcement.';
 
-/** Every line Jamie can say, across both scene variants. */
-const ALLOWED = new Set<string>(
-	(['lift', 'street'] as Variant[]).flatMap((variant) => [
-		startHotel(variant).turns[0].text,
-		...STAGES.flatMap((stage) => hotelChoices({ stage, variant }).flatMap((choice) => [choice.reply, choice.again ?? choice.reply]))
-	])
-);
+/** Jamie's prepared lines; everything else he says is AI-written and signed. */
+const ALLOWED = new Set<string>([GREETING, ...Object.values(FALLBACK_LINES)]);
 
 const CACHE = 'public, max-age=31536000, s-maxage=31536000, immutable';
 
 export const GET: RequestHandler = async ({ url }) => {
 	const text = url.searchParams.get('text') ?? '';
 	const voice = VOICES[url.searchParams.get('voice') ?? 'a'];
-	const known = ALLOWED.has(text) || (text.length <= 300 && verifyJamieLine(text, url.searchParams.get('sig')));
+	const known = ALLOWED.has(text) || (text.length <= 400 && verifyJamieLine(text, url.searchParams.get('sig')));
 	if (!voice || !known) {
 		return new Response('Unknown line', { status: 400 });
 	}

@@ -4,9 +4,7 @@ const { env } = vi.hoisted(() => ({ env: {} as Record<string, string | undefined
 vi.mock('$env/dynamic/private', () => ({ env }));
 
 import { GET } from './+server';
-import { startHotel } from '$lib/practice/hotel';
-
-const GREETING = startHotel('lift').turns[0].text;
+import { GREETING, FALLBACK_LINES } from '$lib/practice/hotel';
 const call = (params: Record<string, string>) =>
 	GET({ url: new URL(`http://localhost/api/english/voice?${new URLSearchParams(params)}`) } as any);
 
@@ -31,7 +29,7 @@ describe('/api/english/voice', () => {
 		expect((await call({ text: GREETING, voice: 'z' })).status).toBe(400);
 	});
 
-	it('voices a lesson line with the receptionist direction and caches it', async () => {
+	it('voices the greeting with the receptionist direction and caches it', async () => {
 		env.OPENAI_API_KEY = 'k';
 		fetchMock.mockResolvedValueOnce(new Response(new Uint8Array([1, 2, 3]), { status: 200 }));
 		const res = await call({ text: GREETING, voice: 'b' });
@@ -43,11 +41,10 @@ describe('/api/english/voice', () => {
 		expect(body.instructions).toContain('receptionist');
 	});
 
-	it('accepts lines from both scene variants', async () => {
+	it('accepts the prepared fallback lines', async () => {
 		env.OPENAI_API_KEY = 'k';
-		fetchMock.mockResolvedValue(new Response(new Uint8Array([1]), { status: 200 }));
-		const street = 'Thank you. I can offer two rooms: room 318 facing the busy street, or room 512 facing the quiet courtyard. Which would you prefer?';
-		expect((await call({ text: street, voice: 'a' })).status).toBe(200);
+		fetchMock.mockImplementation(() => Promise.resolve(new Response(new Uint8Array([1]), { status: 200 })));
+		for (const line of Object.values(FALLBACK_LINES)) expect((await call({ text: line, voice: 'a' })).status).toBe(200);
 	});
 
 	it('returns 503 without a key and 502 when OpenAI fails, so the client falls back', async () => {
