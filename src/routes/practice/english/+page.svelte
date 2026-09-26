@@ -193,6 +193,7 @@
 				<p class="instructions">{isFa ? 'متن آماده‌ای در کار نیست و جواب درست یا غلط هم وجود ندارد. با کلمات خودت حرف بزن و خودت تصمیم بگیر. سعی کن با جمله‌های کامل جواب بدهی؛ جیمی سؤال‌های بیشتری از تو می‌پرسد.' : 'There’s no script and no right answer. Say things in your own words and make your own decisions. Try to answer in full sentences: Jamie will ask you follow-up questions.'}</p>
 				{#if data.completed || saved}<p class="completed-label">✓ {isFa ? 'این درس را قبلاً تمام کرده‌ای. دوباره تمرین کن.' : 'You’ve completed this lesson. You can practise again.'}</p>{/if}
 				<button class="primary start" disabled={!ready} onclick={() => start(data.completed?.variant === 'lift' ? 'street' : 'lift')}>{data.completed || saved ? (isFa ? 'تمرین دوباره' : 'Practise again') : (isFa ? 'شروع گفت‌وگو' : 'Start the conversation')} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
+				<p class="other-module"><a href="/practice/english/retell">{isFa ? 'یا تمرین «گوش بده و بازگو کن» را امتحان کن ←' : 'Or try Listen & retell: hear a short piece, then tell it in your own words →'}</a></p>
 			</div>
 			<aside class="briefing" aria-label={isFa ? 'اطلاعات مأموریت' : 'Your mission brief'}>
 				<div class="hotel-art" aria-hidden="true"><div class="moon"></div><div class="hotel"><span>WILLOW</span><div class="windows">▦ ▦ ▦<br />▦ ▦ ▦<br />▦ ▦ ▦</div><div class="door"></div></div></div>
@@ -359,6 +360,8 @@
 	.correction p + p { color: var(--ink-soft); margin-top: 8px; }
 	.correction .said { color: var(--ink-soft); }
 	.result-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 16px; margin-top: 24px; }
+	.other-module { margin-top: 18px; font-size: .9rem; }
+	.other-module a { color: var(--accent-deep); }
 	.save-status, .completed-label { color: var(--accent-deep); margin-block: 16px; }
 	.error { color: var(--miss); margin-bottom: 16px; }
 	@media (max-width: 960px) { .welcome { gap: 28px; } .session-grid { grid-template-columns: minmax(0, 1fr) 230px; gap: 20px; } }

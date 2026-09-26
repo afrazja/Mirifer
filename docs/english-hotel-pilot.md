@@ -1,4 +1,4 @@
-# English lesson 1: A quieter room
+# English pilot: A quieter room, and Listen & retell
 
 Entry: choose English at `/languages`, then `/practice/english`. English has a single experimental lesson, not a full beginner curriculum. German and the public landing pages remain unchanged.
 
@@ -20,10 +20,35 @@ Jamie's lines play automatically when voice is on, and each has a replay button.
 
 The Record answer button uses browser English speech recognition to fill the answer box; the learner reviews the transcript and sends it. A separate optional practice recorder captures at most 45 seconds for local playback only. Mirifer never uploads, scores or persists raw audio.
 
+## Listen & retell
+
+`/practice/english/retell` (linked from the hotel lesson's intro) offers short pieces in `src/lib/practice/retell.ts`. Each has a level, the text and 4–7 authored key points. The flow:
+1. The learner listens, up to twice. Pausing doesn't use up a play. The piece is narrated by OpenAI `gpt-4o-mini-tts` through `/api/english/voice?piece=<id>` with a narrator direction, and cached like Jamie's lines.
+2. They can show the text; the result is then marked "with text". If the audio fails, the text is the way through.
+3. They retell by recording with `MediaRecorder` at 32 kbps.
+
+Speaking time has no minimum. Each piece has a maximum, shown on the list, on the piece and while recording, and recording stops automatically at it (`speakLimit`):
+- 1:30 when the listening is up to 2 minutes;
+- 2:00 for anything longer, however long the listening.
+
+`POST /api/english/retell` handles the feedback step:
+- It sends the recording to OpenAI `gpt-4o-mini-transcribe` (or `OPENAI_TRANSCRIBE_MODEL`) and discards it.
+- It then asks the provider chain for:
+  - the key points covered;
+  - up to 4 contradictions of the piece;
+  - 2–4 of the learner's sentences said more naturally (they must quote the transcript);
+  - short English/Persian feedback.
+- The response includes speaking time, word count and words per minute.
+- Only the best score per piece is stored, in `user_metadata.english_retell_v1`: points, total, whether the text was shown, and a timestamp. The transcript is never stored.
+- It counts as one request against the daily AI allowance and needs `OPENAI_API_KEY`.
+
+The results screen shows the key points (covered or missed), any contradictions, the natural-phrasing suggestions with Listen buttons, the transcript, and the full text.
+
 ## Data and cost boundaries
 
 - **Refresh/resume.** The conversation, goals, goal proof, corrections and voice signatures are kept in account-scoped `sessionStorage` for the current tab. They are removed when completion saves successfully.
 - **Completion.** The server requires a verified Supabase user, the active English course, and a valid proof covering all four goals. Only the bounded `user_metadata.english_hotel_v1` value is written: timestamp, variant, number of replies and average words per reply. Completions saved by the earlier guided version (with `hints`) still read correctly. No learner text is submitted with completion.
+- **Listen & retell cost.** About $0.003 of transcription per minute spoken, one chain call for feedback, and a one-off narration per piece and voice (cached).
 - **Tracker.** The existing conversation and answer events are used, with allowlisted `course: en` and `scenario: hotel-quiet-room-v1`. `count` on a submitted answer is its word count. `correct` means no correction was suggested; it is not a grade. Raw text and recordings are excluded.
 - **AI.**
   - Each learner turn is one provider call, carrying the conversation (replies up to 400 characters) and the scene.
