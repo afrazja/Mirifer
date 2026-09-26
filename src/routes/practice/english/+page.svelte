@@ -9,7 +9,7 @@
 	import { startHotel, replyToHotel, applyHotelChoice, isHotelAiEligible, hotelChoices, stageHelp, STAGES, HOTEL_ID, type Stage, type DisplayText, type Variant } from '$lib/practice/hotel';
 	import { getLanguage, setLanguage, loadPracticeDraft, savePracticeDraft, clearPracticeDraft } from '$services/data-layer';
 	import { trackEvent } from '$services/analytics';
-	import { playAudioPromise, stopAllAudio, ENGLISH_VOICES, type TTSVoice } from '$services/tts';
+	import { playAudioPromise, playAudioUrl, stopAllAudio, ENGLISH_VOICES, type TTSVoice } from '$services/tts';
 
 	let { data, form }: PageProps = $props();
 	let language = $state<'en' | 'fa'>('en');
@@ -33,11 +33,17 @@
 	const stepIndex = $derived(complete ? 6 : STAGES.indexOf(scene.stage));
 	const payload = $derived(JSON.stringify({ variant: scene.variant, trail: scene.trail, hints: hints.length }));
 	function stopReceptionVoice() { stopAllAudio(); }
-	/** Natural Microsoft voices through /proxy/tts; falls back to the browser voice on failure. */
-	function speakReception(line: string) {
+	/**
+	 * Jamie's lines are pre-written, so they are voiced expressively by OpenAI
+	 * through /api/english/voice (cached after the first play). If that fails,
+	 * the free Microsoft voice through /proxy/tts takes over.
+	 */
+	async function speakReception(line: string) {
 		if (!voiceAvailable || !line) return;
 		stopReceptionVoice(); voiceMessage = '';
-		void playAudioPromise(line, 1, 'en-US', undefined, jamieVoice);
+		const voice = jamieVoice;
+		const url = `/api/english/voice?v=1&voice=${voice}&text=${encodeURIComponent(line)}`;
+		if (!(await playAudioUrl(url))) void playAudioPromise(line, 1, 'en-US', undefined, voice);
 	}
 	function toggleReceptionVoice() {
 		voiceOn = !voiceOn;

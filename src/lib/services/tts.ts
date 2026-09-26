@@ -283,6 +283,47 @@ function playWebAudio(
 }
 
 /**
+ * Play a ready-made audio URL (e.g. an expressive, pre-voiced lesson line)
+ * through the same single player, so stopAllAudio() still stops it.
+ * Resolves true when it played to the end, false if it could not load or
+ * play, so the caller can fall back to the ordinary voice. The load timeout
+ * is generous: the first play of a line may be generated on demand.
+ */
+export function playAudioUrl(url: string, loadTimeoutMs = 12_000): Promise<boolean> {
+	const myGen = ttsGeneration;
+	if (currentAudio) {
+		currentAudio.pause();
+		currentAudio = null;
+	}
+	return new Promise((resolve) => {
+		if (myGen !== ttsGeneration) return resolve(true); // cancelled: don't fall back
+		let done = false;
+		const end = (ok: boolean) => {
+			if (done) return;
+			done = true;
+			clearTimeout(timeout);
+			if (!ok && currentAudio === audio) {
+				audio.pause();
+				currentAudio = null;
+			}
+			// Cancelled mid-load counts as handled, not as a failure.
+			resolve(ok || myGen !== ttsGeneration);
+		};
+		const audio = new Audio(url);
+		currentAudio = audio;
+		ttsIsPlaying.set(true);
+		const timeout = setTimeout(() => end(false), loadTimeoutMs);
+		audio.onplay = () => clearTimeout(timeout);
+		audio.onended = () => {
+			ttsIsPlaying.set(false);
+			end(true);
+		};
+		audio.onerror = () => end(false);
+		audio.play().catch(() => end(false));
+	});
+}
+
+/**
  * Play audio with the TTS routing strategy.
  * Returns a promise that resolves when playback finishes.
  *
