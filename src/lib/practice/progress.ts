@@ -16,3 +16,12 @@ export const HotelSubmissionSchema = z.object({
 	averageWords: z.number().min(0).max(100)
 }).strict();
 export type HotelCompletion = z.infer<typeof HotelCompletionSchema>;
+
+/** Best Listen & retell result per piece, keyed by piece id. No transcript or audio is kept. */
+export const RetellRecordSchema = z.record(z.string().max(40), z.object({
+	completedAt: z.string().datetime(),
+	points: z.number().int().min(0).max(20),
+	total: z.number().int().min(1).max(20),
+	textShown: z.boolean()
+}));
+export type RetellRecord = z.infer<typeof RetellRecordSchema>;

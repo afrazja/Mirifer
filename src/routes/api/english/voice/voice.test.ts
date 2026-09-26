@@ -64,4 +64,15 @@ describe('/api/english/voice', () => {
 		expect((await call({ text: line, voice: 'a', sig: signJamieLine(line)! })).status).toBe(200);
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 	});
+
+	it('narrates a Listen & retell piece by id with a narrator direction', async () => {
+		env.OPENAI_API_KEY = 'k';
+		fetchMock.mockResolvedValueOnce(new Response(new Uint8Array([1]), { status: 200 }));
+		const res = await GET({ url: new URL('http://localhost/api/english/voice?piece=lost-phone&voice=d') } as any);
+		expect(res.status).toBe(200);
+		const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+		expect(body).toMatchObject({ voice: 'nova', input: expect.stringContaining('Maria took a taxi') });
+		expect(body.instructions).toContain('narrat');
+		expect((await GET({ url: new URL('http://localhost/api/english/voice?piece=nope&voice=d') } as any)).status).toBe(400);
+	});
 });
