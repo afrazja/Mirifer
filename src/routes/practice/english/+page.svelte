@@ -19,6 +19,10 @@
 	let started = $state(false), ready = $state(false), saving = $state(false), saved = $state(false), checking = $state(false);
 	let draft = $state(''), pending = $state(''), feedback = $state<DisplayText | null>(null);
 	let latestCorrection = $state<Correction | null>(null);
+	/** End-of-conversation review: the learner's own sentences, said more naturally. */
+	type Upgrade = { original: string; better: string; why: DisplayText };
+	let upgrades = $state<Upgrade[]>([]);
+	let review = $state<'idle' | 'loading' | 'ready' | 'failed' | 'limit'>('idle');
 	/** Signatures that let /api/english/voice speak Jamie's AI-written lines. */
 	let voiceSigs = $state<Record<string, string>>({});
 	let voiceAvailable = $state(false), voiceOn = $state(true), voiceMessage = $state('');
@@ -64,7 +68,7 @@
 		void trackEvent(name, { metadata: { mode: 'conversation', course: 'en', scenario: HOTEL_ID, ...metadata } });
 	}
 	function remember() {
-		savePracticeDraft(data.learnerId, { variant: scene.variant, turns: scene.turns, goals: scene.goals, proof: scene.proof, corrections: scene.corrections, voice: voiceSigs, done: scene.done });
+		savePracticeDraft(data.learnerId, { variant: scene.variant, turns: scene.turns, goals: scene.goals, proof: scene.proof, corrections: scene.corrections, voice: voiceSigs, done: scene.done, upgrades: review === 'ready' ? upgrades : undefined });
 	}
 	onMount(() => {
 		voiceAvailable = true;
@@ -74,13 +78,15 @@
 		if (previous) {
 			scene = { variant: previous.variant, turns: previous.turns, goals: previous.goals as GoalId[], proof: previous.proof, corrections: previous.corrections, done: previous.done ?? false };
 			voiceSigs = previous.voice ?? {}; started = true;
+			if (previous.upgrades) { upgrades = previous.upgrades; review = 'ready'; }
+			else if (scene.done) void loadReview();
 		}
 		ready = true;
 		return () => { stopReceptionVoice(); };
 	});
 	async function changeDisplay(value: 'en' | 'fa') { language = value; await setLanguage(value); }
 	async function start(variant: Variant = 'lift') {
-		generation++; checking = false; pending = ''; stopReceptionVoice(); pickJamieVoice(); scene = startHotel(variant); voiceSigs = {}; feedback = null; latestCorrection = null; draft = ''; voiceMessage = '';
+		generation++; checking = false; pending = ''; stopReceptionVoice(); pickJamieVoice(); scene = startHotel(variant); voiceSigs = {}; upgrades = []; review = 'idle'; feedback = null; latestCorrection = null; draft = ''; voiceMessage = '';
 		form = null; saved = false; started = true; remember();
 		event('conversation_started', { replay: !!data.completed });
 		await tick(); input?.focus();
@@ -122,12 +128,37 @@
 			await tick();
 			if (conversation) conversation.scrollTop = conversation.scrollHeight;
 			if (voiceOn) speakReception(result.reply);
-			if (complete) { event('conversation_completed', { count: replies.length }); saveForm?.requestSubmit(); }
+			if (complete) { event('conversation_completed', { count: replies.length }); saveForm?.requestSubmit(); void loadReview(); }
 			else input?.focus();
 		} catch {
 			if (current === generation) feedback = failure.unavailable;
 		} finally {
 			if (current === generation) { checking = false; pending = ''; }
+		}
+	}
+	async function loadReview() {
+		if (review === 'loading' || !scene.done || !scene.proof) return;
+		const current = generation;
+		review = 'loading';
+		try {
+			const response = await fetch('/api/english/review', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ variant: scene.variant, turns: scene.turns, goals: scene.goals, proof: scene.proof }) });
+			if (current !== generation) return;
+			if (!response.ok) { review = response.status === 429 ? 'limit' : 'failed'; return; }
+			const result = await response.json();
+			if (current !== generation) return;
+			const items: unknown[] = Array.isArray(result.upgrades) ? result.upgrades : [];
+			const valid = items.filter((item): item is Upgrade & { voiceSig?: unknown } => {
+				const value = item as Record<string, any>;
+				return typeof value?.original === 'string' && typeof value.better === 'string' && typeof value.why?.en === 'string' && typeof value.why?.fa === 'string';
+			});
+			const sigs = { ...voiceSigs };
+			for (const item of valid) if (typeof item.voiceSig === 'string') sigs[item.better] = item.voiceSig;
+			voiceSigs = sigs;
+			upgrades = valid.map(({ original, better, why }) => ({ original, better, why }));
+			review = 'ready';
+			if (!saved) remember();
+		} catch {
+			if (current === generation) review = 'failed';
 		}
 	}
 	function returnToIntro() {
@@ -179,6 +210,15 @@
 			<p class="lead">{isFa ? 'مشکل را توضیح دادی، راه‌حلی انتخاب کردی، هزینه را پرسیدی و آن را تأیید کردی — با کلمات خودت.' : 'You explained the problem, chose a solution, checked the cost and confirmed it, in your own words.'}</p>
 			<div class="result-stats"><span><strong>{replies.length}</strong> {isFa ? 'پاسخ' : replies.length === 1 ? 'reply' : 'replies'}</span><span><strong>{averageWords}</strong> {isFa ? 'کلمه در هر پاسخ (میانگین)' : 'words per reply on average'}</span></div>
 			<p class="small-note">{isFa ? 'این نتیجه نشان می‌دهد که به هدف‌های گفت‌وگو رسیدی؛ نمرهٔ زبان یا تلفظ نیست.' : 'This records that you reached the goals of the conversation, rather than a language or pronunciation score.'}</p>
+			<div class="takeaways upgrades" aria-live="polite"><h2>{isFa ? 'طبیعی‌تر بگو' : 'Say it more naturally'}</h2>
+				{#if review === 'loading'}<p class="small-note">{isFa ? 'در حال بررسی جمله‌هایت…' : 'Looking back at what you said…'}</p>
+				{:else if review === 'ready' && upgrades.length}
+					<p class="small-note">{isFa ? 'جمله‌های خودت، همان‌طور که یک انگلیسی‌زبان در این موقعیت می‌گوید. بلند تکرارشان کن.' : 'Your own sentences, the way a fluent speaker might say them here. Try saying them out loud.'}</p>
+					{#each upgrades as upgrade}<div class="correction"><p lang="en" dir="ltr"><span class="said">{upgrade.original}</span> <span aria-hidden="true">→</span> <strong>{upgrade.better}</strong></p><p>{text(upgrade.why)}</p>{#if voiceAvailable}<button type="button" class="listen-line" onclick={() => speakReception(upgrade.better)}>{isFa ? 'شنیدن' : 'Listen'}</button>{/if}</div>{/each}
+				{:else if review === 'ready'}<p class="small-note">{isFa ? 'جمله‌هایت همین حالا هم طبیعی بودند. آفرین!' : 'Your sentences already sounded natural. Well done!'}</p>
+				{:else if review === 'limit'}<p class="small-note">{isFa ? 'سهمیهٔ امروز هوش مصنوعی تمام شده است؛ فردا دوباره امتحان کن.' : 'Today’s AI allowance is used up, so the review isn’t available until tomorrow.'}</p>
+				{:else if review === 'failed'}<p class="small-note">{isFa ? 'بررسی جمله‌ها انجام نشد.' : 'The review couldn’t load.'} <button type="button" class="text-button" onclick={() => void loadReview()}>{isFa ? 'دوباره تلاش کن' : 'Try again'}</button></p>{/if}
+			</div>
 			{#if scene.corrections.length}
 				<div class="takeaways"><h2>{isFa ? 'برای دفعهٔ بعد' : 'For next time'}</h2>
 					{#each scene.corrections as correction}<div class="correction"><p lang="en" dir="ltr">{correction.original} <span aria-hidden="true">→</span> <strong>{correction.improved}</strong></p><p>{text(correction.note)}</p></div>{/each}
@@ -317,6 +357,7 @@
 	.correction + .correction { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 14px; }
 	.correction p { font-size: .9rem; }
 	.correction p + p { color: var(--ink-soft); margin-top: 8px; }
+	.correction .said { color: var(--ink-soft); }
 	.result-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 16px; margin-top: 24px; }
 	.save-status, .completed-label { color: var(--accent-deep); margin-block: 16px; }
 	.error { color: var(--miss); margin-bottom: 16px; }

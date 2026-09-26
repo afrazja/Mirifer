@@ -10,7 +10,9 @@ const Draft = z.object({
 	corrections: z.array(z.object({ original: z.string().max(MAX_REPLY), improved: z.string().max(MAX_REPLY + 100), note: z.object(Text) })).max(MAX_TURNS),
 	/** Voice signatures for Jamie's AI-written lines, keyed by line. */
 	voice: z.record(z.string().max(400), z.string().max(100)).optional(),
-	done: z.boolean().optional()
+	done: z.boolean().optional(),
+	/** The end-of-conversation review, once loaded. */
+	upgrades: z.array(z.object({ original: z.string().max(MAX_REPLY), better: z.string().max(300), why: z.object(Text) })).max(5).optional()
 });
 export type PracticeDraft = z.infer<typeof Draft>;
 const key = (userId: string) => `mirifer_practice:${encodeURIComponent(userId)}:en:hotel-v2`;
