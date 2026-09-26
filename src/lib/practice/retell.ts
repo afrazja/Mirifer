@@ -21,18 +21,25 @@ export interface RetellPiece {
 	keyPoints: string[];
 }
 
-/** Rough listening time: the narration is a little slower than conversation. */
-export function listenSeconds(piece: Pick<RetellPiece, 'text'>): number {
+/**
+ * The narration comes out at about 185 words a minute, too fast for
+ * learners, so the browser slows playback (pitch is preserved).
+ */
+export const PLAYBACK_RATE: Record<RetellPiece['level'], number> = { A2: 0.85, B1: 0.9, B2: 1 };
+const NARRATION_WORDS_PER_SECOND = 3.1;
+
+/** Listening time at the piece's playback rate. */
+export function listenSeconds(piece: Pick<RetellPiece, 'text' | 'level'>): number {
 	const words = piece.text.trim().split(/\s+/).length;
-	return Math.round(words / 2.3);
+	return Math.round(words / (NARRATION_WORDS_PER_SECOND * PLAYBACK_RATE[piece.level]));
 }
 
 /**
  * The most a learner may speak for a piece: 90 seconds for short listening
- * (up to 2 minutes), 2 minutes for anything longer, however long it is.
+ * (up to 1:30), 2 minutes for anything longer, however long it is.
  */
-export function speakLimit(piece: Pick<RetellPiece, 'text'>): number {
-	return listenSeconds(piece) <= 120 ? 90 : 120;
+export function speakLimit(piece: Pick<RetellPiece, 'text' | 'level'>): number {
+	return listenSeconds(piece) <= 90 ? 90 : 120;
 }
 
 /** Plays allowed before retelling. */
