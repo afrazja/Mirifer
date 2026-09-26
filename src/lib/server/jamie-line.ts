@@ -15,23 +15,33 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { env } from '$env/dynamic/private';
 import { GOAL_IDS, hotelFacts, type GoalId, type Variant } from '$lib/practice/hotel';
 
-export const MAX_JAMIE_WORDS = 45;
-const MAX_JAMIE_CHARS = 320;
+export const MAX_JAMIE_WORDS = 60;
+const MAX_JAMIE_CHARS = 420;
 
 const plain = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 
-/** Returns the cleaned line if it is safe to show, or null to use a fallback. */
-export function checkJamieLine(value: unknown, variant: Variant, previous?: string): string | null {
-	if (typeof value !== 'string') return null;
+/**
+ * Why a line can't be used, or null if it's fine. Room numbers must come from
+ * the fact sheet; small numbers (floors, times, minutes) are allowed.
+ */
+export function jamieLineProblem(value: unknown, variant: Variant, previous?: string): string | null {
+	if (typeof value !== 'string') return 'it was not text';
 	const line = value.replace(/\s+/g, ' ').trim();
-	if (line.length < 2 || line.length > MAX_JAMIE_CHARS) return null;
-	if (line.split(' ').length > MAX_JAMIE_WORDS) return null;
-	if (/[*#<>{}[\]_`|\\$€£¥%]/.test(line)) return null;
-	if (/\b(?:dollars?|euros?|pounds?|cents?)\b/i.test(line)) return null;
-	const allowed = new Set(hotelFacts(variant).match(/\d+/g));
-	for (const number of line.match(/\d+/g) ?? []) if (!allowed.has(number)) return null;
-	if (previous && plain(previous) === plain(line)) return null;
-	return line;
+	if (line.length < 2) return 'it was empty';
+	if (line.length > MAX_JAMIE_CHARS || line.split(' ').length > MAX_JAMIE_WORDS) return `it was too long (keep it under ${MAX_JAMIE_WORDS - 20} words)`;
+	if (/[*#<>{}[\]_`|\\]/.test(line)) return 'it used formatting characters';
+	if (/[$€£¥%]|\b(?:dollars?|euros?|pounds?|cents?)\b/i.test(line)) return 'it mentioned a price; tonight there is no charge at all';
+	const known = new Set(hotelFacts(variant).match(/\d+/g));
+	for (const number of line.match(/\d+/g) ?? []) {
+		if (!known.has(number) && Number(number) > 24) return `it mentioned ${number}, which is not on the fact sheet`;
+	}
+	if (previous && plain(previous) === plain(line)) return 'it repeated your previous line';
+	return null;
+}
+
+/** Returns the cleaned line if it is safe to show, or null. */
+export function checkJamieLine(value: unknown, variant: Variant, previous?: string): string | null {
+	return jamieLineProblem(value, variant, previous) ? null : (value as string).replace(/\s+/g, ' ').trim();
 }
 
 function sign(purpose: string, data: string): string | null {

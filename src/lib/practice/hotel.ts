@@ -18,11 +18,11 @@ export const GOALS: { id: GoalId; label: DisplayText; meaning: string }[] = [
 	{ id: 'problem', label: { en: 'Explain what’s wrong and how it affects you.', fa: 'توضیح بده چه مشکلی هست و چه اثری روی تو دارد.' },
 		meaning: 'the guest has described the problem with their room in their own words' },
 	{ id: 'solution', label: { en: 'Agree on a solution you’re happy with.', fa: 'روی راه‌حلی که از آن راضی هستی توافق کن.' },
-		meaning: 'the guest has chosen what to do: a particular room, or another option from the fact sheet' },
+		meaning: 'the guest has clearly decided what they want, in their own words: a particular room, or another option from the fact sheet. Asking what the options are, asking to hear or compare them, or asking a question about a room is NOT a decision' },
 	{ id: 'cost', label: { en: 'Find out whether it costs anything.', fa: 'بپرس آیا هزینه‌ای دارد.' },
-		meaning: 'the guest has asked about the price or an extra charge, and Jamie has answered' },
+		meaning: 'the guest has asked about the price or an extra charge, or talked about it, and knows the answer' },
 	{ id: 'confirm', label: { en: 'Confirm the arrangement.', fa: 'هماهنگی نهایی را تأیید کن.' },
-		meaning: 'the guest has clearly confirmed the arrangement, knowing what it involves' }
+		meaning: 'after deciding, the guest has clearly said yes to Jamie arranging it' }
 ];
 export const GOAL_IDS = GOALS.map(goal => goal.id);
 

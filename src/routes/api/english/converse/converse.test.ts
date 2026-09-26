@@ -68,13 +68,38 @@ describe('/api/english/converse', () => {
 		expect(body).toMatchObject({ done: true, goals: GOAL_IDS });
 	});
 
-	it('replaces a line that invents a room or price, or repeats itself, with a prepared one', async () => {
+	it('asks once for a rewrite when a line invents a room or price, or repeats itself', async () => {
 		env.OPENAI_API_KEY = 'o';
-		for (const reply of ['Room 640 is free too. Would you like it?', 'Room 512 is only $20 more. Shall I book it?', 'It costs 30 euros. Is that OK?', GREETING]) {
-			fetchMock.mockResolvedValueOnce(openAi({ reply }));
+		const good = 'I understand. Room 310 is on the 3rd floor by the lift, and room 512 is on the 5th floor, very quiet. Which sounds better to you?';
+		for (const [bad, reason] of [['Room 640 is free too. Would you like it?', '640'], ['Room 512 is only $20 more. Shall I book it?', 'price'], ['It costs 30 euros. Is that OK?', 'price'], [GREETING, 'repeated']]) {
+			fetchMock.mockReset();
+			fetchMock.mockResolvedValueOnce(openAi({ reply: bad })).mockResolvedValueOnce(openAi({ reply: good }));
 			const body = await (await POST(fixture().event)).json();
-			expect(body.reply).toBe(FALLBACK_LINES.problem);
+			expect(body.reply).toBe(good);
+			expect(JSON.stringify(fetchMock.mock.calls[1][1].body)).toContain(reason);
 		}
+	});
+
+	it('uses a prepared line only when the rewrite fails too', async () => {
+		env.OPENAI_API_KEY = 'o';
+		fetchMock.mockImplementation(() => Promise.resolve(openAi({ reply: 'Room 640 is free too. Would you like it?' })));
+		const body = await (await POST(fixture().event)).json();
+		expect(body.reply).toBe(FALLBACK_LINES.problem);
+		expect(fetchMock).toHaveBeenCalledTimes(2);
+	});
+
+	it('allows floors, times and fact-sheet rooms', async () => {
+		env.OPENAI_API_KEY = 'o';
+		const reply = 'Room 512 is on the 5th floor, and a porter can help in 10 minutes. Breakfast is from 7 to 10. What would you like to do?';
+		fetchMock.mockResolvedValueOnce(openAi({ reply }));
+		expect((await (await POST(fixture().event)).json()).reply).toBe(reply);
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+	});
+
+	it('does not count a confirmation before the guest has decided', async () => {
+		env.OPENAI_API_KEY = 'o';
+		fetchMock.mockResolvedValueOnce(openAi({ goalsMet: ['problem', 'confirm'] }));
+		expect((await (await POST(fixture().event)).json()).goals).toEqual(['problem']);
 	});
 
 	it('requires an English account and enforces the daily limit before calling AI', async () => {
