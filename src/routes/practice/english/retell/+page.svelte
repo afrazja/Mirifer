@@ -3,7 +3,7 @@
 	import type { PageProps } from './$types';
 	import AppHeader from '$lib/components/AppHeader.svelte';
 	import CourseSwitcher from '$lib/components/CourseSwitcher.svelte';
-	import { RETELL_PIECES, MAX_LISTENS, formatDuration, listenSeconds, speakLimit, type RetellPiece } from '$lib/practice/retell';
+	import { RETELL_PIECES, MAX_LISTENS, PLAYBACK_RATE, formatDuration, listenSeconds, speakLimit, type RetellPiece } from '$lib/practice/retell';
 	import type { DisplayText } from '$lib/practice/hotel';
 	import type { RetellRecord } from '$lib/practice/progress';
 	import { getLanguage, setLanguage } from '$services/data-layer';
@@ -77,6 +77,7 @@
 		stopAllAudio();
 		if (!audio) {
 			audio = new Audio(`/api/english/voice?v=1&voice=${voice}&piece=${piece.id}`);
+			audio.defaultPlaybackRate = audio.playbackRate = PLAYBACK_RATE[piece.level];
 			audio.onplay = () => { playing = true; loadingAudio = false; };
 			audio.onpause = () => { playing = false; };
 			audio.onended = () => { playing = false; progress = 1; };
@@ -84,6 +85,7 @@
 			audio.onerror = () => { loadingAudio = false; playing = false; audioFailed = true; };
 			loadingAudio = true;
 		} else audio.currentTime = 0;
+		audio.playbackRate = PLAYBACK_RATE[piece.level];
 		listens++;
 		audio.play().catch(() => { loadingAudio = false; audioFailed = true; });
 	}
@@ -194,7 +196,7 @@
 				<li>{isFa ? 'هر چه یادت مانده را با کلمات خودت بگو.' : 'Retell what you remember, in your own words.'}</li>
 				<li>{isFa ? 'ببین کدام نکته‌ها را گفتی، و چطور می‌شد طبیعی‌تر گفت. بعد متن را بخوان.' : 'See which points you covered and how to say things more naturally, then read the text.'}</li>
 			</ol>
-			<p class="rule"><strong>{isFa ? 'زمان صحبت:' : 'Speaking time:'}</strong> {isFa ? 'حداقلی وجود ندارد؛ هر قدر می‌خواهی صحبت کن. هر متن یک سقف دارد که قبل از شروع می‌بینی: متن‌های کوتاه تا ۱:۳۰ و متن‌های بلندتر حداکثر ۲:۰۰. ضبط در سقف زمان خودکار متوقف می‌شود.' : 'There’s no minimum: speak for as long as you like. Each piece has a maximum, shown before you start: up to 1:30 for short pieces, and never more than 2:00, however long the listening. Recording stops automatically at the limit.'}</p>
+			<p class="rule"><strong>{isFa ? 'زمان صحبت:' : 'Speaking time:'}</strong> {isFa ? 'حداقلی وجود ندارد؛ هر قدر می‌خواهی صحبت کن. هر متن یک سقف دارد که قبل از شروع می‌بینی: متن‌های کوتاه تا ۱:۳۰ و متن‌های بلندتر حداکثر ۲:۰۰. ضبط در سقف زمان خودکار متوقف می‌شود.' : 'There’s no minimum: speak for as long as you like. Each piece has a maximum, shown before you start: up to 1:30 when the listening is short, and never more than 2:00, however long the listening. Recording stops automatically at the limit.'}</p>
 		</section>
 		<ul class="pieces">
 			{#each RETELL_PIECES as item}
