@@ -9,6 +9,7 @@
 	import { startHotel, replyToHotel, applyHotelChoice, isHotelAiEligible, hotelChoices, stageHelp, STAGES, HOTEL_ID, type Stage, type DisplayText, type Variant } from '$lib/practice/hotel';
 	import { getLanguage, setLanguage, loadPracticeDraft, savePracticeDraft, clearPracticeDraft } from '$services/data-layer';
 	import { trackEvent } from '$services/analytics';
+	import { playAudioPromise, stopAllAudio, ENGLISH_VOICES, type TTSVoice } from '$services/tts';
 
 	let { data, form }: PageProps = $props();
 	let language = $state<'en' | 'fa'>('en');
@@ -20,7 +21,10 @@
 	let latestCorrection = $state<{ improved: string; note: DisplayText } | null>(null);
 	let replies = $state<string[]>([]), resolved = $state<(string | null)[]>([]), hints = $state<Stage[]>([]);
 	let voiceAvailable = $state(false), voiceOn = $state(true), voiceMessage = $state('');
-	let englishVoice: SpeechSynthesisVoice | null = null;
+	// Jamie's voice changes from one run to the next (two men, two women), so a
+	// replay does not sound identical.
+	let jamieVoice = $state<TTSVoice>('b');
+	const pickJamieVoice = () => (jamieVoice = ENGLISH_VOICES[Math.floor(Math.random() * ENGLISH_VOICES.length)].id);
 	let generation = 0;
 	let input: HTMLTextAreaElement | undefined = $state();
 	let conversation: HTMLDivElement | undefined = $state();
@@ -28,23 +32,12 @@
 	const complete = $derived(scene.stage === 'complete');
 	const stepIndex = $derived(complete ? 6 : STAGES.indexOf(scene.stage));
 	const payload = $derived(JSON.stringify({ variant: scene.variant, trail: scene.trail, hints: hints.length }));
-	function refreshVoices() {
-		voiceAvailable = !!window.speechSynthesis;
-		const english = window.speechSynthesis?.getVoices().filter(voice => voice.lang.toLowerCase().startsWith('en')) ?? [];
-		englishVoice = english.find(voice => voice.localService) ?? english[0] ?? null;
-	}
-	function stopReceptionVoice() { window.speechSynthesis?.cancel(); }
+	function stopReceptionVoice() { stopAllAudio(); }
+	/** Natural Microsoft voices through /proxy/tts; falls back to the browser voice on failure. */
 	function speakReception(line: string) {
 		if (!voiceAvailable || !line) return;
 		stopReceptionVoice(); voiceMessage = '';
-		const utterance = new SpeechSynthesisUtterance(line);
-		if (englishVoice) utterance.voice = englishVoice;
-		utterance.lang = englishVoice?.lang ?? 'en-US'; utterance.rate = .88;
-		utterance.onerror = event => {
-			if (event.error === 'interrupted' || event.error === 'canceled') return;
-			voiceMessage = isFa ? 'صدای پذیرش پخش نشد. می‌توانی متن را بخوانی و ادامه بدهی.' : 'Reception audio could not play. You can read the line and continue.';
-		};
-		window.speechSynthesis.speak(utterance);
+		void playAudioPromise(line, 1, 'en-US', undefined, jamieVoice);
 	}
 	function toggleReceptionVoice() {
 		voiceOn = !voiceOn;
@@ -60,8 +53,8 @@
 	}
 	function remember() { savePracticeDraft(data.learnerId, scene.variant, replies, hints, resolved); }
 	onMount(() => {
-		refreshVoices();
-		window.speechSynthesis?.addEventListener('voiceschanged', refreshVoices);
+		voiceAvailable = true;
+		pickJamieVoice();
 		void getLanguage().then(value => { if (value === 'fa' || value === 'en') language = value; });
 		const previous = loadPracticeDraft(data.learnerId);
 		if (previous) {
@@ -70,11 +63,11 @@
 			replies = previous.replies; resolved = previous.replies.map((_, index) => previous.resolved?.[index] ?? null); hints = previous.hints; started = true;
 		}
 		ready = true;
-		return () => { stopReceptionVoice(); window.speechSynthesis?.removeEventListener('voiceschanged', refreshVoices); };
+		return () => { stopReceptionVoice(); };
 	});
 	async function changeDisplay(value: 'en' | 'fa') { language = value; await setLanguage(value); }
 	async function start(variant: Variant = 'lift') {
-		generation++; checking = false; stopReceptionVoice(); scene = startHotel(variant); replies = []; resolved = []; hints = []; feedback = null; latestCorrection = null; draft = ''; examples = false; voiceMessage = '';
+		generation++; checking = false; stopReceptionVoice(); pickJamieVoice(); scene = startHotel(variant); replies = []; resolved = []; hints = []; feedback = null; latestCorrection = null; draft = ''; examples = false; voiceMessage = '';
 		form = null; saved = false; started = true; remember();
 		event('conversation_started', { replay: !!data.completed });
 		await tick(); input?.focus();

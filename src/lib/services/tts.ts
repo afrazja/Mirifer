@@ -15,8 +15,20 @@ import { get, writable } from 'svelte/store';
 import { preferencesStore } from '$stores/preferences';
 import { appStore } from '$stores/app';
 
-/** Dialogue voice: 'a' = learner side (sent), 'b' = conversation partner (received). */
-export type TTSVoice = 'a' | 'b';
+/**
+ * Dialogue voice: 'a' = learner side (sent), 'b' = conversation partner
+ * (received). English has two more speakers, 'c' and 'd', so a scene can
+ * vary who talks; other languages map them to 'a' and 'b'.
+ */
+export type TTSVoice = 'a' | 'b' | 'c' | 'd';
+
+/** The English voices behind each slot (Microsoft neural voices via /proxy/tts). */
+export const ENGLISH_VOICES: { id: TTSVoice; name: string; gender: 'male' | 'female' }[] = [
+	{ id: 'a', name: 'Andrew', gender: 'male' },
+	{ id: 'b', name: 'Ava', gender: 'female' },
+	{ id: 'c', name: 'Brian', gender: 'male' },
+	{ id: 'd', name: 'Emma', gender: 'female' }
+];
 
 let currentAudio: HTMLAudioElement | null = null;
 let ttsGeneration = 0; // incremented on stop — lets in-flight calls know they're stale

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { stopAllAudio } from '$services/tts';
 
 	type SpeechResultItem = ArrayLike<{ transcript: string }> & { isFinal: boolean };
 	type SpeechResult = { results: ArrayLike<SpeechResultItem> };
@@ -33,7 +34,7 @@
 	function recordAnswer() {
 		if (listening) { recognition?.stop(); return; }
 		if (!Constructor || disabled) return;
-		window.speechSynthesis?.cancel();
+		stopAllAudio(); // don't record Jamie's voice
 		message = '';
 		const current = new Constructor();
 		let heardText = '', failed = false;
