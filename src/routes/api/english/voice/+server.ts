@@ -6,19 +6,22 @@
  * gpt-4o-mini-tts takes a plain-language direction for how to speak, which
  * is what a role-play needs.
  *
- * Only the lesson's own receptionist lines are accepted: any other text is
- * refused, so this endpoint cannot be used to run up the OpenAI bill. The
+ * Only the lesson's own receptionist lines are accepted, plus Jamie's
+ * AI-written replies carrying a server signature from /api/english/interpret.
+ * Any other text is refused, so this endpoint cannot be used to run up the
+ * OpenAI bill. The
  * audio for a given line never changes, so responses are cached for a year
  * by browsers and Vercel's CDN; a line is generated roughly once per CDN
  * region and voice, not once per learner.
  *
- * Usage: GET /api/english/voice?text=<authored line>&voice=a|b|c|d
+ * Usage: GET /api/english/voice?text=<line>&voice=a|b|c|d[&sig=<signature>]
  * 503 without OPENAI_API_KEY, 502 on a provider error: the client then falls
  * back to the free Edge voice, so the lesson never goes silent.
  */
 
 import type { RequestHandler } from './$types';
 import { env } from '$env/dynamic/private';
+import { verifyJamieLine } from '$lib/server/jamie-line';
 import { STAGES, hotelChoices, startHotel, type Variant } from '$lib/practice/hotel';
 
 const MODEL = env.OPENAI_TTS_MODEL || 'gpt-4o-mini-tts';
@@ -46,7 +49,8 @@ const CACHE = 'public, max-age=31536000, s-maxage=31536000, immutable';
 export const GET: RequestHandler = async ({ url }) => {
 	const text = url.searchParams.get('text') ?? '';
 	const voice = VOICES[url.searchParams.get('voice') ?? 'a'];
-	if (!voice || !ALLOWED.has(text)) {
+	const known = ALLOWED.has(text) || (text.length <= 300 && verifyJamieLine(text, url.searchParams.get('sig')));
+	if (!voice || !known) {
 		return new Response('Unknown line', { status: 400 });
 	}
 	if (!env.OPENAI_API_KEY) return new Response('Voice unavailable', { status: 503 });

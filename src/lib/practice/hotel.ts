@@ -89,12 +89,15 @@ const knownCorrections = [
 	{ from: 'is there a extra charge', to: 'Is there an extra charge?', note: { en: 'Use “an” before the vowel sound at the start of “extra”.', fa: 'قبل از صدای مصوت ابتدای «extra» از «an» استفاده کن.' } }
 ] as const;
 export interface HotelReply { state: HotelState; understood: boolean; feedback: DisplayText | null; }
-/** Applies only a choice authored for the current stage. Used after server-side AI classification. */
-export function applyHotelChoice(state: HotelState, id: string, input: string, correction?: { improved: string; note: DisplayText } | null): HotelReply {
+/**
+ * Applies only a choice authored for the current stage. Used after server-side AI classification.
+ * `jamieLine` replaces the authored reply for a 'related' turn only; the path is unchanged.
+ */
+export function applyHotelChoice(state: HotelState, id: string, input: string, correction?: { improved: string; note: DisplayText } | null, jamieLine?: string | null): HotelReply {
 	if (!input.trim() || input.length > 300) return { state, understood: false, feedback: null };
 	const matched = hotelChoices(state).find(option => option.id === id);
 	if (!matched) return { state, understood: false, feedback: null };
-	const turns: Turn[] = [...state.turns, { speaker: 'learner', text: input.trim() }, { speaker: state.stage === 'recall' ? 'coach' : 'reception', text: matched.reply }];
+	const turns: Turn[] = [...state.turns, { speaker: 'learner', text: input.trim() }, { speaker: state.stage === 'recall' ? 'coach' : 'reception', text: (matched.id === 'related' && jamieLine) || matched.reply }];
 	if (matched.next === 'recall') turns.push({ speaker: 'coach', text: 'Quick recall: at a different hotel, you are offered an upgrade. Ask whether it costs extra. Try without the examples first.' });
 	return { understood: true, feedback: correction?.note ?? null, state: {
 		...state, stage: matched.next, turns, trail: [...state.trail, matched.id],
