@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { completedHotelTrail } from '$lib/practice/hotel';
+import { GOAL_IDS } from '$lib/practice/hotel';
+import { provenGoals } from '$lib/server/jamie-line';
 import { HotelCompletionSchema, HotelSubmissionSchema } from '$lib/practice/progress';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -21,8 +22,10 @@ export const actions: Actions = {
 		let value: unknown;
 		try { value = JSON.parse(raw); } catch { return fail(400, { error: 'invalid' }); }
 		const result = HotelSubmissionSchema.safeParse(value);
-		if (!result.success || !completedHotelTrail(result.data.variant, result.data.trail)) return fail(400, { error: 'invalid' });
-		const completed = { completedAt: new Date().toISOString(), variant: result.data.variant, hints: result.data.hints };
+		if (!result.success) return fail(400, { error: 'invalid' });
+		const { variant, goals, proof, turns, averageWords } = result.data;
+		if (provenGoals(user.id, variant, goals, proof).length !== GOAL_IDS.length) return fail(400, { error: 'invalid' });
+		const completed = { completedAt: new Date().toISOString(), variant, turns, averageWords: Math.round(averageWords * 10) / 10 };
 		try {
 			const { error: saveError } = await locals.supabase.auth.updateUser({ data: { english_hotel_v1: completed } });
 			if (saveError) return fail(503, { error: 'save_failed' });

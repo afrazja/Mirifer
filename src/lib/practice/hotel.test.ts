@@ -1,134 +1,31 @@
 import { describe, it, expect } from 'vitest';
-import { startHotel, replyToHotel, applyHotelChoice, isHotelAiEligible, completedHotelTrail, hotelChoices, STAGES, type HotelState } from './hotel';
+import { GOAL_IDS, fallbackLine, hotelFacts, learnerTurns, startHotel, wordCount } from './hotel';
 
-function say(state: HotelState, input: string) {
-	const result = replyToHotel(state, input);
-	expect(result.understood, input).toBe(true);
-	return result.state;
-}
-describe('authored hotel conversation', () => {
-	it.each(['lift', 'street'] as const)('completes the %s scene with clarification, price, confirmation and independent recall', variant => {
-		let state = startHotel(variant);
-		for (const line of ['Excuse me, my room is too noisy!', 'I’m in room 204.', 'Is it quiet?', 'Could I have a quieter room, please?', 'Is there an extra charge?', 'How do I get there?', 'Yes, thank you.', 'How much does it cost?']) state = say(state, line);
-		expect(state.stage).toBe('complete');
-		expect(state.turns.some(turn => turn.text.includes(variant === 'lift' ? '310' : '318'))).toBe(true);
-		expect(completedHotelTrail(variant, state.trail)).toBe(true);
-		expect(completedHotelTrail(variant, state.trail.slice(0, -1))).toBe(false);
+describe('open hotel role-play', () => {
+	it('starts with Jamie’s greeting and no goals', () => {
+		const state = startHotel('street');
+		expect(state).toMatchObject({ variant: 'street', goals: [], proof: null, done: false });
+		expect(state.turns).toEqual([{ speaker: 'reception', text: expect.stringContaining('How can I help') }]);
 	});
-	it('keeps misunderstood, contradictory and out-of-context replies out of the success path', () => {
-		for (const input of ['My room is not noisy.', 'I do not want a quieter room.', 'It sounds like a nightclub in here.', 'yes', '<script>alert(1)</script>']) {
-			const state = startHotel(); const result = replyToHotel(state, input);
-			expect(result.state).toBe(state); expect(result.understood).toBe(false);
-			expect(result.feedback?.en).toContain('may still be good English');
-		}
-	});
-	it('offers targeted corrections without changing unrelated or already-correct English', () => {
-		let state = say(startHotel(), 'My room too noisy.');
-		expect(state.corrections[0].improved).toBe('My room is too noisy.');
-		state = say(state, '204'); state = say(state, 'I would like a quieter room');
-		state = say(state, 'How much it costs?');
-		expect(state.corrections[1].improved).toBe('How much does it cost?');
-		expect(replyToHotel(startHotel(), 'My room is very noisy.').state.corrections).toEqual([]);
-		expect(replyToHotel(startHotel(), 'My room too noisy and I do not want to move.').understood).toBe(false);
-	});
-	it('asks the learner to check a noisy offer and verify the price before accepting', () => {
-		let state = say(startHotel(), 'Can I change rooms?');
-		const wrongRoom = replyToHotel(state, '999'); expect(wrongRoom.state).toBe(state); expect(wrongRoom.feedback?.en).toContain('204');
-		state = say(state, 'room 204');
-		expect(replyToHotel(state, 'yes').feedback?.en).toContain('quieter option');
-		state = say(state, 'I need a quieter room');
-		expect(replyToHotel(state, 'yes').feedback?.en).toContain('costs extra');
-		state = say(state, 'Is it free?'); state = say(state, 'No, thank you.');
-		expect(state.stage).toBe('alternative');
-	});
-	it.each([['lift', '310'], ['street', '318']] as const)('offers two rooms and confirms the learner’s choice in the %s scene', (variant, noisyRoom) => {
-		let state = say(startHotel(variant), 'My room is too noisy.');
-		state = say(state, '204');
-		expect(state.turns.at(-1)?.text).toContain(`room ${noisyRoom}`);
-		expect(state.turns.at(-1)?.text).toContain('512');
-		state = say(state, `What about room ${noisyRoom}?`);
-		expect(state.stage).toBe('offer');
-		expect(state.turns.at(-1)?.text).toContain('may still be noisy');
-		state = say(state, 'Room 512, please.');
-		expect(state.turns.at(-1)?.text).toContain('Room 512, certainly');
-		state = say(state, 'Does it cost extra?');
-		expect(state.turns.at(-1)?.text).toContain('no extra charge');
-		state = say(state, 'Yes, thank you.');
-		expect(state.turns.at(-2)?.text).toContain('All arranged');
-	});
-	it('recognizes an explicit courtyard choice without treating a comparison question as a choice', () => {
-		let state = say(startHotel(), 'My room is too noisy.');
-		state = say(state, '204');
-		const chosen = say(state, "I'd really prefer the courtyard-facing option so I can actually sleep.");
-		expect(chosen.stage).toBe('alternative');
-		expect(chosen.trail.at(-1)).toBe('quieter');
-		expect(replyToHotel(state, 'Does the courtyard-facing option have a window?').understood).toBe(false);
-		expect(replyToHotel(state, 'I would prefer to know if room 512 has a window.').understood).toBe(false);
-		expect(replyToHotel(state, 'I do not want room 512.').understood).toBe(false);
-		expect(replyToHotel(state, 'I prefer room 310 rather than 512.').understood).toBe(false);
-	});
-	it('every displayed example works at its reachable stage', () => {
+	it('gives each variant its own noisy room, and both a no-charge quiet room', () => {
+		expect(hotelFacts('lift')).toContain('Room 310');
+		expect(hotelFacts('lift')).not.toContain('318');
+		expect(hotelFacts('street')).toContain('Room 318');
 		for (const variant of ['lift', 'street'] as const) {
-			let state = startHotel(variant);
-			while (state.stage !== 'complete') {
-				for (const option of hotelChoices(state)) expect(replyToHotel(state, option.text).understood).toBe(true);
-				state = say(state, hotelChoices(state)[0].text);
-			}
+			expect(hotelFacts(variant)).toContain('Room 512');
+			expect(hotelFacts(variant)).toContain('costs nothing extra');
 		}
 	});
-	it('rejects fabricated completion paths and oversized replies', () => {
-		expect(completedHotelTrail('lift', ['accept', 'recall-price'])).toBe(false);
-		expect(completedHotelTrail('lift', ['noise', 'room204', 'quieter', 'price', 'accept', 'recall-price', 'recall-price'])).toBe(false);
-		expect(replyToHotel(startHotel(), 'a'.repeat(301)).understood).toBe(false);
+	it('falls back to a line about the first goal still open', () => {
+		expect(fallbackLine([])).toContain('what’s wrong');
+		expect(fallbackLine(['problem'])).toContain('What would you like to do');
+		expect(fallbackLine(['problem', 'solution', 'confirm'])).toContain('cost');
+		expect(fallbackLine(GOAL_IDS)).toContain('All arranged');
 	});
-	it('lets AI select a current intent or acknowledge a relevant question without skipping goals', () => {
+	it('counts learner turns and words', () => {
 		const state = startHotel();
-		const accepted = applyHotelChoice(state, 'noise', 'The music kept me awake all night.');
-		expect(accepted.understood).toBe(true);
-		expect(accepted.state.stage).toBe('room');
-		expect(accepted.state.turns[1].text).toBe('The music kept me awake all night.');
-		const related = applyHotelChoice(accepted.state, 'related', 'Where is my key card?');
-		expect(related.understood).toBe(true);
-		expect(related.state.stage).toBe('room');
-		expect(related.state.turns.at(-1)?.text).toContain('room number');
-		expect(completedHotelTrail('lift', [...related.state.trail, 'quieter'])).toBe(false);
-		expect(applyHotelChoice(state, 'accept', 'yes').understood).toBe(false);
-		expect(isHotelAiEligible(state, 'My room is not noisy.')).toBe(false);
-		expect(isHotelAiEligible(accepted.state, '999')).toBe(false);
-	});
-});
-
-describe('dynamic Jamie lines', () => {
-	it('replaces only the related reply and keeps the authored path', () => {
-		const offer = replyToHotel(replyToHotel(startHotel('lift'), 'My room is too noisy.').state, '204').state;
-		const line = 'I understand. Room 512 is the quiet one. Which would you like?';
-		const result = applyHotelChoice(offer, 'related', 'I need to see them first', null, line);
-		expect(result.state.turns.at(-1)).toEqual({ speaker: 'reception', text: line });
-		expect(result.state.stage).toBe('offer');
-		expect(result.state.trail.at(-1)).toBe('related');
-		const chosen = applyHotelChoice(offer, 'quieter', 'Room 512, please.', null, line);
-		expect(chosen.state.turns.at(-1)?.text).not.toBe(line);
-	});
-});
-
-describe('repeated choices', () => {
-	const offer = (variant: 'lift' | 'street' = 'lift') => replyToHotel(replyToHotel(startHotel(variant), 'My room is too noisy.').state, '204').state;
-	it('does not say the same line twice when the learner insists on the noisy room', () => {
-		const first = applyHotelChoice(offer(), 'noisy-room', 'the noisy one').state;
-		const second = applyHotelChoice(first, 'noisy-room', 'no I prefer the noisy one').state;
-		const jamie = (state: HotelState) => state.turns.filter(turn => turn.speaker === 'reception').at(-1)!.text;
-		expect(jamie(second)).not.toBe(jamie(first));
-		expect(second.stage).toBe('offer');
-		expect(second.turns.at(-1)).toMatchObject({ speaker: 'coach', text: expect.stringContaining('512') });
-		expect(first.turns.at(-1)?.speaker).toBe('reception');
-	});
-	it('gives every looping choice a second wording', () => {
-		for (const variant of ['lift', 'street'] as const) for (const stage of STAGES) for (const option of hotelChoices({ stage, variant })) {
-			if (option.next === stage) expect(option.again, `${stage}/${option.id}`).toBeTruthy();
-			if (option.again) expect(option.again).not.toBe(option.reply);
-		}
-	});
-	it('still completes after repeated related turns', () => {
-		expect(completedHotelTrail('lift', ['related', 'related', 'noise', 'room204', 'noisy-room', 'noisy-room', 'quieter', 'price', 'accept', 'recall-price'])).toBe(true);
+		state.turns.push({ speaker: 'learner', text: 'The music downstairs is very loud.' }, { speaker: 'reception', text: 'I’m sorry.' });
+		expect(learnerTurns(state)).toEqual(['The music downstairs is very loud.']);
+		expect(wordCount('  The music   is loud. ')).toBe(4);
 	});
 });
