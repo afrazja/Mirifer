@@ -11,7 +11,7 @@ Every learner reply goes to `/api/english/converse` with the conversation so far
 The goals are: explain the problem, agree on a solution, find out the cost, and confirm the arrangement. They can be reached in any order and are shown as a checklist beside the conversation. The scene ends when all four are reached and Jamie closes the conversation. A conversation is capped at 16 learner turns.
 
 The server keeps the model in bounds:
-- Jamie's line must pass `checkJamieLine` (at most 45 words, and no numbers, currency or prices beyond the fact sheet), or a prepared fallback line for the first open goal is used.
+- Jamie's line must pass `jamieLineProblem` (at most 60 words, no prices, and no room or other number above 24 that is not on the fact sheet). A failing line gets one rewrite with the reason; only if that fails too is a prepared fallback line used.
 - Goals only accumulate, and are returned with an HMAC proof tied to the account and scene variant. The proof is sent back on the next turn and at completion, so no conversation needs to be stored.
 
 Jamie's lines play automatically when voice is on, and each has a replay button. Jamie is voiced by OpenAI `gpt-4o-mini-tts` through `/api/english/voice`, directed to sound like a warm receptionist speaking clearly for a learner. One of four voices (two men, two women) is chosen at random per run. The endpoint accepts only the greeting, the fallback lines, and AI-written lines carrying a server signature from `/api/english/converse`. Responses are cached for a year. If OpenAI fails, Jamie falls back to the free Microsoft voices through `/proxy/tts`, then the browser's voice.
