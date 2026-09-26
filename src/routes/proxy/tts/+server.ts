@@ -3,6 +3,8 @@
  * Usage: GET /proxy/tts?q=Hallo&tl=de[&voice=a|b][&rate=0.5..1.5]
  *
  * voice=a (default) → learner-side voice; voice=b → conversation partner.
+ * English also has voice=c and voice=d, for scenes that want more than two
+ * speakers; German and Persian map c→a and d→b.
  * rate → the engine's native speaking speed: the voice articulates slower,
  * instead of the client time-stretching the audio (which mostly lengthens
  * the gaps between words). Clamped to what each engine supports.
@@ -160,6 +162,15 @@ async function tryAzureFa(text: string, voiceName: string, rate: number): Promis
 // voice built to switch languages can read an English-looking word in English.
 const EDGE_VOICE_EN_A = env.EDGE_TTS_VOICE_EN || 'en-US-AndrewMultilingualNeural';
 const EDGE_VOICE_EN_B = env.EDGE_TTS_VOICE_EN_B || 'en-US-AvaMultilingualNeural';
+// Two more English speakers, so scenes can vary who talks: a/c are men, b/d women.
+const EDGE_VOICE_EN_C = env.EDGE_TTS_VOICE_EN_C || 'en-US-BrianMultilingualNeural';
+const EDGE_VOICE_EN_D = env.EDGE_TTS_VOICE_EN_D || 'en-US-EmmaMultilingualNeural';
+const EDGE_VOICES_EN: Record<string, string> = {
+	a: EDGE_VOICE_EN_A,
+	b: EDGE_VOICE_EN_B,
+	c: EDGE_VOICE_EN_C,
+	d: EDGE_VOICE_EN_D
+};
 const EDGE_VOICE_DE_A = env.EDGE_TTS_VOICE_DE || 'de-DE-ConradNeural';
 const EDGE_VOICE_DE_B = env.EDGE_TTS_VOICE_DE_B || 'de-DE-KatjaNeural';
 
@@ -368,7 +379,7 @@ export const GET: RequestHandler = async ({ url, request }) => {
 
 	// German → Edge's native German voices first, ElevenLabs only as a fallback.
 	if (lang === 'de') {
-		const isB = url.searchParams.get('voice') === 'b';
+		const isB = ['b', 'd'].includes(url.searchParams.get('voice') ?? '');
 		const rawRate = parseFloat(url.searchParams.get('rate') || '1');
 		const rate = isFinite(rawRate) ? rawRate : 1;
 		const edgeDe = await tryEdge(text, isB ? EDGE_VOICE_DE_B : EDGE_VOICE_DE_A, rate);
@@ -412,7 +423,7 @@ export const GET: RequestHandler = async ({ url, request }) => {
 		const rate = isFinite(rawRate) ? rawRate : 1;
 		const edgeEn = await tryEdge(
 			text,
-			url.searchParams.get('voice') === 'b' ? EDGE_VOICE_EN_B : EDGE_VOICE_EN_A,
+			EDGE_VOICES_EN[url.searchParams.get('voice') ?? 'a'] ?? EDGE_VOICE_EN_A,
 			rate
 		);
 		if (edgeEn) {
@@ -434,7 +445,7 @@ export const GET: RequestHandler = async ({ url, request }) => {
 	// voice at all, so without these branches fa would 502 and fall to browser
 	// TTS, which almost no OS ships a Persian voice for).
 	if (lang === 'fa') {
-		const wantVoiceB = url.searchParams.get('voice') === 'b';
+		const wantVoiceB = ['b', 'd'].includes(url.searchParams.get('voice') ?? '');
 		const rawRate = parseFloat(url.searchParams.get('rate') || '1');
 		const rate = isFinite(rawRate) ? rawRate : 1;
 
