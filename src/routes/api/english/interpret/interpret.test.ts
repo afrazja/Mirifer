@@ -80,4 +80,24 @@ describe('English hotel semantic checking', () => {
 		expect((await POST(fixture().event)).status).toBe(502);
 		expect(fetchMock).toHaveBeenCalledTimes(2);
 	});
+	it('lets Jamie answer a relevant reply in his own words, and signs the line for voicing', async () => {
+		env.OPENAI_API_KEY = 'o';
+		const line = 'I’m afraid I can’t show you the rooms right now, but room 512 is much quieter. Which one would you like?';
+		fetchMock.mockResolvedValue(new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ choiceId: null, related: true, improved: null, noteEn: null, noteFa: null, jamieReply: line }) } }] }), { status: 200 }));
+		const { POST } = await import('./+server');
+		const body = await (await POST(fixture({ stage: 'offer', utterance: 'I need to see them before I choose any' }).event)).json();
+		expect(body).toMatchObject({ choiceId: 'related', correction: null, jamieReply: line });
+		expect(typeof body.jamieSig).toBe('string');
+		const { verifyJamieLine } = await import('$lib/server/jamie-line');
+		expect(verifyJamieLine(line, body.jamieSig)).toBe(true);
+		expect(verifyJamieLine('Something else?', body.jamieSig)).toBe(false);
+		expect(JSON.stringify(fetchMock.mock.calls[0][1].body)).toContain('respond to what the guest actually said');
+	});
+	it('falls back to the authored line when Jamie’s reply invents facts or is too long', async () => {
+		env.OPENAI_API_KEY = 'o';
+		const bad = ['Room 640 is free tonight. Would you like it?', 'Room 512 costs $20 more. Which would you prefer?', 'Sure. ' + 'word '.repeat(40) + 'ok?', 'I can help you with that.'];
+		for (const jamieReply of bad) fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ choiceId: null, related: true, improved: null, noteEn: null, noteFa: null, jamieReply }) } }] }), { status: 200 }));
+		const { POST } = await import('./+server');
+		for (const _ of bad) expect(await (await POST(fixture({ stage: 'offer' }).event)).json()).toEqual({ choiceId: 'related', correction: null });
+	});
 });

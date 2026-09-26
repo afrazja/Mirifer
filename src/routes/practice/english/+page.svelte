@@ -8,6 +8,7 @@
 	import EnglishSpeechInput from '$lib/components/EnglishSpeechInput.svelte';
 	import { startHotel, replyToHotel, applyHotelChoice, isHotelAiEligible, hotelChoices, stageHelp, STAGES, HOTEL_ID, type Stage, type DisplayText, type Variant } from '$lib/practice/hotel';
 	import { getLanguage, setLanguage, loadPracticeDraft, savePracticeDraft, clearPracticeDraft } from '$services/data-layer';
+	import type { JamieLine } from '$services/practice-draft';
 	import { trackEvent } from '$services/analytics';
 	import { playAudioPromise, playAudioUrl, stopAllAudio, ENGLISH_VOICES, type TTSVoice } from '$services/tts';
 
@@ -19,7 +20,7 @@
 	let started = $state(false), ready = $state(false), examples = $state(false), saving = $state(false), saved = $state(false), checking = $state(false);
 	let draft = $state(''), feedback = $state<DisplayText | null>(null);
 	let latestCorrection = $state<{ improved: string; note: DisplayText } | null>(null);
-	let replies = $state<string[]>([]), resolved = $state<(string | null)[]>([]), hints = $state<Stage[]>([]);
+	let replies = $state<string[]>([]), resolved = $state<(string | null)[]>([]), lines = $state<(JamieLine | null)[]>([]), hints = $state<Stage[]>([]);
 	let voiceAvailable = $state(false), voiceOn = $state(true), voiceMessage = $state('');
 	// Jamie's voice changes from one run to the next (two men, two women), so a
 	// replay does not sound identical.
@@ -42,7 +43,8 @@
 		if (!voiceAvailable || !line) return;
 		stopReceptionVoice(); voiceMessage = '';
 		const voice = jamieVoice;
-		const url = `/api/english/voice?v=1&voice=${voice}&text=${encodeURIComponent(line)}`;
+		const sig = lines.find(item => item?.text === line)?.sig;
+		const url = `/api/english/voice?v=1&voice=${voice}&text=${encodeURIComponent(line)}${sig ? `&sig=${encodeURIComponent(sig)}` : ''}`;
 		if (!(await playAudioUrl(url))) void playAudioPromise(line, 1, 'en-US', undefined, voice);
 	}
 	function toggleReceptionVoice() {
@@ -57,7 +59,7 @@
 	function event(name: Parameters<typeof trackEvent>[0], metadata: Record<string, string | number | boolean> = {}) {
 		void trackEvent(name, { metadata: { mode: 'conversation', course: 'en', scenario: HOTEL_ID, ...metadata } });
 	}
-	function remember() { savePracticeDraft(data.learnerId, scene.variant, replies, hints, resolved); }
+	function remember() { savePracticeDraft(data.learnerId, scene.variant, replies, hints, resolved, lines); }
 	onMount(() => {
 		voiceAvailable = true;
 		pickJamieVoice();
@@ -65,15 +67,15 @@
 		const previous = loadPracticeDraft(data.learnerId);
 		if (previous) {
 			scene = startHotel(previous.variant);
-			for (const [index, reply] of previous.replies.entries()) scene = (previous.resolved?.[index] ? applyHotelChoice(scene, previous.resolved[index]!, reply) : replyToHotel(scene, reply)).state;
-			replies = previous.replies; resolved = previous.replies.map((_, index) => previous.resolved?.[index] ?? null); hints = previous.hints; started = true;
+			for (const [index, reply] of previous.replies.entries()) scene = (previous.resolved?.[index] ? applyHotelChoice(scene, previous.resolved[index]!, reply, null, previous.lines?.[index]?.text) : replyToHotel(scene, reply)).state;
+			replies = previous.replies; resolved = previous.replies.map((_, index) => previous.resolved?.[index] ?? null); lines = previous.replies.map((_, index) => previous.lines?.[index] ?? null); hints = previous.hints; started = true;
 		}
 		ready = true;
 		return () => { stopReceptionVoice(); };
 	});
 	async function changeDisplay(value: 'en' | 'fa') { language = value; await setLanguage(value); }
 	async function start(variant: Variant = 'lift') {
-		generation++; checking = false; stopReceptionVoice(); pickJamieVoice(); scene = startHotel(variant); replies = []; resolved = []; hints = []; feedback = null; latestCorrection = null; draft = ''; examples = false; voiceMessage = '';
+		generation++; checking = false; stopReceptionVoice(); pickJamieVoice(); scene = startHotel(variant); replies = []; resolved = []; lines = []; hints = []; feedback = null; latestCorrection = null; draft = ''; examples = false; voiceMessage = '';
 		form = null; saved = false; started = true; remember();
 		event('conversation_started', { replay: !!data.completed });
 		await tick(); input?.focus();
@@ -96,11 +98,12 @@
 		const localResult = replyToHotel(scene, reply);
 		let result = localResult;
 		let aiChoice: string | null = null;
+		let aiLine: JamieLine | null = null;
 		if (!localResult.understood && isHotelAiEligible(scene, reply)) {
 			checking = true;
 			const current = generation;
 			try {
-				const response = await fetch('/api/english/interpret', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stage: scene.stage, variant: scene.variant, utterance: reply }) });
+				const response = await fetch('/api/english/interpret', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stage: scene.stage, variant: scene.variant, utterance: reply, previous: [...scene.turns].reverse().find(turn => turn.speaker === 'reception')?.text }) });
 				if (current !== generation) return;
 				if (response.ok) {
 					const interpretation = await response.json();
@@ -109,8 +112,9 @@
 						const correction = interpretation.correction;
 						const known = localResult.understood && localResult.state.trail.at(-1) === interpretation.choiceId && localResult.state.corrections.length > scene.corrections.length ? localResult.state.corrections.at(-1) : null;
 						const suggested = correction && typeof correction.improved === 'string' && typeof correction.note?.en === 'string' && typeof correction.note?.fa === 'string' ? correction : known ? { improved: known.improved, note: known.note } : null;
-						const evaluated = applyHotelChoice(scene, interpretation.choiceId, reply, suggested);
-						if (evaluated.understood) { result = evaluated; aiChoice = interpretation.choiceId; }
+						const jamie = typeof interpretation.jamieReply === 'string' ? { text: interpretation.jamieReply, sig: typeof interpretation.jamieSig === 'string' ? interpretation.jamieSig : null } : null;
+						const evaluated = applyHotelChoice(scene, interpretation.choiceId, reply, suggested, jamie?.text);
+						if (evaluated.understood) { result = evaluated; aiChoice = interpretation.choiceId; aiLine = jamie; }
 					} else if (!localResult.understood) {
 						result = { ...localResult, feedback: { en: 'That does not answer Jamie’s question yet. Try a short reply about this hotel situation or open the examples.', fa: 'این پاسخ هنوز جواب پرسش جیمی نیست. پاسخی کوتاه دربارهٔ موقعیت هتل بده یا مثال‌ها را باز کن.' } };
 					}
@@ -129,7 +133,7 @@
 		event('answer_submitted', { index: stepIndex, correct: result.understood, ai_rescued: !!aiChoice && !localResult.understood });
 		if (result.understood) {
 			latestCorrection = result.state.corrections.length > scene.corrections.length ? result.state.corrections.at(-1) ?? null : null;
-			replies = [...replies, reply]; resolved = [...resolved, aiChoice]; scene = result.state; draft = ''; examples = false; remember();
+			replies = [...replies, reply]; resolved = [...resolved, aiChoice]; lines = [...lines, aiLine]; scene = result.state; draft = ''; examples = false; remember();
 			await tick();
 			if (conversation) conversation.scrollTop = conversation.scrollHeight;
 			const lastReception = [...scene.turns].reverse().find(turn => turn.speaker === 'reception');

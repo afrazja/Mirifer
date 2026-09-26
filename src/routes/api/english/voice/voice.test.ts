@@ -56,4 +56,15 @@ describe('/api/english/voice', () => {
 		fetchMock.mockResolvedValueOnce(new Response('nope', { status: 500 }));
 		expect((await call({ text: GREETING, voice: 'a' })).status).toBe(502);
 	});
+
+	it('voices an AI-written Jamie line only with a valid signature', async () => {
+		env.OPENAI_API_KEY = 'k';
+		fetchMock.mockResolvedValue(new Response(new Uint8Array([1]), { status: 200 }));
+		const { signJamieLine } = await import('$lib/server/jamie-line');
+		const line = 'I understand. Room 512 is the quiet one. Which would you like?';
+		expect((await call({ text: line, voice: 'a' })).status).toBe(400);
+		expect((await call({ text: line, voice: 'a', sig: 'forged' })).status).toBe(400);
+		expect((await call({ text: line, voice: 'a', sig: signJamieLine(line)! })).status).toBe(200);
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+	});
 });

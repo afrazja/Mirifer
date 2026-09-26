@@ -97,3 +97,16 @@ describe('authored hotel conversation', () => {
 		expect(isHotelAiEligible(accepted.state, '999')).toBe(false);
 	});
 });
+
+describe('dynamic Jamie lines', () => {
+	it('replaces only the related reply and keeps the authored path', () => {
+		const offer = replyToHotel(replyToHotel(startHotel('lift'), 'My room is too noisy.').state, '204').state;
+		const line = 'I understand. Room 512 is the quiet one. Which would you like?';
+		const result = applyHotelChoice(offer, 'related', 'I need to see them first', null, line);
+		expect(result.state.turns.at(-1)).toEqual({ speaker: 'reception', text: line });
+		expect(result.state.stage).toBe('offer');
+		expect(result.state.trail.at(-1)).toBe('related');
+		const chosen = applyHotelChoice(offer, 'quieter', 'Room 512, please.', null, line);
+		expect(chosen.state.turns.at(-1)?.text).not.toBe(line);
+	});
+});
