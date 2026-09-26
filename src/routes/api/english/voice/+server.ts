@@ -40,7 +40,7 @@ const DIRECTION =
 const ALLOWED = new Set<string>(
 	(['lift', 'street'] as Variant[]).flatMap((variant) => [
 		startHotel(variant).turns[0].text,
-		...STAGES.flatMap((stage) => hotelChoices({ stage, variant }).map((choice) => choice.reply))
+		...STAGES.flatMap((stage) => hotelChoices({ stage, variant }).flatMap((choice) => [choice.reply, choice.again ?? choice.reply]))
 	])
 );
 

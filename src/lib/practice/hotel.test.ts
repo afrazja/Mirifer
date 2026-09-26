@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { startHotel, replyToHotel, applyHotelChoice, isHotelAiEligible, completedHotelTrail, hotelChoices, type HotelState } from './hotel';
+import { startHotel, replyToHotel, applyHotelChoice, isHotelAiEligible, completedHotelTrail, hotelChoices, STAGES, type HotelState } from './hotel';
 
 function say(state: HotelState, input: string) {
 	const result = replyToHotel(state, input);
@@ -108,5 +108,27 @@ describe('dynamic Jamie lines', () => {
 		expect(result.state.trail.at(-1)).toBe('related');
 		const chosen = applyHotelChoice(offer, 'quieter', 'Room 512, please.', null, line);
 		expect(chosen.state.turns.at(-1)?.text).not.toBe(line);
+	});
+});
+
+describe('repeated choices', () => {
+	const offer = (variant: 'lift' | 'street' = 'lift') => replyToHotel(replyToHotel(startHotel(variant), 'My room is too noisy.').state, '204').state;
+	it('does not say the same line twice when the learner insists on the noisy room', () => {
+		const first = applyHotelChoice(offer(), 'noisy-room', 'the noisy one').state;
+		const second = applyHotelChoice(first, 'noisy-room', 'no I prefer the noisy one').state;
+		const jamie = (state: HotelState) => state.turns.filter(turn => turn.speaker === 'reception').at(-1)!.text;
+		expect(jamie(second)).not.toBe(jamie(first));
+		expect(second.stage).toBe('offer');
+		expect(second.turns.at(-1)).toMatchObject({ speaker: 'coach', text: expect.stringContaining('512') });
+		expect(first.turns.at(-1)?.speaker).toBe('reception');
+	});
+	it('gives every looping choice a second wording', () => {
+		for (const variant of ['lift', 'street'] as const) for (const stage of STAGES) for (const option of hotelChoices({ stage, variant })) {
+			if (option.next === stage) expect(option.again, `${stage}/${option.id}`).toBeTruthy();
+			if (option.again) expect(option.again).not.toBe(option.reply);
+		}
+	});
+	it('still completes after repeated related turns', () => {
+		expect(completedHotelTrail('lift', ['related', 'related', 'noise', 'room204', 'noisy-room', 'noisy-room', 'quieter', 'price', 'accept', 'recall-price'])).toBe(true);
 	});
 });
