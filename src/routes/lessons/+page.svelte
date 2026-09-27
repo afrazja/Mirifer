@@ -1,6 +1,7 @@
 <script lang="ts">
  import { onMount } from 'svelte';
  import AppHeader from '$lib/components/AppHeader.svelte';
+ import GermanSectionTabs from '$lib/components/GermanSectionTabs.svelte';
  import LearningPath from '$lib/components/LearningPath.svelte';
  import { getLessonIndex, resolveResumePoint, type LessonMeta } from '$services/lesson-loader';
  import { getLanguage, getProgress, getCompletedLessons } from '$services/data-layer';
@@ -36,8 +37,9 @@
 <svelte:head><title>{language === 'fa' ? 'همه درس‌ها' : 'All lessons'} – Mirifer</title></svelte:head>
 
 <main id="main-content" dir={language === 'fa' ? 'rtl' : 'ltr'}>
- <AppHeader title={language === 'fa' ? 'همه درس‌ها' : 'All lessons'} backHref="/home"
-  backLabel={language === 'fa' ? 'خانه' : 'Home'} direction={language === 'fa' ? 'rtl' : 'ltr'} />
+ <AppHeader title={language === 'fa' ? 'همه درس‌ها' : 'All lessons'} backHref="/languages"
+  backLabel={language === 'fa' ? 'زبان‌ها' : 'Languages'} direction={language === 'fa' ? 'rtl' : 'ltr'} />
+ <GermanSectionTabs current="lessons" {language} />
  {#if failed}
   <div class="load-error" role="alert">
    <p>{language === 'fa' ? 'بارگذاری درس‌ها انجام نشد.' : 'We couldn’t load your lessons.'}</p>

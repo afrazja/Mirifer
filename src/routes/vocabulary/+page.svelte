@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import AppHeader from '$lib/components/AppHeader.svelte';
+	import GermanSectionTabs from '$lib/components/GermanSectionTabs.svelte';
 	import { preferencesStore } from '$stores/preferences';
 	import type { Language } from '$stores/preferences';
 	import { getVocabulary, removeWord, updateWordKnown, getLanguage } from '$services/data-layer';
@@ -217,11 +218,13 @@
 		<AppHeader
 			title="My Vocabulary"
 			icon="Aa"
-			backHref="/home"
-			backLabel="Home"
+			backHref="/languages"
+			backLabel={language === 'fa' ? 'زبان‌ها' : 'Languages'}
 			actions={listHeaderActions}
+			direction={language === 'fa' ? 'rtl' : 'ltr'}
 			sticky
 		/>
+		<GermanSectionTabs current="vocabulary" {language} />
 
 	<!-- Skip-link target: absolutely positioned, so it adds no box. -->
 	<span id="main-content" tabindex="-1" class="sr-only"></span>

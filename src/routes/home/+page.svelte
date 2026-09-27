@@ -33,9 +33,8 @@
 	import TrophyCabinet from "$lib/components/TrophyCabinet.svelte";
 	import Icon from "$lib/components/Icon.svelte";
 	import AppHeader from "$lib/components/AppHeader.svelte";
-	import DashboardSidebar from "$lib/components/DashboardSidebar.svelte";
 	import BrandLogo from "$lib/components/BrandLogo.svelte";
-	import CourseSwitcher from "$lib/components/CourseSwitcher.svelte";
+	import GermanSectionTabs from "$lib/components/GermanSectionTabs.svelte";
 
 	// Auth modal state
 	let showAuthModal = $state(false);
@@ -422,11 +421,6 @@
 		}
 	}
 
-	async function handleSignOut() {
-		await auth.signOut();
-		window.location.href = "/";
-	}
-
 	async function updateProfileUI() {
 		const authed = await auth.isAuthenticated();
 		isAuthenticated = authed;
@@ -779,29 +773,7 @@
 	</div>
 {/if}
 
-<!-- The same side-menu links serve desktop and mobile users. -->
-<div class="dash-shell" class:has-sidebar={isAuthenticated}>
-	{#if isAuthenticated}
-		<DashboardSidebar {language} {dueReviews} onSignOut={handleSignOut} />
-	{/if}
-
 <main class="home-container">
-	{#if !isAuthenticated}
-		<a class="dashboard-brand" href="/" aria-label="Mirifer home"><BrandLogo /></a>
-	{/if}
-	{#snippet profileLeading()}
-		<div class="nav-profile-brand">
-			<div class="brand-avatar">
-				{#if avatarUrl}
-					<img src={avatarUrl} alt="" />
-				{:else}
-					{(displayName || "L").charAt(0).toUpperCase()}
-				{/if}
-			</div>
-			<span class="brand-text">{displayName}</span>
-		</div>
-	{/snippet}
-
 	{#snippet homeHeaderActions()}
 		<div class="nav-right">
 			{#if isAuthenticated}
@@ -817,17 +789,12 @@
 					<button class="nav-stat" onclick={() => (showCalendar = true)} title={language === "fa" ? "تقویم تمرین" : "Practice calendar"} aria-label={language === "fa" ? "تقویم تمرین" : "Practice calendar"}><span aria-hidden="true">📅</span></button>
 				</div>
 
-				<!-- Account actions are in DashboardSidebar. -->
-			{:else}
-				<button class="nav-text-btn" onclick={toggleAuthModal}
-					>{language === "fa" ? "ورود" : "Sign In"}</button
-				>
 			{/if}
 		</div>
 	{/snippet}
 
-	<AppHeader leading={profileLeading} actions={homeHeaderActions} variant="dark" />
-	<CourseSwitcher {language} targetLanguage={data.checkLanguage} />
+	<AppHeader backHref="/languages" backLabel={language === "fa" ? "زبان‌ها" : "Languages"} actions={homeHeaderActions} direction={language === "fa" ? "rtl" : "ltr"} />
+	{#if isAuthenticated}<GermanSectionTabs current="today" {language} {dueReviews} />{/if}
 
 	<!-- Skip-link target: absolutely positioned, so it adds no box. -->
 	<span id="main-content" tabindex="-1" class="sr-only"></span>
@@ -985,7 +952,6 @@
 	{/if}
 
 </main>
-</div>
 
 <style>
 	.check-in-card { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:20px 24px; margin:22px 0; border:1px solid #3f5543; border-radius:12px; background:#1b2b20; color:#d8e7d8; }
@@ -1015,16 +981,7 @@
 
 
 	/* ── Dashboard shell + left rail ─────────────────── */
-	.dash-shell {
-		display: block;
-	}
 
-	.dashboard-brand {
-		--brand-logo-width: 160px;
-		display: flex;
-		inline-size: fit-content;
-		margin-bottom: 16px;
-	}
 
 	.auth-brand {
 		display: flex;
@@ -1037,21 +994,6 @@
 
 
 
-	/* The sidebar stays visible on desktop; smaller screens use a drawer. */
-	@media (min-width: 1080px) {
-		.dash-shell.has-sidebar {
-			display: grid;
-			grid-template-columns: 232px minmax(0, 1fr);
-			align-items: start;
-			max-width: 1340px;
-			margin-inline: auto;
-		}
-
-		.home-container {
-			margin: 0;
-			max-width: none;
-		}
-	}
 
 
 
@@ -1085,53 +1027,18 @@
 
 
 
-	.nav-profile-brand {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		min-height: 44px;
-		padding: 4px 8px;
-		color: inherit;
-		text-align: start;
-	}
-	.brand-avatar {
-		width: 32px;
-		height: 32px;
-		border-radius: 50%;
-		background: var(--accent);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 0.9rem;
-		font-weight: 700;
-		color: var(--on-accent);
-		border: 1.5px solid var(--line);
-		overflow: hidden;
-	}
 
 
 
 
 
 
-	.brand-avatar img {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-	}
 
 
 
 
 
 
-	.brand-text {
-		font-weight: 700;
-		font-size: 1rem;
-		/* Sits on the dark ribbon, not the page — var(--ink) rendered it
-		   invisible (1.02:1) in light mode. */
-		color: var(--on-brand);
-	}
 
 
 
@@ -1151,28 +1058,12 @@
 
 	/* Compact language picker */
 
-	.nav-text-btn {
-		padding: 6px 16px;
-		border-radius: 20px;
-		border: 1px solid var(--line);
-		background: transparent;
-		color: var(--ink-soft);
-		cursor: pointer;
-		font-size: 0.84rem;
-		font-family: inherit;
-		transition: all 0.2s;
-	}
 
 
 
 
 
 
-	.nav-text-btn:hover {
-		border-color: var(--accent);
-		color: var(--accent-deep);
-		background: var(--accent-wash);
-	}
 
 
 
@@ -1302,24 +1193,17 @@
 		display: flex;
 		align-items: center;
 		gap: 4px;
-		margin-right: 8px;
-		/* This pill sits on the dark ribbon, so a light --paper-sunken
-		   fill put white numerals on a white background (1.18:1). */
-		background: rgba(255, 255, 255, 0.08);
+		background: var(--paper-sunken);
 		padding: 4px;
 		border-radius: 12px;
-		border: 1px solid var(--on-strip-accent);
+		border: 1px solid var(--control-border);
 	}
-
-
-
-
-
 
 	.nav-stat {
 		background: transparent;
 		border: none;
 		border-radius: 8px;
+		min-height: 36px;
 		padding: 4px 8px;
 		display: flex;
 		align-items: center;
@@ -1327,45 +1211,23 @@
 		cursor: pointer;
 		transition: all 0.2s;
 		font-family: inherit;
-		color: var(--on-brand);
+		font-weight: 700;
+		color: var(--ink);
 	}
-
-
-
-
-
 
 	.nav-stat:hover {
-		background: var(--paper-sunken);
+		background: var(--control-hover);
 	}
-
-
-
-
-
 
 	.ns-icon {
 		display: inline-flex;
 	}
 
-
-
-
-
-
-	/* Gold, and the same gold for the numeral beside it, so the XP badge
-	   reads as one thing. The star was var(--accent) — deep forest green on
-	   a near-black pill, measured 1.8:1 on the live page, which is why it
-	   looked like nothing was there. This is 8.6:1. */
-	.ns-icon.star,
-	.nav-stat.xp .ns-value {
+	/* The header is on the page background now, so the star keeps its gold
+	   and the numeral uses the ink colour for contrast. */
+	.ns-icon.star {
 		color: var(--gold);
 	}
-
-
-
-
-
 
 	/* Amber rather than the old --accent-deep: same problem, same fix. */
 
@@ -2735,9 +2597,6 @@
 			grid-template-columns: 1fr;
 		}
 
-		.brand-text {
-			display: none;
-		}
 
 		.nav-stats {
 			display: flex;
@@ -2752,10 +2611,6 @@
 			font-size: 0.8rem;
 		}
 
-		.nav-text-btn {
-			padding: 4px 10px;
-			font-size: 0.75rem;
-		}
 
 		.mastery-grid {
 			gap: 8px;
