@@ -5,7 +5,7 @@
 	import AppHeader from '$lib/components/AppHeader.svelte';
 	import { getCourse, isAvailableCourse } from '$lib/courses';
 	import { progressShare, type CourseProgress } from '$lib/practice/course-progress';
-	import { applyDocumentLanguage, getLanguage } from '$services/data-layer';
+	import { applyDocumentLanguage, getLanguage, setLanguage } from '$services/data-layer';
 	let { data, form }: PageProps = $props();
 	let language = $state<'en' | 'fa'>('en');
 	let saving = $state<string | null>(null);
@@ -20,6 +20,7 @@
 			applyDocumentLanguage(language);
 		}).catch(() => applyDocumentLanguage(language));
 	});
+	async function changeDisplay(value: 'en' | 'fa') { language = value; await setLanguage(value); }
 	const fa = (value: number) => isFa ? value.toLocaleString('fa-IR') : String(value);
 	function summary(progress: CourseProgress): { label: string; detail: string } {
 		if (progress.code === 'de') return {
@@ -51,7 +52,16 @@
 
 <main id="main-content" class="language-page" dir={isFa ? 'rtl' : 'ltr'}>
 	<AppHeader direction={isFa ? 'rtl' : 'ltr'}>
-		{#snippet actions()}<a class="settings-link" href="/settings">{isFa ? 'تنظیمات' : 'Settings'}</a>{/snippet}
+		{#snippet actions()}
+			<div class="header-actions">
+				<label class="display-control">{isFa ? 'نمایش' : 'Display'}
+					<select aria-label={isFa ? 'زبان نمایش' : 'Display language'} value={language} onchange={e => void changeDisplay(e.currentTarget.value as 'en' | 'fa')}>
+						<option value="en">English</option><option value="fa">فارسی</option>
+					</select>
+				</label>
+				<a class="settings-link" href="/settings">{isFa ? 'تنظیمات' : 'Settings'}</a>
+			</div>
+		{/snippet}
 	</AppHeader>
 	<section class="introduction" aria-labelledby="language-title">
 		<p class="eyebrow">{isFa ? 'مسیر یادگیری تو' : 'YOUR LEARNING JOURNEY'}</p>
@@ -151,6 +161,9 @@
 	h1 { font-family: var(--font-display); font-weight: 500; font-size: clamp(2rem, 5vw, 3.25rem); line-height: 1.15; margin-bottom: 18px; }
 	.introduction > p:last-child, .display-note { color: var(--ink-soft); line-height: 1.6; }
 	.courses { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 24px; }
+	.header-actions { display: flex; align-items: center; gap: 14px; }
+	.display-control { display: flex; align-items: center; gap: 8px; color: var(--ink-soft); font-size: .8rem; }
+	.display-control select { min-height: 40px; padding: 5px 8px; border: 1px solid var(--control-border); border-radius: 8px; background: var(--paper-raised); color: var(--ink); font: inherit; font-size: .85rem; }
 	.settings-link { color: var(--accent-deep); font-weight: 600; font-size: .9rem; text-decoration: none; padding: 10px 4px; }
 	.settings-link:hover { text-decoration: underline; }
 	.course { display: flex; flex-direction: column; padding: 30px; background: var(--paper-raised); border: 1px solid var(--control-border); border-radius: 20px; box-shadow: var(--paper-shadow); }
@@ -175,5 +188,5 @@
 	.notice, .error { padding: 16px; border-radius: 12px; margin-bottom: 24px; line-height: 1.6; }
 	.notice { background: var(--attention-wash); color: var(--attention); }
 	.error { border: 1px solid var(--miss); color: var(--miss); }
-	@media (max-width: 640px) { .language-page { padding: 16px 16px 40px; } .introduction { margin-top: 36px; } .courses { grid-template-columns: 1fr; gap: 16px; } .course, .learning-card { padding: 22px; } .card-top { margin-bottom: 20px; } }
+	@media (max-width: 640px) { .display-control { font-size: 0; } .display-control select { font-size: .85rem; } .language-page { padding: 16px 16px 40px; } .introduction { margin-top: 36px; } .courses { grid-template-columns: 1fr; gap: 16px; } .course, .learning-card { padding: 22px; } .card-top { margin-bottom: 20px; } }
 </style>

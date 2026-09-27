@@ -216,6 +216,13 @@ export async function cloudWrite(
 
 	try {
 		await executeCloudWrite(uid, { type, key, data, retries: 0, createdAt: Date.now() });
+		// A queued older write for the same thing must not replay over this one.
+		const queue = getQueue();
+		const remaining = queue.filter((q) => !(q.type === type && q.key === key));
+		if (remaining.length !== queue.length) {
+			saveQueue(remaining);
+			updateStatus(remaining.length ? 'pending' : 'synced');
+		}
 	} catch (e: any) {
 		if (type === 'progress_upsert') trackObstacle('progress_save_failed');
 		logWarn('sync-queue:cloudWrite', `Cloud write failed (${type}), queuing for retry: ${e.message}`);
