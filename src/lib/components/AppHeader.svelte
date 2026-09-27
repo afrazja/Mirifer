@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from "svelte";
 	import BrandLogo from "./BrandLogo.svelte";
+	import AccountMenu from "./AccountMenu.svelte";
 
 	let {
 		title,
@@ -16,6 +17,7 @@
 		sticky = false,
 		direction = "ltr",
 		variant = "plain",
+		menu = true,
 	}: {
 		title?: string;
 		subtitle?: string;
@@ -33,6 +35,8 @@
 		 *  "dark"  = near-black ribbon with green-outlined controls, for the
 		 *  dashboard and Basics where a pale header washed out. */
 		variant?: "plain" | "brand" | "dark";
+		/** The account menu (My languages, Settings, Sign out). On for every app page. */
+		menu?: boolean;
 	} = $props();
 </script>
 
@@ -45,6 +49,10 @@
 >
 	<header class="app-header" class:connected={secondary}>
 		<div class="leading">
+			<!-- The logo is on every page and always leads back to My languages. -->
+			<a class="brand" href="/languages" aria-label="Mirifer: my languages">
+				<BrandLogo tone={variant === "plain" ? "auto" : "light"} />
+			</a>
 			{#if leading}
 				{@render leading()}
 			{:else if onBack}
@@ -56,10 +64,6 @@
 				<a class="back-control" href={backHref} aria-label={backLabel}>
 					<span class="back-arrow" aria-hidden="true">&larr;</span>
 					<span>{backLabel}</span>
-				</a>
-			{:else}
-				<a class="brand" href="/languages" aria-label="Mirifer: my languages">
-					<BrandLogo tone={variant === "plain" ? "auto" : "light"} />
 				</a>
 			{/if}
 		</div>
@@ -74,8 +78,9 @@
 			</div>
 		{/if}
 
-		<div class="actions">
-			{#if actions}{@render actions()}{/if}
+		<div class="trailing">
+			{#if actions}<div class="actions">{@render actions()}</div>{/if}
+			{#if menu}<div class="account"><AccountMenu isFa={direction === "rtl"} /></div>{/if}
 		</div>
 	</header>
 
@@ -139,7 +144,8 @@
 	}
 
 	.leading,
-	.actions {
+	.actions,
+	.trailing {
 		display: flex;
 		align-items: center;
 		min-width: 0;
@@ -148,13 +154,40 @@
 	.leading {
 		grid-column: 1;
 		justify-content: flex-start;
+		gap: 12px;
+	}
+
+	.trailing {
+		grid-column: 3;
+		justify-content: flex-end;
+		gap: 10px;
 	}
 
 	.actions {
-		grid-column: 3;
 		justify-content: flex-end;
 		gap: 8px;
 		flex-wrap: wrap;
+	}
+
+	.account {
+		flex-shrink: 0;
+	}
+
+	.brand-variant .account :global(.trigger),
+	.dark-variant .account :global(.trigger) {
+		background: rgba(255, 255, 255, 0.08);
+		border-color: rgba(255, 255, 255, 0.45);
+	}
+
+	.brand-variant .account :global(.avatar),
+	.dark-variant .account :global(.avatar) {
+		background: var(--leaf, #3ab362);
+		color: var(--on-accent, #fff);
+	}
+
+	.brand-variant .account :global(.caret),
+	.dark-variant .account :global(.caret) {
+		color: var(--on-brand);
 	}
 
 	.identity {
@@ -399,12 +432,20 @@
 		}
 
 		.header-stack .brand {
-			--brand-logo-width: 112px;
+			--brand-logo-width: 104px;
+		}
+
+		.leading {
+			gap: 8px;
 		}
 
 	}
 
 	@media (max-width: 440px) {
+		.header-stack .brand {
+			--brand-logo-width: 88px;
+		}
+
 		.back-control {
 			width: 44px;
 			padding-inline: 8px;

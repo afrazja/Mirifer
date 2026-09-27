@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onDestroy, tick } from 'svelte';
+  import AppHeader from '$lib/components/AppHeader.svelte';
   import { invalidateAll } from '$app/navigation';
   import { preferencesStore } from '$stores/preferences';
   import type { PageData } from './$types';
@@ -59,7 +60,7 @@
 
 <svelte:head><title>German progress check · Mirifer</title><meta name="robots" content="noindex" /></svelte:head>
 <main id="main-content" class="check-page" dir={fa ? 'rtl' : 'ltr'}>
-  <a class="back" href="/home">{tr('← Back to learning', 'بازگشت به یادگیری ←')}</a>
+  <AppHeader backHref="/home" backLabel={tr('Back to learning', 'بازگشت به یادگیری')} direction={fa ? 'rtl' : 'ltr'} />
   <header><span class="eyebrow">MIRIFER / {tr('PROGRESS CHECK', 'سنجش پیشرفت')}</span><h1>{tr('See what you understand.', 'ببین چه چیزهایی را می‌فهمی.')}</h1></header>
   {#if error}<p class="error" role="alert">{error}</p>{/if}
   {#if data.unavailable}
@@ -109,7 +110,7 @@
 <style>
   .check-page { max-width:780px; margin:0 auto; padding:28px 22px 70px; color:var(--ink,#14201b); font-family:'IBM Plex Sans Variable','Vazirmatn Variable',sans-serif; }
   header .eyebrow { color:var(--ink-soft,#4d5b55); }
-  .back { color:inherit; font-size:.88rem; } header { margin:40px 0 25px; } .eyebrow { display:block; font-size:.7rem; letter-spacing:.09em; color:#9fc681; margin:16px 0; }
+  header { margin:40px 0 25px; } .eyebrow { display:block; font-size:.7rem; letter-spacing:.09em; color:#9fc681; margin:16px 0; }
   h1 { font-family:'Newsreader Variable','Vazirmatn Variable',serif; font-size:clamp(2.2rem,5vw,3.5rem); font-weight:500; line-height:1.1; margin:18px 0; } h2 { font-size:1.35rem; line-height:1.5; font-weight:500; }
   .card { padding:30px; border:1px solid #3d5247; background:#17271f; color:#f0f3ed; border-radius:16px; margin:22px 0; } p { color:#bbc8bf; line-height:1.8; } .small,small { font-size:.82rem; color:#afbeb2; line-height:1.7; } small { display:block; }
   button,a.primary { font:inherit; cursor:pointer; min-height:46px; } button:disabled { opacity:.5; cursor:default; } button:focus-visible,a:focus-visible,input:focus-visible { outline:2px solid #b6dd94; outline-offset:4px; }

@@ -63,12 +63,10 @@
 {/snippet}
 
 <aside class="desktop-sidebar" aria-label={language === "fa" ? "منوی کناری" : "Side menu"}>
-	<a href="/" class="brand" aria-label="Mirifer home"><BrandLogo /></a>
 	{@render navigation()}
 </aside>
 
 <div class="mobile-bar">
-	<a href="/" class="brand" aria-label="Mirifer home"><BrandLogo /></a>
 	<button class="menu-button" type="button" bind:this={trigger} onclick={openMenu}
 		aria-expanded={open} aria-controls={menuId} aria-haspopup="dialog">
 		<span aria-hidden="true">☰</span>{language === "fa" ? "منو" : "Menu"}
@@ -97,7 +95,7 @@
 		--brand-logo-width: 160px;
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
+		justify-content: flex-end;
 		gap: 16px;
 		padding: 24px 24px 0;
 	}
