@@ -3,6 +3,7 @@
 	import type { PageProps } from './$types';
 	import AppHeader from '$lib/components/AppHeader.svelte';
 	import CourseSwitcher from '$lib/components/CourseSwitcher.svelte';
+	import EnglishModuleTabs from '$lib/components/EnglishModuleTabs.svelte';
 	import { RETELL_PIECES, MAX_LISTENS, PLAYBACK_RATE, pieceImage, formatDuration, listenSeconds, speakLimit, type RetellPiece } from '$lib/practice/retell';
 	import type { DisplayText } from '$lib/practice/hotel';
 	import type { RetellRecord } from '$lib/practice/progress';
@@ -176,7 +177,7 @@
 </svelte:head>
 
 <main id="main-content" class="retell-page" dir={isFa ? 'rtl' : 'ltr'}>
-	<AppHeader backHref="/practice/english" backLabel={isFa ? 'تمرین انگلیسی' : 'English practice'} direction={isFa ? 'rtl' : 'ltr'}>
+	<AppHeader backHref="/languages" backLabel={isFa ? 'زبان‌ها' : 'Languages'} direction={isFa ? 'rtl' : 'ltr'}>
 		{#snippet actions()}
 			<label class="display-control">{isFa ? 'نمایش' : 'Display'}
 				<select aria-label={isFa ? 'زبان نمایش' : 'Display language'} value={language} onchange={e => void changeDisplay(e.currentTarget.value as 'en' | 'fa')}>
@@ -186,6 +187,7 @@
 		{/snippet}
 	</AppHeader>
 	<CourseSwitcher {language} targetLanguage="en" />
+	<EnglishModuleTabs current="retell" {isFa} />
 
 	{#if stage === 'list' || !piece}
 		<section class="intro">
@@ -210,7 +212,6 @@
 				</button></li>
 			{/each}
 		</ul>
-		<p class="small-note other"><a href="/practice/english">{isFa ? 'گفت‌وگوی هتل را امتحان کن ←' : 'Or practise a conversation: A quieter room →'}</a></p>
 	{:else}
 		<div class="session-heading">
 			<div><p class="eyebrow">{piece.level} · {isFa ? 'گوش بده و بازگو کن' : 'LISTEN & RETELL'}</p><h1>{text(piece.title)}</h1></div>
@@ -301,7 +302,7 @@
 	p { line-height: 1.65; }
 	button { font: inherit; cursor: pointer; }
 	button:disabled { opacity: .55; cursor: default; }
-	button:focus-visible, select:focus-visible, a:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+	button:focus-visible, select:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 	.primary { display: inline-flex; gap: 14px; align-items: center; justify-content: center; min-height: 48px; padding: 12px 22px; background: var(--accent); color: var(--on-accent); border: 1px solid var(--accent); border-radius: 10px; font-weight: 600; }
 	.primary:hover:not(:disabled) { background: var(--accent-deep); }
 	.secondary { min-height: 48px; padding: 12px 18px; background: var(--paper-raised); border: 1px solid var(--control-border); border-radius: 10px; color: var(--ink); }
@@ -319,7 +320,6 @@
 	.level { font-size: .72rem; font-weight: 700; letter-spacing: .1em; color: var(--accent-deep); }
 	.meta { color: var(--ink-soft); font-size: .85rem; }
 	.best { color: var(--accent-deep); font-size: .85rem; }
-	.other a { color: var(--accent-deep); }
 	.session-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin: 28px 0 12px; }
 	.session-heading h1 { margin: 0; font-size: 1.9rem; }
 	.steps { display: flex; gap: 18px; list-style: none; padding: 0; margin: 0 0 18px; color: var(--ink-soft); font-size: .85rem; }
