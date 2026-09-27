@@ -224,7 +224,7 @@
 			await setLanguage(currentLang);
 			showStatus(
 				(v) => (langStatus = v),
-				"Display language saved!",
+				"Display language saved.",
 				"success",
 			);
 		} catch {
@@ -476,11 +476,16 @@
 
 			<div class="pref-row">
 				<label for="pref-language">Interface Language</label>
-				<select id="pref-language" bind:value={currentLang}>
+				<select id="pref-language" bind:value={currentLang} onchange={handleLanguageSave}>
 					<option value="fa">فارسی</option>
 					<option value="en">English</option>
 				</select>
 			</div>
+			{#if langStatus}
+				<div class="status-msg {langStatus.type}">
+					{langStatus.text}
+				</div>
+			{/if}
 
 			<CourseSwitcher language={currentLang} targetLanguage={currentTargetLang} />
 
@@ -514,17 +519,6 @@
 					{/each}
 				</div>
 			</div>
-
-			<button
-				class="btn-primary"
-				onclick={handleLanguageSave}
-				style="margin-top:8px;">Save Display Language</button
-			>
-			{#if langStatus}
-				<div class="status-msg {langStatus.type}">
-					{langStatus.text}
-				</div>
-			{/if}
 		</div>
 
 		<!-- Goethe Exam Section -->

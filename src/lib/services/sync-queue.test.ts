@@ -413,6 +413,19 @@ describe('flushQueue', () => {
 // ─── cloudWrite ───────────────────────────────────────────────────────────────
 
 describe('cloudWrite', () => {
+	it('drops an older queued write for the same thing once a newer write succeeds', async () => {
+		seedQueue([
+			{ type: 'profile_update', key: 'language', data: { language: 'fa' } },
+			{ type: 'profile_update', key: 'voice_speed', data: { voice_speed: 1 } }
+		]);
+		const sb = makeSbClient();
+		vi.mocked(getSupabaseBrowserClient).mockReturnValue(sb as any);
+
+		await cloudWrite('profile_update', 'language', { language: 'en' });
+
+		expect(readQueue()).toEqual([expect.objectContaining({ key: 'voice_speed' })]);
+	});
+
 	it('calls Supabase immediately when online and authenticated', async () => {
 		const sb = makeSbClient();
 		vi.mocked(getSupabaseBrowserClient).mockReturnValue(sb as any);
