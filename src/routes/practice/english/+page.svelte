@@ -3,7 +3,6 @@
 	import { enhance } from '$app/forms';
 	import type { PageProps } from './$types';
 	import AppHeader from '$lib/components/AppHeader.svelte';
-	import CourseSwitcher from '$lib/components/CourseSwitcher.svelte';
 	import EnglishModuleTabs from '$lib/components/EnglishModuleTabs.svelte';
 	import PracticeVoice from '$lib/components/PracticeVoice.svelte';
 	import EnglishSpeechInput from '$lib/components/EnglishSpeechInput.svelte';
@@ -182,7 +181,6 @@
 			</label>
 		{/snippet}
 	</AppHeader>
-	<CourseSwitcher {language} targetLanguage="en" />
 	<EnglishModuleTabs current="conversation" {isFa} />
 
 	{#if !started}
