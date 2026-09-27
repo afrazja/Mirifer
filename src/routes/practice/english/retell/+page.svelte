@@ -2,7 +2,6 @@
 	import { onMount } from 'svelte';
 	import type { PageProps } from './$types';
 	import AppHeader from '$lib/components/AppHeader.svelte';
-	import CourseSwitcher from '$lib/components/CourseSwitcher.svelte';
 	import EnglishModuleTabs from '$lib/components/EnglishModuleTabs.svelte';
 	import { RETELL_PIECES, MAX_LISTENS, PLAYBACK_RATE, pieceImage, formatDuration, listenSeconds, speakLimit, type RetellPiece } from '$lib/practice/retell';
 	import type { DisplayText } from '$lib/practice/hotel';
@@ -186,7 +185,6 @@
 			</label>
 		{/snippet}
 	</AppHeader>
-	<CourseSwitcher {language} targetLanguage="en" />
 	<EnglishModuleTabs current="retell" {isFa} />
 
 	{#if stage === 'list' || !piece}
