@@ -3,7 +3,7 @@
 	import type { PageProps } from './$types';
 	import AppHeader from '$lib/components/AppHeader.svelte';
 	import CourseSwitcher from '$lib/components/CourseSwitcher.svelte';
-	import { RETELL_PIECES, MAX_LISTENS, PLAYBACK_RATE, formatDuration, listenSeconds, speakLimit, type RetellPiece } from '$lib/practice/retell';
+	import { RETELL_PIECES, MAX_LISTENS, PLAYBACK_RATE, pieceImage, formatDuration, listenSeconds, speakLimit, type RetellPiece } from '$lib/practice/retell';
 	import type { DisplayText } from '$lib/practice/hotel';
 	import type { RetellRecord } from '$lib/practice/progress';
 	import { getLanguage, setLanguage } from '$services/data-layer';
@@ -202,6 +202,7 @@
 			{#each RETELL_PIECES as item}
 				{@const best = records[item.id]}
 				<li><button class="piece" onclick={() => open(item)}>
+					<img class="thumb" src={pieceImage(item, true)} alt="" width="480" height="320" loading="lazy" decoding="async" />
 					<span class="level">{item.level}</span>
 					<strong>{text(item.title)}</strong>
 					<span class="meta">{isFa ? 'شنیدن' : 'Listening'} ≈ {formatDuration(listenSeconds(item))} · {isFa ? 'صحبت تا' : 'You speak up to'} {formatDuration(speakLimit(item))}</span>
@@ -220,6 +221,8 @@
 			<li class:current={stage === 'speak' || stage === 'checking'}>{isFa ? '۲. بازگو کن' : '2. Retell'}</li>
 			<li class:current={stage === 'result'}>{isFa ? '۳. بازخورد' : '3. Feedback'}</li>
 		</ol>
+
+		<img class="banner" src={pieceImage(piece)} srcset={`${pieceImage(piece, true)} 480w, ${pieceImage(piece)} 960w`} sizes="(max-width: 640px) 100vw, 812px" alt={text(piece.imageAlt)} width="960" height="640" decoding="async" />
 
 		{#if stage === 'listen'}
 			<section class="panel">
@@ -307,7 +310,10 @@
 	.how { padding-inline-start: 22px; color: var(--ink-soft); line-height: 1.9; margin-bottom: 18px; }
 	.rule { padding: 12px 14px; border-radius: 10px; background: var(--paper-sunken); border: 1px solid var(--line); font-size: .9rem; }
 	.pieces { list-style: none; padding: 0; margin: 24px 0; display: grid; gap: 12px; }
-	.piece { width: 100%; display: grid; gap: 4px; text-align: start; padding: 18px 20px; border: 1px solid var(--control-border); border-radius: 14px; background: var(--paper-raised); color: var(--ink); }
+	.piece { width: 100%; display: grid; grid-template-columns: 150px 1fr; column-gap: 18px; row-gap: 4px; align-content: center; text-align: start; padding: 14px; border: 1px solid var(--control-border); border-radius: 14px; background: var(--paper-raised); color: var(--ink); }
+	.piece > :not(.thumb) { grid-column: 2; }
+	.thumb { grid-column: 1; grid-row: 1 / span 4; width: 150px; height: 100px; object-fit: cover; border-radius: 10px; background: var(--paper-sunken); }
+	.banner { display: block; width: 100%; height: auto; max-height: 300px; aspect-ratio: 3 / 2; object-fit: cover; border-radius: 16px; margin-bottom: 16px; background: var(--paper-sunken); }
 	.piece:hover { border-color: var(--accent); }
 	.piece strong { font-size: 1.1rem; }
 	.level { font-size: .72rem; font-weight: 700; letter-spacing: .1em; color: var(--accent-deep); }
@@ -349,6 +355,9 @@
 	@media (max-width: 640px) {
 		.retell-page { padding: 16px 16px 40px; }
 		.panel { padding: 18px 16px; }
+		.piece { grid-template-columns: 96px 1fr; column-gap: 14px; }
+		.thumb { width: 96px; height: 72px; }
+		.banner { max-height: 200px; }
 		.player, .recorder { grid-template-columns: 1fr; }
 		.session-heading h1 { font-size: 1.5rem; }
 		.display-control { font-size: 0; } .display-control select { font-size: .85rem; }

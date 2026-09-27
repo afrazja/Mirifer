@@ -19,7 +19,11 @@ export interface RetellPiece {
 	text: string;
 	/** What a complete retelling covers, in plain English. */
 	keyPoints: string[];
+	/** Describes the piece's picture, /images/retell/<id>.webp (and -sm.webp). */
+	imageAlt: DisplayText;
 }
+
+export const pieceImage = (piece: Pick<RetellPiece, 'id'>, small = false) => `/images/retell/${piece.id}${small ? '-sm' : ''}.webp`;
 
 /**
  * The narration comes out at about 185 words a minute, too fast for
@@ -62,7 +66,8 @@ export const RETELL_PIECES: RetellPiece[] = [
 			'She called the taxi company with the number on her receipt, using her neighbour’s phone.',
 			'The driver found the phone under the seat and brought it to her door.',
 			'He didn’t want money, only a cup of coffee.'
-		]
+		],
+		imageAlt: { en: 'A tired young woman asleep in the back of a taxi at night, her phone slipping onto the seat.', fa: 'زنی جوان و خسته که شب در صندلی عقب تاکسی خوابش برده و گوشی‌اش روی صندلی افتاده است.' }
 	},
 	{
 		id: 'four-day-week',
@@ -76,7 +81,8 @@ export const RETELL_PIECES: RetellPiece[] = [
 			'They changed how they worked: short morning meetings and checking email only twice a day.',
 			'Some clients wanted answers on Fridays, so staff took turns being available.',
 			'The company is keeping the four-day week, and other businesses want advice.'
-		]
+		],
+		imageAlt: { en: 'A small team of designers smiling around a table with sketches in a short morning meeting.', fa: 'گروه کوچکی از طراحان که در یک جلسهٔ کوتاه صبحگاهی دور میزی پر از طرح لبخند می‌زنند.' }
 	},
 	{
 		id: 'night-market',
@@ -91,7 +97,8 @@ export const RETELL_PIECES: RetellPiece[] = [
 			'It helped the town: cafés stayed open later, new shops opened, and the council paid for lights and bins.',
 			'Neighbours complained about noise and parking, so the music ends at nine and visitors park at the station.',
 			'Volunteers run it now, and for Priya the best part is that neighbours know each other.'
-		]
+		],
+		imageAlt: { en: 'A crowded evening market under string lights in front of a brick town hall, with families chatting after the rain.', fa: 'بازاری شلوغ در شب زیر ریسه‌های چراغ، جلوی ساختمان آجری شهرداری، با خانواده‌هایی که بعد از باران گپ می‌زنند.' }
 	}
 ];
 
