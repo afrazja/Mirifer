@@ -3,7 +3,7 @@
     "name": "Mirifer — Learn German",
     "short_name": "Mirifer",
     "description": "Learn German through real conversations — voice practice, daily lessons, weekly exams and spaced repetition. English and Persian support.",
-    "start_url": "/home",
+    "start_url": "/languages",
     "scope": "/",
     "display": "standalone",
     "orientation": "portrait-primary",

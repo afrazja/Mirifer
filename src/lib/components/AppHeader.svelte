@@ -58,7 +58,7 @@
 					<span>{backLabel}</span>
 				</a>
 			{:else}
-				<a class="brand" href="/home" aria-label="Mirifer home">
+				<a class="brand" href="/languages" aria-label="Mirifer: my languages">
 					<BrandLogo tone={variant === "plain" ? "auto" : "light"} />
 				</a>
 			{/if}

@@ -255,7 +255,7 @@ export async function ensureProfile(user: User): Promise<void> {
  * Google user would be shown "Email confirmed!", which they never asked for
  * and did not do.
  */
-export async function signInWithGoogle(next = '/home'): Promise<{ error: string | null }> {
+export async function signInWithGoogle(next = '/languages'): Promise<{ error: string | null }> {
 	const client = sb();
 	if (!client) return { error: 'Supabase not configured' };
 	if (typeof window === 'undefined') return { error: 'Unavailable' };

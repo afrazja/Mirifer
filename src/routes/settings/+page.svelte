@@ -371,7 +371,7 @@
 {#if !isLoading}
 	<main class="settings-container">
 		<div class="settings-header">
-			<AppHeader title="Settings" icon="⚙" backHref="/home" backLabel="Home" />
+			<AppHeader title="Settings" icon="⚙" backHref="/languages" backLabel="My languages" />
 		</div>
 
 	<!-- Skip-link target: absolutely positioned, so it adds no box. -->
