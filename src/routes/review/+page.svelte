@@ -2,6 +2,7 @@
 	import { onMount } from "svelte";
 	import { goto } from "$app/navigation";
 	import AppHeader from "$lib/components/AppHeader.svelte";
+	import GermanSectionTabs from "$lib/components/GermanSectionTabs.svelte";
 	import { preferencesStore, type Language } from "$stores/preferences";
 	import {
 		getDueReviewItems,
@@ -132,11 +133,12 @@
 		<AppHeader
 			title={prefs.language === "fa" ? "مرور" : "Review"}
 			icon="🔄"
-			backHref="/home"
-			backLabel={prefs.language === "fa" ? "خانه" : "Home"}
+			backHref="/languages"
+			backLabel={prefs.language === "fa" ? "زبان‌ها" : "Languages"}
 			actions={headerActions}
 			direction={prefs.language === "fa" ? "rtl" : "ltr"}
 		/>
+		<GermanSectionTabs current="review" language={prefs.language} />
 	</div>
 
 	<main id="main-content" tabindex="-1" class="review-content">

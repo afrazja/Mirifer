@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import AppHeader from "$lib/components/AppHeader.svelte";
+	import GermanSectionTabs from "$lib/components/GermanSectionTabs.svelte";
 	import { getLanguage, setLanguage, getBasicsCompleted } from "$services/data-layer";
 	import { GROUPS, groupFor, matchesQuery, type GroupId } from "$services/basics-groups";
 	import type { Language } from "$stores/preferences";
@@ -72,7 +73,7 @@
 			: "Choose a category to start learning",
 	);
 	const backText = $derived(
-		currentLang === "fa" ? "\u062E\u0627\u0646\u0647" : "Home",
+		currentLang === "fa" ? "زبان‌ها" : "Languages",
 	);
 	const wordsLabel = $derived(
 		currentLang === "fa" ? "\u06A9\u0644\u0645\u0647" : "words",
@@ -124,12 +125,12 @@
 		title={pageTitle}
 		subtitle={pageSubtitle}
 		icon="🔤"
-		backHref="/home"
+		backHref="/languages"
 		backLabel={backText}
 		actions={headerActions}
-		variant="dark"
 		direction={currentLang === "fa" ? "rtl" : "ltr"}
 	/>
+	<GermanSectionTabs current="basics" language={currentLang} />
 
 	<!-- Skip-link target: absolutely positioned, so it adds no box. -->
 	<span id="main-content" tabindex="-1" class="sr-only"></span>

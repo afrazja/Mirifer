@@ -437,7 +437,6 @@
 				actions={categoryHeaderActions}
 				secondary={categorySecondaryControls}
 				secondaryLabel={currentLang === "fa" ? "کنترل‌های مبحث" : "Topic controls"}
-				variant="dark"
 				direction={currentLang === "fa" ? "rtl" : "ltr"}
 			/>
 		</div>

@@ -960,7 +960,6 @@
 		secondary={lessonSecondaryControls}
 		secondaryLabel={prefs.language === "fa" ? "کنترل‌های درس" : "Lesson controls"}
 		sticky
-		variant="brand"
 		direction={prefs.language === "fa" ? "rtl" : "ltr"}
 	/>
 
