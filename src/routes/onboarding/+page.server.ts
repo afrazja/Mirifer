@@ -8,9 +8,11 @@ export async function load({ locals, url }: RequestEvent) {
 		throw redirect(303, '/login');
 	}
 
-	// If user has already selected a target language, skip onboarding
+	// Onboarding is German setup (exam goal, level). Skip it once done; an
+	// English learner adding German still goes through it.
 	const targetLang = locals.user?.user_metadata?.target_language;
-	if (getCourse(targetLang)) {
+	const meta = locals.user?.user_metadata ?? {};
+	if (targetLang === 'de' || (getCourse(targetLang) && (meta.exam_settings || meta.onboarding))) {
 		throw redirect(303, isAvailableCourse(targetLang) ? '/home' : '/languages');
 	}
 	const language = url.searchParams.get('language');

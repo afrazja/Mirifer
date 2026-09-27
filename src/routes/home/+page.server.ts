@@ -6,7 +6,7 @@ import { isAvailableCourse } from '$lib/courses';
 
 export async function load({ locals }: RequestEvent) {
 	// Must be signed in. Send to the app login screen — NOT the marketing
-	// landing page — so the installed PWA (start_url /home) never opens on
+	// landing page — so a direct visit or old bookmark never opens on
 	// marketing content.
 	if (!locals.session) {
 		throw redirect(303, '/login');

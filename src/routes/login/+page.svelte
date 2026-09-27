@@ -5,7 +5,6 @@
 	import { onMount } from "svelte";
 	import * as auth from "$services/auth";
 	import * as dataLayer from "$services/data-layer";
-	import { isAvailableCourse } from '$lib/courses';
 
 	let mode = $state<"signin" | "signup" | "reset">("signin");
 	/** Set once a reset mail has gone out, so the form is replaced by advice. */
@@ -93,12 +92,8 @@
 				// Email confirmation required — no active session yet
 				emailSent = true;
 			} else {
-				const targetLang = result.user?.user_metadata?.target_language;
-				goto(
-					isAvailableCourse(targetLang)
-						? "/home"
-						: "/onboarding",
-				);
+				// Everyone lands on My languages; a new learner picks a course there.
+				goto("/languages");
 				// Fire-and-forget after navigation
 				if (result.user) auth.ensureProfile(result.user);
 				dataLayer.syncOnLogin();
@@ -177,7 +172,7 @@
 			{#if mode !== "reset"}
 				<GoogleSignIn
 					position="above"
-					next="/home"
+					next="/languages"
 					onError={(m) => (error = m)}
 				/>
 			{/if}

@@ -47,7 +47,7 @@
 		}
 		done = true;
 		// Already signed in by the code exchange, so straight into the app.
-		setTimeout(() => goto('/home'), 1200);
+		setTimeout(() => goto('/languages'), 1200);
 	}
 
 	function onKey(e: KeyboardEvent) {

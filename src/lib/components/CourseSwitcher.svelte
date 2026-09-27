@@ -8,7 +8,7 @@
 <a class="course-switcher" href="/languages" dir={isFa ? 'rtl' : 'ltr'}>
 	<span><small>{isFa ? 'زبان یادگیری' : 'Learning language'}</small>
 		<strong>{course ? course.name[isFa ? 'fa' : 'en'] : (isFa ? 'انتخاب زبان' : 'Choose a language')}</strong></span>
-	<span class="change">{isFa ? 'انتخاب زبان ←' : 'Change language →'}</span>
+	<span class="change">{isFa ? 'زبان‌های من ←' : 'My languages →'}</span>
 </a>
 
 <style>

@@ -53,7 +53,7 @@ describe('course entry and persistence', () => {
 	it.each(['fr'])('repairs an unavailable %s selection by updating only the course preference', async (course) => {
 		const f = fixture(course);
 		await expect(actions.default(f.event())).rejects.toMatchObject({ location: '/home' });
-		expect(f.supabase.auth.updateUser).toHaveBeenCalledExactlyOnceWith({ data: { target_language: 'de' } });
+		expect(f.supabase.auth.updateUser).toHaveBeenCalledExactlyOnceWith({ data: { target_language: 'de', learning: ['de'] } });
 	});
 	it('keeps the learner on the chooser when a save fails', async () => {
 		const f = fixture('fr');
@@ -75,7 +75,7 @@ describe('course entry and persistence', () => {
 		for (const target of [undefined, 'de']) {
 			const f = fixture(target); f.form.set('language', 'en');
 			await expect(actions.default(f.event())).rejects.toMatchObject({ location: '/practice/english' });
-			expect(f.supabase.auth.updateUser).toHaveBeenCalledExactlyOnceWith({ data: { target_language: 'en' } });
+			expect(f.supabase.auth.updateUser).toHaveBeenCalledExactlyOnceWith({ data: { target_language: 'en', learning: target ? [target, 'en'] : ['en'] } });
 		}
 		await expect(home(fixture('en').event())).rejects.toMatchObject({ location: '/practice/english' });
 	});
@@ -89,5 +89,15 @@ describe('course entry and persistence', () => {
 	it('protects course deep links while leaving the landing page and account pages alone', () => {
 		for (const path of ['/lesson', '/lesson/', '/lessons', '/review/quiz', '/drill/sprechen', '/check-in', '/vocabulary']) expect(needsCourse(path)).toBe(true);
 		for (const path of ['/', '/fa', '/try', '/languages', '/onboarding', '/settings', '/admin', '/api/analytics', '/review-other']) expect(needsCourse(path)).toBe(false);
+	});
+	it('sends an English learner adding German through German setup, then keeps both languages', async () => {
+		const f = fixture('en'); delete (f.user.user_metadata as any).onboarding;
+		await expect(actions.default(f.event())).rejects.toMatchObject({ location: '/onboarding?language=de' });
+		expect(f.supabase.auth.updateUser).not.toHaveBeenCalled();
+		const event = f.event(); event.url = new URL('https://mirifer.test/onboarding?language=de');
+		expect(await onboarding(event)).toEqual({ targetLanguage: 'de' });
+		const back = fixture('de'); (back.user.user_metadata as any).learning = ['en', 'de']; back.form.set('language', 'en');
+		await expect(actions.default(back.event())).rejects.toMatchObject({ location: '/practice/english' });
+		expect(back.supabase.auth.updateUser).toHaveBeenCalledExactlyOnceWith({ data: { target_language: 'en', learning: ['de', 'en'] } });
 	});
 });

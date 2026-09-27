@@ -32,7 +32,7 @@
 		position?: 'above' | 'below';
 	}
 
-	let { next = '/home', lang = 'en', onError, position = 'below' }: Props = $props();
+	let { next = '/languages', lang = 'en', onError, position = 'below' }: Props = $props();
 
 	const isFa = $derived(lang === 'fa');
 	let busy = $state(false);
