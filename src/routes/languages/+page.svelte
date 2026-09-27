@@ -59,7 +59,6 @@
 						<option value="en">English</option><option value="fa">فارسی</option>
 					</select>
 				</label>
-				<a class="settings-link" href="/settings">{isFa ? 'تنظیمات' : 'Settings'}</a>
 			</div>
 		{/snippet}
 	</AppHeader>
@@ -164,8 +163,6 @@
 	.header-actions { display: flex; align-items: center; gap: 14px; }
 	.display-control { display: flex; align-items: center; gap: 8px; color: var(--ink-soft); font-size: .8rem; }
 	.display-control select { min-height: 40px; padding: 5px 8px; border: 1px solid var(--control-border); border-radius: 8px; background: var(--paper-raised); color: var(--ink); font: inherit; font-size: .85rem; }
-	.settings-link { color: var(--accent-deep); font-weight: 600; font-size: .9rem; text-decoration: none; padding: 10px 4px; }
-	.settings-link:hover { text-decoration: underline; }
 	.course { display: flex; flex-direction: column; padding: 30px; background: var(--paper-raised); border: 1px solid var(--control-border); border-radius: 20px; box-shadow: var(--paper-shadow); }
 	.upcoming { background: var(--paper-sunken); box-shadow: none; }
 	.card-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 28px; }

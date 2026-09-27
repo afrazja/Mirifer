@@ -14,6 +14,7 @@
 	 * Speaking items skipped (or no mic) are excluded, like the placement test.
 	 */
 	import { onDestroy, onMount } from 'svelte';
+	import AppHeader from '$lib/components/AppHeader.svelte';
 	import { playAudioPromise, stopAllAudio, ttsIsPlaying } from '$services/tts';
 	import {
 		initSpeechRecognition,
@@ -243,12 +244,11 @@
 </svelte:head>
 
 <main class="drill-page">
-	<header class="dr-header">
-		<a href={authed ? '/home' : '/'} class="back">← Mirifer</a>
-		{#if phase === 'drill'}
-			<span class="dr-progress">{idx + 1} / {total}</span>
-		{/if}
-	</header>
+	<AppHeader backHref={authed ? '/home' : '/'} backLabel={authed ? 'Home' : 'Mirifer'}>
+		{#snippet actions()}
+			{#if phase === 'drill'}<span class="dr-progress">{idx + 1} / {total}</span>{/if}
+		{/snippet}
+	</AppHeader>
 
 	<span id="main-content" tabindex="-1" class="sr-only"></span>
 
@@ -386,26 +386,8 @@
 	}
 
 
-	.dr-header {
-		width: 100%;
-		max-width: 620px;
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		padding: 8px 4px 18px;
-	}
 
 
-	.back {
-		/* 44px minimum touch target — this was a bare 26px-tall link. */
-		display: inline-flex;
-		align-items: center;
-		min-height: 44px;
-		padding: 10px 4px;
-		color: var(--ink-soft);
-		text-decoration: none;
-		font-weight: 600;
-	}
 
 
 	.dr-progress {
