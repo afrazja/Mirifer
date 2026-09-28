@@ -301,6 +301,22 @@
 	let showScript = $state(false);
 	let showScenarioInfo = $state(false);
 
+	// The script never gives the lesson away. While a lesson is running it
+	// lists the lines already done and the current one; the rest is a
+	// count. A finished lesson (just now, or reopened later) unlocks the
+	// whole script as a review sheet.
+	const scriptUnlocked = $derived(
+		!!completionData || !!app.completedLessons?.[app.currentDay],
+	);
+	const visibleScript = $derived(
+		scriptUnlocked
+			? scriptItems
+			: scriptItems.slice(0, app.currentSentenceIndex + 1),
+	);
+	const lockedLines = $derived(scriptItems.length - visibleScript.length);
+	const canRevisit = (index: number) =>
+		scriptUnlocked || index < app.currentSentenceIndex;
+
 	function updateScript() {
 		if (!lesson.currentLesson) return;
 		const isLessonDone = !!(
@@ -675,6 +691,8 @@
 	}
 
 	function handleScriptItemClick(index: number) {
+		// Only lines already done can be replayed: no jumping ahead.
+		if (!canRevisit(index)) return;
 		jumpToSentence(index);
 		showScript = false; // close mobile drawer after selecting a sentence
 	}
@@ -1910,16 +1928,21 @@
 								</p>
 							</div>
 						{/if}
-						{#each exam.isExamMode || exam.isConversation ? [] : scriptItems as item, i}
+						{#each exam.isExamMode || exam.isConversation ? [] : visibleScript as item, i}
+							{@const hidden = item.active && prefs.blindMode && !scriptUnlocked}
 							<div class="script-row">
 								<!-- svelte-ignore a11y_interactive_supports_focus -->
 								<div
 									class="script-item"
 									class:done={item.done}
 									class:active={item.active}
+									class:locked={!canRevisit(i)}
 									role="button"
-									tabindex="0"
-									aria-label="Sentence {i + 1}: {item.german}"
+									tabindex={canRevisit(i) ? 0 : -1}
+									aria-disabled={!canRevisit(i)}
+									aria-label={hidden
+										? `Sentence ${i + 1}`
+										: `Sentence ${i + 1}: ${item.german}`}
 									onclick={() => handleScriptItemClick(i)}
 									onkeydown={(e) => {
 										if (e.key === "Enter" || e.key === " ") {
@@ -1932,7 +1955,16 @@
 										{item.active ? "▶" : i + 1}
 									</div>
 									<div class="script-text">
-										<div class="german" lang="de" dir="ltr">{item.german}</div>
+										{#if hidden}
+											<!-- Blind mode hides the current sentence here too, as in the chat. -->
+											<div class="german hidden-line">
+												{prefs.language === "fa"
+													? "🙈 [مخفی] - گوش کن!"
+													: "🙈 [Hidden] - Listen!"}
+											</div>
+										{:else}
+											<div class="german" lang="de" dir="ltr">{item.german}</div>
+										{/if}
 										<div
 											class="translation"
 											style="direction: {prefs.language ===
@@ -1945,23 +1977,32 @@
 									</div>
 								</div>
 
-								<div class="script-foot">
-									<button
-										class="practice-link"
-										onclick={() =>
-											openPractice(
-												item.german,
-												item.translation,
-												i,
-											)}
-									>
-										{prefs.language === "fa"
-											? "تمرین ←"
-											: "Practice →"}
-									</button>
-								</div>
+								{#if !hidden}
+									<div class="script-foot">
+										<button
+											class="practice-link"
+											onclick={() =>
+												openPractice(
+													item.german,
+													item.translation,
+													i,
+												)}
+										>
+											{prefs.language === "fa"
+												? "تمرین ←"
+												: "Practice →"}
+										</button>
+									</div>
+								{/if}
 							</div>
 						{/each}
+						{#if !exam.isExamMode && !exam.isConversation && lockedLines > 0}
+							<p class="script-locked">
+								🔒 {prefs.language === "fa"
+									? `${lockedLines} خط دیگر — با پیش رفتن درس باز می‌شوند.`
+									: `${lockedLines} more line${lockedLines === 1 ? "" : "s"} — they unlock as you go.`}
+							</p>
+						{/if}
 					</div>
 				</aside>
 
@@ -3523,7 +3564,7 @@
 		align-items: flex-start;
 	}
 
-	.script-item:hover {
+	.script-item:not(.locked):hover {
 		background: var(--paper-sunken);
 	}
 
@@ -3585,6 +3626,23 @@
 
 	.script-item.active .german {
 		color: var(--accent-deep);
+	}
+
+	.script-item.locked {
+		cursor: default;
+	}
+
+	.script-item .german.hidden-line {
+		color: var(--ink-faint);
+		font-weight: normal;
+	}
+
+	.script-locked {
+		margin: 0;
+		padding: 14px 16px;
+		color: var(--ink-soft);
+		font-size: 0.85rem;
+		text-align: center;
 	}
 
 	.script-item.active .translation {
