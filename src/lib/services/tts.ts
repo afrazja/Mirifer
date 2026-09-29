@@ -125,12 +125,16 @@ export function stopAllAudio(): void {
  * because lessons differ in word length, but the voice itself does not
  * change speed. The speed setting multiplies on top of this.
  *
- * English (Edge Andrew/Ava Multilingual) was asked for at 0.7. A neural
- * voice slowed that far stretches its sounds and drags the last word of a
- * sentence, which learners heard as unnatural, so English plays at the
- * voice's natural speed. The German speed setting does not apply to it.
+ * English (Edge Andrew/Ava Multilingual), the lesson translations, plays at
+ * 0.8. At the voice's own speed it runs about 234 words a minute counting
+ * pauses (117 translations measured across lessons 1-120), far faster than
+ * the German it introduces; at 0.8 it is about 186. It was once asked for
+ * at 0.7 (about 164), which learners heard as unnatural with the last word
+ * held, so it stays above that. The German speed setting does not apply to
+ * English, and other languages play at the voice's own speed.
  */
 export const GERMAN_BASE_RATE = 0.9;
+export const ENGLISH_BASE_RATE = 0.8;
 
 /**
  * Native speed range of the Edge voices (the server's clamp). Anything
@@ -141,8 +145,10 @@ const ENGINE_MIN = 0.5;
 const ENGINE_MAX = 1.5;
 
 /** The speed a language's voice is asked for at an app-level rate of `rate`. */
-export const paceFor = (shortLang: string, rate: number): number =>
-	Math.round((shortLang === 'de' ? rate * GERMAN_BASE_RATE : rate) * 100) / 100;
+export const paceFor = (shortLang: string, rate: number): number => {
+	const base = shortLang === 'de' ? GERMAN_BASE_RATE : shortLang === 'en' ? ENGLISH_BASE_RATE : 1;
+	return Math.round(rate * base * 100) / 100;
+};
 
 /**
  * Split an app-level rate into the speed to request from the TTS engine
