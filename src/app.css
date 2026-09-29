@@ -468,8 +468,6 @@ select {
    .brand is scoped to the app header on purpose. Bare `.brand` also matched
    the landing page's logo link, which has no background and no border, so
    the keycap shadow drew a raised box around nothing. */
-.back-control,
-.app-header .brand,
 .btn-ghost,
 .btn-choice,
 .lesson-toolbar-content select,
@@ -485,8 +483,6 @@ select {
 		border-color 0.15s ease;
 }
 
-.back-control:active,
-.app-header .brand:active,
 .btn-ghost:active,
 .btn-choice:active {
 	transform: translateY(2px);
@@ -506,9 +502,7 @@ select {
 	.btn-mic,
 	.next-day-btn,
 	.gm-continue,
-	.back-control,
-	.app-header .brand,
-		.btn-ghost,
+	.btn-ghost,
 	.btn-choice {
 		transition: none;
 	}

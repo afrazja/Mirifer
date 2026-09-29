@@ -30,7 +30,7 @@
 </nav>
 
 <style>
-	.section-tabs { display: flex; gap: 6px; padding: 6px; margin-block: 16px 8px; border: 1px solid var(--control-border); border-radius: 14px; background: var(--paper-sunken); overflow-x: auto; scrollbar-width: none; }
+	.section-tabs { display: flex; min-width: 0; max-width: 100%; gap: 6px; padding: 6px; margin-block: 16px 8px; border: 1px solid var(--control-border); border-radius: 14px; background: var(--paper-sunken); overflow-x: auto; scrollbar-width: none; }
 	.section-tabs::-webkit-scrollbar { display: none; }
 	a { flex: 1 0 auto; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 8px 14px; border-radius: 10px; color: var(--ink-soft); font-size: .92rem; font-weight: 600; text-decoration: none; white-space: nowrap; }
 	a:hover { background: var(--control-hover); color: var(--ink); }
