@@ -1366,37 +1366,6 @@
 												: "🔊 Replay"}
 										{/if}
 									</button>
-									<!-- The mic belongs where the sentence is, beside the
-									     button that reads it aloud.
-
-									     On EVERY step, not just the learner's own. It was
-									     gated to 'sent' on the theory that there is nothing
-									     to say back to the other speaker — but repeating
-									     what you just heard is shadowing, and
-									     evaluateVoiceInput already scores a received line
-									     against its audioText. The gate blocked a technique
-									     the controller supported, and it moved the mic
-									     between the card and the page footer depending on
-									     whose line it was, which is worse than either
-									     position alone. -->
-									{#if micSupported}
-										<button
-											class="btn-record"
-											class:recording={app.isListening}
-											onclick={handleMicClick}
-											aria-label={app.isListening
-												? "Stop recording"
-												: "Record your answer"}
-										>
-											{app.isListening
-												? currentTeachStep.language === "fa"
-													? "🛑 تمام"
-													: "🛑 Stop"
-												: currentTeachStep.language === "fa"
-													? "🎤 بگو"
-													: "🎤 Say it"}
-										</button>
-									{/if}
 									{#if currentTeachStep.role === "sent" && (currentTeachStep.hint || currentTeachStep.hintFa)}
 										<button
 											class="btn-hint"
@@ -1851,18 +1820,13 @@
 						>
 							<span lang="de" dir="ltr">{@html answerLineHtml}</span>
 						</div>
-						<!-- Hidden whenever a teach card is up, since the card carries
-						     its own. Two mics doing one job is the duplication the
-						     Practice button was removed for, and a mic that changes
-						     position between sentences is worse still. Remains the only
-						     mic in exam and conversation mode, which have no card. -->
-						{#if !(currentTeachStep && micSupported)}
-							<button
-								class="btn-send"
+						<!-- The one mic, always in the same place at the bottom of
+						     the lesson, on every step: the learner's own lines,
+						     shadowing the other speaker's, exams and conversations. -->
+						<button
+							class="btn-send"
 							class:pulse={app.isListening}
-							style="background: {app.isListening
-								? '#f44336'
-								: 'var(--accent)'};"
+							class:recording={app.isListening}
 							onclick={handleMicClick}
 							aria-label={app.isListening
 								? "Stop recording"
@@ -1870,7 +1834,6 @@
 						>
 							{app.isListening ? "🛑" : "🎙️"}
 						</button>
-						{/if}
 					</div>
 				</div>
 				<!-- end chat-main -->
@@ -2806,34 +2769,6 @@
 		color: var(--ink);
 	}
 
-	/* Reads as the primary action on the learner's own lines, because it
-	   is — Replay and Hint are optional, saying it is the lesson. Turns
-	   --miss while live so "recording" is not carried by the label alone. */
-	.btn-record {
-		min-height: 44px;
-		padding: 6px 16px;
-		border: 2px solid var(--leaf-edge);
-		border-radius: 20px;
-		background: var(--leaf);
-		color: var(--on-accent);
-		font-size: 0.85rem;
-		font-weight: 700;
-		cursor: pointer;
-		box-shadow: 0 3px 0 var(--leaf-edge);
-	}
-
-	.btn-record:active {
-		transform: translateY(3px);
-		box-shadow: none;
-	}
-
-	.btn-record.recording {
-		background: var(--miss);
-		border-color: var(--miss-edge);
-		box-shadow: 0 3px 0 var(--miss-edge);
-		animation: pulse 1.4s ease-in-out infinite;
-	}
-
 	.btn-inline-next {
 		padding: 6px 16px;
 		border-radius: 20px;
@@ -2933,19 +2868,25 @@
 		font-size: 0.9rem;
 	}
 
+	/* Speaking is the lesson, so the mic is the biggest control on the bar. */
 	.btn-send {
-		width: 48px;
-		height: 48px;
+		width: 56px;
+		height: 56px;
 		border-radius: 50%;
 		border: none;
+		background: var(--accent);
 		color: white;
-		font-size: 24px;
+		font-size: 26px;
 		cursor: pointer;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		transition: all 0.3s;
 		flex-shrink: 0;
+	}
+
+	.btn-send.recording {
+		background: var(--miss);
 	}
 
 	.btn-send.pulse {
