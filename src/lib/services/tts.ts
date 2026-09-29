@@ -113,18 +113,26 @@ export function stopAllAudio(): void {
 }
 
 /**
- * 1.0× is the voice's own speed, in every lesson and every language.
+ * German plays at 0.9 of the voice's own speed at the 1× setting, in every
+ * lesson.
  *
- * German (Edge Conrad/Katja) speaks about 147 wpm at 1.0, a clear learner
- * pace. It used to speed up after lesson 5, towards 1.2 by lesson 30, so
- * the same 1× setting got faster from lesson 9 on without the learner
- * choosing it. The speed setting is the only thing that changes it now.
+ * Measured on the live audio (117 lines across lessons 1-120, Edge
+ * Conrad/Katja): at the voice's own speed German runs about 177 words a
+ * minute counting pauses, close to native speech and fast for a learner.
+ * At 0.9 it is about 160. The speed is one number for the whole course on
+ * purpose: it used to speed up after lesson 5, so the same 1× got faster
+ * from lesson 9 on. Word count per minute differs a little between lessons
+ * because lessons differ in word length, but the voice itself does not
+ * change speed. The speed setting multiplies on top of this.
  *
  * English (Edge Andrew/Ava Multilingual) was asked for at 0.7. A neural
  * voice slowed that far stretches its sounds and drags the last word of a
  * sentence, which learners heard as unnatural, so English plays at the
  * voice's natural speed. The German speed setting does not apply to it.
- *
+ */
+export const GERMAN_BASE_RATE = 0.9;
+
+/**
  * Native speed range of the Edge voices (the server's clamp). Anything
  * outside it is made up with playbackRate, which stretches the audio instead
  * of having the voice speak slower or faster, so it is the last resort.
@@ -132,13 +140,18 @@ export function stopAllAudio(): void {
 const ENGINE_MIN = 0.5;
 const ENGINE_MAX = 1.5;
 
+/** The speed a language's voice is asked for at an app-level rate of `rate`. */
+export const paceFor = (shortLang: string, rate: number): number =>
+	Math.round((shortLang === 'de' ? rate * GERMAN_BASE_RATE : rate) * 100) / 100;
+
 /**
  * Split an app-level rate into the speed to request from the TTS engine
  * and the playbackRate that makes up any remainder outside its range.
  */
-export function engineRate(rate: number): { engine: number; playback: number } {
-	const engine = Math.round(Math.min(ENGINE_MAX, Math.max(ENGINE_MIN, rate)) * 100) / 100;
-	return { engine, playback: rate / engine };
+export function engineRate(shortLang: string, rate: number): { engine: number; playback: number } {
+	const target = paceFor(shortLang, rate);
+	const engine = Math.round(Math.min(ENGINE_MAX, Math.max(ENGINE_MIN, target)) * 100) / 100;
+	return { engine, playback: target / engine };
 }
 
 /** Browser speech synthesis fallback */
@@ -210,7 +223,7 @@ function playWebAudio(
 		// Ask the TTS engine to actually speak slower (natural slow articulation)
 		// instead of time-stretching the audio client-side, which mostly widens
 		// the gaps between words. See engineRate for the pace and range.
-		const { engine, playback } = engineRate(requestedRate);
+		const { engine, playback } = engineRate(shortLang, requestedRate);
 		// `v` changes whenever the voice behind a URL changes, so audio cached
 		// for a year under the old voice is not replayed. v=2: German moved
 		// from ElevenLabs to Edge's German-only voices.
@@ -257,7 +270,7 @@ function playWebAudio(
 			}
 			// Browser TTS does its own rate handling — give it the full
 			// rate, not the residual left over after engine speed.
-			_browserTTS(text, lang, requestedRate).then(resolve);
+			_browserTTS(text, lang, paceFor(shortLang, requestedRate)).then(resolve);
 		};
 
 		const audio = player();
