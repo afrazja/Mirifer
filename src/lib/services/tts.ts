@@ -31,6 +31,72 @@ export const ENGLISH_VOICES: { id: TTSVoice; name: string; gender: 'male' | 'fem
 ];
 
 let currentAudio: HTMLAudioElement | null = null;
+
+/**
+ * One audio element for every line, unlocked by the learner's first tap.
+ *
+ * Phones (iOS Safari above all) only let an audio element start playing
+ * inside a tap. A lesson plays its next line on its own, after a timer or
+ * the microphone, so a fresh `new Audio()` per line was refused, and the
+ * lesson fell back to the phone's built-in voice. That voice speaks much
+ * faster at the same rate, which is why 1× sounded too fast on phones and
+ * 0.75× sounded like 1×. An element that has played once inside a tap may
+ * play again later without one, so every line reuses this one.
+ */
+let sharedPlayer: HTMLAudioElement | null = null;
+let playerUnlocked = false;
+/** Resolves the promise of whatever is playing now, when it is replaced or stopped. */
+let settleCurrent: (() => void) | null = null;
+
+function player(): HTMLAudioElement {
+	if (!sharedPlayer) {
+		sharedPlayer = new Audio();
+		sharedPlayer.preload = 'auto';
+	}
+	return sharedPlayer;
+}
+
+/** A few milliseconds of silence, as a WAV data URI, for unlocking the player. */
+function silence(): string {
+	const samples = 80;
+	const bytes = new Uint8Array(44 + samples * 2);
+	const view = new DataView(bytes.buffer);
+	const text = (at: number, value: string) => [...value].forEach((c, i) => view.setUint8(at + i, c.charCodeAt(0)));
+	text(0, 'RIFF'); view.setUint32(4, 36 + samples * 2, true); text(8, 'WAVE');
+	text(12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+	view.setUint32(24, 8000, true); view.setUint32(28, 16000, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+	text(36, 'data'); view.setUint32(40, samples * 2, true);
+	return `data:audio/wav;base64,${btoa(String.fromCharCode(...bytes))}`;
+}
+
+function unlockPlayer(): void {
+	if (playerUnlocked) return;
+	const audio = player();
+	// Something real is already playing from this tap: that unlocks it too.
+	if (!audio.paused) { playerUnlocked = true; return; }
+	// A line is loading or playing: leave it alone.
+	if (settleCurrent) return;
+	// Drop the last line's handlers so the silence can't end or fail it.
+	audio.onplay = audio.onended = audio.onerror = null;
+	audio.src = silence();
+	audio.play().then(() => { playerUnlocked = true; }).catch(() => {});
+}
+
+if (typeof document !== 'undefined') {
+	// touchend and click are the events iOS counts as a tap for audio.
+	for (const type of ['touchend', 'click', 'keydown']) {
+		document.addEventListener(type, unlockPlayer, { capture: true, passive: true });
+	}
+}
+
+/** Stop the shared player and settle the promise of the line it was playing. */
+function releasePlayer(): void {
+	const settle = settleCurrent;
+	settleCurrent = null;
+	sharedPlayer?.pause();
+	currentAudio = null;
+	settle?.();
+}
 let ttsGeneration = 0; // incremented on stop — lets in-flight calls know they're stale
 /** Reactive flag — true while any TTS audio is playing */
 export const ttsIsPlaying = writable(false);
@@ -42,12 +108,9 @@ export function stopAllAudio(): void {
 
 	ttsGeneration++; // invalidate any in-flight playback
 	window.speechSynthesis?.cancel();
-	if (currentAudio) {
-		currentAudio.pause();
-		currentAudio.removeAttribute('src');
-		currentAudio.load();
-		currentAudio = null;
-	}
+	// Pausing is enough: removing the src would also re-lock the player on
+	// some phones. The next line replaces the src anyway.
+	releasePlayer();
 }
 
 /**
@@ -209,10 +272,7 @@ function playWebAudio(
 	const myGen = ttsGeneration; // snapshot — if it changes, we were cancelled
 
 	return new Promise((resolve) => {
-		if (currentAudio) {
-			currentAudio.pause();
-			currentAudio = null;
-		}
+		releasePlayer();
 
 		// Already stale? resolve immediately without playing
 		if (myGen !== ttsGeneration) { resolve(); return; }
@@ -228,20 +288,22 @@ function playWebAudio(
 		const finish = () => {
 			if (!done) {
 				done = true;
+				clearTimeout(timeout);
 				stopTick();
 				resolve();
 			}
 		};
-		const fallback = () => {
+		const fallback = (reason: 'timeout' | 'error' | 'blocked') => {
 			if (done) return;
 			stopTick();
 			// If cancelled while waiting, don't start browser TTS
 			if (myGen !== ttsGeneration) { done = true; resolve(); return; }
 			done = true;
-			void trackEvent('audio_fallback', { metadata: { engine: 'proxy' } });
+			void trackEvent('audio_fallback', { metadata: { engine: 'proxy', reason, unlocked: playerUnlocked } });
 			// Stop proxy audio before starting browser TTS to prevent double playback
-			if (currentAudio) {
-				currentAudio.pause();
+			if (currentAudio === audio) {
+				settleCurrent = null;
+				audio.pause();
 				currentAudio = null;
 			}
 			// Browser TTS does its own rate handling — give it the full
@@ -249,14 +311,17 @@ function playWebAudio(
 			_browserTTS(text, lang, requestedRate * basePace(shortLang, day)).then(resolve);
 		};
 
-		const audio = new Audio(url);
-		audio.playbackRate = safeRate;
+		const audio = player();
+		audio.src = url;
+		// Set after src: some browsers reset the rate when a new source loads.
+		audio.defaultPlaybackRate = audio.playbackRate = safeRate;
 		currentAudio = audio;
-		audio.onerror = fallback;
+		settleCurrent = finish;
+		audio.onerror = () => fallback('error');
 
 		// Per-frame progress loop for word highlighting (only if a hook is given).
 		const tick = () => {
-			if (myGen !== ttsGeneration || audio.paused || audio.ended) {
+			if (done || myGen !== ttsGeneration || audio.paused || audio.ended) {
 				stopTick();
 				return;
 			}
@@ -265,9 +330,12 @@ function playWebAudio(
 		};
 
 		// Timeout is for load failures only — clear it once audio starts playing
-		// so slow playback (low playbackRate) doesn't trigger a false fallback
-		const timeout = setTimeout(fallback, 4000);
+		// so slow playback (low playbackRate) doesn't trigger a false fallback.
+		// 8s, not 4: on a phone network the first render of a line can take a
+		// few seconds, and giving up early switched to the fast phone voice.
+		const timeout = setTimeout(() => fallback('timeout'), 8000);
 		audio.onplay = () => {
+			if (done) return;
 			clearTimeout(timeout);
 			if (onTime) {
 				stopTick();
@@ -275,10 +343,16 @@ function playWebAudio(
 			}
 		};
 		audio.onended = () => {
+			if (done) return;
 			clearTimeout(timeout);
+			if (settleCurrent === finish) settleCurrent = null;
 			finish();
 		};
-		audio.play().catch(fallback);
+		audio.play().catch((error: unknown) => {
+			// AbortError: a newer line or a stop replaced this one, not a failure.
+			if (error instanceof DOMException && error.name === 'AbortError') return;
+			fallback(error instanceof DOMException && error.name === 'NotAllowedError' ? 'blocked' : 'error');
+		});
 	});
 }
 
@@ -291,10 +365,7 @@ function playWebAudio(
  */
 export function playAudioUrl(url: string, loadTimeoutMs = 12_000): Promise<boolean> {
 	const myGen = ttsGeneration;
-	if (currentAudio) {
-		currentAudio.pause();
-		currentAudio = null;
-	}
+	releasePlayer();
 	return new Promise((resolve) => {
 		if (myGen !== ttsGeneration) return resolve(true); // cancelled: don't fall back
 		let done = false;
@@ -302,6 +373,7 @@ export function playAudioUrl(url: string, loadTimeoutMs = 12_000): Promise<boole
 			if (done) return;
 			done = true;
 			clearTimeout(timeout);
+			if (currentAudio === audio && settleCurrent === cancel) settleCurrent = null;
 			if (!ok && currentAudio === audio) {
 				audio.pause();
 				currentAudio = null;
@@ -309,8 +381,13 @@ export function playAudioUrl(url: string, loadTimeoutMs = 12_000): Promise<boole
 			// Cancelled mid-load counts as handled, not as a failure.
 			resolve(ok || myGen !== ttsGeneration);
 		};
-		const audio = new Audio(url);
+		// Replaced or stopped before the end: handled, not a failure.
+		const cancel = () => end(true);
+		const audio = player();
+		audio.src = url;
+		audio.defaultPlaybackRate = audio.playbackRate = 1;
 		currentAudio = audio;
+		settleCurrent = cancel;
 		ttsIsPlaying.set(true);
 		const timeout = setTimeout(() => end(false), loadTimeoutMs);
 		audio.onplay = () => clearTimeout(timeout);
@@ -319,7 +396,10 @@ export function playAudioUrl(url: string, loadTimeoutMs = 12_000): Promise<boole
 			end(true);
 		};
 		audio.onerror = () => end(false);
-		audio.play().catch(() => end(false));
+		audio.play().catch((error: unknown) => {
+			if (error instanceof DOMException && error.name === 'AbortError') return;
+			end(false);
+		});
 	});
 }
 
