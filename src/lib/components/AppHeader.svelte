@@ -1,7 +1,7 @@
 <script lang="ts">
 	/**
 	 * The app header, the same on every page, in one bar:
-	 * logo (always back to My languages) · back arrow · page title, then the
+	 * logo (back to My languages) · back arrow · page title, then the
 	 * page's own controls and the account menu at the far end.
 	 *
 	 * The back link shows its label on wide screens and only the arrow on
@@ -26,6 +26,7 @@
 		sticky = false,
 		direction = "ltr",
 		menu = true,
+		logo = true,
 	}: {
 		title?: string;
 		subtitle?: string;
@@ -40,6 +41,8 @@
 		direction?: "ltr" | "rtl";
 		/** The account menu (My languages, Settings, Sign out). On for every app page. */
 		menu?: boolean;
+		/** The logo link. On for every page except focus screens such as the lesson. */
+		logo?: boolean;
 	} = $props();
 
 	const isFa = $derived(direction === "rtl");
@@ -55,12 +58,14 @@
 
 <div class="header-stack" class:sticky dir={direction}>
 	<header class="app-header" class:connected={secondary} class:has-actions={!!actions}>
-		<a class="brand" href="/languages" aria-label={isFa ? "میریفر: زبان‌های من" : "Mirifer: my languages"}>
-			<BrandLogo />
-		</a>
+		{#if logo}
+			<a class="brand" href="/languages" aria-label={isFa ? "میریفر: زبان‌های من" : "Mirifer: my languages"}>
+				<BrandLogo />
+			</a>
+		{/if}
 
 		{#if onBack || backHref}
-			<span class="sep" aria-hidden="true"></span>
+			{#if logo}<span class="sep" aria-hidden="true"></span>{/if}
 			{#if onBack}
 				<button class="back-link" type="button" onclick={onBack} aria-label={backName}>
 					{@render backContent()}
