@@ -3897,21 +3897,21 @@
 
 		.lesson-toolbar-options {
 			display: grid;
-			grid-template-columns: 56px 82px minmax(112px, 1fr) 92px;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
 			gap: 6px;
 		}
 
-		.language-control,
+		/* The interface language is set in Settings; on a phone the lesson
+		   toolbar keeps only Blind Mode and the voice speed. */
+		.language-control {
+			display: none;
+		}
+
 		.speed-control,
-		.language-control select,
 		.speed-control select,
 		.blind-mode-control {
 			justify-content: center;
 			padding-inline: 6px;
-		}
-
-		.blind-mode-control label span {
-			display: none;
 		}
 
 		.progress-info {
