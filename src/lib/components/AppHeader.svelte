@@ -1,12 +1,13 @@
 <script lang="ts">
 	/**
-	 * The app header, the same on every page.
+	 * The app header, the same on every page, in one bar:
+	 * logo (always back to My languages) · back arrow · page title, then the
+	 * page's own controls and the account menu at the far end.
 	 *
-	 * Row 1: the logo (always back to My languages) and the account menu.
-	 * Row 2, when the page has one: a back link sitting above the page title,
-	 * with the page's own controls on the other side. The back link always
-	 * shows its label, on phones too, so it reads as "back to X", not as a
-	 * bare arrow.
+	 * The back link shows its label on wide screens and only the arrow on
+	 * phones, where the title beside it says where the learner is. When a
+	 * page has controls and the bar is too narrow for a title as well, the
+	 * title stays for screen readers only.
 	 */
 	import type { Snippet } from "svelte";
 	import BrandLogo from "./BrandLogo.svelte";
@@ -41,54 +42,50 @@
 		menu?: boolean;
 	} = $props();
 
-	const hasBack = $derived(!!onBack || !!backHref);
-	/** With no back link and no title, the page controls fit on the top row. */
-	const pageRow = $derived(hasBack || !!title);
 	const isFa = $derived(direction === "rtl");
+	const backName = $derived(isFa ? `بازگشت: ${backLabel}` : `Back to ${backLabel}`);
 </script>
 
 {#snippet backContent()}
-	<svg class="chevron" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
+	<svg class="chevron" viewBox="0 0 20 20" width="20" height="20" aria-hidden="true">
 		<path d="M12.5 4.5 7 10l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
 	</svg>
-	<span>{backLabel}</span>
+	<span class="label">{backLabel}</span>
 {/snippet}
 
 <div class="header-stack" class:sticky dir={direction}>
-	<header class="app-header" class:connected={secondary}>
-		<div class="top-row">
-			<a class="brand" href="/languages" aria-label={isFa ? "میریفر: زبان‌های من" : "Mirifer: my languages"}>
-				<BrandLogo />
-			</a>
-			<div class="top-end">
-				{#if actions && !pageRow}<div class="actions">{@render actions()}</div>{/if}
-				{#if menu}<AccountMenu {isFa} />{/if}
-			</div>
-		</div>
+	<header class="app-header" class:connected={secondary} class:has-actions={!!actions}>
+		<a class="brand" href="/languages" aria-label={isFa ? "میریفر: زبان‌های من" : "Mirifer: my languages"}>
+			<BrandLogo />
+		</a>
 
-		{#if pageRow}
-			<div class="page-row">
-				<div class="page-start">
-					{#if onBack}
-						<button class="back-link" type="button" onclick={onBack} aria-label={isFa ? `بازگشت: ${backLabel}` : `Back to ${backLabel}`}>
-							{@render backContent()}
-						</button>
-					{:else if backHref}
-						<a class="back-link" href={backHref} aria-label={isFa ? `بازگشت: ${backLabel}` : `Back to ${backLabel}`}>
-							{@render backContent()}
-						</a>
-					{/if}
-					{#if title}
-						<div class="title-row">
-							{#if icon}<span class="title-icon" aria-hidden="true">{icon}</span>{/if}
-							<h1>{title}</h1>
-						</div>
-						{#if subtitle}<p class="subtitle">{subtitle}</p>{/if}
-					{/if}
+		{#if onBack || backHref}
+			<span class="sep" aria-hidden="true"></span>
+			{#if onBack}
+				<button class="back-link" type="button" onclick={onBack} aria-label={backName}>
+					{@render backContent()}
+				</button>
+			{:else}
+				<a class="back-link" href={backHref} aria-label={backName}>
+					{@render backContent()}
+				</a>
+			{/if}
+		{/if}
+
+		{#if title}
+			<div class="title-block">
+				<div class="title-row">
+					{#if icon}<span class="title-icon" aria-hidden="true">{icon}</span>{/if}
+					<h1>{title}</h1>
 				</div>
-				{#if actions}<div class="actions">{@render actions()}</div>{/if}
+				{#if subtitle}<p class="subtitle">{subtitle}</p>{/if}
 			</div>
 		{/if}
+
+		<div class="top-end">
+			{#if actions}<div class="actions">{@render actions()}</div>{/if}
+			{#if menu}<AccountMenu {isFa} />{/if}
+		</div>
 	</header>
 
 	{#if secondary}
@@ -111,19 +108,27 @@
 	}
 
 	.app-header {
+		display: flex;
+		align-items: center;
+		gap: 10px;
 		width: 100%;
+		min-height: 60px;
+		padding: 8px 12px 8px 16px;
 		background: color-mix(in srgb, var(--paper-raised) 94%, var(--paper));
 		border: 1px solid var(--line);
 		border-radius: 16px;
 		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 	}
 
+	[dir="rtl"] .app-header {
+		padding: 8px 16px 8px 12px;
+	}
+
 	.header-stack.sticky .app-header {
 		border-radius: 0 0 16px 16px;
 	}
 
-	.app-header.connected,
-	.header-stack.sticky .app-header.connected {
+	.app-header.connected {
 		border-radius: 16px 16px 0 0;
 	}
 
@@ -131,49 +136,21 @@
 		border-radius: 0;
 	}
 
-	.top-row {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-		min-height: 60px;
-		padding: 8px 12px 8px 16px;
-	}
-
-	[dir="rtl"] .top-row {
-		padding: 8px 16px 8px 12px;
-	}
-
 	.brand {
 		--brand-logo-width: 124px;
 		display: inline-flex;
 		align-items: center;
+		flex: none;
 		min-height: 44px;
 		border-radius: 8px;
 		text-decoration: none;
 	}
 
-	.top-end {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		min-width: 0;
-	}
-
-	.page-row {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-		padding: 6px 16px 12px;
-		border-top: 1px solid var(--line);
-	}
-
-	.page-start {
-		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-		min-width: 0;
+	.sep {
+		flex: none;
+		width: 1px;
+		height: 24px;
+		background: var(--line);
 	}
 
 	/* A plain text link, not a pill: it is navigation, not an action. The
@@ -181,10 +158,10 @@
 	.back-link {
 		display: inline-flex;
 		align-items: center;
-		gap: 4px;
+		flex: none;
+		gap: 2px;
 		min-height: 44px;
-		margin-inline-start: -8px;
-		padding: 6px 10px 6px 4px;
+		padding: 6px 12px 6px 6px;
 		border: 0;
 		border-radius: 10px;
 		background: none;
@@ -198,16 +175,14 @@
 	}
 
 	[dir="rtl"] .back-link {
-		padding: 6px 4px 6px 10px;
+		padding: 6px 6px 6px 12px;
 	}
 
 	.back-link:hover {
 		background: var(--accent-wash);
 	}
 
-	.back-link span {
-		overflow: hidden;
-		text-overflow: ellipsis;
+	.label {
 		white-space: nowrap;
 	}
 
@@ -225,16 +200,16 @@
 		outline-offset: 2px;
 	}
 
+	.title-block {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
+
 	.title-row {
 		display: flex;
 		align-items: center;
 		gap: 8px;
 		min-width: 0;
-		max-width: 100%;
-	}
-
-	.back-link + .title-row {
-		margin-top: -4px;
 	}
 
 	h1 {
@@ -242,7 +217,7 @@
 		overflow: hidden;
 		color: var(--ink);
 		font-family: var(--font-display);
-		font-size: clamp(1.15rem, 2.2vw, 1.4rem);
+		font-size: clamp(1.1rem, 2.2vw, 1.35rem);
 		font-weight: 700;
 		line-height: 1.2;
 		text-overflow: ellipsis;
@@ -255,19 +230,29 @@
 	}
 
 	.subtitle {
-		margin: 2px 0 0;
+		margin: 1px 0 0;
+		overflow: hidden;
 		color: var(--ink-soft);
 		font-size: 0.8rem;
-		line-height: 1.3;
+		line-height: 1.25;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.top-end {
+		display: flex;
+		align-items: center;
+		flex: none;
+		gap: 10px;
+		margin-inline-start: auto;
+		min-width: 0;
 	}
 
 	.actions {
 		display: flex;
 		align-items: center;
 		justify-content: flex-end;
-		flex-wrap: wrap;
 		gap: 8px;
-		flex-shrink: 0;
 	}
 
 	/* Whatever a page drops into the controls slot keeps a 44px target. */
@@ -295,9 +280,15 @@
 	}
 
 	@media (max-width: 760px) {
-		.app-header,
-		.secondary-toolbar {
+		.app-header {
+			gap: 8px;
+			min-height: 56px;
+			padding: 6px 10px 6px 14px;
 			border-radius: 14px;
+		}
+
+		[dir="rtl"] .app-header {
+			padding: 6px 14px 6px 10px;
 		}
 
 		.header-stack.sticky .app-header {
@@ -318,25 +309,48 @@
 			border-radius: 0 0 14px 14px;
 		}
 
-		.top-row {
-			min-height: 56px;
-			padding-block: 6px;
-		}
-
 		.brand {
-			--brand-logo-width: 108px;
-		}
-
-		.page-row {
-			padding: 4px 12px 10px 16px;
-		}
-
-		[dir="rtl"] .page-row {
-			padding: 4px 16px 10px 12px;
+			--brand-logo-width: 104px;
 		}
 
 		.subtitle {
 			display: none;
+		}
+	}
+
+	/* Phones: the arrow alone is the back link; the title beside it says where you are. */
+	@media (max-width: 600px) {
+		.label {
+			display: none;
+		}
+
+		.back-link,
+		[dir="rtl"] .back-link {
+			padding: 6px 8px;
+		}
+
+		.top-end {
+			gap: 8px;
+		}
+	}
+
+	@media (max-width: 440px) {
+		.brand {
+			--brand-logo-width: 88px;
+		}
+
+		.title-icon {
+			display: none;
+		}
+
+		/* No room for a title next to the page's controls: screen readers only. */
+		.app-header.has-actions .title-block {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			overflow: hidden;
+			clip-path: inset(50%);
+			white-space: nowrap;
 		}
 	}
 </style>
