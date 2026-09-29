@@ -975,6 +975,7 @@
 		secondary={lessonSecondaryControls}
 		secondaryLabel={prefs.language === "fa" ? "کنترل‌های درس" : "Lesson controls"}
 		sticky
+		logo={false}
 		direction={prefs.language === "fa" ? "rtl" : "ltr"}
 	/>
 
