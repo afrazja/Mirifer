@@ -2,7 +2,7 @@
 	import { onMount, onDestroy } from "svelte";
 	import AppHeader from "$lib/components/AppHeader.svelte";
 	import { appStore } from "$stores/app";
-	import { preferencesStore, type Language } from "$stores/preferences";
+	import { preferencesStore } from "$stores/preferences";
 	import { lessonStore, type Sentence } from "$stores/lesson";
 	import { examStore } from "$stores/exam";
 	import { isUnlocked, isWeekUnlocked } from "$services/lesson-access";
@@ -12,9 +12,7 @@
 		processNextStep,
 		manualNext,
 		goToNextDay,
-		jumpToSentence,
 		changeDay,
-		changeLanguage,
 		handleVoiceInput as controllerHandleVoice,
 		startExam,
 		answerExamChoice,
@@ -68,7 +66,6 @@
 	} from "$services/readiness";
 	import {
 		getLanguage,
-		setLanguage,
 		getVoiceSpeed,
 		setVoiceSpeed,
 		saveWord,
@@ -144,6 +141,10 @@
 		id: number;
 		type: "received" | "sent" | "system";
 		text: string;
+		/** 0-based position in the lesson, for Practice. */
+		index?: number;
+		/** The line's translation, for Practice. */
+		meaning?: string;
 	}
 	let msgCounter = 0;
 
@@ -202,7 +203,7 @@
 	): Array<{ word: string; meaning: string | null }> {
 		return text.split(" ").map((word) => {
 			const cleanKey = word.toLowerCase().replace(/[.,!?]/g, "");
-			const meaning = getGlossaryMeaning(cleanKey, 'en');
+			const meaning = getGlossaryMeaning(cleanKey, prefs.language);
 			return { word, meaning };
 		});
 	}
@@ -292,55 +293,19 @@
 		bookmarkedSentences = getBookmarks();
 	}
 
-	// ============ SCRIPT PANEL ============
-	let scriptItems: Array<{
-		german: string;
-		translation: string;
-		done: boolean;
-		active: boolean;
-	}> = $state([]);
-	let showScript = $state(false);
+	// ============ GOALS ============
+	let showGoals = $state(false);
 	let showScenarioInfo = $state(false);
 
-	// The script never gives the lesson away. While a lesson is running it
-	// lists the lines already done and the current one; the rest is a
-	// count. A finished lesson (just now, or reopened later) unlocks the
-	// whole script as a review sheet.
-	const scriptUnlocked = $derived(
+	// What the learner can do by the end of the lesson, ticked as they go. A
+	// finished lesson (just now, or reopened later) has every goal done.
+	const lessonDone = $derived(
 		!!completionData || !!app.completedLessons?.[app.currentDay],
 	);
-	const visibleScript = $derived(
-		scriptUnlocked
-			? scriptItems
-			: scriptItems.slice(0, app.currentSentenceIndex + 1),
-	);
-	const lockedLines = $derived(scriptItems.length - visibleScript.length);
-	// What the learner can do by the end of the lesson, ticked as they go.
 	const goals = $derived(
-		goalProgress(lesson.currentLesson?.goals, app.currentSentenceIndex, scriptUnlocked),
+		goalProgress(lesson.currentLesson?.goals, app.currentSentenceIndex, lessonDone),
 	);
 	const goalsTotal = $derived(goals.length);
-	const canRevisit = (index: number) =>
-		scriptUnlocked || index < app.currentSentenceIndex;
-
-	function updateScript() {
-		if (!lesson.currentLesson) return;
-		const isLessonDone = !!(
-			app.completedLessons && app.completedLessons[app.currentDay]
-		);
-
-		scriptItems = lesson.currentLesson.sentences.map((step, i) => {
-			const german =
-				step.role === "received" ? step.audioText! : step.targetText!;
-			const translation = getTranslation(step, prefs.language);
-			return {
-				german,
-				translation,
-				done: isLessonDone || i < app.currentSentenceIndex,
-				active: i === app.currentSentenceIndex,
-			};
-		});
-	}
 
 	// ============ CALLBACKS ============
 	function setupCallbacks() {
@@ -355,7 +320,6 @@
 				examResultsData = null;
 				voiceResult = null;
 				isSpeaking = true; // audio is about to play
-				updateScript();
 			},
 			onSpokenWord(index) {
 				spokenWordIndex = index;
@@ -372,13 +336,11 @@
 				if (data) {
 					currentTeachStep = null;
 					isSpeaking = false;
-					updateScript();
 				}
 			},
 			onCompletionCard(data) {
 				currentTeachStep = null;
 				completionData = data;
-				updateScript();
 			},
 			async onAnswerPrompt(message) {
 				answerLineHtml = message;
@@ -393,32 +355,21 @@
 						: step.targetText!;
 				chatMessages = [
 					...chatMessages,
-					{ id: msgCounter++, type: step.role, text },
+					{
+						id: msgCounter++,
+						type: step.role,
+						text,
+						// Lesson lines have a real position; conversation-mode
+						// bubbles (id -1) do not, so they get no Practice.
+						index: step.id > 0 ? step.id - 1 : undefined,
+						meaning: getTranslation(step, prefs.language),
+					},
 				];
 				trimMessages();
 			},
-			onScriptHighlight(index) {
-				scriptItems = scriptItems.map((item, i) => ({
-					...item,
-					active: i === index,
-				}));
-				setTimeout(() => {
-					const active = scriptContainerEl?.children[index] as
-						| HTMLElement
-						| undefined;
-					active?.scrollIntoView({
-						block: "nearest",
-						behavior: "smooth",
-					});
-				}, 50);
-			},
-			onScriptMarkDone(index) {
-				if (scriptItems[index]) {
-					scriptItems = scriptItems.map((item, i) =>
-						i === index ? { ...item, done: true } : item,
-					);
-				}
-			},
+			// The lesson has no script panel to highlight or tick off.
+			onScriptHighlight() {},
+			onScriptMarkDone() {},
 			onExamQuestion(data) {
 				currentTeachStep = null;
 				completionData = null;
@@ -468,7 +419,6 @@
 				lessonMisses = [];
 				systemMessages = [];
 				answerLineHtml = "";
-				updateScript();
 			},
 			onVoiceResult(result) {
 				voiceResult = result;
@@ -578,9 +528,6 @@
 		if (!german?.trim()) return;
 		stopAllAudio();
 		if (app.isListening) stopListening();
-		// The script is a drop-down over the content — leaving it open
-		// would cover the panel it just launched.
-		showScript = false;
 		pauseLessonAnalytics();
 		practiceSentence = { german, meaning, index };
 		if (!exam.isExamMode && !exam.isConversation) void trackEvent('sentence_practice_opened', { day: app.currentDay, metadata: { index, mode: 'lesson' } });
@@ -641,13 +588,6 @@
 		}
 	}
 
-	function handleLanguageSelectChange(e: Event) {
-		const val = (e.target as HTMLSelectElement).value as Language;
-		preferencesStore.update((s) => ({ ...s, language: val }));
-		setLanguage(val);
-		changeLanguage(val);
-	}
-
 	function handleSpeedSelectChange(e: Event) {
 		const val = parseFloat((e.target as HTMLSelectElement).value);
 		preferencesStore.update((s) => ({ ...s, voiceSpeed: val }));
@@ -696,13 +636,6 @@
 		});
 	}
 
-	function handleScriptItemClick(index: number) {
-		// Only lines already done can be replayed: no jumping ahead.
-		if (!canRevisit(index)) return;
-		jumpToSentence(index);
-		showScript = false; // close the drop-down after picking a sentence
-	}
-
 	function handleMessageBubbleClick(text: string) {
 		stopAllAudio();
 		if ($appStore.isListening) stopListening();
@@ -717,7 +650,6 @@
 
 	// ============ LIFECYCLE ============
 	let chatHistoryEl: HTMLDivElement | undefined = $state(undefined);
-	let scriptContainerEl: HTMLElement | undefined = $state(undefined);
 
 	$effect(() => {
 		// Auto-scroll when messages change
@@ -949,18 +881,6 @@
 				</label>
 			</div>
 
-			<div class="language-control">
-				<select
-					id="language-select"
-					aria-label={prefs.language === "fa" ? "انتخاب زبان" : "Select language"}
-					value={prefs.language}
-					onchange={handleLanguageSelectChange}
-				>
-					<option value="fa">فارسی</option>
-					<option value="en">English</option>
-				</select>
-			</div>
-
 			<div class="speed-control">
 				<select
 					id="speed-select"
@@ -1019,23 +939,38 @@
 			</div>
 		{/if}
 
-		<!-- Script bar: opens the script drop-down -->
-		<button
-			class="script-toggle-btn"
-			onclick={() => (showScript = !showScript)}
-			aria-label="Toggle lesson script"
-		>
-			📋 {prefs.language === "fa" ? "متن درس" : "Script"}
-			{#if lesson.currentLesson}
-				<span class="script-toggle-count">
-					{Math.min(
-						app.currentSentenceIndex + 1,
-						lesson.currentLesson.sentences.length,
-					)} / {lesson.currentLesson.sentences.length}
+		<!-- Goals bar: what this lesson teaches, ticked as you go. Only lessons
+		     that have goals get one. -->
+		{#if goalsTotal && !exam.isExamMode && !exam.isConversation}
+			{@const next = goals.find((item) => !item.done)}
+			<button
+				class="goals-bar"
+				type="button"
+				onclick={() => (showGoals = !showGoals)}
+				aria-expanded={showGoals}
+				aria-controls="goals-panel"
+			>
+				<span class="goals-count">🎯 {goalsDone(goals)}/{goalsTotal}</span>
+				<span class="goals-next">
+					{next
+						? goalText(next.goal, prefs.language)
+						: prefs.language === "fa"
+							? "همهٔ هدف‌ها انجام شد"
+							: "All goals done"}
 				</span>
+				<span class="goals-arrow" class:open={showGoals}>▼</span>
+			</button>
+			{#if showGoals}
+				<ul class="goals-panel" id="goals-panel" dir={prefs.language === "fa" ? "rtl" : "ltr"}>
+					{#each goals as item}
+						<li class:done={item.done}>
+							<span aria-hidden="true">{item.done ? "✓" : "○"}</span>
+							{goalText(item.goal, prefs.language)}
+						</li>
+					{/each}
+				</ul>
 			{/if}
-			<span class="script-toggle-arrow" class:open={showScript}>▼</span>
-		</button>
+		{/if}
 
 		<div class="chat-wrapper">
 			<!-- Lesson Progress Bar -->
@@ -1085,27 +1020,67 @@
 							</div>
 						{/if}
 
-						<!-- Chat bubbles (conversation mode dialogue history) -->
+						<!-- Chat bubbles: the lines already said. Tap a bubble to hear it
+						     again, tap a word to hear it and see its meaning. -->
 						{#each chatMessages as msg (msg.id)}
 							{#if msg.type === "system"}
 								<div class="message system">{msg.text}</div>
 							{:else}
+								{@const words = createInteractiveWords(msg.text)}
 								<!-- German, so LTR regardless of interface language.
 								     The system branch above is narration in the
 								     learner's own language and must not get this. -->
+								<!-- svelte-ignore a11y_click_events_have_key_events -->
+								<!-- svelte-ignore a11y_no_static_element_interactions -->
 								<div
-									class="message {msg.type}"
+									class="message {msg.type} history"
 									lang="de"
 									dir="ltr"
-									role="button"
-									tabindex="0"
-									onclick={() =>
-										handleMessageBubbleClick(msg.text)}
-									onkeydown={(e) =>
-										e.key === "Enter" &&
-										handleMessageBubbleClick(msg.text)}
+									onclick={() => handleMessageBubbleClick(msg.text)}
 								>
-									{msg.text}
+									<span class="history-text">
+										{#each words as w}
+											<span
+												class="interactive-word"
+												role="button"
+												tabindex="0"
+												aria-label="{w.word}{w.meaning ? `, meaning: ${w.meaning}` : ''}"
+												onclick={(e) => {
+													e.stopPropagation();
+													handleWordClick(w.word, w.meaning, e);
+												}}
+												onkeydown={(e) => {
+													if (e.key === "Enter" || e.key === " ") {
+														e.preventDefault();
+														e.stopPropagation();
+														handleWordClick(w.word, w.meaning, e as any);
+													}
+												}}>{w.word}</span
+											>{" "}
+										{/each}
+									</span>
+									<span class="history-actions" dir={prefs.language === "fa" ? "rtl" : "ltr"}>
+										<button
+											type="button"
+											onclick={(e) => {
+												e.stopPropagation();
+												handleMessageBubbleClick(msg.text);
+											}}
+										>
+											🔊 {prefs.language === "fa" ? "گوش کن" : "Listen"}
+										</button>
+										{#if msg.index !== undefined && msg.meaning}
+											<button
+												type="button"
+												onclick={(e) => {
+													e.stopPropagation();
+													openPractice(msg.text, msg.meaning!, msg.index!);
+												}}
+											>
+												🎤 {prefs.language === "fa" ? "تمرین" : "Practice"}
+											</button>
+										{/if}
+									</span>
 								</div>
 							{/if}
 						{/each}
@@ -1862,162 +1837,6 @@
 				</div>
 				<!-- end chat-main -->
 
-				<!-- Script Panel -->
-				<aside
-					class="script-view"
-					class:open={showScript}
-					id="script-view"
-				>
-					<div class="script-header">
-						<h3>
-							{prefs.language === "fa"
-								? "\u0645\u062A\u0646 \u062F\u0631\u0633"
-								: "Lesson Script"}
-						</h3>
-						<div class="script-header-right">
-							{#if lesson.currentLesson && !exam.isExamMode && !exam.isConversation}
-								<span class="script-count"
-									>{Math.min(
-										app.currentSentenceIndex + 1,
-										scriptItems.length,
-									)}/{scriptItems.length}</span
-								>
-							{/if}
-							<button
-								class="script-close-btn"
-								onclick={() => (showScript = false)}
-								aria-label="Close script">✕</button
-							>
-						</div>
-					</div>
-					{#if goalsTotal && !exam.isExamMode && !exam.isConversation}
-						<details class="script-goals">
-							<summary>
-								🎯 {prefs.language === "fa" ? "هدف‌ها" : "Goals"}
-								<span class="script-count">{goalsDone(goals)}/{goalsTotal}</span>
-							</summary>
-							<ul>
-								{#each goals as item}
-									<li class:done={item.done}>
-										<span aria-hidden="true">{item.done ? "✓" : "○"}</span>
-										{goalText(item.goal, prefs.language)}
-									</li>
-								{/each}
-							</ul>
-						</details>
-					{/if}
-					<div class="script-container" bind:this={scriptContainerEl}>
-						{#if exam.isExamMode || exam.isConversation}
-							<!-- The lesson script doesn't apply to exams or
-							     Week Talks — the previous lesson's script
-							     showing here was just confusing. -->
-							<div class="script-empty">
-								<p>
-									{exam.isConversation
-										? prefs.language === "fa"
-											? "💬 گفتگو در جریان است — از چت دنبال کن."
-											: "💬 Conversation in progress — follow the chat."
-										: prefs.language === "fa"
-											? "📝 آزمون در جریان است — متن درس پنهان است."
-											: "📝 Exam in progress — the script stays hidden."}
-								</p>
-							</div>
-						{:else if scriptItems.length === 0}
-							<div class="script-empty">
-								<p>
-									{prefs.language === "fa"
-										? "وقتی شروع کنی، متن درس اینجا نمایش داده می‌شود."
-										: "Lesson script will appear here once you start."}
-								</p>
-							</div>
-						{/if}
-						{#each exam.isExamMode || exam.isConversation ? [] : visibleScript as item, i}
-							{@const hidden = item.active && prefs.blindMode && !scriptUnlocked}
-							<div class="script-row">
-								<!-- svelte-ignore a11y_interactive_supports_focus -->
-								<div
-									class="script-item"
-									class:done={item.done}
-									class:active={item.active}
-									class:locked={!canRevisit(i)}
-									role="button"
-									tabindex={canRevisit(i) ? 0 : -1}
-									aria-disabled={!canRevisit(i)}
-									aria-label={hidden
-										? `Sentence ${i + 1}`
-										: `Sentence ${i + 1}: ${item.german}`}
-									onclick={() => handleScriptItemClick(i)}
-									onkeydown={(e) => {
-										if (e.key === "Enter" || e.key === " ") {
-											e.preventDefault();
-											handleScriptItemClick(i);
-										}
-									}}
-								>
-									<div class="script-num">
-										{item.active ? "▶" : i + 1}
-									</div>
-									<div class="script-text">
-										{#if hidden}
-											<!-- Blind mode hides the current sentence here too, as in the chat. -->
-											<div class="german hidden-line">
-												{prefs.language === "fa"
-													? "🙈 [مخفی] - گوش کن!"
-													: "🙈 [Hidden] - Listen!"}
-											</div>
-										{:else}
-											<div class="german" lang="de" dir="ltr">{item.german}</div>
-										{/if}
-										<div
-											class="translation"
-											style="direction: {prefs.language ===
-											'fa'
-												? 'rtl'
-												: 'ltr'};"
-										>
-											{item.translation}
-										</div>
-									</div>
-								</div>
-
-								{#if !hidden}
-									<div class="script-foot">
-										<button
-											class="practice-link"
-											onclick={() =>
-												openPractice(
-													item.german,
-													item.translation,
-													i,
-												)}
-										>
-											{prefs.language === "fa"
-												? "تمرین ←"
-												: "Practice →"}
-										</button>
-									</div>
-								{/if}
-							</div>
-						{/each}
-						{#if !exam.isExamMode && !exam.isConversation && lockedLines > 0}
-							<p class="script-locked">
-								🔒 {prefs.language === "fa"
-									? `${lockedLines} خط دیگر — با پیش رفتن درس باز می‌شوند.`
-									: `${lockedLines} more line${lockedLines === 1 ? "" : "s"} — they unlock as you go.`}
-							</p>
-						{/if}
-					</div>
-				</aside>
-
-				<!-- Tap outside to close -->
-				{#if showScript}
-					<!-- svelte-ignore a11y_click_events_have_key_events -->
-					<!-- svelte-ignore a11y_no_static_element_interactions -->
-					<div
-						class="script-backdrop"
-						onclick={() => (showScript = false)}
-					></div>
-				{/if}
 			</div>
 			<!-- end chat-body -->
 		</div>
@@ -2424,23 +2243,6 @@
 		font-weight: 800;
 	}
 
-	/* ── Script Empty ── */
-	.script-empty {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		height: 100%;
-		min-height: 120px;
-		text-align: center;
-		padding: 24px;
-	}
-
-	.script-empty p {
-		color: var(--ink-soft);
-		font-size: 0.88rem;
-		line-height: 1.5;
-	}
-
 	.hidden {
 		display: none;
 	}
@@ -2477,7 +2279,6 @@
 
 	.day-selection-control,
 	.blind-mode-control,
-	.language-control,
 	.speed-control {
 		display: flex;
 		align-items: center;
@@ -2508,10 +2309,6 @@
 	}
 
 	/* Cap widths so the header stays on one row */
-	.language-control select {
-		min-width: 104px;
-		max-width: 120px;
-	}
 	.speed-control select {
 		max-width: 132px;
 		min-width: 116px;
@@ -2574,7 +2371,7 @@
 		overflow: hidden;
 	}
 
-	/* Row that holds the chat content (the script opens over it) */
+	/* Row that holds the chat content */
 	.chat-body {
 		flex: 1;
 		display: flex;
@@ -2880,44 +2677,6 @@
 	}
 
 	.comp-goals li span {
-		color: var(--leaf);
-		font-weight: 700;
-	}
-
-	/* The goals fold away inside the Script drop-down; the count stays visible. */
-	.script-goals {
-		flex-shrink: 0;
-		border-bottom: 1px solid var(--line);
-		background: var(--paper-raised);
-	}
-
-	.script-goals summary {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		min-height: 44px;
-		padding: 6px 15px;
-		font-size: 0.85rem;
-		font-weight: 700;
-		cursor: pointer;
-	}
-
-	.script-goals ul {
-		margin: 0;
-		padding: 0 15px 10px;
-		list-style: none;
-		font-size: 0.85rem;
-		line-height: 1.7;
-		color: var(--ink-soft);
-	}
-
-	.script-goals li.done {
-		color: var(--ink);
-	}
-
-	.script-goals li span {
-		display: inline-block;
-		width: 1.2em;
 		color: var(--leaf);
 		font-weight: 700;
 	}
@@ -3300,23 +3059,8 @@
 		width: 100%;
 	}
 
-	.script-row {
-		border-bottom: 1px solid var(--line);
-	}
-
-	.script-foot {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		padding: 0 12px 8px;
-	}
-
 	/* Pushed right by an auto margin rather than space-between, so the button
 	   keeps its place on the sentences that have no mastery meter yet. */
-	.script-foot .practice-link {
-		margin-inline-start: auto;
-	}
-
 	.practice-link {
 		min-height: 44px;
 		padding: 6px 12px;
@@ -3576,146 +3320,6 @@
 		text-overflow: ellipsis;
 	}
 
-	/* Script Panel */
-	.script-view {
-		height: 28vh;
-		background: var(--paper-raised);
-		color: var(--ink);
-		display: flex;
-		flex-direction: column;
-		border-top: 1px solid var(--line);
-	}
-
-	.script-header {
-		padding: 10px 15px;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		background: var(--paper-sunken);
-		border-bottom: 1px solid var(--line);
-		flex-shrink: 0;
-	}
-
-	.script-header h3 {
-		margin: 0;
-		font-size: 0.88rem;
-		color: var(--ink);
-		font-family: var(--font-display);
-		font-weight: 700;
-		letter-spacing: 0.03em;
-	}
-
-	.script-count {
-		font-size: 0.75rem;
-		color: var(--ink-soft);
-		font-weight: 600;
-	}
-
-	.script-container {
-		flex: 1;
-		overflow-y: auto;
-		padding: 8px 12px;
-	}
-
-	.script-item {
-		padding: 8px 10px;
-		border-radius: 8px;
-		margin-bottom: 4px;
-		cursor: pointer;
-		transition:
-			background 0.2s,
-			border-color 0.2s;
-		border-left: 3px solid transparent;
-		display: flex;
-		gap: 8px;
-		align-items: flex-start;
-	}
-
-	.script-item:not(.locked):hover {
-		background: var(--paper-sunken);
-	}
-
-	.script-item.active {
-		background: var(--accent-wash);
-		border-left-color: var(--accent);
-		border-left-width: 4px;
-		box-shadow: 0 0 0 1px rgba(46, 204, 113, 0.3);
-	}
-
-	.script-item.done {
-		opacity: 0.72;
-	}
-
-	.script-num {
-		font-size: 0.65rem;
-		font-weight: 700;
-		color: var(--ink-faint);
-		min-width: 18px;
-		height: 18px;
-		background: var(--paper-sunken);
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex-shrink: 0;
-		margin-top: 2px;
-	}
-
-	.script-item.active .script-num {
-		background: var(--accent);
-		color: var(--on-accent);
-		font-size: 0.7rem;
-	}
-
-	.script-item.done .script-num {
-		background: var(--leaf-wash);
-		color: var(--leaf);
-	}
-
-	.script-text {
-		flex: 1;
-		min-width: 0;
-	}
-
-	.script-item .german {
-		font-weight: 700;
-		color: var(--ink);
-		font-size: 0.9rem;
-		line-height: 1.35;
-	}
-
-	.script-item .translation {
-		color: var(--ink-soft);
-		font-size: 0.78rem;
-		margin-top: 2px;
-		line-height: 1.3;
-	}
-
-	.script-item.active .german {
-		color: var(--accent-deep);
-	}
-
-	.script-item.locked {
-		cursor: default;
-	}
-
-	.script-item .german.hidden-line {
-		color: var(--ink-faint);
-		font-weight: normal;
-	}
-
-	.script-locked {
-		margin: 0;
-		padding: 14px 16px;
-		color: var(--ink-soft);
-		font-size: 0.85rem;
-		text-align: center;
-	}
-
-	.script-item.active .translation {
-		color: var(--accent-deep);
-	}
-
 	/* Word Tooltip */
 	.word-tooltip {
 		position: fixed;
@@ -3767,106 +3371,106 @@
 		}
 	}
 
-	/* ── Script header right side (count + close btn) ── */
-	.script-header-right {
+	/* ── Goals bar: what the lesson teaches, ticked as you go ── */
+	.goals-bar {
 		display: flex;
 		align-items: center;
-		gap: 8px;
-	}
-
-	.script-close-btn {
-		display: flex;
-		background: none;
-		border: none;
-		color: var(--ink-soft);
-		font-size: 1rem;
-		cursor: pointer;
-		padding: 2px 6px;
-		line-height: 1;
-	}
-
-	/* ── The script is a drop-down on every screen ──────────────
-	   It used to be a fixed right sidebar on desktop, which took a third
-	   of the width for a list the learner opens now and then. The Script
-	   bar at the top of the lesson opens it over the chat instead. */
-	.script-view {
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: 65vh;
-		z-index: 400;
-		transform: translateY(-105%);
-		transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
-		border-top: none;
-		border-radius: 0 0 18px 18px;
-		box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
-	}
-
-	.script-view.open {
-		transform: translateY(0);
-	}
-
-	/* On a wide screen a full-width sheet is hard to read: keep it a
-	   centred column. */
-	@media (min-width: 768px) {
-		.script-view {
-			left: 50%;
-			right: auto;
-			width: min(720px, calc(100vw - 32px));
-			transform: translate(-50%, -105%);
-		}
-
-		.script-view.open {
-			transform: translate(-50%, 0);
-		}
-	}
-
-	/* The Script bar: full width at the top of the lesson content. */
-	.script-toggle-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 8px;
+		gap: 10px;
 		width: 100%;
-		background: var(--strip);
-		color: var(--on-strip);
+		min-height: 44px;
+		padding: 9px 16px;
 		border: none;
 		border-radius: 0;
-		padding: 9px 16px;
-		min-height: 44px;
+		background: var(--strip);
+		color: var(--on-strip);
+		font: inherit;
 		font-size: 0.85rem;
 		font-weight: 600;
+		text-align: start;
 		cursor: pointer;
 		flex-shrink: 0;
-		box-shadow: none;
 	}
 
-	.script-toggle-count {
+	.goals-count {
+		flex: none;
+		padding: 1px 8px;
+		border-radius: 10px;
 		background: rgba(255, 255, 255, 0.14);
 		color: var(--leaf);
-		border-radius: 10px;
-		padding: 1px 6px;
-		font-size: 0.75rem;
+		font-size: 0.78rem;
 		font-weight: 700;
 	}
 
-	.script-toggle-arrow {
+	.goals-next {
+		flex: 1;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.goals-arrow {
+		flex: none;
 		font-size: 0.7rem;
 		color: var(--leaf);
 		transition: transform 0.3s;
 	}
 
-	.script-toggle-arrow.open {
+	.goals-arrow.open {
 		transform: rotate(180deg);
 	}
 
-	/* Backdrop behind the open drop-down */
-	.script-backdrop {
-		position: fixed;
-		inset: 0;
-		background: rgba(0, 0, 0, 0.35);
-		z-index: 399;
+	.goals-panel {
+		flex-shrink: 0;
+		margin: 0;
+		padding: 10px 16px 12px;
+		list-style: none;
+		background: var(--paper-raised);
+		border-bottom: 1px solid var(--line);
+		font-size: 0.88rem;
+		line-height: 1.7;
+		color: var(--ink-soft);
+	}
+
+	.goals-panel li.done {
+		color: var(--ink);
+	}
+
+	.goals-panel li span {
+		display: inline-block;
+		width: 1.3em;
+		color: var(--leaf);
+		font-weight: 700;
+	}
+
+	/* ── Lines already said: tap to hear again, tap a word for its meaning ── */
+	.message.history {
+		cursor: pointer;
+	}
+
+	.history-actions {
+		display: flex;
+		gap: 4px;
+		margin-top: 4px;
+	}
+
+	.history-actions button {
+		min-height: 36px;
+		padding: 4px 10px;
+		border: 0;
+		border-radius: 999px;
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		font-size: 0.75rem;
+		opacity: 0.75;
+		cursor: pointer;
+	}
+
+	.history-actions button:hover,
+	.history-actions button:focus-visible {
+		opacity: 1;
+		background: rgba(0, 0, 0, 0.08);
 	}
 
 	@media (max-width: 980px) {
@@ -3914,11 +3518,8 @@
 			gap: 6px;
 		}
 
-		/* The interface language is set in Settings; on a phone the lesson
-		   toolbar keeps only Blind Mode and the voice speed. */
-		.language-control {
-			display: none;
-		}
+		/* The interface language is set in Settings; the lesson toolbar keeps
+		   only the day, Blind Mode and the voice speed. */
 
 		.speed-control,
 		.speed-control select,
