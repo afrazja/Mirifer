@@ -40,6 +40,7 @@
 		type LessonMeta,
 	} from "$services/lesson-loader";
 	import { stopAllAudio, playAudioPromise } from "$services/tts";
+	import { goalProgress, goalText, goalsDone } from "$services/lesson-goals";
 	import { tipFor } from "$services/pronunciation";
 	import {
 		recordMiss,
@@ -314,6 +315,11 @@
 			: scriptItems.slice(0, app.currentSentenceIndex + 1),
 	);
 	const lockedLines = $derived(scriptItems.length - visibleScript.length);
+	// What the learner can do by the end of the lesson, ticked as they go.
+	const goals = $derived(
+		goalProgress(lesson.currentLesson?.goals, app.currentSentenceIndex, scriptUnlocked),
+	);
+	const goalsTotal = $derived(goals.length);
 	const canRevisit = (index: number) =>
 		scriptUnlocked || index < app.currentSentenceIndex;
 
@@ -824,6 +830,16 @@
 				<h2 class="overlay-title">{scenarioTitle()}</h2>
 				{#if scenarioDescription()}
 					<p class="overlay-desc">{scenarioDescription()}</p>
+				{/if}
+				{#if goalsTotal}
+					<div class="overlay-goals">
+						<h3>{prefs.language === "fa" ? "در این درس یاد می‌گیرید:" : "In this lesson you will:"}</h3>
+						<ol>
+							{#each goals as item}
+								<li>{goalText(item.goal, prefs.language)}</li>
+							{/each}
+						</ol>
+					</div>
 				{/if}
 				<div class="overlay-tags">
 					{#if lessonGrammarFocus()}
@@ -1572,6 +1588,16 @@
 											? `\u0631\u0648\u0632 ${app.currentDay} \u0631\u0627 \u062A\u0645\u0627\u0645 \u06A9\u0631\u062F\u06CC\u062F!`
 											: `Day ${app.currentDay} complete!`}
 									</p>
+									{#if goalsTotal}
+										<div class="comp-goals" dir={completionData.language === "fa" ? "rtl" : "ltr"}>
+											<h4>{completionData.language === "fa" ? "حالا می‌توانید:" : "You can now:"}</h4>
+											<ul>
+												{#each goals as item}
+													<li><span aria-hidden="true">✓</span> {goalText(item.goal, completionData.language)}</li>
+												{/each}
+											</ul>
+										</div>
+									{/if}
 									<div class="completion-stats">
 										{#if lesson.currentLesson}
 											<span class="comp-stat"
@@ -1864,6 +1890,22 @@
 							>
 						</div>
 					</div>
+					{#if goalsTotal && !exam.isExamMode && !exam.isConversation}
+						<details class="script-goals">
+							<summary>
+								🎯 {prefs.language === "fa" ? "هدف‌ها" : "Goals"}
+								<span class="script-count">{goalsDone(goals)}/{goalsTotal}</span>
+							</summary>
+							<ul>
+								{#each goals as item}
+									<li class:done={item.done}>
+										<span aria-hidden="true">{item.done ? "✓" : "○"}</span>
+										{goalText(item.goal, prefs.language)}
+									</li>
+								{/each}
+							</ul>
+						</details>
+					{/if}
 					<div class="script-container" bind:this={scriptContainerEl}>
 						{#if exam.isExamMode || exam.isConversation}
 							<!-- The lesson script doesn't apply to exams or
@@ -2097,6 +2139,29 @@
 		color: var(--ink-soft);
 		margin: 0 0 10px;
 		line-height: 1.4;
+	}
+
+	.overlay-goals {
+		margin: 0 0 12px;
+		padding: 12px 14px;
+		text-align: start;
+		background: var(--paper-sunken);
+		border-radius: 12px;
+	}
+
+	.overlay-goals h3 {
+		margin: 0 0 6px;
+		font-size: 0.8rem;
+		font-weight: 700;
+		color: var(--ink-soft);
+	}
+
+	.overlay-goals ol {
+		margin: 0;
+		padding-inline-start: 1.3em;
+		font-size: 0.88rem;
+		line-height: 1.55;
+		color: var(--ink);
 	}
 
 	.overlay-tags {
@@ -2792,6 +2857,69 @@
 		box-shadow: var(--paper-shadow);
 		border-radius: 15px !important;
 		padding: 25px !important;
+	}
+
+	.comp-goals {
+		margin: 4px auto 12px;
+		max-width: 340px;
+		text-align: start;
+	}
+
+	.comp-goals h4 {
+		margin: 0 0 6px;
+		font-size: 0.85rem;
+		color: var(--ink-soft);
+	}
+
+	.comp-goals ul {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		font-size: 0.9rem;
+		line-height: 1.6;
+	}
+
+	.comp-goals li span {
+		color: var(--leaf);
+		font-weight: 700;
+	}
+
+	/* The goals fold away inside the Script drop-down; the count stays visible. */
+	.script-goals {
+		flex-shrink: 0;
+		border-bottom: 1px solid var(--line);
+		background: var(--paper-raised);
+	}
+
+	.script-goals summary {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		min-height: 44px;
+		padding: 6px 15px;
+		font-size: 0.85rem;
+		font-weight: 700;
+		cursor: pointer;
+	}
+
+	.script-goals ul {
+		margin: 0;
+		padding: 0 15px 10px;
+		list-style: none;
+		font-size: 0.85rem;
+		line-height: 1.7;
+		color: var(--ink-soft);
+	}
+
+	.script-goals li.done {
+		color: var(--ink);
+	}
+
+	.script-goals li span {
+		display: inline-block;
+		width: 1.2em;
+		color: var(--leaf);
+		font-weight: 700;
 	}
 
 	/* The unlock, stated just above the button that acts on it. */

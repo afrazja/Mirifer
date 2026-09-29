@@ -33,12 +33,24 @@ export interface GrammarNote {
 	basicsKey?: string;
 }
 
+/** Something the learner can do after the lesson; see LessonGoalSchema. */
+export interface LessonGoal {
+	id: string;
+	en: string;
+	fa: string;
+	/** 0-based positions of the sentences that practise it. */
+	sentences: number[];
+}
+
 export interface Lesson {
 	title: string;
 	titleFa?: string;
 	sentences: Sentence[];
+	/** The scenario: who the learner is talking to and what they are doing. */
 	description?: string;
 	descriptionFa?: string;
+	/** What the learner will be able to do, in the order the dialogue teaches it. */
+	goals?: LessonGoal[];
 	grammarFocus?: string;
 	grammarFocusFa?: string;
 	grammarNote?: GrammarNote;
