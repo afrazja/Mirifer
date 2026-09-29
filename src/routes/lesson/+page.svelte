@@ -572,7 +572,7 @@
 		if (!german?.trim()) return;
 		stopAllAudio();
 		if (app.isListening) stopListening();
-		// On mobile the script is a drawer over the content — leaving it open
+		// The script is a drop-down over the content — leaving it open
 		// would cover the panel it just launched.
 		showScript = false;
 		pauseLessonAnalytics();
@@ -694,7 +694,7 @@
 		// Only lines already done can be replayed: no jumping ahead.
 		if (!canRevisit(index)) return;
 		jumpToSentence(index);
-		showScript = false; // close mobile drawer after selecting a sentence
+		showScript = false; // close the drop-down after picking a sentence
 	}
 
 	function handleMessageBubbleClick(text: string) {
@@ -1002,7 +1002,7 @@
 			</div>
 		{/if}
 
-		<!-- Mobile script toggle bar — top of content area on mobile -->
+		<!-- Script bar: opens the script drop-down -->
 		<button
 			class="script-toggle-btn"
 			onclick={() => (showScript = !showScript)}
@@ -1966,7 +1966,7 @@
 					</div>
 				</aside>
 
-				<!-- Mobile: tap outside to close -->
+				<!-- Tap outside to close -->
 				{#if showScript}
 					<!-- svelte-ignore a11y_click_events_have_key_events -->
 					<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -2508,7 +2508,7 @@
 		overflow: hidden;
 	}
 
-	/* Row that holds chat content + sidebar (desktop) */
+	/* Row that holds the chat content (the script opens over it) */
 	.chat-body {
 		flex: 1;
 		display: flex;
@@ -3646,7 +3646,7 @@
 	}
 
 	.script-close-btn {
-		display: none; /* shown only on mobile via media query */
+		display: flex;
 		background: none;
 		border: none;
 		color: var(--ink-soft);
@@ -3656,142 +3656,88 @@
 		line-height: 1;
 	}
 
-	/* ── Mobile script toggle bar ─────────────────────────── */
-	.script-toggle-btn {
-		display: none; /* hidden on desktop */
+	/* ── The script is a drop-down on every screen ──────────────
+	   It used to be a fixed right sidebar on desktop, which took a third
+	   of the width for a list the learner opens now and then. The Script
+	   bar at the top of the lesson opens it over the chat instead. */
+	.script-view {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 65vh;
+		z-index: 400;
+		transform: translateY(-105%);
+		transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+		border-top: none;
+		border-radius: 0 0 18px 18px;
+		box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
 	}
 
-	.script-backdrop {
-		display: none;
+	.script-view.open {
+		transform: translateY(0);
 	}
 
-	/* ── Desktop: right sidebar layout ───────────────── */
+	/* On a wide screen a full-width sheet is hard to read: keep it a
+	   centred column. */
 	@media (min-width: 768px) {
-		/* Chat header stays full-width; sidebar only sits beside chat content */
-		.chat-body {
-			flex-direction: row;
-		}
-
-		.chat-main {
-			flex: 1;
-			min-width: 0;
-		}
-
-		/* The script panel stays on the visual RIGHT in both directions.
-		   flex-direction: row mirrors under dir="rtl", which put the panel
-		   on the left in Persian — correct mirroring, wrong for this panel.
-		   Its contents are German, which is LTR whatever the interface is,
-		   and a learner switching language should not have to relearn where
-		   their sentence list lives. order: -1 makes it first in RTL flow,
-		   which is the rightmost position. */
-		:global(html[dir="rtl"]) .script-view {
-			order: -1;
-		}
-
 		.script-view {
-			width: 300px;
-			flex-shrink: 0;
-			height: auto;
-			overflow: hidden;
-			border-top: none;
-			border-left: 1px solid var(--line);
-		}
-	}
-
-	/* ── Mobile: top-down dropdown drawer ──────────────────────── */
-	@media (max-width: 767px) {
-		/* Hide the static sidebar panel; become a slide-down drawer */
-		.script-view {
-			position: fixed;
-			top: 0;
-			left: 0;
-			right: 0;
-			height: 65vh;
-			z-index: 400;
-			transform: translateY(-105%);
-			transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
-			border-top: none;
-			border-radius: 0 0 18px 18px;
-			box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
+			left: 50%;
+			right: auto;
+			width: min(720px, calc(100vw - 32px));
+			transform: translate(-50%, -105%);
 		}
 
 		.script-view.open {
-			transform: translateY(0);
+			transform: translate(-50%, 0);
 		}
+	}
 
-		/* Drag handle at bottom of drawer (now slides down) */
-		.script-header::before {
-			content: none;
-		}
+	/* The Script bar: full width at the top of the lesson content. */
+	.script-toggle-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		width: 100%;
+		background: var(--strip);
+		color: var(--on-strip);
+		border: none;
+		border-radius: 0;
+		padding: 9px 16px;
+		min-height: 44px;
+		font-size: 0.85rem;
+		font-weight: 600;
+		cursor: pointer;
+		flex-shrink: 0;
+		box-shadow: none;
+	}
 
-		.script-header {
-			flex-direction: column;
-			align-items: stretch;
-		}
+	.script-toggle-count {
+		background: rgba(255, 255, 255, 0.14);
+		color: var(--leaf);
+		border-radius: 10px;
+		padding: 1px 6px;
+		font-size: 0.75rem;
+		font-weight: 700;
+	}
 
-		.script-header > * {
-			display: flex;
-			align-items: center;
-		}
+	.script-toggle-arrow {
+		font-size: 0.7rem;
+		color: var(--leaf);
+		transition: transform 0.3s;
+	}
 
-		.script-header h3,
-		.script-header-right {
-			display: flex;
-		}
+	.script-toggle-arrow.open {
+		transform: rotate(180deg);
+	}
 
-		/* Show close × button inside drawer on mobile */
-		.script-close-btn {
-			display: flex;
-		}
-
-		/* Script toggle as full-width bar at the top of content */
-		.script-toggle-btn {
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			gap: 8px;
-			width: 100%;
-			/* Dark strip directly under the green band, as in the screenshot. */
-			background: var(--strip);
-			color: var(--on-strip);
-			border: none;
-			border-bottom: none;
-			border-radius: 0;
-			padding: 9px 16px;
-			font-size: 0.85rem;
-			font-weight: 600;
-			cursor: pointer;
-			flex-shrink: 0;
-			box-shadow: none;
-		}
-
-		.script-toggle-count {
-			background: rgba(255, 255, 255, 0.14);
-			color: var(--leaf);
-			border-radius: 10px;
-			padding: 1px 6px;
-			font-size: 0.75rem;
-			font-weight: 700;
-		}
-
-		.script-toggle-arrow {
-			font-size: 0.7rem;
-			color: var(--leaf);
-			transition: transform 0.3s;
-		}
-
-		.script-toggle-arrow.open {
-			transform: rotate(180deg);
-		}
-
-		/* Backdrop behind open drawer */
-		.script-backdrop {
-			display: block;
-			position: fixed;
-			inset: 0;
-			background: rgba(0, 0, 0, 0.35);
-			z-index: 399;
-		}
+	/* Backdrop behind the open drop-down */
+	.script-backdrop {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.35);
+		z-index: 399;
 	}
 
 	@media (max-width: 980px) {
@@ -3856,7 +3802,6 @@
 			display: none;
 		}
 
-		/* script-view is a fixed drawer on mobile — no height override needed */
 	}
 
 	@media (max-width: 360px) {
