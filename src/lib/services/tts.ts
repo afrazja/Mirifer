@@ -13,7 +13,6 @@ import { trackEvent, trackObstacle } from './analytics';
 import { isMobile } from '$utils/device';
 import { get, writable } from 'svelte/store';
 import { preferencesStore } from '$stores/preferences';
-import { appStore } from '$stores/app';
 
 /**
  * Dialogue voice: 'a' = learner side (sent), 'b' = conversation partner
@@ -114,62 +113,18 @@ export function stopAllAudio(): void {
 }
 
 /**
- * Engine speed that 1.0× in the app maps to.
+ * 1.0× is the voice's own speed, in every lesson and every language.
  *
- * Measured on the voices in use: German (Edge Conrad/Katja) speaks ~156 wpm
- * at the engine's 1.0, a clear learner pace; English (Edge Andrew/Ava
- * Multilingual) speaks ~225 wpm at 1.0, far too fast to follow.
+ * German (Edge Conrad/Katja) speaks about 147 wpm at 1.0, a clear learner
+ * pace. It used to speed up after lesson 5, towards 1.2 by lesson 30, so
+ * the same 1× setting got faster from lesson 9 on without the learner
+ * choosing it. The speed setting is the only thing that changes it now.
  *
- * German — the language being learned — starts at 1.0 (~156 wpm) for
- * lessons 1–5, then steps up until about 1.2 (~190 wpm, close to ordinary
- * native speech) by lesson 30. A learner meets native speed gradually
- * instead of in one jump.
+ * English (Edge Andrew/Ava Multilingual) was asked for at 0.7. A neural
+ * voice slowed that far stretches its sounds and drags the last word of a
+ * sentence, which learners heard as unnatural, so English plays at the
+ * voice's natural speed. The German speed setting does not apply to it.
  *
- * English is the learner's own language (translations, narration), so it
- * stays at 0.7 (~155 wpm) throughout. Other languages play at the engine's
- * own pace. The learner's speed setting and slow replays multiply on top.
- */
-export const GERMAN_PACE = { start: 1, native: 1.2, slowUntil: 5, nativeFrom: 30 } as const;
-const ENGLISH_PACE = 0.7;
-
-export function basePace(shortLang: string, lessonDay: number): number {
-	if (shortLang === 'en') return ENGLISH_PACE;
-	if (shortLang !== 'de') return 1;
-	const { start, native, slowUntil, nativeFrom } = GERMAN_PACE;
-	if (lessonDay <= slowUntil) return start;
-	if (lessonDay >= nativeFrom) return native;
-	const t = (lessonDay - slowUntil) / (nativeFrom - slowUntil);
-	// Steps of 0.05, not a new speed per lesson: the speed is part of the
-	// audio URL, so every distinct value is another paid ElevenLabs render.
-	return Math.round((start + (native - start) * t) * 20) / 20;
-}
-
-/**
- * Which lesson the pace follows. Inside a lesson it is that lesson, so
- * replaying lesson 2 stays slow. Everywhere else (review, drills, Basics)
- * it is the learner's own level: the lesson after the highest one they
- * have completed.
- */
-let inLesson = false;
-export function setLessonActive(active: boolean): void {
-	inLesson = active;
-}
-
-function learnerLevel(): number {
-	try {
-		const done = JSON.parse(localStorage.getItem('mirifer_completed_lessons') || '{}');
-		const days = Object.keys(done).map(Number).filter((n) => Number.isFinite(n));
-		return days.length ? Math.max(...days) + 1 : 1;
-	} catch {
-		return 1;
-	}
-}
-
-function paceDay(): number {
-	return inLesson ? get(appStore).currentDay : learnerLevel();
-}
-
-/**
  * Native speed range of the Edge voices (the server's clamp). Anything
  * outside it is made up with playbackRate, which stretches the audio instead
  * of having the voice speak slower or faster, so it is the last resort.
@@ -181,14 +136,9 @@ const ENGINE_MAX = 1.5;
  * Split an app-level rate into the speed to request from the TTS engine
  * and the playbackRate that makes up any remainder outside its range.
  */
-export function engineRate(
-	shortLang: string,
-	rate: number,
-	lessonDay: number = 1
-): { engine: number; playback: number } {
-	const target = rate * basePace(shortLang, lessonDay);
-	const engine = Math.round(Math.min(ENGINE_MAX, Math.max(ENGINE_MIN, target)) * 100) / 100;
-	return { engine, playback: target / engine };
+export function engineRate(rate: number): { engine: number; playback: number } {
+	const engine = Math.round(Math.min(ENGINE_MAX, Math.max(ENGINE_MIN, rate)) * 100) / 100;
+	return { engine, playback: rate / engine };
 }
 
 /** Browser speech synthesis fallback */
@@ -252,7 +202,6 @@ function playWebAudio(
 	const shortLang = lang.split('-')[0];
 	const requestedRate = isFinite(rate) && rate > 0 ? rate : 1.0;
 	let safeRate = requestedRate;
-	const day = paceDay();
 	// voice/rate params only apply to engine-backed languages (German →
 	// ElevenLabs/Edge, Persian → Azure/Edge, English → Edge); keep other URLs
 	// stable.
@@ -261,7 +210,7 @@ function playWebAudio(
 		// Ask the TTS engine to actually speak slower (natural slow articulation)
 		// instead of time-stretching the audio client-side, which mostly widens
 		// the gaps between words. See engineRate for the pace and range.
-		const { engine, playback } = engineRate(shortLang, requestedRate, day);
+		const { engine, playback } = engineRate(requestedRate);
 		// `v` changes whenever the voice behind a URL changes, so audio cached
 		// for a year under the old voice is not replayed. v=2: German moved
 		// from ElevenLabs to Edge's German-only voices.
@@ -307,8 +256,8 @@ function playWebAudio(
 				currentAudio = null;
 			}
 			// Browser TTS does its own rate handling — give it the full
-			// paced rate, not the residual left over after engine speed.
-			_browserTTS(text, lang, requestedRate * basePace(shortLang, day)).then(resolve);
+			// rate, not the residual left over after engine speed.
+			_browserTTS(text, lang, requestedRate).then(resolve);
 		};
 
 		const audio = player();
