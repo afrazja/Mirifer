@@ -181,6 +181,19 @@ describe('loadLesson', () => {
 		expect(lesson!.sentences[1].targetText).toBe('Guten Morgen');
 	});
 
+	it('loads a lesson\'s goals, and drops a malformed list instead of the lesson', async () => {
+		const id = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+		const goals = [{ id: 'name', en: 'Say your name', fa: 'اسمتان را بگویید', sentences: [5] }];
+		setupTwoTableMock({ id, title: 'Intro', title_fa: null, goals }, []);
+		expect((await loadLesson(1))!.goals).toEqual(goals);
+
+		invalidateLessonCache();
+		setupTwoTableMock({ id, title: 'Intro', title_fa: null, goals: [{ nope: true }] }, []);
+		const lesson = await loadLesson(1);
+		expect(lesson!.title).toBe('Intro');
+		expect(lesson!.goals).toBeUndefined();
+	});
+
 	it('assigns 1-based sentence IDs from sentence_order', async () => {
 		const lessonRow = { id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', title: 'Test', title_fa: '' };
 		const sentenceRows = [
@@ -403,7 +416,7 @@ describe('offline caching (localStorage)', () => {
 	it('falls back to the cached lesson when Supabase fails (offline)', async () => {
 		const cachedLesson = { title: 'Offline Café', sentences: [{ id: 1, role: 'received', translation: 'Hi' }] };
 		localStorage.setItem('mirifer_lesson_3', JSON.stringify(cachedLesson));
-		localStorage.setItem('mirifer_lesson_3_v', '2');
+		localStorage.setItem('mirifer_lesson_3_v', '3');
 		const sb = mockSbForTables({ lessons: { data: null, error: { message: 'network down' } } });
 		vi.mocked(getSupabaseBrowserClient).mockReturnValue(sb as any);
 
@@ -415,7 +428,7 @@ describe('offline caching (localStorage)', () => {
 	it('getLesson reads from localStorage when not in the in-memory cache', () => {
 		const cachedLesson = { title: 'Synced Café', sentences: [] };
 		localStorage.setItem('mirifer_lesson_9', JSON.stringify(cachedLesson));
-		localStorage.setItem('mirifer_lesson_9_v', '2');
+		localStorage.setItem('mirifer_lesson_9_v', '3');
 
 		expect(getLesson(9)!.title).toBe('Synced Café');
 	});
@@ -428,6 +441,10 @@ describe('offline caching (localStorage)', () => {
 		expect(getLesson(11)).toBeNull();
 
 		localStorage.setItem('mirifer_lesson_11_v', '1');
+		expect(getLesson(11)).toBeNull();
+
+		// Version 2 predates goals: a Day 1 cached then would never show them.
+		localStorage.setItem('mirifer_lesson_11_v', '2');
 		expect(getLesson(11)).toBeNull();
 	});
 

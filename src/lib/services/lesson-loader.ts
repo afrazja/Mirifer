@@ -5,7 +5,7 @@
  */
 
 import { getSupabaseBrowserClient } from '$lib/supabase/client';
-import type { Lesson, LessonChunk, LessonParagraph, Sentence } from '$stores/lesson';
+import type { Lesson, LessonChunk, LessonGoal, LessonParagraph, Sentence } from '$stores/lesson';
 import type { Language } from '$stores/preferences';
 import { logError, logWarn } from '$utils/error';
 import { isUnlocked } from '$services/lesson-access';
@@ -16,6 +16,7 @@ import {
 	GlossaryRowSchema,
 	GrammarNoteSchema,
 	LessonChunkListSchema,
+	LessonGoalListSchema,
 	LessonParagraphListSchema
 } from '$lib/schemas';
 
@@ -50,8 +51,9 @@ const lsLessonKey = (day: number) => `mirifer_lesson_${day}`;
  * to exactly the people who had used the app most.
  *
  * 2 = words / collocations / paragraphs added.
+ * 3 = goals added.
  */
-const LESSON_CACHE_VERSION = 2;
+const LESSON_CACHE_VERSION = 3;
 const lsLessonVersionKey = (day: number) => `mirifer_lesson_${day}_v`;
 
 /** A cached lesson is only usable if it was written by this shape. */
@@ -178,9 +180,18 @@ export async function loadLesson(day: number): Promise<Lesson | null> {
 	const CHUNK_COLS = 'words, collocations, paragraphs';
 	let { data: lessonRow, error: lessonErr } = await sb
 		.from('lessons')
-		.select(`${BASE_COLS}, grammar_note, ${CHUNK_COLS}`)
+		.select(`${BASE_COLS}, grammar_note, ${CHUNK_COLS}, goals`)
 		.eq('day', day)
 		.maybeSingle();
+
+	if (lessonErr) {
+		// No goals column yet (supabase-lesson-goals.sql not run): keep the rest.
+		({ data: lessonRow, error: lessonErr } = await sb
+			.from('lessons')
+			.select(`${BASE_COLS}, grammar_note, ${CHUNK_COLS}`)
+			.eq('day', day)
+			.maybeSingle());
+	}
 
 	if (lessonErr) {
 		({ data: lessonRow, error: lessonErr } = await sb
@@ -296,8 +307,17 @@ export async function loadLesson(day: number): Promise<Lesson | null> {
 			);
 	}
 
+	let goals: LessonGoal[] | undefined;
+	if (validatedLesson.goals) {
+		const r = LessonGoalListSchema.safeParse(validatedLesson.goals);
+		if (r.success) goals = r.data.length ? r.data : undefined;
+		else
+			logWarn('lesson-loader:loadLesson', `goals for day ${day} failed validation: ${r.error.message}`);
+	}
+
 	const lesson: Lesson = {
 		title: validatedLesson.title,
+		goals,
 		words: parseChunks(validatedLesson.words, 'words'),
 		collocations: parseChunks(validatedLesson.collocations, 'collocations'),
 		paragraphs,

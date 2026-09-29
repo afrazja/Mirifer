@@ -61,8 +61,23 @@ export const LessonDetailRowSchema = z.object({
 	words: z.unknown().nullable().optional(),
 	collocations: z.unknown().nullable().optional(),
 	paragraphs: z.unknown().nullable().optional(),
+	// Validated separately too: a malformed goal list drops itself.
+	goals: z.unknown().nullable().optional(),
 	difficulty: z.string().nullable().optional()
 });
+
+/**
+ * One thing the learner can do after the lesson ("Say your age"). `sentences`
+ * are the 0-based positions of the lines that practise it; the goal counts as
+ * done once the learner has moved past all of them.
+ */
+export const LessonGoalSchema = z.object({
+	id: z.string().min(1),
+	en: z.string().min(1),
+	fa: z.string().optional().default(''),
+	sentences: z.array(z.number().int().nonnegative()).min(1)
+});
+export const LessonGoalListSchema = z.array(LessonGoalSchema);
 
 /** A pre-taught vocabulary item or a collocation — same shape, different job. */
 export const LessonChunkSchema = z.object({
