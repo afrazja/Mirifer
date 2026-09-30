@@ -108,6 +108,7 @@
 	let exercisesData: ExercisesData | null = $state(null);
 	/** A pre-teaching batch or quick check from the batched flow. */
 	let practice: PracticeData | null = $state(null);
+	let wordCardsEl: WordCards | undefined = $state();
 	/** One focused thing on screen: the lesson controls and mic step aside. */
 	const practiceActive = $derived(!!practice || !!exercisesData || !!warmUp);
 
@@ -782,6 +783,10 @@
 				freeTurnEl?.handleVoice(transcript);
 				return;
 			}
+			if (practice?.kind === "teach") {
+				wordCardsEl?.handleVoice(transcript, getLastVoiceAlternatives());
+				return;
+			}
 			controllerHandleVoice(transcript);
 		});
 
@@ -1040,7 +1045,7 @@
 	</div>
 {/if}
 
-<div class="container" class:hidden={showOverlay}>
+<div class="container" class:hidden={showOverlay} inert={showOptions}>
 	<AppHeader
 		title={prefs.language === "fa" ? "درس‌های روزانه" : "Daily Lessons"}
 		icon="📖"
@@ -1138,7 +1143,7 @@
 						onscroll={handleChatScroll}
 						role="log"
 						aria-live="off"
-						aria-label="Current sentence"
+						aria-label={prefs.language === "fa" ? "جملهٔ فعلی" : "Current sentence"}
 					>
 						{#each systemMessages as msg}
 							<div class="message system">
@@ -1685,6 +1690,13 @@
 									<div class="text">
 										{#if practice.kind === "teach"}
 											<WordCards
+												bind:this={wordCardsEl}
+												micAvailable={micSupported}
+												listening={app.isListening}
+												onMic={() => {
+													stopAllAudio();
+													toggleMic();
+												}}
 												items={practice.items}
 												batch={practice.batch}
 												of={practice.of}
@@ -2009,13 +2021,19 @@
 						<div
 							class="message-composer"
 							aria-live="polite"
-							aria-label="Your reply"
+							aria-label={prefs.language === "fa" ? "پاسخ تو" : "Your reply"}
 						>
 							<span lang="de" dir="ltr">{@html answerLineHtml}</span>
 						</div>
 						{#if currentTeachStep}
 							<button class="btn-bar-next" onclick={() => manualNext()}>
-								{prefs.language === "fa" ? "بعدی ←" : "Next ➡"}
+								{currentTeachStep.role === "sent"
+									? prefs.language === "fa"
+										? "رد کردن ←"
+										: "Skip ➡"
+									: prefs.language === "fa"
+										? "بعدی ←"
+										: "Next ➡"}
 							</button>
 						{/if}
 						<!-- The one mic, always in the same place at the bottom of
@@ -2027,8 +2045,12 @@
 							class:recording={app.isListening}
 							onclick={handleMicClick}
 							aria-label={app.isListening
-								? "Stop recording"
-								: "Microphone - tap to record"}
+								? prefs.language === "fa"
+									? "توقف ضبط"
+									: "Stop recording"
+								: prefs.language === "fa"
+									? "میکروفن، برای ضبط بزن"
+									: "Microphone - tap to record"}
 						>
 							{app.isListening ? "🛑" : "🎙️"}
 						</button>
@@ -2716,6 +2738,7 @@
 		align-items: center;
 		gap: 16px;
 		overflow-anchor: none;
+		scroll-padding-top: 28px;
 		-webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 28px);
 		mask-image: linear-gradient(to bottom, transparent 0, #000 28px);
 	}

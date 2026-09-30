@@ -4,7 +4,7 @@
 	 * One question at a time, feedback straight away, a score at the end, and
 	 * a chance to go over the ones that were missed. It can be skipped.
 	 */
-	import { untrack } from 'svelte';
+	import { untrack, tick } from 'svelte';
 	import {
 		type LessonExercise,
 		optionText,
@@ -54,6 +54,7 @@
 	let checked = $state(false);
 	let correct = $state(false);
 
+	let bodyEl: HTMLDivElement | undefined = $state();
 	const current = $derived(finished ? null : queue[position] ?? null);
 	const score = $derived(Object.values(firstTry).filter(Boolean).length);
 	const total = $derived(exercises.length);
@@ -68,10 +69,17 @@
 		correct = false;
 		tiles = ex?.type === 'order' ? orderTiles(ex) : [];
 		if (ex?.type === 'listen' && ex.de) play(ex.de);
+		// The new question's prompt is read out and is where keyboard focus starts.
+		void tick().then(() => bodyEl?.querySelector<HTMLElement>('.ex-prompt')?.focus({ preventScroll: true }));
 	});
+
+	function focusNext() {
+		void tick().then(() => bodyEl?.querySelector<HTMLElement>('.ex-next')?.focus({ preventScroll: true }));
+	}
 
 	function record(ok: boolean) {
 		if (!current) return;
+		focusNext();
 		correct = ok;
 		if (round === 1) firstTry = { ...firstTry, [current.id]: ok };
 		if (!ok && round === 1) missed = [...missed, current];
@@ -89,12 +97,14 @@
 		if (checked) return;
 		placed = [...placed, tiles[i]];
 		tiles = tiles.filter((_, k) => k !== i);
+		void tick().then(() => (bodyEl?.querySelector<HTMLElement>('.ex-tiles .tile') ?? bodyEl?.querySelector<HTMLElement>('.ex-check'))?.focus({ preventScroll: true }));
 	}
 
 	function unplace(i: number) {
 		if (checked) return;
 		tiles = [...tiles, placed[i]];
 		placed = placed.filter((_, k) => k !== i);
+		void tick().then(() => (bodyEl?.querySelector<HTMLElement>('.ex-answer .tile') ?? bodyEl?.querySelector<HTMLElement>('.ex-tiles .tile'))?.focus({ preventScroll: true }));
 	}
 
 	function checkOrder() {
@@ -129,8 +139,8 @@
 		score === total
 			? t('Perfect. You have this.', 'عالی! کاملاً یاد گرفتی.')
 			: score >= Math.ceil(total * 0.7)
-				? t('Good work. Go over the ones you missed.', 'آفرین! موارد اشتباه را دوباره مرور کن.')
-				: t('A good start. Try the missed ones again.', 'شروع خوبی بود. موارد اشتباه را دوباره امتحان کن.')
+				? t('Good work.', 'آفرین!')
+				: t('A good start. Come back to this lesson to strengthen it.', 'شروع خوبی بود. برای محکم‌تر شدن، دوباره به این درس برگرد.')
 	);
 </script>
 
@@ -138,7 +148,7 @@
 	<div class="ex-head">
 		<span class="ex-badge">✍️ {mode === 'check' ? t('Quick check', 'تمرین سریع') : t('Check what you learned', 'مرور آنچه یاد گرفتی')}</span>
 		{#if !finished}
-			<span class="ex-progress" aria-live="polite">
+			<span class="ex-progress">
 				{#if round > 1}{t('Once more', 'یک بار دیگر')} · {/if}<bdi dir="ltr">{position + 1} / {queue.length}</bdi>
 			</span>
 		{/if}
@@ -146,17 +156,17 @@
 
 	{#if current}
 		{#key `${round}-${current.id}`}
-			<div class="ex-body">
+			<div class="ex-body" bind:this={bodyEl}>
 				{#if current.type === 'listen'}
-					<p class="ex-prompt">{t('Listen. What does it mean?', 'گوش کن. معنی‌اش چیست؟')}</p>
+					<p class="ex-prompt" tabindex="-1">{t('Listen. What does it mean?', 'گوش کن. معنی‌اش چیست؟')}</p>
 					<button class="ex-listen" onclick={() => current.de && play(current.de)} aria-label={t('Play again', 'پخش دوباره')}>
 						🔊 {t('Play again', 'پخش دوباره')}
 					</button>
 				{:else if current.type === 'choice'}
-					<p class="ex-prompt">{localized(current.prompt, language)}</p>
+					<p class="ex-prompt" tabindex="-1">{localized(current.prompt, language)}</p>
 					{#if current.de}<p class="ex-de" lang="de" dir="ltr">{current.de}</p>{/if}
 				{:else if current.type === 'fill'}
-					<p class="ex-prompt">{localized(current.prompt, language) || t('Which word fits?', 'کدام کلمه مناسب است؟')}</p>
+					<p class="ex-prompt" tabindex="-1">{localized(current.prompt, language) || t('Which word fits?', 'کدام کلمه مناسب است؟')}</p>
 					{@const [before, after] = fillParts(current)}
 					<p class="ex-de" lang="de" dir="ltr">
 						{before}<span class="gap" class:filled={picked !== null}
@@ -164,11 +174,11 @@
 						>{after}
 					</p>
 				{:else}
-					<p class="ex-prompt">{t('Put the words in order.', 'کلمه‌ها را به ترتیب درست بچین.')}</p>
+					<p class="ex-prompt" tabindex="-1">{t('Put the words in order.', 'کلمه‌ها را به ترتیب درست بچین.')}</p>
 					{#if current.prompt}<p class="ex-meaning">{localized(current.prompt, language)}</p>{/if}
-					<div class="ex-answer" dir="ltr" aria-label={t('Your sentence', 'جملهٔ تو')}>
+					<div class="ex-answer" dir="ltr" role="group" aria-label={t('Your sentence', 'جملهٔ تو')}>
 						{#each placed as word, i (i)}
-							<button class="tile placed" disabled={checked} onclick={() => unplace(i)}>{word}</button>
+							<button class="tile placed" disabled={checked} aria-label={t(`${word}, word ${i + 1}, tap to remove`, `${word}، کلمهٔ ${i + 1}، برای برداشتن بزن`)} onclick={() => unplace(i)}>{word}</button>
 						{:else}
 							<span class="ex-empty">{t('Tap the words below', 'روی کلمه‌های پایین بزن')}</span>
 						{/each}
@@ -200,15 +210,19 @@
 					</div>
 				{/if}
 
+				<div role="status">
+					{#if answered}
+						<div class="ex-feedback" class:ok={correct}>
+							<strong>{correct ? t('Correct ✓', 'درست ✓') : t('Not quite', 'درست نبود')}</strong>
+							{#if !correct && current.type === 'order'}
+								<span class="ex-solution" dir="ltr" lang="de">{current.de}</span>
+							{/if}
+							{#if current.explain}<span>{localized(current.explain, language)}</span>{/if}
+							{#if !correct && round === 1}<span class="ex-again">{t('You will see this one again.', 'این سؤال دوباره می‌آید.')}</span>{/if}
+						</div>
+					{/if}
+				</div>
 				{#if answered}
-					<div class="ex-feedback" class:ok={correct} role="status">
-						<strong>{correct ? t('Correct ✓', 'درست ✓') : t('Not quite', 'درست نبود')}</strong>
-						{#if !correct && current.type === 'order'}
-							<span class="ex-solution" dir="ltr" lang="de">{current.de}</span>
-						{/if}
-						{#if current.explain}<span>{localized(current.explain, language)}</span>{/if}
-						{#if !correct && round === 1}<span class="ex-again">{t('You will see this one again.', 'این سؤال دوباره می‌آید.')}</span>{/if}
-					</div>
 					<button class="ex-next" onclick={next}>
 						{position + 1 < queue.length || (round === 1 && missed.length) ? t('Next →', 'بعدی ←') : mode === 'check' ? t('Continue →', 'ادامه ←') : t('See my result →', 'دیدن نتیجه ←')}
 					</button>
@@ -427,9 +441,9 @@
 		padding: 0 4px;
 		border: 0;
 		background: none;
-		color: var(--ink-soft);
+		color: var(--ink);
 		font: inherit;
-		font-size: 0.85rem;
+		font-size: 0.9rem;
 		text-decoration: underline;
 		text-underline-offset: 3px;
 		cursor: pointer;
