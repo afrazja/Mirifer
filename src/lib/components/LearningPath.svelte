@@ -1,12 +1,11 @@
 <script lang="ts">
  import type { LessonMeta } from '$services/lesson-loader';
- import { isUnlocked } from '$services/lesson-access';
  let { lessons, completed = {}, currentDay = 1, language = 'en', loading = false }: {
   lessons: LessonMeta[]; completed?: Record<number, unknown>; currentDay?: number;
   language?: 'en' | 'fa'; loading?: boolean;
  } = $props();
- const sorted = $derived([...lessons].sort((a,b) => a.day-b.day));
- const finished = $derived(sorted.filter(day => completed[day.day]).length);
+ // Only lessons the learner has finished: nothing locked, no count of what remains.
+ const passed = $derived([...lessons].filter(day => completed[day.day]).sort((a,b) => a.day-b.day));
  function title(meta: LessonMeta) {
   return (language === 'fa' && meta.titleFa ? meta.titleFa : meta.title).replace(/^(?:(?:Day|روز)\s*)?[0-9۰-۹٠-٩]+\s*[:.\-–]\s*/i, '');
  }
@@ -14,29 +13,25 @@
 <section class="learning-path" id="learning-path" aria-labelledby="path-heading">
  <header>
   <div><span class="eyebrow">{language === 'fa' ? 'روز به روز' : 'DAY BY DAY'}</span>
-   <h2 id="path-heading">{language === 'fa' ? 'مسیر یادگیری تو' : 'Your learning path'}</h2>
-   <p>{language === 'fa' ? 'درس‌های باز را انتخاب کن یا درس‌های تمام‌شده را دوباره تمرین کن.' : 'Choose an available lesson or revisit one you’ve completed.'}</p>
+   <h2 id="path-heading">{language === 'fa' ? 'درس‌های تمام‌شدهٔ تو' : 'Your completed lessons'}</h2>
+   <p>{language === 'fa' ? 'هر درس تمام‌شده را دوباره تمرین کن.' : 'Revisit any lesson you’ve finished.'}</p>
   </div>
-  {#if lessons.length}<span class="progress">{language === 'fa' ? `${finished} از ${lessons.length} کامل شده` : `${finished} of ${lessons.length} completed`}</span>{/if}
  </header>
  {#if loading}<p role="status">{language === 'fa' ? 'در حال بارگذاری درس‌ها…' : 'Loading lessons…'}</p>
  {:else if !lessons.length}<p role="status">{language === 'fa' ? 'درس‌ها بارگذاری نشدند. صفحه را تازه کن.' : 'Lessons couldn’t be loaded. Please refresh to try again.'}</p>
+ {:else if !passed.length}
+  <p role="status">{language === 'fa' ? 'هنوز درسی را تمام نکرده‌ای.' : 'You haven’t finished a lesson yet.'}</p>
+  <a class="start" href={`/lesson?day=${currentDay}`}>{language === 'fa' ? `شروع روز ${currentDay} ←` : `Start Day ${currentDay} →`}</a>
  {:else}
-  <div class="lesson-list" role="region" aria-label={language === 'fa' ? 'همه روزهای درس' : 'All lesson days'}>
+  <div class="lesson-list" role="region" aria-label={language === 'fa' ? 'درس‌های تمام‌شده' : 'Completed lessons'}>
    <ol>
-    {#each sorted as meta (meta.day)}
-     {@const available = isUnlocked(meta.day, completed)}
-     {@const done = !!completed[meta.day]}
-     {#snippet row()}
-      <span class="day-number" aria-hidden="true">{done ? '✓' : available ? meta.day : '🔒'}</span>
-      <span class="lesson-copy"><span class="day-label">{language === 'fa' ? 'روز' : 'Day'} {meta.day}</span><strong>{title(meta)}</strong>
-       {#if !available}<span class="unlock-hint">{language === 'fa' ? `برای باز شدن، روز ${meta.day - 1} را تمام کن` : `Complete Day ${meta.day - 1} to unlock`}</span>{/if}
-      </span>
-      <span class="state">{done ? (language === 'fa' ? 'کامل شده' : 'Completed') : available ? (language === 'fa' ? 'آماده شروع' : 'Available') : (language === 'fa' ? 'قفل' : 'Locked')}{#if available}<span aria-hidden="true">{language === 'fa' ? ' ←' : ' →'}</span>{/if}</span>
-     {/snippet}
-     <li class:done class:next={available && !done && meta.day === currentDay}>
-      {#if available}<a href={`/lesson?day=${meta.day}`} aria-current={meta.day === currentDay && !done ? 'step' : undefined}>{@render row()}</a>
-      {:else}<div class="locked" aria-disabled="true">{@render row()}</div>{/if}
+    {#each passed as meta (meta.day)}
+     <li class="done">
+      <a href={`/lesson?day=${meta.day}`}>
+       <span class="day-number" aria-hidden="true">✓</span>
+       <span class="lesson-copy"><span class="day-label">{language === 'fa' ? 'روز' : 'Day'} {meta.day}</span><strong>{title(meta)}</strong></span>
+       <span class="state">{language === 'fa' ? 'تمرین دوباره ←' : 'Practice again →'}</span>
+      </a>
      </li>
     {/each}
    </ol>
@@ -49,22 +44,19 @@
  .eyebrow { color:var(--accent); font-size:.72rem; font-weight:700; letter-spacing:.12em; }
  h2 { margin:6px 0 8px; color:var(--ink); font-family:var(--font-display); font-size:1.6rem; }
  p { margin:0; color:var(--ink-soft); line-height:1.6; }
- .progress { flex-shrink:0; padding:7px 11px; border-radius:var(--radius-pill); background:var(--accent-wash); color:var(--accent); font-size:.8rem; }
  .lesson-list { border-top:1px solid var(--line); }
  ol { list-style:none; padding:0; margin:0; }
  li { border-bottom:1px solid var(--line); }
  li:last-child { border-bottom:0; }
- a,.locked { display:flex; align-items:center; gap:16px; padding:16px 10px; min-height:84px; color:var(--ink); text-decoration:none; border-radius:8px; }
- a:hover { background:var(--control-hover); }
- a:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
- .next a { background:var(--accent-wash); }
+ .lesson-list a { display:flex; align-items:center; gap:16px; padding:16px 10px; min-height:84px; color:var(--ink); text-decoration:none; border-radius:8px; }
+ .lesson-list a:hover { background:var(--control-hover); }
+ .lesson-list a:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
  .day-number { display:grid; place-items:center; flex-shrink:0; width:38px; height:38px; border:1px solid var(--line); border-radius:50%; font-size:.9rem; color:var(--ink-soft); }
  .done .day-number { background:var(--accent); color:var(--on-brand); border-color:var(--accent); }
  .lesson-copy { display:flex; flex:1; min-width:0; flex-direction:column; gap:4px; }
  .day-label { color:var(--ink-soft); font-size:.75rem; }
  strong { font-size:.98rem; font-weight:600; overflow-wrap:anywhere; }
- .unlock-hint { font-size:.75rem; color:var(--ink-soft); }
+ .start { display:inline-flex; align-items:center; min-height:44px; margin-top:14px; color:var(--accent); font-weight:600; }
  .state { font-size:.75rem; color:var(--accent); white-space:nowrap; }
- .locked .state { color:var(--ink-soft); }
- @media(max-width:600px) { .learning-path { padding:20px 16px; } header { flex-direction:column; gap:12px; } a,.locked { flex-wrap:wrap; gap:10px; padding:14px 4px; } .state { width:100%; padding-inline-start:48px; } h2 { font-size:1.4rem; } }
+ @media(max-width:600px) { .learning-path { padding:20px 16px; } header { flex-direction:column; gap:12px; } .lesson-list a { flex-wrap:wrap; gap:10px; padding:14px 4px; } .state { width:100%; padding-inline-start:48px; } h2 { font-size:1.4rem; } }
 </style>
