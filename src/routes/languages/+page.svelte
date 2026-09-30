@@ -20,7 +20,6 @@
 			applyDocumentLanguage(language);
 		}).catch(() => applyDocumentLanguage(language));
 	});
-	async function changeDisplay(value: 'en' | 'fa') { language = value; await setLanguage(value); }
 	const fa = (value: number) => isFa ? value.toLocaleString('fa-IR') : String(value);
 	function summary(progress: CourseProgress): { label: string; detail: string } {
 		if (progress.code === 'de') return {
@@ -51,17 +50,7 @@
 </svelte:head>
 
 <main id="main-content" class="language-page" dir={isFa ? 'rtl' : 'ltr'}>
-	<AppHeader direction={isFa ? 'rtl' : 'ltr'}>
-		{#snippet actions()}
-			<div class="header-actions">
-				<label class="display-control">{isFa ? 'نمایش' : 'Display'}
-					<select aria-label={isFa ? 'زبان نمایش' : 'Display language'} value={language} onchange={e => void changeDisplay(e.currentTarget.value as 'en' | 'fa')}>
-						<option value="en">English</option><option value="fa">فارسی</option>
-					</select>
-				</label>
-			</div>
-		{/snippet}
-	</AppHeader>
+	<AppHeader direction={isFa ? 'rtl' : 'ltr'} />
 	<section class="introduction" aria-labelledby="language-title">
 		<p class="eyebrow">{isFa ? 'مسیر یادگیری تو' : 'YOUR LEARNING JOURNEY'}</p>
 		<h1 id="language-title">{firstVisit ? (isFa ? 'دوست داری چه زبانی یاد بگیری؟' : 'What would you like to learn?') : (isFa ? 'زبان‌های من' : 'My languages')}</h1>
@@ -161,8 +150,6 @@
 	.introduction > p:last-child, .display-note { color: var(--ink-soft); line-height: 1.6; }
 	.courses { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 24px; }
 	.header-actions { display: flex; align-items: center; gap: 14px; }
-	.display-control { display: flex; align-items: center; gap: 8px; color: var(--ink-soft); font-size: .8rem; }
-	.display-control select { min-height: 40px; padding: 5px 8px; border: 1px solid var(--control-border); border-radius: 8px; background: var(--paper-raised); color: var(--ink); font: inherit; font-size: .85rem; }
 	.course { display: flex; flex-direction: column; padding: 30px; background: var(--paper-raised); border: 1px solid var(--control-border); border-radius: 20px; box-shadow: var(--paper-shadow); }
 	.upcoming { background: var(--paper-sunken); box-shadow: none; }
 	.card-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 28px; }
@@ -185,5 +172,5 @@
 	.notice, .error { padding: 16px; border-radius: 12px; margin-bottom: 24px; line-height: 1.6; }
 	.notice { background: var(--attention-wash); color: var(--attention); }
 	.error { border: 1px solid var(--miss); color: var(--miss); }
-	@media (max-width: 640px) { .display-control { font-size: 0; } .display-control select { font-size: .85rem; } .language-page { padding: 16px 16px 40px; } .introduction { margin-top: 36px; } .courses { grid-template-columns: 1fr; gap: 16px; } .course, .learning-card { padding: 22px; } .card-top { margin-bottom: 20px; } }
+	@media (max-width: 640px) { .language-page { padding: 16px 16px 40px; } .introduction { margin-top: 36px; } .courses { grid-template-columns: 1fr; gap: 16px; } .course, .learning-card { padding: 22px; } .card-top { margin-bottom: 20px; } }
 </style>
