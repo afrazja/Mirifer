@@ -2294,6 +2294,14 @@
 		font-weight: 600;
 	}
 
+	/* Word cards, quick checks and the closing questions sit on a clean surface,
+	   not the tinted system-message box. */
+	.message.system.lesson-exercises {
+		background: var(--paper-raised);
+		color: var(--ink);
+		border: 1px solid var(--line);
+	}
+
 	.lesson-exercises .text {
 		text-align: start;
 	}
