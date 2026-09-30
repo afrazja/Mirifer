@@ -84,25 +84,46 @@ describe('helpers', () => {
 describe('Lesson 1 content (supabase-lesson-exercises.sql)', () => {
 	const sql = readFileSync(resolve(process.cwd(), 'supabase-lesson-exercises.sql'), 'utf8');
 	const blocks = [...sql.matchAll(/\$json\$([\s\S]*?)\$json\$/g)].map((m) => JSON.parse(m[1]));
+	const [words, collocations, rawExercises] = blocks;
 
 	it('has words, collocations and exercises, all valid', () => {
-		const [words, collocations, exercises] = blocks;
 		expect(words).toHaveLength(6);
 		expect(collocations).toHaveLength(8);
 		const dropped: string[] = [];
-		const kept = parseExercises(exercises, (m) => dropped.push(m));
+		const kept = parseExercises(rawExercises, (m) => dropped.push(m));
 		expect(dropped).toEqual([]);
-		expect(kept).toHaveLength(exercises.length);
+		expect(kept).toHaveLength(rawExercises.length);
 	});
 
 	it('gives every exercise a distinct id and a Persian text where it has an explanation', () => {
-		const exercises = parseExercises(blocks[2])!;
+		const exercises = parseExercises(rawExercises)!;
 		expect(new Set(exercises.map((e) => e.id)).size).toBe(exercises.length);
 		for (const e of exercises) if (e.explain) expect(e.explain.fa).not.toBe('');
 	});
 
 	it('does not always put the right answer first', () => {
-		const answers = parseExercises(blocks[2])!.filter((e) => e.type !== 'order').map((e) => e.answer);
+		const answers = parseExercises(rawExercises)!.filter((e) => e.type !== 'order').map((e) => e.answer);
 		expect(new Set(answers).size).toBeGreaterThan(1);
+	});
+
+	it('keeps batches small and every check attached to a real batch or line', () => {
+		const exercises = parseExercises(rawExercises)!;
+		const batches = new Set<number>();
+		for (const c of [...words, ...collocations]) if (c.batch) batches.add(c.batch);
+		for (const n of batches) {
+			const size = [...words, ...collocations].filter((c) => c.batch === n).length;
+			expect(size).toBeLessThanOrEqual(3);
+			expect(exercises.some((e) => e.after === `batch-${n}`)).toBe(true);
+		}
+		for (const e of exercises) {
+			if (typeof e.after === 'string') expect(batches.has(Number(e.after.slice(6)))).toBe(true);
+			if (typeof e.after === 'number') expect(e.after).toBeLessThan(19);
+		}
+	});
+
+	it('closes with a short set that ends on the hardest kind', () => {
+		const closing = parseExercises(rawExercises)!.filter((e) => e.after === undefined);
+		expect(closing.length).toBeLessThanOrEqual(6);
+		expect(closing.at(-1)?.type).toBe('order');
 	});
 });

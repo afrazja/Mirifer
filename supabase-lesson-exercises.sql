@@ -23,6 +23,15 @@
 --
 -- `answer` is the 0-based index into `options`.
 --
+-- Sequencing (the lesson is taught a few items at a time, not as one list):
+--   * `words` / `collocations` items with a "batch": 1, 2, ... are pre-taught,
+--     one card at a time, before the dialogue. Items without a batch are met
+--     in the dialogue only. A lesson with no batches keeps the one-screen
+--     warm-up.
+--   * an exercise with "after": "batch-2" is asked right after that batch;
+--     "after": 12 is asked right after the dialogue line with that 0-based
+--     index; with no "after" it is part of the closing set at the end.
+--
 -- Rules for the content (learned on Day 1):
 --   * every word and collocation must occur in the dialogue
 --   * a warm-up item is a word, a collocation or a frame ("Ich heiße ..."),
@@ -37,9 +46,9 @@ alter table public.lessons add column if not exists exercises jsonb;
 
 update public.lessons
 set words = $json$[
-  {"de": "der Beruf",       "en": "job, occupation",         "fa": "شغل، حرفه"},
-  {"de": "der Ingenieur",   "en": "engineer",                "fa": "مهندس"},
-  {"de": "verheiratet",     "en": "married",                 "fa": "متأهل"},
+  {"de": "der Beruf",       "en": "job, occupation",         "fa": "شغل، حرفه",      "batch": 1},
+  {"de": "der Ingenieur",   "en": "engineer",                "fa": "مهندس",           "batch": 1},
+  {"de": "verheiratet",     "en": "married",                 "fa": "متأهل",           "batch": 1},
   {"de": "der Abschluss",   "en": "degree, qualification",   "fa": "مدرک تحصیلی"},
   {"de": "der Master",      "en": "master's degree",         "fa": "کارشناسی ارشد"},
   {"de": "dreißig",         "en": "thirty",                  "fa": "سی"}
@@ -48,47 +57,57 @@ collocations = $json$[
   {"de": "Guten Morgen",        "en": "Good morning",            "fa": "صبح بخیر"},
   {"de": "Wie geht es Ihnen?",  "en": "How are you? (formal)",   "fa": "حال شما چطور است؟"},
   {"de": "Freut mich",          "en": "Pleased to meet you",     "fa": "خوشبختم"},
-  {"de": "Ich heiße …",         "en": "My name is …",            "fa": "اسم من … است"},
-  {"de": "Ich komme aus …",     "en": "I come from …",           "fa": "من اهل … هستم"},
-  {"de": "… Jahre alt",         "en": "… years old",             "fa": "… ساله"},
+  {"de": "Ich heiße …",         "en": "My name is …",           "fa": "اسم من … است",    "batch": 2},
+  {"de": "Ich komme aus …",     "en": "I come from …",          "fa": "من اهل … هستم",   "batch": 2},
+  {"de": "… Jahre alt",         "en": "… years old",            "fa": "… ساله",           "batch": 2},
   {"de": "von Beruf",           "en": "by profession",           "fa": "از نظر شغل"},
   {"de": "Auf Wiedersehen",     "en": "Goodbye",                 "fa": "خداحافظ"}
 ]$json$::jsonb,
 exercises = $json$[
-  {"id": "age-listen", "type": "listen", "de": "Wie alt sind Sie?",
-   "options": [{"en": "What is your name?", "fa": "اسم شما چیست؟"}, {"en": "How old are you?", "fa": "چند سالتان است؟"}, {"en": "Where are you from?", "fa": "اهل کجا هستید؟"}],
+  {"id": "word-listen", "type": "listen", "de": "verheiratet", "after": "batch-1",
+   "options": [{"en": "engineer", "fa": "مهندس"}, {"en": "married", "fa": "متأهل"}, {"en": "job", "fa": "شغل"}],
    "answer": 1,
-   "explain": {"en": "Wie alt … = how old. You will hear it in every first conversation.", "fa": "Wie alt … یعنی «چند ساله». در هر گفتگوی اول می‌شنوی‌اش."}},
+   "explain": {"en": "verheiratet = married. You will use it in a few minutes.", "fa": "verheiratet یعنی «متأهل». چند دقیقهٔ دیگر از آن استفاده می‌کنی."}},
 
-  {"id": "job-listen", "type": "listen", "de": "Und was sind Sie von Beruf?",
-   "options": [{"en": "What do you do for a living?", "fa": "شغل شما چیست؟"}, {"en": "Are you married?", "fa": "آیا متأهل هستید؟"}, {"en": "Where are you from?", "fa": "اهل کجا هستید؟"}],
-   "answer": 0,
-   "explain": {"en": "Der Beruf is your job, so von Beruf means by profession.", "fa": "Beruf یعنی شغل؛ von Beruf یعنی «از نظر شغل»."}},
+  {"id": "beruf-listen", "type": "listen", "de": "der Beruf", "after": "batch-1",
+   "options": [{"en": "name", "fa": "اسم"}, {"en": "degree", "fa": "مدرک"}, {"en": "job", "fa": "شغل"}],
+   "answer": 2,
+   "explain": {"en": "Der Beruf is your job.", "fa": "Beruf یعنی شغل."}},
 
-  {"id": "name-fill", "type": "fill", "de": "Ich ___ Ali.",
+  {"id": "name-fill", "type": "fill", "de": "Ich ___ Ali.", "after": "batch-2",
    "prompt": {"en": "Say your name.", "fa": "اسمت را بگو."},
    "options": ["komme", "heiße", "habe"], "answer": 1,
    "explain": {"en": "Ich heiße … is how you give your name.", "fa": "برای گفتن اسم می‌گوییم Ich heiße …"}},
 
-  {"id": "age-fill", "type": "fill", "de": "Ich ___ dreißig Jahre alt.",
+  {"id": "age-fill", "type": "fill", "de": "Ich ___ dreißig Jahre alt.", "after": "batch-2",
    "prompt": {"en": "Say your age.", "fa": "سنت را بگو."},
    "options": ["habe", "heiße", "bin"], "answer": 2,
    "explain": {"en": "In German you are old: Ich bin … Jahre alt. Not “I have”.", "fa": "در آلمانی «هستی» ساله: Ich bin … Jahre alt؛ نه «دارم»."}},
 
-  {"id": "origin-fill", "type": "fill", "de": "Woher ___ Sie?",
-   "prompt": {"en": "Ask where someone is from.", "fa": "بپرس اهل کجاست."},
-   "options": ["heißen", "kommen", "verheiratet"], "answer": 1,
-   "explain": {"en": "Woher kommen Sie? = Where do you come from?", "fa": "Woher kommen Sie? یعنی «اهل کجا هستید؟»"}},
-
-  {"id": "job-question", "type": "choice",
+  {"id": "job-question", "type": "choice", "after": 12,
    "prompt": {"en": "Which question asks about someone’s job?", "fa": "کدام سؤال دربارهٔ شغل است؟"},
    "options": ["Woher kommen Sie?", "Was sind Sie von Beruf?", "Sind Sie verheiratet?"], "answer": 1,
    "explain": {"en": "Was sind Sie von Beruf? = What do you do for a living?", "fa": "Was sind Sie von Beruf? یعنی «شغل شما چیست؟»"}},
+
+  {"id": "origin-fill", "type": "fill", "de": "Woher ___ Sie?", "after": 12,
+   "prompt": {"en": "Ask where someone is from.", "fa": "بپرس اهل کجاست."},
+   "options": ["heiße", "kommen", "komme"], "answer": 1,
+   "explain": {"en": "With Sie the verb ends in -en: Woher kommen Sie? The ich form is komme.", "fa": "با Sie فعل به -en ختم می‌شود: Woher kommen Sie؟ شکل ich می‌شود komme."}},
+
+  {"id": "job-listen", "type": "listen", "de": "Und was sind Sie von Beruf?",
+   "options": [{"en": "What do you do for a living?", "fa": "شغل شما چیست؟"}, {"en": "Are you married?", "fa": "آیا متأهل هستید؟"}, {"en": "Where are you from?", "fa": "اهل کجا هستید؟"}],
+   "answer": 0,
+   "explain": {"en": "Von Beruf = by profession, so this asks about your job.", "fa": "von Beruf یعنی «از نظر شغل»؛ پس این سؤال دربارهٔ شغل است."}},
 
   {"id": "job-answer", "type": "choice",
    "prompt": {"en": "How do you say “I am an engineer”?", "fa": "«من مهندس هستم» را چطور می‌گویی؟"},
    "options": ["Ich habe Ingenieur.", "Ich heiße Ingenieur.", "Ich bin Ingenieur."], "answer": 2,
    "explain": {"en": "Your job comes after Ich bin, with no “a” in front.", "fa": "بعد از Ich bin شغل می‌آید، بدون حرف تعریف."}},
+
+  {"id": "married-answer", "type": "choice",
+   "prompt": {"en": "Anna asks “Sind Sie verheiratet?” You are married. What do you say?", "fa": "آنا می‌پرسد «Sind Sie verheiratet؟» تو متأهلی. چه می‌گویی؟"},
+   "options": ["Ja, ich bin verheiratet.", "Ja, ich habe verheiratet.", "Ja, ich heiße verheiratet."], "answer": 0,
+   "explain": {"en": "Married is something you are: ich bin verheiratet.", "fa": "متأهل بودن یعنی «هستی»: ich bin verheiratet."}},
 
   {"id": "degree-question", "type": "choice", "de": "Welchen Abschluss haben Sie?",
    "prompt": {"en": "What is Anna asking?", "fa": "آنا چه می‌پرسد؟"},
@@ -96,18 +115,15 @@ exercises = $json$[
    "answer": 1,
    "explain": {"en": "Der Abschluss is a degree or qualification.", "fa": "Abschluss یعنی مدرک تحصیلی."}},
 
-  {"id": "degree-order", "type": "order", "de": "Ich habe einen Master in Elektrotechnik.",
-   "prompt": {"en": "I have a master’s degree in electrical engineering.", "fa": "من کارشناسی ارشد مهندسی برق دارم."},
-   "explain": {"en": "For a degree you say Ich habe …", "fa": "برای مدرک می‌گوییم Ich habe …"}},
-
-  {"id": "origin-order", "type": "order", "de": "Ich komme aus dem Iran.",
-   "prompt": {"en": "I come from Iran.", "fa": "من اهل ایران هستم."}}
+  {"id": "age-order", "type": "order", "de": "Ich bin dreißig Jahre alt.",
+   "prompt": {"en": "I am thirty years old.", "fa": "من سی سال دارم."},
+   "explain": {"en": "Ich bin … Jahre alt: in German you are old.", "fa": "Ich bin … Jahre alt: در آلمانی «هستی» ساله."}}
 ]$json$::jsonb
 where day = 1;
 
 commit;
 
--- Check: expect 6 words, 8 collocations, 10 exercises, 19 sentences.
+-- Check: expect 6 words, 8 collocations, 11 exercises, 19 sentences.
 --   select jsonb_array_length(words), jsonb_array_length(collocations),
 --          jsonb_array_length(exercises),
 --          (select count(*) from sentences s where s.lesson_id = l.id)

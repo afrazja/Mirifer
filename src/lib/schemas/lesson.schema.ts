@@ -85,7 +85,9 @@ export const LessonGoalListSchema = z.array(LessonGoalSchema);
 export const LessonChunkSchema = z.object({
 	de: z.string().min(1),
 	en: z.string().optional().default(''),
-	fa: z.string().optional().default('')
+	fa: z.string().optional().default(''),
+	/** Which pre-teaching batch (1, 2, ...) introduces it. No batch: not pre-taught. */
+	batch: z.number().int().positive().optional()
 });
 
 export const LessonChunkListSchema = z.array(LessonChunkSchema);

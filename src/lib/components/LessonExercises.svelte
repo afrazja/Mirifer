@@ -20,11 +20,14 @@
 	let {
 		exercises,
 		language = 'en',
+		mode = 'final',
 		play,
 		onDone
 	}: {
 		exercises: LessonExercise[];
 		language?: 'en' | 'fa';
+		/** `check`: a short quick check inside the lesson, no score screen. `final`: the closing set with a score. */
+		mode?: 'check' | 'final';
 		/** Speak German text. */
 		play: (text: string) => void;
 		/** `result` is null when skipped. */
@@ -101,16 +104,19 @@
 	}
 
 	function next() {
-		if (position + 1 < queue.length) position += 1;
-		else finished = true;
-	}
-
-	function retryMissed() {
-		queue = [...missed];
-		missed = [];
-		position = 0;
-		round += 1;
-		finished = false;
+		if (position + 1 < queue.length) {
+			position += 1;
+		} else if (round === 1 && missed.length) {
+			// What was missed comes round once more, straight away.
+			queue = [...missed];
+			missed = [];
+			position = 0;
+			round = 2;
+		} else if (mode === 'check') {
+			onDone({ correct: score, total });
+		} else {
+			finished = true;
+		}
 	}
 
 	const optionState = (i: number) => {
@@ -130,10 +136,10 @@
 
 <div class="exercises" {dir}>
 	<div class="ex-head">
-		<span class="ex-badge">✍️ {t('Check what you learned', 'مرور آنچه یاد گرفتی')}</span>
+		<span class="ex-badge">✍️ {mode === 'check' ? t('Quick check', 'مرور سریع') : t('Check what you learned', 'مرور آنچه یاد گرفتی')}</span>
 		{#if !finished}
 			<span class="ex-progress" aria-live="polite">
-				{#if round > 1}{t('Second try', 'تلاش دوباره')} · {/if}<bdi dir="ltr">{position + 1} / {queue.length}</bdi>
+				{#if round > 1}{t('Once more', 'یک بار دیگر')} · {/if}<bdi dir="ltr">{position + 1} / {queue.length}</bdi>
 			</span>
 		{/if}
 	</div>
@@ -201,14 +207,15 @@
 							<span class="ex-solution" dir="ltr" lang="de">{current.de}</span>
 						{/if}
 						{#if current.explain}<span>{localized(current.explain, language)}</span>{/if}
+						{#if !correct && round === 1}<span class="ex-again">{t('You will see this one again.', 'این یکی دوباره می‌آید.')}</span>{/if}
 					</div>
 					<button class="ex-next" onclick={next}>
-						{position + 1 < queue.length ? t('Next →', 'بعدی ←') : t('See my result →', 'دیدن نتیجه ←')}
+						{position + 1 < queue.length || (round === 1 && missed.length) ? t('Next →', 'بعدی ←') : mode === 'check' ? t('Continue →', 'ادامه ←') : t('See my result →', 'دیدن نتیجه ←')}
 					</button>
 				{/if}
 			</div>
 		{/key}
-		{#if !answered}
+		{#if !answered && mode === 'final'}
 			<button class="ex-skip" onclick={() => onDone(round > 1 ? { correct: score, total } : null)}>
 				{round > 1 ? t('Finish', 'پایان') : t('Skip the exercises', 'رد شدن از تمرین‌ها')}
 			</button>
@@ -218,11 +225,6 @@
 			<p class="ex-score" dir="ltr">{score} / {total}</p>
 			<p>{message}</p>
 			<div class="ex-result-actions">
-				{#if missed.length && round === 1}
-					<button class="ex-retry" onclick={retryMissed}>
-						{t('Try the missed ones again', 'دوباره موارد اشتباه')} ({missed.length})
-					</button>
-				{/if}
 				<button class="ex-next" onclick={() => onDone({ correct: score, total })}>{t('Continue →', 'ادامه ←')}</button>
 			</div>
 		</div>
@@ -372,8 +374,7 @@
 	}
 
 	.ex-check,
-	.ex-next,
-	.ex-retry {
+	.ex-next {
 		justify-self: start;
 		min-height: 48px;
 		padding: 10px 22px;
@@ -386,15 +387,15 @@
 		cursor: pointer;
 	}
 
+	/* Whole-width in the thumb zone while a question is on screen. */
+	.ex-body .ex-next,
+	.ex-body .ex-check {
+		justify-self: stretch;
+	}
+
 	.ex-check:disabled {
 		opacity: 0.5;
 		cursor: default;
-	}
-
-	.ex-retry {
-		background: var(--control);
-		color: var(--ink);
-		border: 2px solid var(--control-edge);
 	}
 
 	.ex-feedback {
@@ -407,6 +408,11 @@
 
 	.ex-feedback.ok {
 		background: var(--leaf-wash);
+	}
+
+	.ex-again {
+		color: var(--ink-soft);
+		font-size: 0.85rem;
 	}
 
 	.ex-solution {
@@ -458,7 +464,6 @@
 	.tile:focus-visible,
 	.ex-check:focus-visible,
 	.ex-next:focus-visible,
-	.ex-retry:focus-visible,
 	.ex-skip:focus-visible {
 		outline: 3px solid var(--accent);
 		outline-offset: 2px;

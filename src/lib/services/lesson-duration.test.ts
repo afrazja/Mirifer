@@ -124,3 +124,21 @@ describe('countLessonContent', () => {
 		expect(lessonMinutes(null)).toBe(0);
 	});
 });
+
+describe('batched lessons', () => {
+	it('count only the items that are pre-taught', () => {
+		const counts = countLessonContent({
+			sentences: [{ role: 'received' }, { role: 'sent' }],
+			words: [{ batch: 1 }, {}],
+			collocations: [{ batch: 2 }, {}, {}]
+		});
+		expect(counts.words).toBe(1);
+		expect(counts.collocations).toBe(1);
+	});
+
+	it('count every item when nothing is batched', () => {
+		const counts = countLessonContent({ words: [{}, {}], collocations: [{}] });
+		expect(counts.words).toBe(2);
+		expect(counts.collocations).toBe(1);
+	});
+});
