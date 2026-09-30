@@ -93,7 +93,7 @@
 				emailSent = true;
 			} else {
 				// Everyone lands on My languages; a new learner picks a course there.
-				goto("/languages");
+				goto("/languages", { invalidateAll: true });
 				// Fire-and-forget after navigation
 				if (result.user) auth.ensureProfile(result.user);
 				dataLayer.syncOnLogin();

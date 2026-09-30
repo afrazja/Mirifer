@@ -105,6 +105,7 @@
 					targetLang === "de" || targetLang === "fr"
 						? "/home"
 						: "/onboarding",
+					{ invalidateAll: true },
 				);
 				// Fire-and-forget: don't await these before navigating
 				if (result.user) auth.ensureProfile(result.user);
