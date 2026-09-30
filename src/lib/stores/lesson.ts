@@ -70,6 +70,8 @@ export interface LessonChunk {
 	de: string;
 	en: string;
 	fa: string;
+	/** Which pre-teaching batch introduces it; none means it is not pre-taught. */
+	batch?: number;
 }
 
 export interface LessonParagraph {

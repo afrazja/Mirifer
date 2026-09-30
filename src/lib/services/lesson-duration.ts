@@ -72,8 +72,8 @@ interface LessonLike {
 	sentences?: Array<{ role?: string }> | null;
 	grammarNote?: unknown;
 	/** Not in the data yet — the content work that adds them lands later. */
-	words?: unknown[] | null;
-	collocations?: unknown[] | null;
+	words?: Array<{ batch?: number }> | null;
+	collocations?: Array<{ batch?: number }> | null;
 	paragraphs?: unknown[] | null;
 	exercises?: unknown[] | null;
 }
@@ -87,9 +87,14 @@ export function countLessonContent(lesson: LessonLike | null | undefined): Lesso
 		if (s?.role === 'received') received += 1;
 		else sent += 1;
 	}
+	// A lesson with batched items pre-teaches only those; the rest are met in
+	// the dialogue. Without batches every item is on the warm-up screen.
+	const batched = [...(lesson?.words ?? []), ...(lesson?.collocations ?? [])].some((c) => c.batch !== undefined);
+	const taught = (items: Array<{ batch?: number }> | null | undefined) =>
+		batched ? (items ?? []).filter((c) => c.batch !== undefined).length : (items?.length ?? 0);
 	return {
-		words: lesson?.words?.length ?? 0,
-		collocations: lesson?.collocations?.length ?? 0,
+		words: taught(lesson?.words),
+		collocations: taught(lesson?.collocations),
 		received,
 		sent,
 		paragraphs: lesson?.paragraphs?.length ?? 0,

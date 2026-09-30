@@ -23,11 +23,13 @@
 		continueAfterGrammar,
 		continueAfterWarmUp,
 		continueAfterExercises,
+		continueAfterPractice,
 		type TeachStepData,
 		type CompletionCardData,
 		type GrammarMomentData,
 		type WarmUpData,
 		type ExercisesData,
+		type PracticeData,
 		type ExamQuestionData,
 		type ExamResultsData,
 		type VoiceResultData,
@@ -60,6 +62,7 @@
 	} from "$services/speech";
 	import SentencePractice from "$components/SentencePractice.svelte";
 	import LessonExercises from "$components/LessonExercises.svelte";
+	import WordCards from "$components/WordCards.svelte";
 	import ConversationTurn from "$components/ConversationTurn.svelte";
 	import { openerForDay } from "$services/conversation-openers";
 	import { type Outcome } from "$services/practice-drills";
@@ -103,6 +106,10 @@
 	let grammarMoment: GrammarMomentData | null = $state(null);
 	let warmUp: WarmUpData | null = $state(null);
 	let exercisesData: ExercisesData | null = $state(null);
+	/** A pre-teaching batch or quick check from the batched flow. */
+	let practice: PracticeData | null = $state(null);
+	/** One focused thing on screen: the lesson controls and mic step aside. */
+	const practiceActive = $derived(!!practice || !!exercisesData || !!warmUp);
 
 	let examQuestionData: ExamQuestionData | null = $state(null);
 	let examResultsData: ExamResultsData | null = $state(null);
@@ -321,6 +328,7 @@
 				completionData = null;
 				grammarMoment = null;
 				exercisesData = null;
+				practice = null;
 				examQuestionData = null;
 				examResultsData = null;
 				voiceResult = null;
@@ -331,6 +339,13 @@
 			},
 			onWarmUp(data) {
 				warmUp = data;
+				if (data) {
+					currentTeachStep = null;
+					isSpeaking = false;
+				}
+			},
+			onPractice(data) {
+				practice = data;
 				if (data) {
 					currentTeachStep = null;
 					isSpeaking = false;
@@ -387,6 +402,7 @@
 				completionData = null;
 				grammarMoment = null;
 				exercisesData = null;
+				practice = null;
 				examResultsData = null;
 				voiceResult = null;
 				choiceAnswered = -1;
@@ -397,6 +413,7 @@
 				completionData = null;
 				grammarMoment = null;
 				exercisesData = null;
+				practice = null;
 				examQuestionData = null;
 				voiceResult = null;
 				examResultsData = data;
@@ -424,6 +441,7 @@
 				completionData = null;
 				grammarMoment = null;
 				exercisesData = null;
+				practice = null;
 				examQuestionData = null;
 				examResultsData = null;
 				voiceResult = null;
@@ -923,7 +941,7 @@
 		icon="📖"
 		backHref="/home"
 		backLabel={prefs.language === "fa" ? "خانه" : "Home"}
-		secondary={lessonSecondaryControls}
+		secondary={practiceActive ? undefined : lessonSecondaryControls}
 		secondaryLabel={prefs.language === "fa" ? "کنترل‌های درس" : "Lesson controls"}
 		sticky
 		logo={false}
@@ -1559,6 +1577,34 @@
 							</div>
 						{/if}
 
+						<!-- Batched flow: pre-teaching cards and quick checks -->
+						{#if practice}
+							{#key practice.kind === "teach" ? `teach-${practice.batch}` : `check-${practice.exercises[0]?.id}`}
+								<div class="message system lesson-exercises">
+									<div class="text">
+										{#if practice.kind === "teach"}
+											<WordCards
+												items={practice.items}
+												batch={practice.batch}
+												of={practice.of}
+												language={practice.language}
+												play={(text) => playAudioPromise(text, 1, "de-DE")}
+												onDone={() => continueAfterPractice()}
+											/>
+										{:else}
+											<LessonExercises
+												mode="check"
+												exercises={practice.exercises}
+												language={practice.language}
+												play={(text) => playAudioPromise(text, 1, "de-DE")}
+												onDone={() => continueAfterPractice()}
+											/>
+										{/if}
+									</div>
+								</div>
+							{/key}
+						{/if}
+
 						<!-- End-of-lesson exercises (after the grammar moment, before completion) -->
 						{#if exercisesData}
 							<div class="message system lesson-exercises">
@@ -1846,7 +1892,8 @@
 						{/if}
 					</div>
 
-					<!-- Interaction Area -->
+					<!-- Interaction Area (steps aside while a card or exercise has the focus) -->
+					{#if !practiceActive}
 					<div class="chat-interaction-area">
 						<div
 							class="message-composer"
@@ -1870,6 +1917,7 @@
 							{app.isListening ? "🛑" : "🎙️"}
 						</button>
 					</div>
+					{/if}
 				</div>
 				<!-- end chat-main -->
 

@@ -42,6 +42,7 @@ import { lessonMinutes, countLessonContent } from '$services/lesson-duration';
 import { matchVoiceInput, bestVoiceMatch, getWordMatchStatus } from '$utils/text-matching';
 import { diagnose, type SoundNote } from './pronunciation';
 import type { LessonExercise } from './lesson-exercises';
+import { hasBatches, buildBatchPlan, midChecksAfter, finalExercises, type PracticeBlock } from './lesson-plan';
 import { getLastVoiceAlternatives } from '$services/speech';
 import { getTranslation, getTranslationLang } from '$utils/i18n';
 import { wait } from '$utils/wait';
@@ -57,6 +58,8 @@ export interface LessonCallbacks {
 	onWarmUp?: (data: WarmUpData | null) => void;
 	/** End-of-lesson grammar moment; null clears it. */
 	onGrammarMoment?: (data: GrammarMomentData | null) => void;
+	/** Small-batch pre-teaching and quick checks around the dialogue; null clears the block. */
+	onPractice?: (data: PracticeData | null) => void;
 	/** End-of-lesson exercises, after the grammar moment; null clears them. */
 	onExercises?: (data: ExercisesData | null) => void;
 	onCompletionCard: (data: CompletionCardData) => void;
@@ -115,6 +118,9 @@ export interface GrammarMomentData {
 	/** Basics category to deep-link into, when the note names one. */
 	basicsKey?: string;
 }
+
+/** One block of the batched flow, with the language to show it in. */
+export type PracticeData = PracticeBlock & { language: Language };
 
 export interface ExercisesData {
 	language: Language;
@@ -194,6 +200,24 @@ let grammarMomentShown = false;
 /** Same, for the warm-up at the start of the lesson. */
 let warmUpShown = false;
 
+/**
+ * The batched pre-teaching plan for the current lesson and how far through it
+ * the learner is, the mid-dialogue checks already asked, and the last line
+ * presented (a check is due only when the learner moves forward past a line,
+ * never on resuming).
+ */
+let prePlan: PracticeBlock[] | null = null;
+let prePlanPos = 0;
+let shownMidChecks = new Set<number>();
+let lastPresentedIndex = -1;
+
+function resetPractice(): void {
+	prePlan = null;
+	prePlanPos = 0;
+	shownMidChecks = new Set();
+	lastPresentedIndex = -1;
+}
+
 /** Same, for the exercises after the grammar moment. */
 let exercisesShown = false;
 
@@ -232,6 +256,16 @@ export async function continueAfterGrammar(): Promise<void> {
 	if (!lesson) return;
 	if (offerExercises(lesson, prefs)) return; // continueAfterExercises() resumes into the completion card
 	await handleLessonCompletion(lesson, app, prefs);
+}
+
+/**
+ * A pre-teaching batch or a quick check is done: show the next block, or the
+ * dialogue.
+ */
+export async function continueAfterPractice(): Promise<void> {
+	callbacks?.onPractice?.(null);
+	if (prePlan && prePlanPos < prePlan.length && get(appStore).currentSentenceIndex === 0) prePlanPos += 1;
+	await processNextStep();
 }
 
 /**
@@ -276,6 +310,7 @@ export async function initLesson(requestedDay?: number): Promise<void> {
 	warmUpShown = false;
 	exercisesShown = false;
 	exerciseResult = null;
+	resetPractice();
 	try {
 		// Load saved language preference
 		const savedLang = await getLanguage();
@@ -355,6 +390,35 @@ export async function processNextStep(skipAudio = false): Promise<void> {
 
 	if (!lesson) return;
 
+	// Batched pre-teaching: a few items at a time, one card each, every batch
+	// followed by a quick check. Only at the very start of a lesson whose
+	// content is batched; other lessons keep the one-screen warm-up below.
+	if (callbacks?.onPractice && app.currentSentenceIndex === 0 && hasBatches(lesson)) {
+		prePlan ??= buildBatchPlan(lesson);
+		if (prePlanPos < prePlan.length) {
+			stopAllAudio();
+			callbacks.onPractice({ ...prePlan[prePlanPos], language: prefs.language });
+			return; // continueAfterPractice() moves on
+		}
+	}
+
+	// A quick check right after the line it tests, when the learner has just
+	// moved forward past it.
+	if (
+		callbacks?.onPractice &&
+		app.currentSentenceIndex > 0 &&
+		app.currentSentenceIndex === lastPresentedIndex + 1 &&
+		!shownMidChecks.has(app.currentSentenceIndex)
+	) {
+		const due = midChecksAfter(lesson, app.currentSentenceIndex - 1);
+		if (due.length) {
+			shownMidChecks.add(app.currentSentenceIndex);
+			stopAllAudio();
+			callbacks.onPractice({ kind: 'check', stage: 'mid', exercises: due, language: prefs.language });
+			return;
+		}
+	}
+
 	// Warm-up: today's words and collocations, before the conversation opens.
 	// Only at the very start, only once, and only when the lesson actually
 	// carries them — A2 upward has no words, and un-migrated content has
@@ -363,6 +427,7 @@ export async function processNextStep(skipAudio = false): Promise<void> {
 		!warmUpShown &&
 		app.currentSentenceIndex === 0 &&
 		callbacks?.onWarmUp &&
+		!hasBatches(lesson) &&
 		((lesson.words?.length ?? 0) > 0 || (lesson.collocations?.length ?? 0) > 0)
 	) {
 		warmUpShown = true;
@@ -406,6 +471,7 @@ export async function processNextStep(skipAudio = false): Promise<void> {
 	}
 
 	const currentStep = lesson.sentences[app.currentSentenceIndex];
+	lastPresentedIndex = app.currentSentenceIndex;
 	const germanText = currentStep.role === 'received' ? currentStep.audioText! : currentStep.targetText!;
 	const translationText = getTranslation(currentStep, prefs.language);
 
@@ -469,10 +535,11 @@ export async function processNextStep(skipAudio = false): Promise<void> {
  * continueAfterExercises() instead of going straight to the completion card.
  */
 function offerExercises(lesson: Lesson, prefs: PreferencesState): boolean {
-	if (exercisesShown || !callbacks?.onExercises || !lesson.exercises?.length) return false;
+	const closing = finalExercises(lesson);
+	if (exercisesShown || !callbacks?.onExercises || !closing.length) return false;
 	exercisesShown = true;
 	stopAllAudio();
-	callbacks.onExercises({ language: prefs.language, exercises: lesson.exercises });
+	callbacks.onExercises({ language: prefs.language, exercises: closing });
 	return true;
 }
 
@@ -611,6 +678,7 @@ export async function goToNextDay(nextDay: number): Promise<void> {
 	warmUpShown = false; // …and its own warm-up
 	exercisesShown = false; // …and its own exercises
 	exerciseResult = null;
+	resetPractice();
 
 	appStore.update((s) => ({
 		...s,
@@ -668,6 +736,7 @@ export async function changeDay(day: number): Promise<void> {
 	warmUpShown = false; // …and its own warm-up
 	exercisesShown = false; // …and its own exercises
 	exerciseResult = null;
+	resetPractice();
 
 	examStore.update((s) => ({ ...s, isExamMode: false, isReviewMode: false }));
 

@@ -34,7 +34,13 @@ const ExerciseSchema = z
 		/** Index into options. */
 		answer: z.number().int().nonnegative().optional(),
 		/** Shown after answering, right or wrong. */
-		explain: TextSchema.optional()
+		explain: TextSchema.optional(),
+		/**
+		 * When it is asked: "batch-2" right after the second pre-teaching batch,
+		 * or a 0-based sentence index for a check right after that line. Left
+		 * out, it belongs to the closing set at the end of the lesson.
+		 */
+		after: z.union([z.string().regex(/^batch-[1-9][0-9]*$/), z.number().int().nonnegative()]).optional()
 	})
 	.superRefine((ex, ctx) => {
 		const need = (ok: boolean, message: string) => {
