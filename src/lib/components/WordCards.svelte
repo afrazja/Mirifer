@@ -62,9 +62,9 @@
 
 				{#if revealed}
 					<p class="meaning">{meaning}</p>
-					<p class="say">🎙️ {t('Now say it out loud.', 'حالا بلند بگو.')}</p>
+					<p class="say">🎙️ {t('Now say it out loud.', 'حالا آن را بلند بگو.')}</p>
 				{:else}
-					<button class="reveal" onclick={() => (revealed = true)}>{t('What does it mean?', 'یعنی چه؟')}</button>
+					<button class="reveal" onclick={() => (revealed = true)}>{t('What does it mean?', 'معنی‌اش چیست؟')}</button>
 				{/if}
 			</div>
 		{/key}
@@ -72,7 +72,7 @@
 
 	<div class="actions">
 		<button class="next" disabled={!revealed} onclick={next}>
-			{last ? t('Quick check →', 'مرور سریع ←') : t('Next →', 'بعدی ←')}
+			{last ? t('Quick check →', 'تمرین سریع ←') : t('Next →', 'بعدی ←')}
 		</button>
 	</div>
 </div>

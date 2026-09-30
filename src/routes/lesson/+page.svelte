@@ -832,7 +832,7 @@
 		<button class="start-btn" onclick={handleStart} disabled={!isReady}>
 			{isReady
 				? prefs.language === "fa"
-					? "▶ شروع درس"
+					? "◀ شروع درس"
 					: "▶ Start Lesson"
 				: prefs.language === "fa"
 					? "⏳ در حال بارگذاری..."
@@ -1110,7 +1110,7 @@
 													openPractice(msg.text, msg.meaning!, msg.index!);
 												}}
 											>
-												🎤 {prefs.language === "fa" ? "تمرین" : "Practice"}
+												🎤 {prefs.language === "fa" ? "تمرین گفتار" : "Practice"}
 											</button>
 										{/if}
 									</span>
@@ -1392,7 +1392,7 @@
 										<button
 											class="btn-hint"
 											onclick={handleHintToggle}
-											aria-label="Toggle hint"
+											aria-label={prefs.language === "fa" ? "نمایش راهنما" : "Toggle hint"}
 										>
 											💡 {currentTeachStep.language ===
 											"fa"
@@ -1418,8 +1418,8 @@
 											aria-label={bookmarkedSentences.has(
 												currentSentenceKey,
 											)
-												? "Remove bookmark"
-												: "Bookmark sentence"}
+												? (prefs.language === "fa" ? "حذف نشانه" : "Remove bookmark")
+												: (prefs.language === "fa" ? "نشانه‌گذاری جمله" : "Bookmark sentence")}
 										>
 											{#if bookmarkedSentences.has(currentSentenceKey)}
 												★
@@ -1454,14 +1454,14 @@
 									<div class="wu-head">
 										<span class="wu-badge"
 											>🧱 {warmUp.language === "fa"
-												? "بلوک‌های امروز"
+												? "کلمه‌ها و عبارت‌های امروز"
 												: "Today's building blocks"}</span
 										>
 									</div>
 
 									{#if warmUp.words.length}
 										<p class="wu-label">
-											{warmUp.language === "fa" ? "واژه‌ها" : "Words"}
+											{warmUp.language === "fa" ? "کلمه‌ها" : "Words"}
 										</p>
 										<div class="wu-grid">
 											{#each warmUp.words as w}
@@ -1469,7 +1469,7 @@
 													class="wu-chip"
 													onclick={() => playAudioPromise(w.de, 1, "de-DE")}
 												>
-													<span class="wu-de" lang="de">{w.de}</span>
+													<span class="wu-de" lang="de" dir="ltr">{w.de}</span>
 													<span class="wu-gloss">{w.gloss}</span>
 												</button>
 											{/each}
@@ -1479,7 +1479,7 @@
 									{#if warmUp.collocations.length}
 										<p class="wu-label">
 											{warmUp.language === "fa"
-												? "ترکیب‌های ثابت"
+												? "عبارت‌های آماده"
 												: "Phrases to learn whole"}
 										</p>
 										<div class="wu-grid">
@@ -1488,7 +1488,7 @@
 													class="wu-chip phrase"
 													onclick={() => playAudioPromise(c.de, 1, "de-DE")}
 												>
-													<span class="wu-de" lang="de">{c.de}</span>
+													<span class="wu-de" lang="de" dir="ltr">{c.de}</span>
 													<span class="wu-gloss">{c.gloss}</span>
 												</button>
 											{/each}
@@ -1536,11 +1536,11 @@
 														class="gm-play"
 														onclick={() =>
 															playAudioPromise(ex.de, 1, "de-DE")}
-														aria-label="Play example"
+														aria-label={grammarMoment.language === "fa" ? "پخش نمونه" : "Play example"}
 													>
 														🔊
 													</button>
-													<span class="gm-de">{ex.de}</span>
+													<span class="gm-de" lang="de" dir="ltr">{ex.de}</span>
 													{#if ex.gloss}
 														<span
 															class="gm-gloss"

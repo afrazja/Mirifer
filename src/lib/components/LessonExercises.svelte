@@ -136,7 +136,7 @@
 
 <div class="exercises" {dir}>
 	<div class="ex-head">
-		<span class="ex-badge">✍️ {mode === 'check' ? t('Quick check', 'مرور سریع') : t('Check what you learned', 'مرور آنچه یاد گرفتی')}</span>
+		<span class="ex-badge">✍️ {mode === 'check' ? t('Quick check', 'تمرین سریع') : t('Check what you learned', 'مرور آنچه یاد گرفتی')}</span>
 		{#if !finished}
 			<span class="ex-progress" aria-live="polite">
 				{#if round > 1}{t('Once more', 'یک بار دیگر')} · {/if}<bdi dir="ltr">{position + 1} / {queue.length}</bdi>
@@ -148,7 +148,7 @@
 		{#key `${round}-${current.id}`}
 			<div class="ex-body">
 				{#if current.type === 'listen'}
-					<p class="ex-prompt">{t('Listen. What does it mean?', 'گوش کن. یعنی چه؟')}</p>
+					<p class="ex-prompt">{t('Listen. What does it mean?', 'گوش کن. معنی‌اش چیست؟')}</p>
 					<button class="ex-listen" onclick={() => current.de && play(current.de)} aria-label={t('Play again', 'پخش دوباره')}>
 						🔊 {t('Play again', 'پخش دوباره')}
 					</button>
@@ -156,15 +156,15 @@
 					<p class="ex-prompt">{localized(current.prompt, language)}</p>
 					{#if current.de}<p class="ex-de" lang="de" dir="ltr">{current.de}</p>{/if}
 				{:else if current.type === 'fill'}
-					<p class="ex-prompt">{localized(current.prompt, language) || t('Which word fits?', 'کدام کلمه درست است؟')}</p>
+					<p class="ex-prompt">{localized(current.prompt, language) || t('Which word fits?', 'کدام کلمه مناسب است؟')}</p>
 					{@const [before, after] = fillParts(current)}
 					<p class="ex-de" lang="de" dir="ltr">
 						{before}<span class="gap" class:filled={picked !== null}
-							>{picked !== null ? optionText(current.options![current.answer!], 'en') : '＿＿＿'}</span
+							>{picked !== null ? optionText(current.options![current.answer!], 'en') : '\u00a0'}</span
 						>{after}
 					</p>
 				{:else}
-					<p class="ex-prompt">{t('Put the words in order.', 'کلمه‌ها را مرتب کن.')}</p>
+					<p class="ex-prompt">{t('Put the words in order.', 'کلمه‌ها را به ترتیب درست بچین.')}</p>
 					{#if current.prompt}<p class="ex-meaning">{localized(current.prompt, language)}</p>{/if}
 					<div class="ex-answer" dir="ltr" aria-label={t('Your sentence', 'جملهٔ تو')}>
 						{#each placed as word, i (i)}
@@ -179,7 +179,7 @@
 						{/each}
 					</div>
 					{#if !checked}
-						<button class="ex-check" disabled={tiles.length > 0} onclick={checkOrder}>{t('Check', 'بررسی')}</button>
+						<button class="ex-check" disabled={tiles.length > 0} onclick={checkOrder}>{t('Check', 'بررسی کن')}</button>
 					{/if}
 				{/if}
 
@@ -202,12 +202,12 @@
 
 				{#if answered}
 					<div class="ex-feedback" class:ok={correct} role="status">
-						<strong>{correct ? t('Correct ✓', 'درست ✓') : t('Not quite', 'کاملاً درست نبود')}</strong>
+						<strong>{correct ? t('Correct ✓', 'درست ✓') : t('Not quite', 'درست نبود')}</strong>
 						{#if !correct && current.type === 'order'}
 							<span class="ex-solution" dir="ltr" lang="de">{current.de}</span>
 						{/if}
 						{#if current.explain}<span>{localized(current.explain, language)}</span>{/if}
-						{#if !correct && round === 1}<span class="ex-again">{t('You will see this one again.', 'این یکی دوباره می‌آید.')}</span>{/if}
+						{#if !correct && round === 1}<span class="ex-again">{t('You will see this one again.', 'این سؤال دوباره می‌آید.')}</span>{/if}
 					</div>
 					<button class="ex-next" onclick={next}>
 						{position + 1 < queue.length || (round === 1 && missed.length) ? t('Next →', 'بعدی ←') : mode === 'check' ? t('Continue →', 'ادامه ←') : t('See my result →', 'دیدن نتیجه ←')}
@@ -217,12 +217,12 @@
 		{/key}
 		{#if !answered && mode === 'final'}
 			<button class="ex-skip" onclick={() => onDone(round > 1 ? { correct: score, total } : null)}>
-				{round > 1 ? t('Finish', 'پایان') : t('Skip the exercises', 'رد شدن از تمرین‌ها')}
+				{round > 1 ? t('Finish', 'پایان') : t('Skip the exercises', 'رد کردن تمرین‌ها')}
 			</button>
 		{/if}
 	{:else if finished}
 		<div class="ex-result">
-			<p class="ex-score" dir="ltr">{score} / {total}</p>
+			<p class="ex-score" dir={fa ? 'rtl' : 'ltr'}>{fa ? `${score} از ${total}` : `${score} / ${total}`}</p>
 			<p>{message}</p>
 			<div class="ex-result-actions">
 				<button class="ex-next" onclick={() => onDone({ correct: score, total })}>{t('Continue →', 'ادامه ←')}</button>
@@ -280,6 +280,7 @@
 	}
 
 	.ex-de {
+		text-align: center;
 		margin: 0;
 		font-family: var(--font-display);
 		font-size: 1.25rem;

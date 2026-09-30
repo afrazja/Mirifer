@@ -46,78 +46,35 @@ alter table public.lessons add column if not exists exercises jsonb;
 
 update public.lessons
 set words = $json$[
-  {"de": "der Beruf",       "en": "job, occupation",         "fa": "شغل، حرفه",      "batch": 1},
-  {"de": "der Ingenieur",   "en": "engineer",                "fa": "مهندس",           "batch": 1},
-  {"de": "verheiratet",     "en": "married",                 "fa": "متأهل",           "batch": 1},
-  {"de": "der Abschluss",   "en": "degree, qualification",   "fa": "مدرک تحصیلی"},
-  {"de": "der Master",      "en": "master's degree",         "fa": "کارشناسی ارشد"},
-  {"de": "dreißig",         "en": "thirty",                  "fa": "سی"}
+  {"de": "der Beruf", "en": "job, occupation", "fa": "شغل، حرفه", "batch": 2},
+  {"de": "der Ingenieur", "en": "engineer", "fa": "مهندس"},
+  {"de": "verheiratet", "en": "married", "fa": "متأهل", "batch": 2},
+  {"de": "der Abschluss", "en": "degree, qualification", "fa": "مدرک تحصیلی"},
+  {"de": "der Master", "en": "master's degree", "fa": "کارشناسی ارشد"},
+  {"de": "dreißig", "en": "thirty", "fa": "سی"}
 ]$json$::jsonb,
 collocations = $json$[
-  {"de": "Guten Morgen",        "en": "Good morning",            "fa": "صبح بخیر"},
-  {"de": "Wie geht es Ihnen?",  "en": "How are you? (formal)",   "fa": "حال شما چطور است؟"},
-  {"de": "Freut mich",          "en": "Pleased to meet you",     "fa": "خوشبختم"},
-  {"de": "Ich heiße …",         "en": "My name is …",           "fa": "اسم من … است",    "batch": 2},
-  {"de": "Ich komme aus …",     "en": "I come from …",          "fa": "من اهل … هستم",   "batch": 2},
-  {"de": "… Jahre alt",         "en": "… years old",            "fa": "… ساله",           "batch": 2},
-  {"de": "von Beruf",           "en": "by profession",           "fa": "از نظر شغل"},
-  {"de": "Auf Wiedersehen",     "en": "Goodbye",                 "fa": "خداحافظ"}
+  {"de": "Guten Morgen", "en": "Good morning", "fa": "صبح بخیر"},
+  {"de": "Wie geht es Ihnen?", "en": "How are you? (formal)", "fa": "حال شما چطور است؟", "batch": 1},
+  {"de": "Freut mich", "en": "Pleased to meet you", "fa": "خوشبختم"},
+  {"de": "Ich heiße …", "en": "My name is …", "fa": "اسم من … است", "batch": 1},
+  {"de": "Ich komme aus …", "en": "I come from …", "fa": "من اهل … هستم", "batch": 1},
+  {"de": "Ich bin … Jahre alt", "en": "I am … years old", "fa": "من … ساله هستم", "batch": 2},
+  {"de": "von Beruf", "en": "by profession", "fa": "از نظر شغلی"},
+  {"de": "Auf Wiedersehen", "en": "Goodbye", "fa": "خداحافظ"}
 ]$json$::jsonb,
 exercises = $json$[
-  {"id": "word-listen", "type": "listen", "de": "verheiratet", "after": "batch-1",
-   "options": [{"en": "engineer", "fa": "مهندس"}, {"en": "married", "fa": "متأهل"}, {"en": "job", "fa": "شغل"}],
-   "answer": 1,
-   "explain": {"en": "verheiratet = married. You will use it in a few minutes.", "fa": "verheiratet یعنی «متأهل». چند دقیقهٔ دیگر از آن استفاده می‌کنی."}},
-
-  {"id": "beruf-listen", "type": "listen", "de": "der Beruf", "after": "batch-1",
-   "options": [{"en": "name", "fa": "اسم"}, {"en": "degree", "fa": "مدرک"}, {"en": "job", "fa": "شغل"}],
-   "answer": 2,
-   "explain": {"en": "Der Beruf is your job.", "fa": "Beruf یعنی شغل."}},
-
-  {"id": "name-fill", "type": "fill", "de": "Ich ___ Ali.", "after": "batch-2",
-   "prompt": {"en": "Say your name.", "fa": "اسمت را بگو."},
-   "options": ["komme", "heiße", "habe"], "answer": 1,
-   "explain": {"en": "Ich heiße … is how you give your name.", "fa": "برای گفتن اسم می‌گوییم Ich heiße …"}},
-
-  {"id": "age-fill", "type": "fill", "de": "Ich ___ dreißig Jahre alt.", "after": "batch-2",
-   "prompt": {"en": "Say your age.", "fa": "سنت را بگو."},
-   "options": ["habe", "heiße", "bin"], "answer": 2,
-   "explain": {"en": "In German you are old: Ich bin … Jahre alt. Not “I have”.", "fa": "در آلمانی «هستی» ساله: Ich bin … Jahre alt؛ نه «دارم»."}},
-
-  {"id": "job-question", "type": "choice", "after": 12,
-   "prompt": {"en": "Which question asks about someone’s job?", "fa": "کدام سؤال دربارهٔ شغل است؟"},
-   "options": ["Woher kommen Sie?", "Was sind Sie von Beruf?", "Sind Sie verheiratet?"], "answer": 1,
-   "explain": {"en": "Was sind Sie von Beruf? = What do you do for a living?", "fa": "Was sind Sie von Beruf? یعنی «شغل شما چیست؟»"}},
-
-  {"id": "origin-fill", "type": "fill", "de": "Woher ___ Sie?", "after": 12,
-   "prompt": {"en": "Ask where someone is from.", "fa": "بپرس اهل کجاست."},
-   "options": ["heiße", "kommen", "komme"], "answer": 1,
-   "explain": {"en": "With Sie the verb ends in -en: Woher kommen Sie? The ich form is komme.", "fa": "با Sie فعل به -en ختم می‌شود: Woher kommen Sie؟ شکل ich می‌شود komme."}},
-
-  {"id": "job-listen", "type": "listen", "de": "Und was sind Sie von Beruf?",
-   "options": [{"en": "What do you do for a living?", "fa": "شغل شما چیست؟"}, {"en": "Are you married?", "fa": "آیا متأهل هستید؟"}, {"en": "Where are you from?", "fa": "اهل کجا هستید؟"}],
-   "answer": 0,
-   "explain": {"en": "Von Beruf = by profession, so this asks about your job.", "fa": "von Beruf یعنی «از نظر شغل»؛ پس این سؤال دربارهٔ شغل است."}},
-
-  {"id": "job-answer", "type": "choice",
-   "prompt": {"en": "How do you say “I am an engineer”?", "fa": "«من مهندس هستم» را چطور می‌گویی؟"},
-   "options": ["Ich habe Ingenieur.", "Ich heiße Ingenieur.", "Ich bin Ingenieur."], "answer": 2,
-   "explain": {"en": "Your job comes after Ich bin, with no “a” in front.", "fa": "بعد از Ich bin شغل می‌آید، بدون حرف تعریف."}},
-
-  {"id": "married-answer", "type": "choice",
-   "prompt": {"en": "Anna asks “Sind Sie verheiratet?” You are married. What do you say?", "fa": "آنا می‌پرسد «Sind Sie verheiratet؟» تو متأهلی. چه می‌گویی؟"},
-   "options": ["Ja, ich bin verheiratet.", "Ja, ich habe verheiratet.", "Ja, ich heiße verheiratet."], "answer": 0,
-   "explain": {"en": "Married is something you are: ich bin verheiratet.", "fa": "متأهل بودن یعنی «هستی»: ich bin verheiratet."}},
-
-  {"id": "degree-question", "type": "choice", "de": "Welchen Abschluss haben Sie?",
-   "prompt": {"en": "What is Anna asking?", "fa": "آنا چه می‌پرسد؟"},
-   "options": [{"en": "What is your name?", "fa": "اسم شما چیست؟"}, {"en": "What degree do you have?", "fa": "چه مدرکی دارید؟"}, {"en": "Where do you live?", "fa": "کجا زندگی می‌کنید؟"}],
-   "answer": 1,
-   "explain": {"en": "Der Abschluss is a degree or qualification.", "fa": "Abschluss یعنی مدرک تحصیلی."}},
-
-  {"id": "age-order", "type": "order", "de": "Ich bin dreißig Jahre alt.",
-   "prompt": {"en": "I am thirty years old.", "fa": "من سی سال دارم."},
-   "explain": {"en": "Ich bin … Jahre alt: in German you are old.", "fa": "Ich bin … Jahre alt: در آلمانی «هستی» ساله."}}
+  {"id": "name-fill", "type": "fill", "de": "Ich ___ Ali.", "after": "batch-1", "prompt": {"en": "Say your name.", "fa": "اسمت را بگو."}, "options": ["komme", "heiße", "habe"], "answer": 1, "explain": {"en": "Ich heiße … is how you give your name.", "fa": "برای گفتن اسم می‌گوییم: \u2066Ich heiße Ali\u2069"}},
+  {"id": "komme-fill", "type": "fill", "de": "Ich ___ aus dem Iran.", "after": "batch-1", "prompt": {"en": "Say where you come from.", "fa": "بگو اهل کجایی."}, "options": ["komme", "heiße", "habe"], "answer": 0, "explain": {"en": "Ich komme aus … = I come from …", "fa": "برای گفتن اینکه اهل کجایی: \u2066Ich komme aus dem Iran\u2069"}},
+  {"id": "word-listen", "type": "listen", "de": "verheiratet", "after": "batch-2", "options": [{"en": "engineer", "fa": "مهندس"}, {"en": "married", "fa": "متأهل"}, {"en": "job", "fa": "شغل"}], "answer": 1, "explain": {"en": "verheiratet = married. You will use it in a few minutes.", "fa": "\u2066verheiratet\u2069 یعنی «متأهل». چند دقیقهٔ دیگر از آن استفاده می‌کنی."}},
+  {"id": "age-fill", "type": "fill", "de": "Ich ___ dreißig Jahre alt.", "after": "batch-2", "prompt": {"en": "Say your age.", "fa": "سنت را بگو."}, "options": ["habe", "heiße", "bin"], "answer": 2, "explain": {"en": "In German you are old: Ich bin … Jahre alt, not “I have”.", "fa": "در فارسی «سی سال دارم» می‌گوییم، اما آلمانی از «بودن» استفاده می‌کند: \u2066Ich bin dreißig Jahre alt\u2069 (نه \u2066Ich habe\u2069)."}},
+  {"id": "job-question", "type": "choice", "after": 12, "prompt": {"en": "Which question asks about someone’s job?", "fa": "کدام سؤال دربارهٔ شغل است؟"}, "options": ["Woher kommen Sie?", "Was sind Sie von Beruf?", "Sind Sie verheiratet?"], "answer": 1, "explain": {"en": "Was sind Sie von Beruf? = What do you do for a living?", "fa": "\u2066Was sind Sie von Beruf?\u2069 یعنی «شغل شما چیست؟»"}},
+  {"id": "origin-fill", "type": "fill", "de": "Woher ___ Sie?", "after": 12, "prompt": {"en": "Ask where someone is from.", "fa": "بپرس اهل کجاست."}, "options": ["heiße", "kommen", "komme"], "answer": 1, "explain": {"en": "With Sie the verb ends in -en: Woher kommen Sie? The ich form is komme.", "fa": "با \u2066Sie\u2069 فعل به «\u2066en\u2069» ختم می‌شود (\u2066kommen Sie\u2069) و با \u2066ich\u2069 به «e» (\u2066ich komme\u2069)."}},
+  {"id": "greet-listen", "type": "listen", "de": "Wie geht es Ihnen?", "options": [{"en": "What is your name?", "fa": "اسم شما چیست؟"}, {"en": "How are you? (formal)", "fa": "حال شما چطور است؟"}, {"en": "Where are you from?", "fa": "اهل کجا هستید؟"}], "answer": 1, "explain": {"en": "Ihnen is the formal you, so this is how you ask a stranger how they are.", "fa": "\u2066Ihnen\u2069 شکل رسمی «شما» است؛ با غریبه‌ها این‌طور احوال می‌پرسیم."}},
+  {"id": "job-answer", "type": "choice", "prompt": {"en": "How do you say “I am an engineer”?", "fa": "«من مهندس هستم» را به آلمانی چطور می‌گویی؟"}, "options": ["Ich habe Ingenieur.", "Ich heiße Ingenieur.", "Ich bin Ingenieur."], "answer": 2, "explain": {"en": "Your job comes after Ich bin, with no “a” in front.", "fa": "بعد از \u2066Ich bin\u2069 شغل می‌آید، بدون \u2066ein.\u2069"}},
+  {"id": "married-answer", "type": "choice", "prompt": {"en": "Anna asks “Sind Sie verheiratet?” You are married. What do you say?", "fa": "آنا می‌پرسد: «\u2066Sind Sie verheiratet?\u2069» تو متأهل هستی. چه می‌گویی؟"}, "options": ["Ja, ich bin verheiratet.", "Ja, ich habe verheiratet.", "Ja, ich heiße verheiratet."], "answer": 0, "explain": {"en": "Married is something you are: ich bin verheiratet.", "fa": "«متأهل» را با «هستم» می‌گوییم، نه «دارم»: \u2066ich bin verheiratet\u2069"}},
+  {"id": "degree-question", "type": "choice", "de": "Welchen Abschluss haben Sie?", "prompt": {"en": "What is Anna asking?", "fa": "آنا چه می‌پرسد؟"}, "options": [{"en": "What is your name?", "fa": "اسم شما چیست؟"}, {"en": "What degree do you have?", "fa": "چه مدرکی دارید؟"}, {"en": "Where do you live?", "fa": "کجا زندگی می‌کنید؟"}], "answer": 1, "explain": {"en": "Der Abschluss is a degree or qualification.", "fa": "\u2066Abschluss\u2069 یعنی مدرک تحصیلی."}},
+  {"id": "age-order", "type": "order", "de": "Ich bin dreißig Jahre alt.", "prompt": {"en": "I am thirty years old.", "fa": "من سی ساله هستم."}, "explain": {"en": "Ich bin … Jahre alt: in German you are old.", "fa": "یادت باشد: سن را با «هستم» (\u2066bin\u2069) می‌گوییم، نه «دارم» (\u2066habe\u2069)."}}
 ]$json$::jsonb
 where day = 1;
 
