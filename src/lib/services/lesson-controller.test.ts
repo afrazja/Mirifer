@@ -567,3 +567,23 @@ describe('manualNext', () => {
 		expect(get(appStore).currentSentenceIndex).toBe(0);
 	});
 });
+
+describe('manualNext double tap', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		resetStores();
+		lessonStore.update((s) => ({ ...s, currentLesson: sampleLesson }));
+		appStore.update((s) => ({ ...s, currentDay: 1, currentSentenceIndex: 0 }));
+	});
+
+	it('ignores a second tap straight after the first', async () => {
+		const onMessageBubble = vi.fn();
+		setCallbacks(makeCallbacks({ onMessageBubble }));
+
+		await manualNext();
+		await manualNext();
+
+		expect(onMessageBubble).toHaveBeenCalledTimes(1);
+		expect(get(appStore).currentSentenceIndex).toBe(1);
+	});
+});

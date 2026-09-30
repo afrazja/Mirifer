@@ -55,6 +55,7 @@
 	import {
 		initSpeechRecognition,
 		setVoiceInputHandler,
+		setMicStateChangeHandler,
 		toggleMic,
 		stopListening,
 		getLastVoiceAlternatives,
@@ -367,6 +368,7 @@
 				}
 			},
 			onCompletionCard(data) {
+				answerLineHtml = "";
 				currentTeachStep = null;
 				completionData = data;
 			},
@@ -506,10 +508,9 @@
 	}
 
 	function handleMicClick() {
-		if (isSpeaking) {
-			stopAllAudio();
-			return;
-		}
+		// One tap starts recording even while the model audio is playing
+		// (toggleMic stops the audio first).
+		micProblem = false;
 		toggleMic();
 	}
 
@@ -557,6 +558,10 @@
 		}
 	});
 	let micSupported = $state(false);
+	/** The browser refused or lost the microphone (blocked, no device). */
+	let micProblem = $state(false);
+	/** The lesson could not be loaded at all (offline, server error). */
+	const lessonMissing = $derived(isReady && !lesson.currentLesson);
 
 	function openPractice(german: string, meaning: string, index: number) {
 		if (!german?.trim()) return;
@@ -768,6 +773,10 @@
 		setupCallbacks();
 		initSyncListeners();
 		micSupported = initSpeechRecognition() && isSpeechSupported();
+		setMicStateChangeHandler((state) => {
+			if (state === "error") micProblem = true;
+			else if (state === "listening") micProblem = false;
+		});
 		getLessonIndex().then((idx) => {
 			lessonIndex = idx;
 		});
@@ -888,6 +897,12 @@
 					</span>
 				</div>
 			</div>
+		{:else if lessonMissing}
+			<p role="alert">
+				{prefs.language === "fa"
+					? "درس بارگذاری نشد. اتصال اینترنت را بررسی کن و دوباره تلاش کن."
+					: "The lesson could not be loaded. Check your connection and try again."}
+			</p>
 		{:else}
 			<p>
 				{prefs.language === "fa"
@@ -899,15 +914,21 @@
 		     Start button below the fold. Reviews stay available on their own
 		     in /review; handleStartWithWarmup() is kept for when we bring an
 		     opt-in version back. -->
-		<button class="start-btn" onclick={handleStart} disabled={!isReady}>
-			{isReady
-				? prefs.language === "fa"
-					? "◀ شروع درس"
-					: "▶ Start Lesson"
-				: prefs.language === "fa"
-					? "⏳ در حال بارگذاری..."
-					: "⏳ Loading..."}
-		</button>
+		{#if lessonMissing}
+			<button class="start-btn" onclick={() => location.reload()}>
+				{prefs.language === "fa" ? "تلاش دوباره" : "Try again"}
+			</button>
+		{:else}
+			<button class="start-btn" onclick={handleStart} disabled={!isReady}>
+				{isReady
+					? prefs.language === "fa"
+						? "◀ شروع درس"
+						: "▶ Start Lesson"
+					: prefs.language === "fa"
+						? "⏳ در حال بارگذاری..."
+						: "⏳ Loading..."}
+			</button>
+		{/if}
 	</div>
 {/if}
 
@@ -1051,7 +1072,7 @@
 		icon="📖"
 		backHref="/home"
 		backLabel={prefs.language === "fa" ? "خانه" : "Home"}
-		actions={practiceActive ? undefined : lessonHeaderActions}
+		actions={lessonHeaderActions}
 		sticky
 		logo={false}
 		direction={prefs.language === "fa" ? "rtl" : "ltr"}
@@ -1692,6 +1713,7 @@
 											<WordCards
 												bind:this={wordCardsEl}
 												micAvailable={micSupported}
+												{micProblem}
 												listening={app.isListening}
 												onMic={() => {
 													stopAllAudio();
@@ -2023,7 +2045,13 @@
 							aria-live="polite"
 							aria-label={prefs.language === "fa" ? "پاسخ تو" : "Your reply"}
 						>
-							<span lang="de" dir="ltr">{@html answerLineHtml}</span>
+							{#if !micSupported}
+								<span class="placeholder-text">{prefs.language === "fa" ? "ورودی صوتی در این مرورگر در دسترس نیست. برای ادامه «رد کردن» را بزن." : "Voice input is not available in this browser. Use Skip to continue."}</span>
+							{:else if micProblem}
+								<span class="placeholder-text">{prefs.language === "fa" ? "میکروفن مسدود یا در دسترس نیست. اجازهٔ مرورگر را بررسی کن یا «رد کردن» را بزن." : "The microphone is blocked or unavailable. Check your browser permission, or tap Skip."}</span>
+							{:else}
+								<span lang="de" dir="auto">{@html answerLineHtml}</span>
+							{/if}
 						</div>
 						{#if currentTeachStep}
 							<button class="btn-bar-next" onclick={() => manualNext()}>
@@ -2039,6 +2067,7 @@
 						<!-- The one mic, always in the same place at the bottom of
 						     the lesson, on every step: the learner's own lines,
 						     shadowing the other speaker's, exams and conversations. -->
+						{#if micSupported}
 						<button
 							class="btn-send"
 							class:pulse={app.isListening}
@@ -2054,6 +2083,7 @@
 						>
 							{app.isListening ? "🛑" : "🎙️"}
 						</button>
+						{/if}
 					</div>
 					{/if}
 				</div>
