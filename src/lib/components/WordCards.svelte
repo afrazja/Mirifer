@@ -1,25 +1,40 @@
 <script lang="ts">
 	/**
 	 * Pre-teaching, one item at a time: hear it, see it, recall its meaning,
-	 * say it aloud. A batch is a few items, so each one gets the learner's full
-	 * attention; the quick check that follows makes them retrieve it.
+	 * then say it aloud into the microphone and see how close it was. A batch is
+	 * a few items, so each one gets the learner's full attention; the quick
+	 * check that follows makes them retrieve it.
+	 *
+	 * Speaking never blocks: after one attempt (or Skip) the learner can move
+	 * on. With no microphone the prompt changes to match what is offered.
 	 */
+	import { tick } from 'svelte';
 	import type { TeachItem } from '$services/lesson-plan';
+	import { bestVoiceMatch, getWordMatchStatus } from '$utils/text-matching';
 
 	let {
 		items,
 		batch,
 		of,
 		language = 'en',
+		micAvailable = false,
+		listening = false,
 		play,
+		onMic,
 		onDone
 	}: {
 		items: TeachItem[];
 		batch: number;
 		of: number;
 		language?: 'en' | 'fa';
+		/** Whether this browser can take voice input at all. */
+		micAvailable?: boolean;
+		/** The microphone is on right now. */
+		listening?: boolean;
 		/** Speak German text. */
 		play: (text: string) => void;
+		/** Start or stop the microphone. */
+		onMic: () => void;
 		onDone: () => void;
 	} = $props();
 
@@ -28,20 +43,83 @@
 
 	let position = $state(0);
 	let revealed = $state(false);
+	/** none: not tried yet. */
+	let outcome = $state<'none' | 'good' | 'almost' | 'nothing'>('none');
+	let attempted = $state(false);
+	let wordStatus = $state<Array<{ word: string; ok: boolean }>>([]);
+	let heard = false;
+	let cardEl: HTMLDivElement | undefined = $state();
+	let sayEl: HTMLDivElement | undefined = $state();
+	let nextEl: HTMLButtonElement | undefined = $state();
+
 	const item = $derived(items[position]);
 	const last = $derived(position === items.length - 1);
 	const meaning = $derived(item ? (fa && item.fa) || item.en : '');
+	/** What the learner is asked to say: the item without its blank marks. */
+	const target = $derived((item?.de ?? '').replace(/…/g, ' ').replace(/\s+/g, ' ').trim());
+	const canContinue = $derived(revealed && (attempted || !micAvailable));
 
 	$effect(() => {
-		// A new card: hide the meaning and play the item.
+		// A new card: hide the meaning, clear the last attempt, play the item.
 		const current = item;
 		revealed = false;
+		outcome = 'none';
+		attempted = false;
+		wordStatus = [];
+		heard = false;
 		if (current) play(current.de);
+		// Keyboard and screen-reader users land on the new card.
+		void tick().then(() => cardEl?.focus({ preventScroll: true }));
 	});
 
+	let wasListening = false;
+	$effect(() => {
+		// The microphone stopped without a transcript: tell the learner.
+		const now = listening;
+		if (wasListening && !now) {
+			const started = position;
+			setTimeout(() => {
+				if (started === position && !heard && outcome === 'none') outcome = 'nothing';
+			}, 1500);
+		}
+		if (now) heard = false;
+		wasListening = now;
+	});
+
+	/** Called by the lesson page with what the microphone heard. */
+	export function handleVoice(transcript: string, alternatives: string[] = []) {
+		if (!item) return;
+		heard = true;
+		attempted = true;
+		void tick().then(() => nextEl?.focus({ preventScroll: true }));
+		const { transcript: best, result } = bestVoiceMatch([transcript, ...alternatives], target);
+		if (result.isMatch) {
+			outcome = 'good';
+			wordStatus = [];
+			play(item.de);
+			return;
+		}
+		outcome = 'almost';
+		const words = target.split(' ');
+		const status = getWordMatchStatus(best, words);
+		wordStatus = words.map((word) => ({ word, ok: !!status.get(word) }));
+	}
+
+	function skip() {
+		if (listening) onMic();
+		attempted = true;
+		void tick().then(() => nextEl?.focus({ preventScroll: true }));
+	}
+
 	function next() {
+		if (listening) onMic();
 		if (last) onDone();
 		else position += 1;
+	}
+
+	function back() {
+		if (listening) onMic();
+		if (position > 0) position -= 1;
 	}
 </script>
 
@@ -55,25 +133,73 @@
 
 	{#if item}
 		{#key position}
-			<div class="card">
+			<div
+				class="card"
+				bind:this={cardEl}
+				tabindex="-1"
+				role="group"
+				aria-label={t(`Card ${position + 1} of ${items.length}: ${item.de}`, `کارت ${position + 1} از ${items.length}: ${item.de}`)}
+			>
 				<p class="kind">{item.phrase ? t('Learn it whole', 'یک‌جا یاد بگیر') : t('Word', 'کلمه')}</p>
 				<p class="de" lang="de" dir="ltr">{item.de}</p>
 				<button class="play" onclick={() => play(item.de)} aria-label={t('Play again', 'پخش دوباره')}>🔊</button>
 
-				{#if revealed}
-					<p class="meaning">{meaning}</p>
-					<p class="say">🎙️ {t('Now say it out loud.', 'حالا آن را بلند بگو.')}</p>
+				{#if !revealed}
+					<button
+						class="reveal"
+						onclick={() => {
+							revealed = true;
+							// The button is about to disappear; move on to what comes next.
+							void tick().then(() => sayEl?.querySelector<HTMLElement>('.mic, .skip')?.focus() ?? nextEl?.focus());
+						}}
+					>{t('What does it mean?', 'معنی‌اش چیست؟')}</button>
 				{:else}
-					<button class="reveal" onclick={() => (revealed = true)}>{t('What does it mean?', 'معنی‌اش چیست؟')}</button>
+					<p class="meaning" role="status">{meaning}</p>
 				{/if}
 			</div>
 		{/key}
 	{/if}
 
+	{#if revealed}
+		<div class="say-step" aria-live="polite" bind:this={sayEl}>
+			{#if micAvailable}
+				<p class="say">🎙️ {t('Tap the mic and say it.', 'میکروفن را بزن و آن را بگو.')}</p>
+				<div class="mic-row">
+					<button
+						class="mic"
+						class:on={listening}
+						onclick={onMic}
+						aria-label={listening ? t('Stop recording', 'توقف ضبط') : t('Record yourself', 'ضبط صدای خودت')}
+					>{listening ? '🛑' : '🎙️'}</button>
+					{#if !attempted}<button class="skip" onclick={skip}>{t('Skip', 'رد کردن')}</button>{/if}
+				</div>
+				{#if listening}
+					<p class="status">{t('Listening…', 'در حال گوش دادن…')}</p>
+				{:else if outcome === 'good'}
+					<p class="status good">✓ {t('Good!', 'آفرین!')}</p>
+				{:else if outcome === 'almost'}
+					<p class="status almost">{t('Almost. Listen and try again.', 'تقریباً. گوش کن و دوباره بگو.')}</p>
+					<p class="words" lang="de" dir="ltr">
+						{#each wordStatus as w}<span class:ok={w.ok} class:miss={!w.ok}>{w.word}</span>{' '}{/each}
+					</p>
+				{:else if outcome === 'nothing'}
+					<p class="status almost">{t('We did not hear anything. Try again, or skip.', 'چیزی نشنیدیم. دوباره امتحان کن یا رد شو.')}</p>
+				{/if}
+			{:else}
+				<p class="say">🗣️ {t('Say it quietly to yourself.', 'آن را آهسته برای خودت بگو.')}</p>
+			{/if}
+		</div>
+	{/if}
+
 	<div class="actions">
-		<button class="next" disabled={!revealed} onclick={next}>
-			{last ? t('Quick check →', 'تمرین سریع ←') : t('Next →', 'بعدی ←')}
-		</button>
+		{#if position > 0}
+			<button class="back" onclick={back}>{t('‹ Previous', 'قبلی ›')}</button>
+		{/if}
+		{#if canContinue}
+			<button class="next" bind:this={nextEl} onclick={next}>
+				{last ? t('Quick check →', 'تمرین سریع ←') : t('Next →', 'بعدی ←')}
+			</button>
+		{/if}
 	</div>
 </div>
 
@@ -184,15 +310,88 @@
 		color: var(--accent-deep);
 	}
 
+	.say-step {
+		display: grid;
+		justify-items: center;
+		gap: 10px;
+	}
+
 	.say {
 		margin: 0;
 		color: var(--ink-soft);
 		font-size: 0.95rem;
 	}
 
+	.mic-row {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+	}
+
+	.mic {
+		inline-size: 72px;
+		block-size: 72px;
+		border: none;
+		border-radius: 50%;
+		background: var(--accent);
+		color: white;
+		font-size: 30px;
+		cursor: pointer;
+	}
+
+	.mic.on {
+		background: var(--miss);
+	}
+
+	.skip,
+	.back {
+		min-block-size: 44px;
+		padding: 0 14px;
+		border: 0;
+		background: none;
+		color: var(--ink);
+		font: inherit;
+		text-decoration: underline;
+		text-underline-offset: 3px;
+		cursor: pointer;
+	}
+
+	.status {
+		margin: 0;
+		font-weight: 700;
+	}
+
+	.status.good {
+		color: var(--leaf);
+	}
+
+	.status.almost {
+		color: var(--ink-soft);
+	}
+
+	.words {
+		margin: 0;
+		font-family: var(--font-display);
+		font-size: 1.15rem;
+		font-weight: 700;
+	}
+
+	.words .ok {
+		color: var(--leaf);
+	}
+
+	.words .miss {
+		color: var(--miss);
+		text-decoration: underline;
+	}
+
 	.actions {
 		position: sticky;
 		inset-block-end: 0;
+		display: grid;
+		gap: 4px;
+		justify-items: center;
+		margin-block-start: 8px;
 		padding-block: 6px;
 	}
 
@@ -209,13 +408,11 @@
 		cursor: pointer;
 	}
 
-	.next:disabled {
-		opacity: 0.4;
-		cursor: default;
-	}
-
 	.play:focus-visible,
 	.reveal:focus-visible,
+	.mic:focus-visible,
+	.skip:focus-visible,
+	.back:focus-visible,
 	.next:focus-visible {
 		outline: 3px solid var(--accent);
 		outline-offset: 2px;
