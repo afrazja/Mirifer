@@ -22,6 +22,8 @@
 		TIER_LABELS,
 	} from "$services/curriculum";
 	import { lessonMinutes } from "$services/lesson-duration";
+	import { goalText } from "$services/lesson-goals";
+	import type { LessonGoal } from "$stores/lesson";
 	import {
 		computeReadiness,
 		READINESS_MODULES,
@@ -65,6 +67,7 @@
 	/** Estimated minutes for today's lesson, from its actual content. */
 	let todayMinutes = $state<number | null>(null);
 	let todayDescription = $state({ en: "", fa: "" });
+	let todayGoals = $state<LessonGoal[]>([]);
 	let isResuming = $state(false);
 
 	/** "middle A2" — where today's day sits, so the level is legible at a glance. */
@@ -95,7 +98,6 @@
 	let totalXp = $state(0);
 	let dueReviews = $state(0);
 	let savedWordCount = $state(0);
-	let totalLessons = $state(0);
 	let completedLessons = $state<
 		Record<number, { completedAt: number; sentenceCount: number }>
 	>({});
@@ -107,6 +109,15 @@
 	// stats, nav cards) unlocks after the first completed lesson.
 	const isNewUser = $derived(
 		isAuthenticated && progressLoaded && daysCompleted === 0,
+	);
+
+	/** A lesson finished today, and none half-done: nothing more is asked of the learner today. */
+	const doneToday = $derived(
+		progressLoaded &&
+			!isResuming &&
+			Object.values(completedLessons).some(
+				(c) => new Date(c.completedAt).toDateString() === new Date().toDateString(),
+			),
 	);
 
 	const todayTitle = $derived.by(() => {
@@ -263,16 +274,6 @@
 		} else calMonth++;
 	}
 
-	// i18n content
-	const content = $derived({
-		langLabel: language === "fa" ? "زبان:" : "Language:",
-		basicsTitle: language === "fa" ? "مبانی آلمانی" : "German Basics",
-		basicsDesc:
-			language === "fa"
-				? "یادگیری اصول اولیه: ضمایر، حروف تعریف، قیدها، اعداد، رنگ‌ها و روزهای هفته."
-				: "Essential building blocks: pronouns, articles, adverbs, numbers, colors, and days of the week.",
-	});
-
 	async function loadProgress() {
 		// Fault-isolated: one failed fetch must not zero out the others.
 		const [completedRes, progressRes, indexRes] = await Promise.allSettled([
@@ -293,7 +294,6 @@
 
 		// Actual lesson count from database
 		const index = indexRes.status === "fulfilled" ? indexRes.value : [];
-		totalLessons = index.length;
 		lessonMetaIndex = index;
 
 		// "Today's session" — same rule the lesson page uses, so the card and
@@ -310,6 +310,7 @@
 			.then((l) => {
 				todayMinutes = lessonMinutes(l) || null;
 				todayDescription = { en: l?.description || "", fa: l?.descriptionFa || "" };
+				todayGoals = l?.goals ?? [];
 			})
 			.catch(() => (todayMinutes = null));
 
@@ -824,123 +825,80 @@
 	{/if}
 
 
-	<!-- ── Today's Session (primary daily action) ──────── -->
+	<!-- ── Today: the lesson to do, and reviews when some are due ── -->
 	{#if isAuthenticated && !isNewUser}
-		<a href="/lesson" class="today-session" title="Start today's session">
-			<div class="today-info">
-				<span class="today-label">
-					{language === "fa" ? "از امروز شروع کن" : "START TODAY"}
-				</span>
-				{#if progressLoaded}
-					<!-- No review count here: the lesson no longer starts with a
-					     warm-up, so promising one would be a lie. Reviews have
-					     their own card below. -->
-					<span class="today-title">
-						{language === "fa" ? "روز" : "Day"}
-						{todayTitle || currentDay}
+		{#if doneToday}
+			<section class="today-done" aria-live="polite">
+				<span class="done-mark" aria-hidden="true">✓</span>
+				<div>
+					<h2>{language === "fa" ? "امروز کارت تمام است" : "You're done for today"}</h2>
+					<p>{language === "fa" ? "درس بعدی فردا منتظر توست." : "Your next lesson is waiting tomorrow."}</p>
+				</div>
+				<a class="done-more" href="/lesson">{language === "fa" ? "شروع درس بعدی همین حالا ←" : "Start the next lesson now →"}</a>
+			</section>
+		{:else}
+			<a href="/lesson" class="today-session" title="Start today's session">
+				<div class="today-info">
+					<span class="today-label">
+						{language === "fa" ? "از امروز شروع کن" : "START TODAY"}
 					</span>
-					<!-- Estimated from what the lesson actually contains, so it
-					     cannot drift from the content the way a hardcoded
-					     "~5–10 minutes" on every day of the course did. -->
-					<span class="today-sub">{language === "fa" ? todayDescription.fa || todayDescription.en : todayDescription.en}</span>
-				<span class="today-sub">
-						{#if todayMinutes}
-							{language === "fa"
-								? `حدود ${todayMinutes} دقیقه`
-								: `~${todayMinutes} min`}{#if todayTier}<span class="today-tier"
-									>· {todayTier}</span
-								>{/if}
-						{:else if todayTier}
-							{todayTier}
+					{#if progressLoaded}
+						<span class="today-title">
+							{language === "fa" ? "روز" : "Day"}
+							{todayTitle || currentDay}
+						</span>
+						<span class="today-sub">{language === "fa" ? todayDescription.fa || todayDescription.en : todayDescription.en}</span>
+						{#if todayGoals.length}
+							<span class="today-goals-head">{language === "fa" ? "در این درس یاد می‌گیری:" : "In this lesson you will:"}</span>
+							<ul class="today-goals">
+								{#each todayGoals as goal (goal.id)}<li>{goalText(goal, language === "fa" ? "fa" : "en")}</li>{/each}
+							</ul>
 						{/if}
-					</span>
-				{:else}
-					<span class="today-title today-loading">
-						{language === "fa" ? "در حال بارگذاری…" : "Loading…"}
-					</span>
-				{/if}
-			</div>
-			<span class="today-btn">
-				▶ {language === "fa"
-					? (isResuming ? "ادامه درس" : "شروع درس")
-					: (isResuming ? "Continue lesson" : "Start lesson")}
-			</span>
-		</a>
-	{/if}
-
-	{#if isAuthenticated}
-		<a class="browse-lessons" href="/lessons">{language === "fa" ? "دیدن همه درس‌ها ←" : "Browse all lessons →"}</a>
-	{/if}
-
-	<!-- ── Progress Stats ──────────────────────────────── -->
-	{#if isAuthenticated && !isNewUser}
-		<div class="stats-row action-row">
-			<a
-				href="/vocabulary"
-				class="stat-card stat-card-link action-card"
-				class:has-words={savedWordCount > 0}
-				title="View saved vocabulary"
-			>
-				<span class="stat-icon warm"><Icon name="bookmark" size={26} /></span>
-				<div class="stat-content">
-					<span class="stat-value">{savedWordCount}</span>
-					<span class="stat-label"
-						>{language === "fa" ? "واژه‌های ذخیره‌شده" : "Saved Words"}</span
-					>
+						<!-- Estimated from what the lesson actually contains, so it
+						     cannot drift from the content. -->
+						<span class="today-sub">
+							{#if todayMinutes}
+								{language === "fa"
+									? `حدود ${todayMinutes} دقیقه`
+									: `~${todayMinutes} min`}{#if todayTier}<span class="today-tier">· {todayTier}</span>{/if}
+							{:else if todayTier}
+								{todayTier}
+							{/if}
+						</span>
+					{:else}
+						<span class="today-title today-loading">
+							{language === "fa" ? "در حال بارگذاری…" : "Loading…"}
+						</span>
+					{/if}
 				</div>
-				{#if savedWordCount > 0}
-					<span class="stat-cta vocab-cta"
-						>{language === "fa" ? "تمرین ←" : "Practice →"}</span
-					>
-				{/if}
+				<span class="today-btn">
+					▶ {language === "fa"
+						? (isResuming ? "ادامه درس" : "شروع درس")
+						: (isResuming ? "Continue lesson" : "Start lesson")}
+				</span>
 			</a>
+		{/if}
 
-
-			<a
-				href="/drill/sprechen"
-				class="stat-card stat-card-link action-card"
-				title={language === "fa" ? "تمرین Sprechen" : "Sprechen drill"}
-			>
-				<span class="stat-icon aim" aria-hidden="true">🎙</span>
-				<div class="stat-content">
-					<span class="stat-label strong"
-						>{language === "fa" ? "تمرین Sprechen" : "Sprechen drill"}</span
-					>
-					<span class="stat-sub"
-						>{language === "fa" ? "معرفی خود" : "Introduce yourself"}</span
-					>
-				</div>
-				<span class="stat-cta"
-					>{language === "fa" ? "تمرین ←" : "Practice →"}</span
-				>
+		{#if dueReviews > 0}
+			<a class="review-row" href="/review">
+				<span>{language === "fa" ? `${dueReviews} کارت برای مرور` : `Review ${dueReviews} ${dueReviews === 1 ? "card" : "cards"}`}</span>
+				<span aria-hidden="true">{language === "fa" ? "←" : "→"}</span>
 			</a>
-		</div>
-	{/if}
-
-
-	<!-- ── Nav Cards ───────────────────────────────────── -->
-	{#if !isNewUser}
-		<div class="nav-cards" id="categories-grid">
-		<a href="/basics" class="nav-card basics">
-			<div class="card-glow"></div>
-			<div class="icon"><Icon name="letters" size={44} /></div>
-			<h2>{content.basicsTitle}</h2>
-			<p>{content.basicsDesc}</p>
-			<div class="card-meta basics-meta">
-				{language === "fa"
-					? "۱۲ مبحث · ضمایر، حروف تعریف و بیشتر"
-					: "12 topics · Pronouns, Articles & more"}
-			</div>
-			<div class="arrow">→</div>
-		</a>
-		</div>
+		{/if}
 	{/if}
 
 </main>
 
 <style>
-	.browse-lessons { align-self: flex-end; display: inline-flex; align-items: center; min-height: 44px; padding: 6px 4px; color: var(--accent); font-weight: 600; text-underline-offset: 4px; }
-	.browse-lessons:hover { text-decoration: none; }
+	.today-goals-head { margin-top: 8px; font-size: 0.8rem; font-weight: 600; opacity: 0.9; }
+	.today-goals { margin: 0; padding-inline-start: 20px; font-size: 0.85rem; line-height: 1.6; opacity: 0.9; }
+	.today-done { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 22px 26px; border: 1px solid var(--line); border-radius: 18px; background: var(--paper-raised); color: var(--ink); }
+	.today-done h2 { margin: 0 0 4px; font-family: var(--font-display); font-size: 1.25rem; }
+	.today-done p { margin: 0; color: var(--ink-soft); }
+	.done-mark { display: grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: 1.3rem; font-weight: 700; }
+	.done-more { margin-inline-start: auto; display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); font-weight: 600; text-underline-offset: 4px; }
+	.review-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px; margin-top: 14px; padding: 12px 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper-raised); color: var(--ink); font-weight: 600; text-decoration: none; }
+	.review-row:hover { border-color: var(--accent); background: var(--accent-wash); }
 	:global(body) {
 		margin: 0;
 		padding: 0;
@@ -1225,146 +1183,78 @@
 
 
 
-	.stats-row {
-		display: grid;
-		grid-template-columns: repeat(4, 1fr);
-		gap: 16px;
-	}
 
 
 
 
 
 
-	.action-row {
-		grid-template-columns: repeat(2, 1fr);
-	}
 
 
 
 
 
 
-	.action-card {
-		flex-direction: row !important;
-		justify-content: flex-start !important;
-		gap: 20px !important;
-		padding: 16px 24px !important;
-		text-align: left !important;
-	}
 
 
 
 
 
 
-	.stat-content {
-		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-		flex: 1;
-	}
 
 
 
 
 
 
-	.action-card .stat-icon {
-		font-size: 2rem;
-	}
 
 
 
 
 
 
-	.action-card .stat-cta {
-		margin-top: 0;
-		font-size: 0.85rem;
-	}
 
 
 
 
 
 
-	.stat-card {
-		background: var(--paper-raised);
-		border: 1.5px solid var(--leaf);
-		border-radius: 14px;
-		box-shadow: var(--paper-shadow);
-		padding: 20px 16px;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 6px;
-		text-align: center;
-		transition:
-			transform 0.25s ease,
-			border-color 0.25s;
-	}
 
 
 
 
 
 
-	.stat-card:hover {
-		transform: translateY(-3px);
-		border-color: var(--accent);
-	}
 
 
 
 
 
 
-	.stat-icon {
-		display: inline-flex;
-	}
 
 
 
 
 
 
-	.stat-icon.warm {
-		color: var(--accent);
-	}
 
 
 
 
 
 
-	.stat-icon {
-		font-size: 1.6rem;
-	}
 
 
 
 
 
 
-	.stat-value {
-		font-family: var(--font-display);
-		font-size: 1.8rem;
-		font-weight: 700;
-		color: var(--ink);
-		line-height: 1;
-	}
 
 
 
 
 
 
-	.stat-label {
-		font-size: 0.78rem;
-		color: var(--ink-soft);
-		font-weight: 500;
-	}
 
 
 
@@ -1373,32 +1263,18 @@
 
 	/* The relocated cards carry a title instead of a big numeral, so the
 	   label has to do the work the number does on the other two. */
-	.stat-label.strong {
-		font-size: 0.95rem;
-		font-weight: 700;
-		color: var(--ink);
-		line-height: 1.25;
-	}
 
 
 
 
 
 
-	.stat-sub {
-		font-size: 0.78rem;
-		color: var(--ink-soft);
-	}
 
 
 
 
 
 
-	.stat-icon.aim {
-		font-size: 1.5rem;
-		line-height: 1;
-	}
 
 
 
@@ -1406,48 +1282,18 @@
 
 
 	/* ── Nav Cards ────────────────────────────────────── */
-	.nav-cards {
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: 24px;
-	}
 
 
 
 
 
 
-	.nav-card {
-		background: var(--paper-raised);
-		border-radius: 18px;
-		padding: 36px 32px;
-		text-decoration: none;
-		color: var(--ink);
-		/* Green outline so the cards carry brand colour instead of reading
-		   as plain white panels. */
-		border: 1.5px solid var(--leaf);
-		box-shadow: var(--paper-shadow);
-		transition: all 0.3s ease;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		text-align: center;
-		position: relative;
-		overflow: hidden;
-	}
 
 
 
 
 
 
-	.card-glow {
-		position: absolute;
-		inset: 0;
-		opacity: 0;
-		transition: opacity 0.3s;
-		border-radius: inherit;
-	}
 
 
 
@@ -1460,31 +1306,18 @@
 
 
 
-	.nav-card.basics .card-glow {
-		background: radial-gradient(
-			circle at 50% 0%,
-			var(--leaf-wash),
-			transparent 70%
-		);
-	}
 
 
 
 
 
 
-	.nav-card:hover .card-glow {
-		opacity: 1;
-	}
 
 
 
 
 
 
-	.nav-card:hover {
-		transform: translateY(-6px);
-	}
 
 
 
@@ -1497,19 +1330,12 @@
 
 
 
-	.nav-card.basics:hover {
-		border-color: var(--leaf);
-	}
 
 
 
 
 
 
-	.nav-card .icon {
-		margin-bottom: 16px;
-		z-index: 1;
-	}
 
 
 
@@ -1522,52 +1348,24 @@
 
 
 
-	.nav-card.basics .icon {
-		color: var(--leaf);
-	}
 
 
 
 
 
 
-	.nav-card h2 {
-		font-family: var(--font-display);
-		font-size: 1.55rem;
-		font-weight: 700;
-		margin-bottom: 12px;
-		position: relative;
-		z-index: 1;
-	}
 
 
 
 
 
 
-	.nav-card p {
-		color: var(--ink-soft);
-		line-height: 1.6;
-		font-size: 0.92rem;
-		position: relative;
-		z-index: 1;
-	}
 
 
 
 
 
 
-	.card-meta {
-		margin-top: 14px;
-		padding: 5px 14px;
-		background: var(--accent-wash);
-		border-radius: 20px;
-		font-size: 0.8rem;
-		font-weight: 700;
-		color: var(--accent-deep);
-		z-index: 1;
-	}
 
 
 
@@ -1580,10 +1378,6 @@
 
 
 
-	.card-meta.basics-meta {
-		background: var(--leaf-wash);
-		color: var(--leaf);
-	}
 
 
 
@@ -1591,52 +1385,30 @@
 
 
 	/* Clickable stat card for due reviews */
-	.stat-card-link {
-		text-decoration: none;
-		cursor: pointer;
-	}
 
 
 
 
 
 
-	.stat-card-link.has-words {
-		border-color: var(--line);
-		background: var(--accent-wash);
-	}
 
 
 
 
 
 
-	.stat-card-link.has-words:hover {
-		border-color: var(--accent);
-		box-shadow: 0 8px 24px rgba(46, 204, 113, 0.15);
-	}
 
 
 
 
 
 
-	.stat-cta {
-		font-size: 0.72rem;
-		/* Sits on the tinted stat card, where --leaf measured 4.01:1. */
-		color: var(--accent-deep);
-		font-weight: 700;
-		margin-top: 2px;
-	}
 
 
 
 
 
 
-	.stat-cta.vocab-cta {
-		color: var(--accent-deep);
-	}
 
 
 
@@ -1656,25 +1428,12 @@
 
 
 
-	.nav-card .arrow {
-		margin-top: 18px;
-		font-size: 1.5rem;
-		opacity: 0;
-		transform: translateX(-10px);
-		transition: all 0.3s ease;
-		position: relative;
-		z-index: 1;
-	}
 
 
 
 
 
 
-	.nav-card:hover .arrow {
-		opacity: 1;
-		transform: translateX(0);
-	}
 
 
 
@@ -2519,31 +2278,11 @@
 			padding: 24px 18px;
 		}
 
-		.stats-row {
-			grid-template-columns: repeat(2, 1fr);
-		}
 
-		.action-row {
-			grid-template-columns: 1fr;
-			gap: 12px;
-		}
 
-		.action-card {
-			padding: 14px 20px !important;
-			gap: 16px !important;
-		}
 
-		.action-card .stat-icon {
-			font-size: 1.6rem;
-		}
 
-		.action-card .stat-value {
-			font-size: 1.4rem;
-		}
 
-		.nav-cards {
-			grid-template-columns: 1fr;
-		}
 
 
 		.nav-stats {

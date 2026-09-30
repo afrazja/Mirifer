@@ -120,6 +120,9 @@
 	</div>
 
 	<main id="main-content" tabindex="-1" class="review-content">
+		<a class="drill-link" href="/drill/sprechen">
+			🎙 {prefs.language === "fa" ? "تمرین Sprechen: معرفی خود ←" : "Sprechen drill: introduce yourself →"}
+		</a>
 		{#if isLoading}
 			<div class="empty-state">
 				<div class="empty-icon">⏳</div>
@@ -220,6 +223,9 @@
 	}
 
 	/* Content */
+	.drill-link { display: flex; align-items: center; min-height: 44px; margin-bottom: 14px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper-raised); color: var(--accent-deep); font-weight: 600; text-decoration: none; }
+	.drill-link:hover { border-color: var(--accent); background: var(--accent-wash); }
+
 	.review-content {
 		flex: 1;
 		max-width: 600px;
