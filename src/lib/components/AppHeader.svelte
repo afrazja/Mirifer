@@ -27,6 +27,8 @@
 		direction = "ltr",
 		menu = true,
 		logo = true,
+		onClose,
+		closeLabel = "Close",
 	}: {
 		title?: string;
 		subtitle?: string;
@@ -43,6 +45,9 @@
 		menu?: boolean;
 		/** The logo link. On for every page except focus screens such as the lesson. */
 		logo?: boolean;
+		/** A close button at the far end, for pages that open over another page. */
+		onClose?: () => void;
+		closeLabel?: string;
 	} = $props();
 
 	const isFa = $derived(direction === "rtl");
@@ -90,6 +95,11 @@
 		<div class="top-end">
 			{#if actions}<div class="actions">{@render actions()}</div>{/if}
 			{#if menu}<AccountMenu {isFa} />{/if}
+			{#if onClose}
+				<button class="close-btn" type="button" onclick={onClose} aria-label={closeLabel}>
+					<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" /></svg>
+				</button>
+			{/if}
 		</div>
 	</header>
 
@@ -199,8 +209,26 @@
 		transform: scaleX(-1);
 	}
 
+	.close-btn {
+		display: inline-grid;
+		place-items: center;
+		inline-size: 44px;
+		block-size: 44px;
+		border: 1px solid var(--control-border);
+		border-radius: 50%;
+		background: var(--control);
+		color: var(--ink);
+		cursor: pointer;
+	}
+
+	.close-btn:hover {
+		border-color: var(--accent);
+		background: var(--accent-wash);
+	}
+
 	.brand:focus-visible,
-	.back-link:focus-visible {
+	.back-link:focus-visible,
+	.close-btn:focus-visible {
 		outline: 3px solid var(--accent);
 		outline-offset: 2px;
 	}

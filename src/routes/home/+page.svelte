@@ -778,14 +778,6 @@
 		<div class="nav-right">
 			{#if isAuthenticated}
 				<div class="nav-stats">
-					<button
-						class="nav-stat xp"
-						onclick={() => (showBadges = true)}
-						title="View XP & Badges"
-					>
-						<span class="ns-icon star"><Icon name="star" size={16} /></span>
-						<span class="ns-value">{totalXp}</span>
-					</button>
 					<button class="nav-stat" onclick={() => (showCalendar = true)} title={language === "fa" ? "تقویم تمرین" : "Practice calendar"} aria-label={language === "fa" ? "تقویم تمرین" : "Practice calendar"}><span aria-hidden="true">📅</span></button>
 				</div>
 
@@ -832,13 +824,6 @@
 	{/if}
 
 
-	{#if isAuthenticated && data.checkIn && data.checkLanguage === 'de'}
-		<aside class="check-in-card">
-			<div><strong>{language === 'fa' ? 'پیشرفتت را با یک سنجش کوتاه دنبال کن' : 'Track your progress with a short check'}</strong>
-			<p>{data.checkIn.due === 0 ? (language === 'fa' ? 'اختیاری · نقطه شروع خودت را ثبت کن و با سنجش‌های بعدی مقایسه کن.' : 'Optional · Record your starting point, then compare later checks.') : data.checkIn.due !== null ? (language === 'fa' ? 'سنجش بعدی اکنون آماده است.' : 'Your next progress check is ready.') : (language === 'fa' ? 'نتایج قبلی و زمان سنجش بعدی را ببین.' : 'View your saved results and next check date.')}</p></div>
-			<a href="/check-in">{language === 'fa' ? 'سنجش پیشرفت ←' : 'Progress check →'}</a>
-		</aside>
-	{/if}
 	<!-- ── Today's Session (primary daily action) ──────── -->
 	{#if isAuthenticated && !isNewUser}
 		<a href="/lesson" class="today-session" title="Start today's session">
@@ -954,11 +939,6 @@
 </main>
 
 <style>
-	.check-in-card { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:20px 24px; margin:22px 0; border:1px solid #3f5543; border-radius:12px; background:#1b2b20; color:#d8e7d8; }
-	.check-in-card strong { font-size:.95rem; font-weight:500; }
-	.check-in-card p { font-size:.8rem; color:#adbeaf; margin:7px 0 0; line-height:1.6; }
-	.check-in-card a { color:#b6dd94; font-size:.85rem; white-space:nowrap; padding:12px 0; }
-	@media(max-width:600px) { .check-in-card { flex-direction:column; align-items:flex-start; gap:8px; padding:18px; } }
 	.browse-lessons { align-self: flex-end; display: inline-flex; align-items: center; min-height: 44px; padding: 6px 4px; color: var(--accent); font-weight: 600; text-underline-offset: 4px; }
 	.browse-lessons:hover { text-decoration: none; }
 	:global(body) {
@@ -1219,39 +1199,7 @@
 		background: var(--control-hover);
 	}
 
-	.ns-icon {
-		display: inline-flex;
-	}
-
-	/* The header is on the page background now, so the star keeps its gold
-	   and the numeral uses the ink colour for contrast. */
-	.ns-icon.star {
-		color: var(--gold);
-	}
-
 	/* Amber rather than the old --accent-deep: same problem, same fix. */
-
-
-
-
-
-
-	.ns-icon {
-		font-size: 1.1rem;
-	}
-
-
-
-
-
-
-	.ns-value {
-		font-size: 0.9rem;
-		font-weight: 700;
-		/* Bright green reads on the black ribbon in both themes; --leaf is
-		   dark green in light mode and would only reach ~3:1 here. */
-		color: var(--on-strip-accent);
-	}
 
 
 
@@ -2606,11 +2554,6 @@
 			padding: 0;
 			gap: 2px;
 		}
-
-		.ns-value {
-			font-size: 0.8rem;
-		}
-
 
 		.mastery-grid {
 			gap: 8px;

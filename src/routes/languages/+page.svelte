@@ -24,7 +24,7 @@
 	function summary(progress: CourseProgress): { label: string; detail: string } {
 		if (progress.code === 'de') return {
 			label: isFa ? `درس ${fa(progress.currentDay)} از ${fa(progress.total)}` : `Lesson ${progress.currentDay} of ${progress.total}`,
-			detail: isFa ? `${fa(progress.completed)} درس تمام‌شده · ${fa(progress.xp)} امتیاز` : `${progress.completed} ${progress.completed === 1 ? 'lesson' : 'lessons'} completed · ${progress.xp} XP`
+			detail: isFa ? `${fa(progress.completed)} درس تمام‌شده` : `${progress.completed} ${progress.completed === 1 ? 'lesson' : 'lessons'} completed`
 		};
 		const done = (progress.conversationDone ? 1 : 0) + progress.retellDone, total = 1 + progress.retellTotal;
 		return {

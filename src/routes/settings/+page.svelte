@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from "svelte";
-	import { goto } from "$app/navigation";
+	import { goto, afterNavigate } from "$app/navigation";
 	import AppHeader from "$lib/components/AppHeader.svelte";
 	import CourseSwitcher from "$lib/components/CourseSwitcher.svelte";
 	import { themeChoice, setTheme, type ThemeChoice } from "$services/theme";
@@ -324,6 +324,15 @@
 	}
 
 	// ============ LIFECYCLE ============
+	// Settings opens over whichever page the learner was on; Close goes back there.
+	let cameFrom = $state<string | null>(null);
+	afterNavigate(({ from }) => {
+		if (from && from.url.pathname !== "/settings") cameFrom = from.url.pathname + from.url.search;
+	});
+	function closeSettings() {
+		void goto(cameFrom ?? "/languages");
+	}
+
 	onMount(async () => {
 		const authed = await isAuthenticated();
 		if (!authed) {
@@ -371,7 +380,7 @@
 {#if !isLoading}
 	<main class="settings-container">
 		<div class="settings-header">
-			<AppHeader title="Settings" icon="⚙" backHref="/languages" backLabel="My languages" />
+			<AppHeader logo={false} menu={false} onClose={closeSettings} />
 		</div>
 
 	<!-- Skip-link target: absolutely positioned, so it adds no box. -->
