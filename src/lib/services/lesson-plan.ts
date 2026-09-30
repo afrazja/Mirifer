@@ -30,6 +30,8 @@ interface PlanInput {
 	words?: LessonChunk[];
 	collocations?: LessonChunk[];
 	exercises?: LessonExercise[];
+	/** Needed to tell whether a line-index `after` points at a real line. */
+	sentences?: unknown[];
 }
 
 /** True when any word or phrase is assigned to a batch. */
@@ -61,7 +63,18 @@ export function midChecksAfter(lesson: PlanInput, index: number): LessonExercise
 	return (lesson.exercises ?? []).filter((e) => e.after === index);
 }
 
-/** The closing set: every exercise not placed earlier. */
+/**
+ * The closing set: every exercise not placed earlier, and every one whose
+ * `after` points at nothing (a batch that does not exist, a line past the end),
+ * so a content slip never makes a question vanish.
+ */
 export function finalExercises(lesson: PlanInput): LessonExercise[] {
-	return (lesson.exercises ?? []).filter((e) => e.after === undefined);
+	const batches = new Set<number>();
+	for (const c of [...(lesson.words ?? []), ...(lesson.collocations ?? [])]) if (c.batch !== undefined) batches.add(c.batch);
+	const lines = lesson.sentences?.length;
+	return (lesson.exercises ?? []).filter((e) => {
+		if (e.after === undefined) return true;
+		if (typeof e.after === 'string') return !batches.has(Number(e.after.slice(6)));
+		return lines !== undefined && e.after >= lines;
+	});
 }

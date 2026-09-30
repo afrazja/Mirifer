@@ -19,6 +19,7 @@
 		language = 'en',
 		micAvailable = false,
 		listening = false,
+		micProblem = false,
 		play,
 		onMic,
 		onDone
@@ -31,6 +32,8 @@
 		micAvailable?: boolean;
 		/** The microphone is on right now. */
 		listening?: boolean;
+		/** The browser refused or lost the microphone. */
+		micProblem?: boolean;
 		/** Speak German text. */
 		play: (text: string) => void;
 		/** Start or stop the microphone. */
@@ -173,7 +176,9 @@
 					>{listening ? '🛑' : '🎙️'}</button>
 					{#if !attempted}<button class="skip" onclick={skip}>{t('Skip', 'رد کردن')}</button>{/if}
 				</div>
-				{#if listening}
+				{#if micProblem && !listening}
+					<p class="status almost">{t('The microphone is blocked or unavailable. Check your browser permission, or skip.', 'میکروفن مسدود یا در دسترس نیست. اجازهٔ مرورگر را بررسی کن یا رد شو.')}</p>
+				{:else if listening}
 					<p class="status">{t('Listening…', 'در حال گوش دادن…')}</p>
 				{:else if outcome === 'good'}
 					<p class="status good">✓ {t('Good!', 'آفرین!')}</p>

@@ -55,6 +55,12 @@ describe('lesson plan', () => {
 		expect(plan.map((b) => b.kind)).toEqual(['teach']);
 	});
 
+	it('folds an exercise whose placement points at nothing into the closing set', () => {
+		const odd = parseExercises([ex('a', 'batch-1'), ex('x', 'batch-7'), ex('y', 40), ex('z', 3)])!;
+		const l = { ...lesson, exercises: odd, sentences: new Array(15).fill({}) };
+		expect(finalExercises(l).map((e) => e.id)).toEqual(['x', 'y']);
+	});
+
 	it('finds mid-dialogue checks by sentence index and leaves the rest for the end', () => {
 		expect(midChecksAfter(lesson, 12).map((e) => e.id)).toEqual(['c']);
 		expect(midChecksAfter(lesson, 3)).toEqual([]);

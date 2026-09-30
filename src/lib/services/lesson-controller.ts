@@ -43,7 +43,7 @@ import { matchVoiceInput, bestVoiceMatch, getWordMatchStatus } from '$utils/text
 import { diagnose, type SoundNote } from './pronunciation';
 import type { LessonExercise } from './lesson-exercises';
 import { hasBatches, buildBatchPlan, midChecksAfter, finalExercises, type PracticeBlock } from './lesson-plan';
-import { getLastVoiceAlternatives } from '$services/speech';
+import { getLastVoiceAlternatives, stopListening } from '$services/speech';
 import { getTranslation, getTranslationLang } from '$utils/i18n';
 import { wait } from '$utils/wait';
 import { saveExamResult } from '$services/data-layer';
@@ -231,8 +231,12 @@ let exerciseResult: ExerciseResult | null = null;
  */
 let lessonStartedAt = 0;
 
+/** A second tap within this window is a double tap, not a second skip. */
+let lastManualNextAt = 0;
+
 export function setCallbacks(cb: LessonCallbacks) {
 	callbacks = cb;
+	lastManualNextAt = 0;
 }
 
 /**
@@ -368,7 +372,10 @@ export async function initLesson(requestedDay?: number): Promise<void> {
 		// Analytics: a lesson session opened (fire-and-forget).
 		lessonStartedAt = Date.now();
 		openLessonAttempt(currentDay, currentSentenceIndex, false, lesson?.sentences);
-		if (!lesson) trackObstacle('lesson_load_failed', { mode: 'lesson' });
+		if (!lesson) {
+			trackObstacle('lesson_load_failed', { mode: 'lesson' });
+			callbacks?.onSystemMessage('Failed to load lesson data. Please check your connection and refresh.');
+		}
 	} catch (e) {
 		trackObstacle('lesson_load_failed');
 		logError('lesson-controller:initLesson', e);
@@ -407,7 +414,9 @@ export async function processNextStep(skipAudio = false): Promise<void> {
 	if (
 		callbacks?.onPractice &&
 		app.currentSentenceIndex > 0 &&
-		app.currentSentenceIndex === lastPresentedIndex + 1 &&
+		// Moving forward past the line, or resuming straight after it (a reload
+		// must not skip the check).
+		(lastPresentedIndex === -1 || app.currentSentenceIndex === lastPresentedIndex + 1) &&
 		!shownMidChecks.has(app.currentSentenceIndex)
 	) {
 		const due = midChecksAfter(lesson, app.currentSentenceIndex - 1);
@@ -633,6 +642,9 @@ async function handleLessonCompletion(
 // ============ USER ACTIONS ============
 
 export async function manualNext(): Promise<void> {
+	const now = Date.now();
+	if (now - lastManualNextAt < 500) return;
+	lastManualNextAt = now;
 	const app = get(appStore);
 	const lessonState = get(lessonStore);
 	const lesson = lessonState.currentLesson;
@@ -641,8 +653,10 @@ export async function manualNext(): Promise<void> {
 	const currentStep = lesson.sentences[app.currentSentenceIndex];
 	if (!currentStep) return;
 
-	// Stop everything
+	// Stop everything, including a microphone still listening for this line
+	// (its transcript would otherwise land on the next one).
 	stopAllAudio();
+	stopListening();
 
 	void trackEvent('step_skipped', { day: app.currentDay, metadata: { index: app.currentSentenceIndex, mode: 'lesson' } });
 
