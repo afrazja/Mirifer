@@ -6,7 +6,7 @@
 	import * as auth from "$services/auth";
 	import * as dataLayer from "$services/data-layer";
 	import { initSyncListeners } from "$services/sync-queue";
-	import InstallAppButton from "$lib/components/InstallAppButton.svelte";
+	import LandingNav from "$lib/components/LandingNav.svelte";
 	import BrandLogo from "$lib/components/BrandLogo.svelte";
 	import LandingLessonPreview from "$lib/components/LandingLessonPreview.svelte";
 
@@ -330,7 +330,7 @@
 			</h2>
 			<p class="auth-subtitle">
 				{authMode === "signin"
-					? "Sign in to continue learning German"
+					? "Log in to continue learning German"
 					: "Create your free account — no card required"}
 			</p>
 
@@ -378,7 +378,7 @@
 				{authLoading
 					? "···"
 					: authMode === "signin"
-						? "Sign In"
+						? "Log in"
 						: "Create Free Account"}
 			</button>
 
@@ -406,7 +406,7 @@
 					onclick={(e) => {
 						e.preventDefault();
 						toggleAuthMode();
-					}}>{authMode === "signin" ? " Sign Up Free" : " Sign In"}</a
+					}}>{authMode === "signin" ? " Sign up free" : " Log in"}</a
 				>
 			</p>
 			{/if}
@@ -417,29 +417,7 @@
 <!-- ════════════════════════════════════════════════════════ -->
 <!--  NAVBAR                                                  -->
 <!-- ════════════════════════════════════════════════════════ -->
-<nav class="navbar" class:scrolled>
-	<a href="/" class="brand" aria-label="Mirifer home">
-		<BrandLogo />
-	</a>
-
-	<div class="nav-links">
-		<a href="#session">The session</a>
-		<a href="#method">Method</a>
-		<a href="#path">120-day path</a>
-		<a href="#faq">FAQ</a>
-	</div>
-
-	<div class="navbar-right">
-		<a href="/fa" class="lang-link" lang="fa" hreflang="fa">فارسی</a>
-		<InstallAppButton />
-		{#if isAuthenticated}
-			<a href="/home" class="btn btn-primary">Open App &rarr;</a>
-		{:else}
-			<button class="btn btn-ghost" onclick={openSignIn}>Sign in</button>
-			<button class="btn btn-primary" onclick={openSignUp}>Start free</button>
-		{/if}
-	</div>
-</nav>
+<LandingNav lang="en" {isAuthenticated} {scrolled} onLogin={openSignIn} onSignup={openSignUp} />
 
 <main id="main-content" tabindex="-1">
 	<!-- ══ HERO ══════════════════════════════════════════ -->
@@ -900,108 +878,11 @@
 	 * their text is set against them explicitly.
 	 */
 
-	/* ── Navbar ──────────────────────────────────────── */
-	.navbar {
-		position: sticky;
-		top: 0;
-		z-index: 50;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: var(--space-5);
-		padding: 18px 40px;
-		background: color-mix(in srgb, var(--paper) 92%, transparent);
-		backdrop-filter: blur(12px);
-		border-bottom: 1px solid transparent;
-		transition: border-color 0.2s, padding 0.2s;
-	}
-
-	.navbar.scrolled {
-		padding: 12px 40px;
-		border-bottom-color: var(--line);
-	}
-
 	.brand {
 		display: flex;
 		align-items: center;
 		flex: none;
 		text-decoration: none;
-	}
-
-	.nav-links {
-		display: flex;
-		gap: 26px;
-		font-size: 0.92rem;
-	}
-
-	.nav-links a {
-		color: var(--ink-soft);
-		text-decoration: none;
-	}
-
-	.nav-links a:hover {
-		color: var(--accent);
-	}
-
-	.navbar-right {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-	}
-
-	/* Quieter than the sign-in buttons — a way out for the minority who need
-	   it, not a competing call to action. Stays visible on mobile, where
-	   most Iranian traffic is, unlike the primary CTA. */
-	.lang-link {
-		display: inline-flex;
-		align-items: center;
-		min-block-size: 44px;
-		padding: 0 10px;
-		border-radius: var(--radius-control);
-		color: var(--ink-soft);
-		font-weight: 600;
-		font-size: 0.95rem;
-		text-decoration: none;
-		white-space: nowrap;
-	}
-
-	.lang-link:hover {
-		color: var(--accent);
-		background: var(--accent-wash);
-	}
-
-	.btn {
-		font: inherit;
-		font-size: 0.92rem;
-		font-weight: 500;
-		border-radius: var(--radius-pill);
-		padding: 10px 20px;
-		min-block-size: 44px;
-		display: inline-flex;
-		align-items: center;
-		cursor: pointer;
-		text-decoration: none;
-		white-space: nowrap;
-	}
-
-	.btn-primary {
-		background: var(--accent);
-		color: var(--on-accent);
-		border: none;
-	}
-
-	.btn-primary:hover {
-		background: var(--accent-deep);
-	}
-
-	.btn-ghost {
-		background: transparent;
-		border: none;
-		color: var(--ink-soft);
-	}
-
-	.btn-ghost:hover {
-		color: var(--accent);
 	}
 
 	/* ── Shared rhythm ───────────────────────────────── */
@@ -1597,19 +1478,9 @@
 			aspect-ratio: 3 / 2;
 		}
 
-		.nav-links {
-			display: none;
-		}
 	}
 
 	@media (max-width: 640px) {
-		.navbar,
-		.navbar.scrolled {
-			padding: 12px 18px;
-			gap: 8px;
-			--landing-logo-width: 128px;
-		}
-
 		.band,
 		.hero,
 		.bleed-inner,
@@ -1655,18 +1526,6 @@
 			order: 6;
 		}
 
-		/* The primary CTA is dropped on phones, so the language link must not
-		   be — most Iranian traffic is phone traffic, which makes the small
-		   screen where it matters most, not least. */
-		.navbar-right .btn-primary {
-			display: none;
-		}
-
-		.lang-link {
-			padding: 0 6px;
-			font-size: 0.9rem;
-		}
-
 		.hero-actions .pill {
 			inline-size: 100%;
 		}
@@ -1692,12 +1551,6 @@
 			inset-block-end: 16px;
 			max-inline-size: calc(100% - 32px);
 			padding: 12px 16px;
-		}
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.navbar {
-			transition: none;
 		}
 	}
 

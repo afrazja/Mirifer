@@ -18,6 +18,7 @@
 	 */
 	import { onMount } from 'svelte';
 	import * as auth from '$services/auth';
+	import LandingNav from '$lib/components/LandingNav.svelte';
 
 	let isAuthenticated = $state(false);
 
@@ -79,6 +80,8 @@
 </svelte:head>
 
 <div class="fa-page" lang="fa" dir="rtl">
+	<LandingNav lang="fa" {isAuthenticated} />
+
 	<section class="hero">
 		<!-- Ambient blobs, same treatment as the English hero. Purely
 		     decorative, so aria-hidden and pointer-events:none. -->
