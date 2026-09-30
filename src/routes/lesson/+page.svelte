@@ -22,10 +22,12 @@
 		skipAndRemoveReviewItem,
 		continueAfterGrammar,
 		continueAfterWarmUp,
+		continueAfterExercises,
 		type TeachStepData,
 		type CompletionCardData,
 		type GrammarMomentData,
 		type WarmUpData,
+		type ExercisesData,
 		type ExamQuestionData,
 		type ExamResultsData,
 		type VoiceResultData,
@@ -57,6 +59,7 @@
 		isSpeechSupported,
 	} from "$services/speech";
 	import SentencePractice from "$components/SentencePractice.svelte";
+	import LessonExercises from "$components/LessonExercises.svelte";
 	import ConversationTurn from "$components/ConversationTurn.svelte";
 	import { openerForDay } from "$services/conversation-openers";
 	import { type Outcome } from "$services/practice-drills";
@@ -99,6 +102,7 @@
 	let completionData: CompletionCardData | null = $state(null);
 	let grammarMoment: GrammarMomentData | null = $state(null);
 	let warmUp: WarmUpData | null = $state(null);
+	let exercisesData: ExercisesData | null = $state(null);
 
 	let examQuestionData: ExamQuestionData | null = $state(null);
 	let examResultsData: ExamResultsData | null = $state(null);
@@ -316,6 +320,7 @@
 				showHint = false;
 				completionData = null;
 				grammarMoment = null;
+				exercisesData = null;
 				examQuestionData = null;
 				examResultsData = null;
 				voiceResult = null;
@@ -326,6 +331,13 @@
 			},
 			onWarmUp(data) {
 				warmUp = data;
+				if (data) {
+					currentTeachStep = null;
+					isSpeaking = false;
+				}
+			},
+			onExercises(data) {
+				exercisesData = data;
 				if (data) {
 					currentTeachStep = null;
 					isSpeaking = false;
@@ -374,6 +386,7 @@
 				currentTeachStep = null;
 				completionData = null;
 				grammarMoment = null;
+				exercisesData = null;
 				examResultsData = null;
 				voiceResult = null;
 				choiceAnswered = -1;
@@ -383,6 +396,7 @@
 				currentTeachStep = null;
 				completionData = null;
 				grammarMoment = null;
+				exercisesData = null;
 				examQuestionData = null;
 				voiceResult = null;
 				examResultsData = data;
@@ -409,6 +423,7 @@
 				currentTeachStep = null;
 				completionData = null;
 				grammarMoment = null;
+				exercisesData = null;
 				examQuestionData = null;
 				examResultsData = null;
 				voiceResult = null;
@@ -1544,6 +1559,20 @@
 							</div>
 						{/if}
 
+						<!-- End-of-lesson exercises (after the grammar moment, before completion) -->
+						{#if exercisesData}
+							<div class="message system lesson-exercises">
+								<div class="text">
+									<LessonExercises
+										exercises={exercisesData.exercises}
+										language={exercisesData.language}
+										play={(text) => playAudioPromise(text, 1, "de-DE")}
+										onDone={(result) => continueAfterExercises(result)}
+									/>
+								</div>
+							</div>
+						{/if}
+
 						<!-- Completion Card -->
 						{#if completionData}
 							<div class="message system completion-card">
@@ -1572,6 +1601,13 @@
 												{/each}
 											</ul>
 										</div>
+									{/if}
+									{#if completionData.exercises}
+										<p class="comp-exercises">
+											✍️ {completionData.language === "fa"
+												? `تمرین‌ها: ${completionData.exercises.correct} از ${completionData.exercises.total}`
+												: `Exercises: ${completionData.exercises.correct} of ${completionData.exercises.total}`}
+										</p>
 									{/if}
 									<div class="completion-stats">
 										{#if lesson.currentLesson}
@@ -2021,6 +2057,17 @@
 	}
 
 	/* ── Completion Stats ── */
+	.comp-exercises {
+		margin: 6px 0 0;
+		color: var(--ink-soft);
+		font-size: 0.9rem;
+		font-weight: 600;
+	}
+
+	.lesson-exercises .text {
+		text-align: start;
+	}
+
 	.completion-stats {
 		display: flex;
 		gap: 16px;

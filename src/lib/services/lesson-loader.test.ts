@@ -194,6 +194,20 @@ describe('loadLesson', () => {
 		expect(lesson!.goals).toBeUndefined();
 	});
 
+	it('loads a lesson\'s exercises, dropping only the malformed ones', async () => {
+		const id = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+		const good = { id: 'e1', type: 'fill', de: 'Ich ___ Ali.', options: ['heiße', 'habe'], answer: 0 };
+		const bad = { id: 'e2', type: 'fill', de: 'no gap', options: ['a', 'b'], answer: 0 };
+		setupTwoTableMock({ id, title: 'Intro', title_fa: null, exercises: [good, bad] }, []);
+		expect((await loadLesson(1))!.exercises).toEqual([good]);
+
+		invalidateLessonCache();
+		setupTwoTableMock({ id, title: 'Intro', title_fa: null, exercises: 'nope' }, []);
+		const lesson = await loadLesson(1);
+		expect(lesson!.title).toBe('Intro');
+		expect(lesson!.exercises).toBeUndefined();
+	});
+
 	it('assigns 1-based sentence IDs from sentence_order', async () => {
 		const lessonRow = { id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', title: 'Test', title_fa: '' };
 		const sentenceRows = [
@@ -416,7 +430,7 @@ describe('offline caching (localStorage)', () => {
 	it('falls back to the cached lesson when Supabase fails (offline)', async () => {
 		const cachedLesson = { title: 'Offline Café', sentences: [{ id: 1, role: 'received', translation: 'Hi' }] };
 		localStorage.setItem('mirifer_lesson_3', JSON.stringify(cachedLesson));
-		localStorage.setItem('mirifer_lesson_3_v', '3');
+		localStorage.setItem('mirifer_lesson_3_v', '4');
 		const sb = mockSbForTables({ lessons: { data: null, error: { message: 'network down' } } });
 		vi.mocked(getSupabaseBrowserClient).mockReturnValue(sb as any);
 
@@ -428,7 +442,7 @@ describe('offline caching (localStorage)', () => {
 	it('getLesson reads from localStorage when not in the in-memory cache', () => {
 		const cachedLesson = { title: 'Synced Café', sentences: [] };
 		localStorage.setItem('mirifer_lesson_9', JSON.stringify(cachedLesson));
-		localStorage.setItem('mirifer_lesson_9_v', '3');
+		localStorage.setItem('mirifer_lesson_9_v', '4');
 
 		expect(getLesson(9)!.title).toBe('Synced Café');
 	});
@@ -445,6 +459,10 @@ describe('offline caching (localStorage)', () => {
 
 		// Version 2 predates goals: a Day 1 cached then would never show them.
 		localStorage.setItem('mirifer_lesson_11_v', '2');
+		expect(getLesson(11)).toBeNull();
+
+		// Version 3 predates exercises.
+		localStorage.setItem('mirifer_lesson_11_v', '3');
 		expect(getLesson(11)).toBeNull();
 	});
 

@@ -28,7 +28,9 @@ export const ITEM_SECONDS = {
 	/** Short text plus its comprehension checks. */
 	paragraph: 100,
 	/** One rule at the end of the lesson. */
-	grammarMoment: 40
+	grammarMoment: 40,
+	/** One end-of-lesson exercise: read, answer, see the result. */
+	exercise: 20
 } as const;
 
 export interface LessonContentCounts {
@@ -37,6 +39,7 @@ export interface LessonContentCounts {
 	received: number;
 	sent: number;
 	paragraphs?: number;
+	exercises?: number;
 	hasGrammarMoment?: boolean;
 }
 
@@ -49,6 +52,7 @@ export function estimateSeconds(c: LessonContentCounts): number {
 		n(c.received) * ITEM_SECONDS.received +
 		n(c.sent) * ITEM_SECONDS.sent +
 		n(c.paragraphs) * ITEM_SECONDS.paragraph +
+		n(c.exercises) * ITEM_SECONDS.exercise +
 		(c.hasGrammarMoment ? ITEM_SECONDS.grammarMoment : 0)
 	);
 }
@@ -71,6 +75,7 @@ interface LessonLike {
 	words?: unknown[] | null;
 	collocations?: unknown[] | null;
 	paragraphs?: unknown[] | null;
+	exercises?: unknown[] | null;
 }
 
 /** Count a real lesson's items. Absent fields simply count zero. */
@@ -88,6 +93,7 @@ export function countLessonContent(lesson: LessonLike | null | undefined): Lesso
 		received,
 		sent,
 		paragraphs: lesson?.paragraphs?.length ?? 0,
+		exercises: lesson?.exercises?.length ?? 0,
 		hasGrammarMoment: !!lesson?.grammarNote
 	};
 }

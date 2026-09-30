@@ -1,4 +1,5 @@
 import { writable } from 'svelte/store';
+import type { LessonExercise } from '$services/lesson-exercises';
 
 export interface Sentence {
 	id: number;
@@ -60,6 +61,8 @@ export interface Lesson {
 	collocations?: LessonChunk[];
 	/** Short reading texts. From A2 middle upward. */
 	paragraphs?: LessonParagraph[];
+	/** The end-of-lesson check: a few quick exercises on what the lesson taught. */
+	exercises?: LessonExercise[];
 	difficulty?: string;
 }
 

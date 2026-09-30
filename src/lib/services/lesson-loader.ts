@@ -9,6 +9,7 @@ import type { Lesson, LessonChunk, LessonGoal, LessonParagraph, Sentence } from 
 import type { Language } from '$stores/preferences';
 import { logError, logWarn } from '$utils/error';
 import { isUnlocked } from '$services/lesson-access';
+import { parseExercises } from '$services/lesson-exercises';
 import {
 	LessonRowSchema,
 	LessonDetailRowSchema,
@@ -53,7 +54,7 @@ const lsLessonKey = (day: number) => `mirifer_lesson_${day}`;
  * 2 = words / collocations / paragraphs added.
  * 3 = goals added.
  */
-const LESSON_CACHE_VERSION = 3;
+const LESSON_CACHE_VERSION = 4;
 const lsLessonVersionKey = (day: number) => `mirifer_lesson_${day}_v`;
 
 /** A cached lesson is only usable if it was written by this shape. */
@@ -180,9 +181,18 @@ export async function loadLesson(day: number): Promise<Lesson | null> {
 	const CHUNK_COLS = 'words, collocations, paragraphs';
 	let { data: lessonRow, error: lessonErr } = await sb
 		.from('lessons')
-		.select(`${BASE_COLS}, grammar_note, ${CHUNK_COLS}, goals`)
+		.select(`${BASE_COLS}, grammar_note, ${CHUNK_COLS}, goals, exercises`)
 		.eq('day', day)
 		.maybeSingle();
+
+	if (lessonErr) {
+		// No exercises column yet (supabase-lesson-exercises.sql not run): keep the rest.
+		({ data: lessonRow, error: lessonErr } = await sb
+			.from('lessons')
+			.select(`${BASE_COLS}, grammar_note, ${CHUNK_COLS}, goals`)
+			.eq('day', day)
+			.maybeSingle());
+	}
 
 	if (lessonErr) {
 		// No goals column yet (supabase-lesson-goals.sql not run): keep the rest.
@@ -315,9 +325,14 @@ export async function loadLesson(day: number): Promise<Lesson | null> {
 			logWarn('lesson-loader:loadLesson', `goals for day ${day} failed validation: ${r.error.message}`);
 	}
 
+	const exercises = parseExercises(validatedLesson.exercises, (message) =>
+		logWarn('lesson-loader:loadLesson', `An exercise for day ${day} failed validation: ${message}`)
+	);
+
 	const lesson: Lesson = {
 		title: validatedLesson.title,
 		goals,
+		exercises,
 		words: parseChunks(validatedLesson.words, 'words'),
 		collocations: parseChunks(validatedLesson.collocations, 'collocations'),
 		paragraphs,
