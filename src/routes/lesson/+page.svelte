@@ -606,6 +606,7 @@
 
 	function handleDaySelectChange(e: Event) {
 		const val = (e.target as HTMLSelectElement).value;
+		showOptions = false;
 		if (val.startsWith("exam") || val.startsWith("talk")) {
 			// Exams/conversations start immediately — dismiss the start
 			// overlay if it's still up (picked straight from the dropdown).
@@ -691,6 +692,15 @@
 	// when a new step or block arrives. If the learner has scrolled up to read
 	// earlier lines, a new step does not pull the view away: a "back to current"
 	// button appears instead.
+	/** The day picker, Blind Mode and voice speed live in a sheet, not in the header. */
+	let showOptions = $state(false);
+	let optionsTrigger: HTMLButtonElement | undefined = $state();
+	let optionsClose: HTMLButtonElement | undefined = $state();
+	function closeOptions() {
+		showOptions = false;
+		optionsTrigger?.focus();
+	}
+
 	let awayFromCurrent = $state(false);
 	let ignoreScrollUntil = 0;
 
@@ -825,7 +835,8 @@
      is a trap for anyone not using a mouse. -->
 <svelte:window
 	onkeydown={(e) => {
-		if (e.key === "Escape" && practiceSentence) closePractice();
+		if (e.key === "Escape" && showOptions) closeOptions();
+		else if (e.key === "Escape" && practiceSentence) closePractice();
 	}}
 />
 
@@ -989,14 +1000,53 @@
 	</div>
 {/snippet}
 
+{#snippet lessonHeaderActions()}
+	<button
+		type="button"
+		class="options-btn"
+		bind:this={optionsTrigger}
+		aria-haspopup="dialog"
+		aria-expanded={showOptions}
+		onclick={() => {
+			showOptions = true;
+			void tick().then(() => optionsClose?.focus());
+		}}
+	>
+		<span aria-hidden="true">⚙</span>
+		<span class="options-label">{prefs.language === "fa" ? "گزینه‌ها" : "Options"}</span>
+	</button>
+{/snippet}
+
+{#if showOptions}
+	<div class="options-backdrop" role="presentation" onclick={closeOptions}></div>
+	<div
+		class="options-sheet"
+		role="dialog"
+		aria-modal="true"
+		aria-label={prefs.language === "fa" ? "گزینه‌های درس" : "Lesson options"}
+		dir={prefs.language === "fa" ? "rtl" : "ltr"}
+	>
+		<div class="options-head">
+			<h2>{prefs.language === "fa" ? "گزینه‌های درس" : "Lesson options"}</h2>
+			<button
+				type="button"
+				class="options-close"
+				bind:this={optionsClose}
+				aria-label={prefs.language === "fa" ? "بستن" : "Close"}
+				onclick={closeOptions}>✕</button
+			>
+		</div>
+		{@render lessonSecondaryControls()}
+	</div>
+{/if}
+
 <div class="container" class:hidden={showOverlay}>
 	<AppHeader
 		title={prefs.language === "fa" ? "درس‌های روزانه" : "Daily Lessons"}
 		icon="📖"
 		backHref="/home"
 		backLabel={prefs.language === "fa" ? "خانه" : "Home"}
-		secondary={practiceActive ? undefined : lessonSecondaryControls}
-		secondaryLabel={prefs.language === "fa" ? "کنترل‌های درس" : "Lesson controls"}
+		actions={practiceActive ? undefined : lessonHeaderActions}
 		sticky
 		logo={false}
 		direction={prefs.language === "fa" ? "rtl" : "ltr"}
@@ -1459,14 +1509,6 @@
 												: "Hint"}
 										</button>
 									{/if}
-									<button
-										class="btn-inline-next"
-										onclick={() => manualNext()}
-									>
-										{currentTeachStep.language === "fa"
-											? "بعدی ←"
-											: "Next ➡"}
-									</button>
 									{#if !exam.isExamMode && !exam.isReviewMode}
 										<button
 											class="btn-bookmark"
@@ -1971,6 +2013,11 @@
 						>
 							<span lang="de" dir="ltr">{@html answerLineHtml}</span>
 						</div>
+						{#if currentTeachStep}
+							<button class="btn-bar-next" onclick={() => manualNext()}>
+								{prefs.language === "fa" ? "بعدی ←" : "Next ➡"}
+							</button>
+						{/if}
 						<!-- The one mic, always in the same place at the bottom of
 						     the lesson, on every step: the learner's own lines,
 						     shadowing the other speaker's, exams and conversations. -->
@@ -2821,24 +2868,6 @@
 		color: var(--ink);
 	}
 
-	.btn-inline-next {
-		padding: 6px 16px;
-		border-radius: 20px;
-		border: none;
-		background: var(--accent);
-		color: var(--on-accent);
-		cursor: pointer;
-		font-weight: bold;
-		font-size: 0.95em;
-		transition: all 0.3s ease;
-		white-space: nowrap;
-	}
-
-	.btn-inline-next:hover {
-		transform: translateY(-1px);
-		box-shadow: 0 3px 10px rgba(46, 204, 113, 0.3);
-	}
-
 	/* Completion Card */
 	.completion-card {
 		background: var(--paper-raised) !important;
@@ -2925,6 +2954,90 @@
 		padding: 10px 15px;
 		background: var(--paper-sunken);
 		border-top: 1px solid var(--line);
+	}
+
+	.btn-bar-next {
+		flex-shrink: 0;
+		min-height: 52px;
+		padding: 0 22px;
+		border: none;
+		border-radius: 999px;
+		background: var(--accent);
+		color: var(--on-accent);
+		font: inherit;
+		font-size: 1rem;
+		font-weight: 700;
+		cursor: pointer;
+	}
+
+	.btn-bar-next:focus-visible {
+		outline: 3px solid var(--accent);
+		outline-offset: 2px;
+	}
+
+	.options-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 0 14px;
+		border: 1px solid var(--control-border);
+		border-radius: 999px;
+		background: var(--control);
+		color: var(--ink);
+		font: inherit;
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.options-btn:focus-visible,
+	.options-close:focus-visible {
+		outline: 3px solid var(--accent);
+		outline-offset: 2px;
+	}
+
+	.options-backdrop {
+		position: fixed;
+		inset: 0;
+		z-index: 300;
+		background: rgb(0 0 0 / 0.4);
+	}
+
+	.options-sheet {
+		position: fixed;
+		inset-inline: 0;
+		inset-block-end: 0;
+		z-index: 301;
+		max-width: 560px;
+		margin-inline: auto;
+		padding: 16px 16px calc(20px + env(safe-area-inset-bottom));
+		border-radius: 20px 20px 0 0;
+		background: var(--paper-raised);
+		color: var(--ink);
+		box-shadow: 0 -12px 40px rgb(0 0 0 / 0.25);
+	}
+
+	.options-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 12px;
+	}
+
+	.options-head h2 {
+		margin: 0;
+		font-family: var(--font-display);
+		font-size: 1.1rem;
+	}
+
+	.options-close {
+		inline-size: 44px;
+		block-size: 44px;
+		border: 1px solid var(--control-border);
+		border-radius: 50%;
+		background: var(--control);
+		color: var(--ink);
+		font-size: 1rem;
+		cursor: pointer;
 	}
 
 	.message-composer {
