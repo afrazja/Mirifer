@@ -84,7 +84,7 @@
 
 	function prevStep() {
 		if (step === 2) {
-			goto('/languages');
+			goto('/languages', { invalidateAll: true });
 		} else if (step > 2) {
 			enterClass = "slide-in-left";
 			showDatePicker = false;
@@ -145,7 +145,7 @@
 
 			// Force a hard sync then navigate to the dashboard
 			await dataLayer.syncOnLogin();
-			goto("/home");
+			goto("/home", { invalidateAll: true });
 		} catch {
 			saveError = interfaceLanguage === 'fa'
 				? 'انتخاب‌هایت ذخیره نشد. اتصال اینترنت را بررسی کن و دوباره هدف روزانه‌ات را انتخاب کن.'
