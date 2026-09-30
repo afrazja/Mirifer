@@ -130,3 +130,20 @@ Deployed to **Vercel** via GitHub (`main` branch). The Vercel adapter is configu
 3. Push `main` to `https://github.com/afrazja/Mirifer.git` to trigger Vercel, then confirm the deployment succeeds.
 
 The shared integration branch is `main` on `origin`; do not assume another laptop has the same local branch or directory name.
+
+---
+
+## Review agents
+
+Independent, read-only reviewers live in `.claude/agents/`. Before building or changing something significant, run the ones that fit, in parallel, and weigh their reports against the plan. They report; they never edit.
+
+| Agent | Ask it about |
+|---|---|
+| `learning-ux-reviewer` | Lesson flow, pacing, exercises, focus on one thing at a time, mobile-first layout |
+| `german-content-reviewer` | Correct, natural, level-appropriate German; exercise distractors; glosses |
+| `persian-localization-reviewer` | Natural Persian, RTL and mixed-direction rendering |
+| `accessibility-reviewer` | WCAG 2.2 AA: labels, keyboard, contrast, tap targets, motion |
+| `qa-tester` | Edge cases: mic denied, offline, reload mid-lesson, bad data |
+| `security-privacy-reviewer` | Auth, row-level security, secrets, voice data, abuse of proxies |
+| `product-growth-reviewer` | Onboarding, retention, analytics, what to build next |
+| `performance-reliability-reviewer` | Bundle size, audio loading, caching, slow networks, cost |
