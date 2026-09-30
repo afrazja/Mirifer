@@ -62,6 +62,11 @@
 
 	$effect(() => {
 		// A new question: reset the answer state and, for order, deal the tiles.
+		// Position and round are read as well: when the last question of a round is
+		// the one missed, the second round starts with the very same exercise, and
+		// reading `current` alone would leave it showing as already answered.
+		void position;
+		void round;
 		const ex = current;
 		picked = null;
 		placed = [];

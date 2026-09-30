@@ -127,3 +127,49 @@ describe('Lesson 1 content (supabase-lesson-exercises.sql)', () => {
 		expect(closing.at(-1)?.type).toBe('order');
 	});
 });
+
+describe('Lesson 2 content (supabase-lesson-2.sql)', () => {
+	const sql = readFileSync(resolve(process.cwd(), 'supabase-lesson-2.sql'), 'utf8');
+	const blocks = [...sql.matchAll(/\$json\$([\s\S]*?)\$json\$/g)].map((m) => JSON.parse(m[1]));
+	const [goals, note, words, collocations, rawExercises] = blocks;
+
+	it('has goals, a grammar note, words, phrases and exercises, all valid', () => {
+		expect(goals.length).toBeGreaterThanOrEqual(5);
+		expect(note.examples.length).toBeGreaterThanOrEqual(3);
+		expect(words).toHaveLength(6);
+		expect(collocations).toHaveLength(8);
+		const dropped: string[] = [];
+		const kept = parseExercises(rawExercises, (m) => dropped.push(m));
+		expect(dropped).toEqual([]);
+		expect(kept).toHaveLength(rawExercises.length);
+	});
+
+	it('keeps batches small, each with a check, and places checks on real batches and lines', () => {
+		const exercises = parseExercises(rawExercises)!;
+		const batches = new Set<number>();
+		for (const c of [...words, ...collocations]) if (c.batch) batches.add(c.batch);
+		expect(batches.size).toBeGreaterThanOrEqual(2);
+		for (const n of batches) {
+			expect([...words, ...collocations].filter((c) => c.batch === n).length).toBeLessThanOrEqual(3);
+			expect(exercises.some((e) => e.after === `batch-${n}`)).toBe(true);
+		}
+		for (const e of exercises) {
+			if (typeof e.after === 'string') expect(batches.has(Number(e.after.slice(6)))).toBe(true);
+			if (typeof e.after === 'number') expect(e.after).toBeLessThan(14);
+		}
+	});
+
+	it('closes with a short set ending on the hardest kind, with varied answers', () => {
+		const exercises = parseExercises(rawExercises)!;
+		const closing = exercises.filter((e) => e.after === undefined);
+		expect(closing.length).toBeLessThanOrEqual(6);
+		expect(closing.at(-1)?.type).toBe('order');
+		expect(new Set(exercises.filter((e) => e.type !== 'order').map((e) => e.answer)).size).toBeGreaterThan(1);
+		expect(new Set(exercises.map((e) => e.id)).size).toBe(exercises.length);
+		for (const e of exercises) if (e.explain) expect(e.explain.fa).not.toBe('');
+	});
+
+	it('points every goal at lines that exist', () => {
+		for (const g of goals) for (const i of g.sentences) expect(i).toBeLessThan(14);
+	});
+});
