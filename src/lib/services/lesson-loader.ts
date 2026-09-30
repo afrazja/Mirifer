@@ -484,8 +484,13 @@ export function resolveResumePoint(
 	const completed = completedLessons || {};
 	// A path link may select an earned lesson, never bypass the unlock rule.
 	if (requestedDay !== undefined && Number.isInteger(requestedDay) && requestedDay > 0 && hasLesson(requestedDay) && isUnlocked(requestedDay, completed)) {
-		const sentenceIndex = savedProgress?.currentDay === requestedDay && !completed[requestedDay]
-			? savedProgress.currentSentenceIndex ?? 0 : 0;
+		// Refreshing a lesson must keep the learner in it, where they were: the
+		// saved position counts whether or not the lesson was completed before
+		// (a revisit is saved like any other). A finished revisit, whose saved
+		// position is the end, starts again from the top.
+		const saved = savedProgress?.currentDay === requestedDay ? (savedProgress.currentSentenceIndex ?? 0) : 0;
+		const length = getLesson(requestedDay)?.sentences.length;
+		const sentenceIndex = completed[requestedDay] && length !== undefined && saved >= length ? 0 : saved;
 		return { day: requestedDay, sentenceIndex, allDone: false };
 	}
 
