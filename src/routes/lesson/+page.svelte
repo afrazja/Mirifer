@@ -2715,12 +2715,27 @@
 		justify-content: flex-start;
 		align-items: center;
 		gap: 16px;
-		/* Room above and below so the first and the last step can reach the
-		   middle of the view; a fade at the top marks that there is more above. */
-		padding-block: 22dvh 45dvh;
 		overflow-anchor: none;
 		-webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 28px);
 		mask-image: linear-gradient(to bottom, transparent 0, #000 28px);
+	}
+
+	/* Room above and below so the first and the last step can reach the middle
+	   of the view. Spacer boxes, not padding: sticky children (the "back to
+	   current" button, a card's action bar) are measured against the content
+	   box, and bottom padding would pull them up into the middle of the view. */
+	.chat-history::before,
+	.chat-history::after {
+		content: "";
+		flex: 0 0 auto;
+	}
+
+	.chat-history::before {
+		block-size: 22dvh;
+	}
+
+	.chat-history::after {
+		block-size: 45dvh;
 	}
 
 	.back-current {
