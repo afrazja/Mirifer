@@ -93,3 +93,20 @@ describe('lesson links from the learning path', () => {
   expect(resolveResumePoint(null, done(ALL), 100)).toEqual({day:100,sentenceIndex:0,allDone:false});
  });
 });
+
+describe('resolveResumePoint: a requested day (a refresh inside a lesson)', () => {
+	it('stays in a completed lesson that is being revisited, at the saved line', () => {
+		const r = resolveResumePoint({ currentDay: 1, currentSentenceIndex: 6 }, done([1, 2, 3]), 1);
+		expect(r).toEqual({ day: 1, sentenceIndex: 6, allDone: false });
+	});
+
+	it('starts a revisited lesson from the top when the saved progress is for another day', () => {
+		const r = resolveResumePoint({ currentDay: 48, currentSentenceIndex: 3 }, done([1, 2, 3]), 1);
+		expect(r).toEqual({ day: 1, sentenceIndex: 0, allDone: false });
+	});
+
+	it('still refuses a day that is not unlocked yet', () => {
+		const r = resolveResumePoint(null, done([1, 2, 3]), 50);
+		expect(r.day).toBe(4);
+	});
+});

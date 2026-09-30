@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy, tick } from "svelte";
+	import { replaceState } from "$app/navigation";
 	import AppHeader from "$lib/components/AppHeader.svelte";
 	import { appStore } from "$stores/app";
 	import { preferencesStore } from "$stores/preferences";
@@ -690,6 +691,19 @@
 
 	// ============ LIFECYCLE ============
 	let chatHistoryEl: HTMLDivElement | undefined = $state(undefined);
+
+	// The address always names the lesson being done, so a refresh (or a shared
+	// link, or the back button) lands in the same lesson, not in whichever day
+	// the learner has reached. Picked from the day list, it would otherwise
+	// lose the choice on the first reload.
+	$effect(() => {
+		if (!isReady || !app.currentDay) return;
+		const url = new URL(window.location.href);
+		if (url.searchParams.get("mode")) return;
+		if (url.searchParams.get("day") === String(app.currentDay)) return;
+		url.searchParams.set("day", String(app.currentDay));
+		replaceState(url, {});
+	});
 
 	// ── Keeping the current step in focus ──
 	// A new step lands in the middle of the chat area, with only the line
