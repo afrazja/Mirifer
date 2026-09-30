@@ -41,6 +41,7 @@ import { playTone } from '$services/audio-context';
 import { lessonMinutes, countLessonContent } from '$services/lesson-duration';
 import { matchVoiceInput, bestVoiceMatch, getWordMatchStatus } from '$utils/text-matching';
 import { diagnose, type SoundNote } from './pronunciation';
+import type { LessonExercise } from './lesson-exercises';
 import { getLastVoiceAlternatives } from '$services/speech';
 import { getTranslation, getTranslationLang } from '$utils/i18n';
 import { wait } from '$utils/wait';
@@ -56,6 +57,8 @@ export interface LessonCallbacks {
 	onWarmUp?: (data: WarmUpData | null) => void;
 	/** End-of-lesson grammar moment; null clears it. */
 	onGrammarMoment?: (data: GrammarMomentData | null) => void;
+	/** End-of-lesson exercises, after the grammar moment; null clears them. */
+	onExercises?: (data: ExercisesData | null) => void;
 	onCompletionCard: (data: CompletionCardData) => void;
 	onAnswerPrompt: (message: string) => void;
 	onMessageBubble: (step: Sentence) => void;
@@ -113,8 +116,21 @@ export interface GrammarMomentData {
 	basicsKey?: string;
 }
 
+export interface ExercisesData {
+	language: Language;
+	exercises: LessonExercise[];
+}
+
+/** How the learner did on the end-of-lesson exercises. */
+export interface ExerciseResult {
+	correct: number;
+	total: number;
+}
+
 export interface CompletionCardData {
 	language: Language;
+	/** Present when the learner did the lesson's exercises this visit. */
+	exercises?: ExerciseResult;
 	nextDay: number | null;
 	nextLessonTitle: string | null;
 	wasAlreadyCompleted: boolean;
@@ -178,6 +194,12 @@ let grammarMomentShown = false;
 /** Same, for the warm-up at the start of the lesson. */
 let warmUpShown = false;
 
+/** Same, for the exercises after the grammar moment. */
+let exercisesShown = false;
+
+/** How the exercises went this visit, for the completion card. */
+let exerciseResult: ExerciseResult | null = null;
+
 /**
  * When the current lesson was opened. The duration estimate on the dashboard
  * is a promise about effort, and the only way to know whether it is honest is
@@ -204,6 +226,21 @@ export async function continueAfterWarmUp(): Promise<void> {
  */
 export async function continueAfterGrammar(): Promise<void> {
 	callbacks?.onGrammarMoment?.(null);
+	const app = get(appStore);
+	const prefs = get(preferencesStore);
+	const lesson = get(lessonStore).currentLesson;
+	if (!lesson) return;
+	if (offerExercises(lesson, prefs)) return; // continueAfterExercises() resumes into the completion card
+	await handleLessonCompletion(lesson, app, prefs);
+}
+
+/**
+ * Close the exercises and fall through to the completion card. `result` is
+ * null when the learner skipped them.
+ */
+export async function continueAfterExercises(result: ExerciseResult | null): Promise<void> {
+	callbacks?.onExercises?.(null);
+	exerciseResult = result;
 	const app = get(appStore);
 	const prefs = get(preferencesStore);
 	const lesson = get(lessonStore).currentLesson;
@@ -237,6 +274,8 @@ export async function initLesson(requestedDay?: number): Promise<void> {
 	deactivateConversation(); // stale state from a previous page visit
 	grammarMomentShown = false;
 	warmUpShown = false;
+	exercisesShown = false;
+	exerciseResult = null;
 	try {
 		// Load saved language preference
 		const savedLang = await getLanguage();
@@ -361,6 +400,7 @@ export async function processNextStep(skipAudio = false): Promise<void> {
 			});
 			return; // continueAfterGrammar() resumes into the completion card
 		}
+		if (offerExercises(lesson, prefs)) return; // continueAfterExercises() resumes into the completion card
 		await handleLessonCompletion(lesson, app, prefs);
 		return;
 	}
@@ -421,6 +461,19 @@ export async function processNextStep(skipAudio = false): Promise<void> {
 			? 'برای تمرین 🎙️ را بزنید یا بعدی.'
 			: 'Tap 🎙️ to practice or Next to skip.';
 	callbacks?.onAnswerPrompt(promptMsg);
+}
+
+/**
+ * After the dialogue (and the grammar moment), offer the lesson's exercises,
+ * once per visit. Returns true when they were shown, so the caller waits for
+ * continueAfterExercises() instead of going straight to the completion card.
+ */
+function offerExercises(lesson: Lesson, prefs: PreferencesState): boolean {
+	if (exercisesShown || !callbacks?.onExercises || !lesson.exercises?.length) return false;
+	exercisesShown = true;
+	stopAllAudio();
+	callbacks.onExercises({ language: prefs.language, exercises: lesson.exercises });
+	return true;
 }
 
 async function handleLessonCompletion(
@@ -497,8 +550,11 @@ async function handleLessonCompletion(
 		readinessBefore = null; // show both or neither
 	}
 
+	const exercises = exerciseResult ?? undefined;
+	exerciseResult = null;
 	callbacks?.onCompletionCard({
 		language: prefs.language,
+		exercises,
 		nextDay: hasNextLesson ? nextDay : null,
 		nextLessonTitle,
 		wasAlreadyCompleted,
@@ -553,6 +609,8 @@ export async function goToNextDay(nextDay: number): Promise<void> {
 	stopAllAudio();
 	grammarMomentShown = false; // each day gets its own grammar moment
 	warmUpShown = false; // …and its own warm-up
+	exercisesShown = false; // …and its own exercises
+	exerciseResult = null;
 
 	appStore.update((s) => ({
 		...s,
@@ -608,6 +666,8 @@ export async function changeDay(day: number): Promise<void> {
 	stopAllAudio();
 	grammarMomentShown = false; // each day gets its own grammar moment
 	warmUpShown = false; // …and its own warm-up
+	exercisesShown = false; // …and its own exercises
+	exerciseResult = null;
 
 	examStore.update((s) => ({ ...s, isExamMode: false, isReviewMode: false }));
 

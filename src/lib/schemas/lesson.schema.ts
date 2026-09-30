@@ -63,6 +63,8 @@ export const LessonDetailRowSchema = z.object({
 	paragraphs: z.unknown().nullable().optional(),
 	// Validated separately too: a malformed goal list drops itself.
 	goals: z.unknown().nullable().optional(),
+	// Each exercise validates on its own in parseExercises().
+	exercises: z.unknown().nullable().optional(),
 	difficulty: z.string().nullable().optional()
 });
 
