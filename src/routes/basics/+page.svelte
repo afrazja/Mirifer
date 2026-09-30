@@ -79,12 +79,6 @@
 		currentLang === "fa" ? "\u06A9\u0644\u0645\u0647" : "words",
 	);
 
-	function handleLanguageChange(e: Event) {
-		const target = e.target as HTMLSelectElement;
-		currentLang = target.value as Language;
-		setLanguage(currentLang);
-	}
-
 	onMount(async () => {
 		completed = new Set(Object.keys(getBasicsCompleted()));
 
@@ -108,26 +102,12 @@
 </svelte:head>
 
 <main class="basics-container">
-	{#snippet headerActions()}
-		<div class="controls">
-			<select
-				aria-label="Select language"
-				value={currentLang}
-				onchange={handleLanguageChange}
-			>
-				<option value="fa">فارسی</option>
-				<option value="en">English</option>
-			</select>
-		</div>
-	{/snippet}
-
 	<AppHeader
 		title={pageTitle}
 		subtitle={pageSubtitle}
 		icon="🔤"
 		backHref="/languages"
 		backLabel={backText}
-		actions={headerActions}
 		direction={currentLang === "fa" ? "rtl" : "ltr"}
 	/>
 	<GermanSectionTabs current="basics" language={currentLang} />
@@ -233,24 +213,6 @@
 		padding: 30px 20px;
 	}
 
-
-	.controls select {
-		/* 44px minimum touch target. */
-		min-height: 44px;
-		padding: 8px 16px;
-		border-radius: 20px;
-		border: 1px solid var(--control-border);
-		background: var(--control);
-		color: var(--ink);
-		font-size: 0.9rem;
-		cursor: pointer;
-	}
-
-
-	.controls select option {
-		background: var(--paper-raised);
-		color: var(--ink);
-	}
 
 	/* ── The shelf (German Basics artboard) ──────────────── */
 	.shelf {

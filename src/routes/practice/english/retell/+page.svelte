@@ -51,7 +51,6 @@
 		void getLanguage().then(value => { if (value === 'fa' || value === 'en') language = value; });
 		return () => { cleanUpAudio(); stopRecording(true); if (recordingUrl) URL.revokeObjectURL(recordingUrl); };
 	});
-	async function changeDisplay(value: 'en' | 'fa') { language = value; await setLanguage(value); }
 
 	function cleanUpAudio() {
 		if (audio) { audio.pause(); audio.src = ''; audio = null; }
@@ -176,15 +175,7 @@
 </svelte:head>
 
 <main id="main-content" class="retell-page" dir={isFa ? 'rtl' : 'ltr'}>
-	<AppHeader backHref="/languages" backLabel={isFa ? 'زبان‌ها' : 'Languages'} direction={isFa ? 'rtl' : 'ltr'}>
-		{#snippet actions()}
-			<label class="display-control">{isFa ? 'نمایش' : 'Display'}
-				<select aria-label={isFa ? 'زبان نمایش' : 'Display language'} value={language} onchange={e => void changeDisplay(e.currentTarget.value as 'en' | 'fa')}>
-					<option value="en">English</option><option value="fa">فارسی</option>
-				</select>
-			</label>
-		{/snippet}
-	</AppHeader>
+	<AppHeader backHref="/languages" backLabel={isFa ? 'زبان‌ها' : 'Languages'} direction={isFa ? 'rtl' : 'ltr'} />
 	<EnglishModuleTabs current="retell" {isFa} />
 
 	{#if stage === 'list' || !piece}
@@ -291,8 +282,6 @@
 
 <style>
 	.retell-page { max-width: 860px; margin: 0 auto; padding: 24px 24px 64px; color: var(--ink); }
-	.display-control { display: flex; align-items: center; gap: 8px; color: var(--ink-soft); font-size: .8rem; }
-	select { min-height: 40px; padding: 5px 8px; border: 1px solid var(--control-border); border-radius: 8px; background: var(--paper-raised); color: var(--ink); }
 	.eyebrow { font-size: .76rem; letter-spacing: .12em; font-weight: 600; color: var(--accent-deep); margin-bottom: 12px; }
 	h1, h2 { font-family: var(--font-display); font-weight: 500; }
 	h1 { font-size: clamp(1.8rem, 4vw, 2.8rem); line-height: 1.15; margin-bottom: 18px; }
@@ -300,7 +289,7 @@
 	p { line-height: 1.65; }
 	button { font: inherit; cursor: pointer; }
 	button:disabled { opacity: .55; cursor: default; }
-	button:focus-visible, select:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+	button:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 	.primary { display: inline-flex; gap: 14px; align-items: center; justify-content: center; min-height: 48px; padding: 12px 22px; background: var(--accent); color: var(--on-accent); border: 1px solid var(--accent); border-radius: 10px; font-weight: 600; }
 	.primary:hover:not(:disabled) { background: var(--accent-deep); }
 	.secondary { min-height: 48px; padding: 12px 18px; background: var(--paper-raised); border: 1px solid var(--control-border); border-radius: 10px; color: var(--ink); }
@@ -358,6 +347,5 @@
 		.banner { max-height: 200px; }
 		.player, .recorder { grid-template-columns: 1fr; }
 		.session-heading h1 { font-size: 1.5rem; }
-		.display-control { font-size: 0; } .display-control select { font-size: .85rem; }
 	}
 </style>

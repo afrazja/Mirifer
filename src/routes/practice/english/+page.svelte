@@ -84,7 +84,6 @@
 		ready = true;
 		return () => { stopReceptionVoice(); };
 	});
-	async function changeDisplay(value: 'en' | 'fa') { language = value; await setLanguage(value); }
 	async function start(variant: Variant = 'lift') {
 		generation++; checking = false; pending = ''; stopReceptionVoice(); pickJamieVoice(); scene = startHotel(variant); voiceSigs = {}; upgrades = []; review = 'idle'; feedback = null; latestCorrection = null; draft = ''; voiceMessage = '';
 		form = null; saved = false; started = true; remember();
@@ -172,15 +171,7 @@
 </svelte:head>
 
 <main id="main-content" class="practice-page" dir={isFa ? 'rtl' : 'ltr'}>
-	<AppHeader backHref="/languages" backLabel={isFa ? 'زبان‌ها' : 'Languages'} direction={isFa ? 'rtl' : 'ltr'}>
-		{#snippet actions()}
-			<label class="display-control">{isFa ? 'نمایش' : 'Display'}
-				<select aria-label={isFa ? 'زبان نمایش' : 'Display language'} value={language} onchange={e => void changeDisplay(e.currentTarget.value as 'en' | 'fa')}>
-					<option value="en">English</option><option value="fa">فارسی</option>
-				</select>
-			</label>
-		{/snippet}
-	</AppHeader>
+	<AppHeader backHref="/languages" backLabel={isFa ? 'زبان‌ها' : 'Languages'} direction={isFa ? 'rtl' : 'ltr'} />
 	<EnglishModuleTabs current="conversation" {isFa} />
 
 	{#if !started}
@@ -280,8 +271,6 @@
 
 <style>
 	.practice-page { max-width: 1160px; margin: 0 auto; padding: 24px 24px 64px; color: var(--ink); }
-	.display-control { display: flex; align-items: center; gap: 8px; color: var(--ink-soft); font-size: .8rem; }
-	select { min-height: 40px; padding: 5px 8px; border: 1px solid var(--control-border); border-radius: 8px; background: var(--paper-raised); color: var(--ink); }
 	.eyebrow { font-size: .76rem; letter-spacing: .12em; font-weight: 600; color: var(--accent-deep); margin-bottom: 14px; }
 	h1, h2 { font-family: var(--font-display); font-weight: 500; }
 	h1 { font-size: clamp(2rem, 4.5vw, 3.6rem); line-height: 1.12; margin-bottom: 20px; }
@@ -299,7 +288,7 @@
 	.secondary { min-height: 48px; padding: 12px 18px; background: var(--paper-raised); border: 1px solid var(--control-border); border-radius: 10px; color: var(--ink); }
 	.text-button { min-height: 44px; padding: 8px 0; background: none; border: 0; color: var(--accent-deep); font-size: .88rem; }
 	button:disabled { opacity: .55; cursor: default; }
-	button:focus-visible, textarea:focus-visible, select:focus-visible, .transcript:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+	button:focus-visible, textarea:focus-visible, .transcript:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 	.briefing { border: 1px solid var(--control-border); border-radius: 20px; overflow: hidden; background: var(--paper-raised); }
 	.brief-body { padding: 26px; }
 	ol { padding-inline-start: 22px; color: var(--ink-soft); line-height: 1.9; }
@@ -362,5 +351,5 @@
 	.save-status, .completed-label { color: var(--accent-deep); margin-block: 16px; }
 	.error { color: var(--miss); margin-bottom: 16px; }
 	@media (max-width: 960px) { .welcome { gap: 28px; } .session-grid { grid-template-columns: minmax(0, 1fr) 230px; gap: 20px; } }
-	@media (max-width: 720px) { .practice-page { padding: 16px 16px 40px; } .welcome { grid-template-columns: 1fr; padding-top: 24px; } .briefing { max-width: 520px; } .session-grid { grid-template-columns: 1fr; } .session-heading { margin-top: 24px; } .session-heading h1 { font-size: 1.65rem; } .reception-bar, .composer { padding-inline: 16px; } .reception-bar { flex-wrap: wrap; } .voice-toggle { margin-inline-start: 0; } .transcript { padding: 16px; max-height: 290px; } .display-control { font-size: 0; } .display-control select { font-size: .85rem; } .primary { padding-inline: 16px; } .result { margin-top: 30px; } }
+	@media (max-width: 720px) { .practice-page { padding: 16px 16px 40px; } .welcome { grid-template-columns: 1fr; padding-top: 24px; } .briefing { max-width: 520px; } .session-grid { grid-template-columns: 1fr; } .session-heading { margin-top: 24px; } .session-heading h1 { font-size: 1.65rem; } .reception-bar, .composer { padding-inline: 16px; } .reception-bar { flex-wrap: wrap; } .voice-toggle { margin-inline-start: 0; } .transcript { padding: 16px; max-height: 290px; } .primary { padding-inline: 16px; } .result { margin-top: 30px; } }
 </style>

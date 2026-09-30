@@ -233,12 +233,6 @@
 		playWord(`${pronoun} ${verb}`);
 	}
 
-	function handleLanguageChange(e: Event) {
-		const target = e.target as HTMLSelectElement;
-		currentLang = target.value as Language;
-		setLanguage(currentLang);
-	}
-
 	function handleSpeedChange(e: Event) {
 		const target = e.target as HTMLSelectElement;
 		voiceSpeed = parseFloat(target.value);
@@ -413,10 +407,6 @@
 
 	{#snippet categorySecondaryControls()}
 		<div class="controls">
-			<select aria-label="Select language" value={currentLang} onchange={handleLanguageChange}>
-				<option value="fa">فارسی</option>
-				<option value="en">English</option>
-			</select>
 			<select aria-label="Select voice speed" value={voiceSpeed.toString()} onchange={handleSpeedChange}>
 				<option value="1">{'🔊 1x'}</option>
 				<option value="0.75">{'🔉 0.75x'}</option>

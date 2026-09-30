@@ -90,14 +90,6 @@
 		goto("/review/quiz");
 	}
 
-	function handleLanguageChange(e: Event) {
-		const val = (e.target as HTMLSelectElement).value as Language;
-		preferencesStore.update((s) => ({ ...s, language: val }));
-		setLanguage(val);
-		// Reload items with new language translations
-		loadReviewItems();
-	}
-
 	onMount(async () => {
 		initSyncListeners();
 		const savedLang = await getLanguage();
@@ -116,26 +108,12 @@
 </svelte:head>
 
 <div class="review-page">
-	{#snippet headerActions()}
-		<div class="header-right">
-			<select
-				class="lang-select"
-				value={prefs.language}
-				onchange={handleLanguageChange}
-			>
-				<option value="fa">فارسی</option>
-				<option value="en">English</option>
-			</select>
-		</div>
-	{/snippet}
-
 	<div class="header-shell">
 		<AppHeader
 			title={prefs.language === "fa" ? "مرور" : "Review"}
 			icon="🔄"
 			backHref="/languages"
 			backLabel={prefs.language === "fa" ? "زبان‌ها" : "Languages"}
-			actions={headerActions}
 			direction={prefs.language === "fa" ? "rtl" : "ltr"}
 		/>
 		<GermanSectionTabs current="review" language={prefs.language} />
@@ -239,26 +217,6 @@
 		width: min(100%, 1100px);
 		margin: 0 auto;
 		padding: 12px 16px 0;
-	}
-
-	.header-right {
-		display: flex;
-		align-items: center;
-	}
-
-	.lang-select {
-		padding: 4px 8px;
-		border-radius: 8px;
-		border: 1px solid var(--line);
-		background: var(--paper-sunken);
-		color: var(--ink);
-		font-size: 0.85rem;
-		cursor: pointer;
-	}
-
-	.lang-select option {
-		color: var(--ink);
-		background: var(--paper-raised);
 	}
 
 	/* Content */
