@@ -697,7 +697,9 @@
 	// the learner has reached. Picked from the day list, it would otherwise
 	// lose the choice on the first reload.
 	$effect(() => {
-		if (!isReady || !app.currentDay) return;
+		// Not while the lesson failed to load: the address must keep naming the
+		// lesson that was asked for, so Try again reloads that one.
+		if (!isReady || !app.currentDay || lessonMissing) return;
 		const url = new URL(window.location.href);
 		if (url.searchParams.get("mode")) return;
 		if (url.searchParams.get("day") === String(app.currentDay)) return;

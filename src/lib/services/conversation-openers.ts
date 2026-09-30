@@ -39,9 +39,10 @@ const OPENERS: Record<number, Opener> = {
 		fa: 'و در آلمان چه کار می‌کنید؟'
 	},
 	2: {
-		de: 'Und wo wohnen Sie jetzt?',
+		// Day 2 is the informal (du) lesson, so its opener is too.
+		de: 'Und wo wohnst du jetzt?',
 		en: 'And where do you live now?',
-		fa: 'و الان کجا زندگی می‌کنید؟'
+		fa: 'و الان کجا زندگی می‌کنی؟'
 	},
 	3: {
 		de: 'Was möchten Sie bestellen?',
