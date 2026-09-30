@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, onDestroy } from "svelte";
+	import { onMount, onDestroy, tick } from "svelte";
 	import AppHeader from "$lib/components/AppHeader.svelte";
 	import { appStore } from "$stores/app";
 	import { preferencesStore } from "$stores/preferences";
@@ -684,19 +684,73 @@
 	// ============ LIFECYCLE ============
 	let chatHistoryEl: HTMLDivElement | undefined = $state(undefined);
 
+	// ── Keeping the current step in focus ──
+	// A new step lands in the middle of the chat area, with only the line
+	// before it showing above; older lines are out of view but a scroll away.
+	// Nothing here moves on content changes inside a card (hint, feedback), only
+	// when a new step or block arrives. If the learner has scrolled up to read
+	// earlier lines, a new step does not pull the view away: a "back to current"
+	// button appears instead.
+	let awayFromCurrent = $state(false);
+	let ignoreScrollUntil = 0;
+
+	function currentTarget(): HTMLElement | null {
+		const kids = Array.from(chatHistoryEl?.children ?? []).filter(
+			(c) => !c.classList.contains("back-current"),
+		);
+		return (kids.at(-1) as HTMLElement | undefined) ?? null;
+	}
+
+	function scrollToCurrent(smooth: boolean) {
+		const el = chatHistoryEl;
+		const card = currentTarget();
+		if (!el || !card) return;
+		const view = el.clientHeight;
+		// Position inside the scrolling area (offsetTop is relative to a positioned ancestor, not this box).
+		const cardTop = card.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop;
+		const cardHeight = card.getBoundingClientRect().height;
+		// A card taller than most of the view starts near the top; a shorter one
+		// sits just above the middle, so the line before it shows over it.
+		const top =
+			cardHeight >= view * 0.7
+				? cardTop - 24
+				: cardTop + cardHeight / 2 - view * 0.45;
+		const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+		ignoreScrollUntil = performance.now() + (smooth && !reduced ? 700 : 100);
+		el.scrollTo({ top: Math.max(0, top), behavior: smooth && !reduced ? "smooth" : "auto" });
+		awayFromCurrent = false;
+	}
+
+	function handleChatScroll() {
+		if (performance.now() < ignoreScrollUntil) return;
+		const el = chatHistoryEl;
+		const card = currentTarget();
+		if (!el || !card) return;
+		const c = el.getBoundingClientRect();
+		const r = card.getBoundingClientRect();
+		awayFromCurrent = r.bottom < c.top + 20 || r.top > c.bottom - 20;
+	}
+
+	let hadFocusTarget = false;
 	$effect(() => {
-		// Auto-scroll when messages change
-		if (
-			chatHistoryEl &&
-			(chatMessages.length > 0 ||
-				currentTeachStep ||
-				completionData ||
-				examQuestionData)
-		) {
-			setTimeout(() => {
-				chatHistoryEl!.scrollTop = chatHistoryEl!.scrollHeight;
-			}, 50);
-		}
+		// A new step, message or block arrived.
+		void chatMessages.length;
+		void currentTeachStep;
+		void completionData;
+		void examQuestionData;
+		void practice;
+		void exercisesData;
+		void grammarMoment;
+		void warmUp;
+		if (!chatHistoryEl) return;
+		const first = !hadFocusTarget;
+		hadFocusTarget = true;
+		void tick().then(() =>
+			requestAnimationFrame(() => {
+				if (awayFromCurrent && !first) return; // do not yank the view; the button is showing
+				scrollToCurrent(!first);
+			}),
+		);
 	});
 
 	onMount(async () => {
@@ -1023,12 +1077,17 @@
 			<!-- Content row: chat + sidebar side-by-side (desktop only) -->
 			<div class="chat-body">
 				<div class="chat-main">
-					<!-- Current Sentence Area (one sentence at a time, centered) -->
+					<!-- The log below is silent (a growing history would be re-read); this announces only the current line. -->
+					<div class="sr-only" aria-live="polite">
+						{currentTeachStep ? currentTeachStep.germanText : ""}
+					</div>
+					<!-- Current Sentence Area (the current step sits in the middle of the view) -->
 					<div
 						class="chat-history"
 						bind:this={chatHistoryEl}
+						onscroll={handleChatScroll}
 						role="log"
-						aria-live="polite"
+						aria-live="off"
 						aria-label="Current sentence"
 					>
 						{#each systemMessages as msg}
@@ -1890,6 +1949,16 @@
 								</div>
 							</div>
 						{/if}
+					
+						{#if awayFromCurrent}
+							<button
+								type="button"
+								class="back-current"
+								onclick={() => scrollToCurrent(true)}
+							>
+								{prefs.language === "fa" ? "بازگشت به جملهٔ فعلی ↓" : "Back to current ↓"}
+							</button>
+						{/if}
 					</div>
 
 					<!-- Interaction Area (steps aside while a card or exercise has the focus) -->
@@ -2596,9 +2665,37 @@
 		background-position: center;
 		display: flex;
 		flex-direction: column;
-		justify-content: center;
+		justify-content: flex-start;
 		align-items: center;
 		gap: 16px;
+		/* Room above and below so the first and the last step can reach the
+		   middle of the view; a fade at the top marks that there is more above. */
+		padding-block: 22dvh 45dvh;
+		overflow-anchor: none;
+		-webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 28px);
+		mask-image: linear-gradient(to bottom, transparent 0, #000 28px);
+	}
+
+	.back-current {
+		position: sticky;
+		inset-block-end: 12px;
+		align-self: center;
+		min-height: 44px;
+		padding: 8px 18px;
+		border: 2px solid var(--accent);
+		border-radius: 999px;
+		background: var(--paper-raised);
+		color: var(--accent-deep);
+		font: inherit;
+		font-weight: 700;
+		box-shadow: 0 6px 18px rgb(0 0 0 / 0.18);
+		cursor: pointer;
+		z-index: 2;
+	}
+
+	.back-current:focus-visible {
+		outline: 3px solid var(--accent);
+		outline-offset: 2px;
 	}
 
 	/* Pushes messages toward the bottom when the chat is sparse */
@@ -3541,6 +3638,14 @@
 	/* ── Lines already said: tap to hear again, tap a word for its meaning ── */
 	.message.history {
 		cursor: pointer;
+		/* Earlier lines recede so the current one is the only thing in focus. */
+		opacity: 0.62;
+		transition: opacity 0.2s;
+	}
+
+	.message.history:hover,
+	.message.history:focus-within {
+		opacity: 1;
 	}
 
 	.history-actions {
