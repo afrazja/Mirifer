@@ -12,6 +12,7 @@
 	import '../app.css';
 	import { onMount } from 'svelte';
 	import { dev } from '$app/environment';
+	import { page, updated } from '$app/state';
 	import { beforeNavigate, afterNavigate } from '$app/navigation';
 	import { setAnalyticsUser, startAnalyticsListeners, trackEvent, clearLessonContext } from '$services/analytics';
 	import { getSupabaseBrowserClient } from '$lib/supabase/client';
@@ -65,6 +66,43 @@
 	});
 
 	let { children, data } = $props();
+
+	// ── Always show the current release ──
+	// A new service worker takes over the open tab (it calls skipWaiting and
+	// claim): reload once so the page and its scripts are the new ones. Not on
+	// the very first install, when there was no controller before.
+	onMount(() => {
+		if (dev || !('serviceWorker' in navigator)) return;
+		let hadController = !!navigator.serviceWorker.controller;
+		let reloading = false;
+		const onChange = () => {
+			if (!hadController) {
+				hadController = true;
+				return;
+			}
+			if (reloading) return;
+			reloading = true;
+			location.reload();
+		};
+		navigator.serviceWorker.addEventListener('controllerchange', onChange);
+		// Look for a new service worker whenever the tab comes back into view.
+		const onVisible = () => {
+			if (document.visibilityState === 'visible') void navigator.serviceWorker.getRegistration().then((r) => r?.update());
+		};
+		document.addEventListener('visibilitychange', onVisible);
+		return () => {
+			navigator.serviceWorker.removeEventListener('controllerchange', onChange);
+			document.removeEventListener('visibilitychange', onVisible);
+		};
+	});
+
+	// SvelteKit polls for a new release (see svelte.config.js). On the public
+	// pages nothing is in progress, so reload straight away; in the app the
+	// next link click does a full load instead of interrupting a lesson.
+	const PUBLIC_PAGES = ['/', '/fa', '/try', '/login'];
+	$effect(() => {
+		if (updated.current && PUBLIC_PAGES.includes(page.url.pathname)) location.reload();
+	});
 
 	// One skip link for the whole app, targeting the <main id="main-content">
 	// every page renders. Keyboard users otherwise tab through the header's
