@@ -12,6 +12,7 @@
 
 import type { RequestHandler } from './$types';
 import { env } from '$env/dynamic/private';
+import { createLimiter, tooMany, verifiedUser } from '$lib/server/rate-limit';
 
 const SCRIBE_MODEL_ID = env.ELEVENLABS_STT_MODEL_ID || 'scribe_v1';
 
@@ -45,13 +46,20 @@ export const OPTIONS: RequestHandler = async ({ request }) => {
 	});
 };
 
-export const POST: RequestHandler = async ({ request }) => {
+/** Paid engines: signed-in learners only, a few requests a minute (one per spoken answer). */
+const allow = createLimiter(20, 60_000);
+
+export const POST: RequestHandler = async ({ request, locals }) => {
 	const origin = request.headers.get('origin') || '';
 	const json = (body: unknown, status = 200) =>
 		new Response(JSON.stringify(body), {
 			status,
 			headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) }
 		});
+
+	const user = await verifiedUser(locals);
+	if (!user) return json({ error: 'Sign in required' }, 401);
+	if (!allow(user.id)) return tooMany();
 
 	if (!env.ELEVENLABS_API_KEY) {
 		return json({ error: 'STT not configured' }, 503);

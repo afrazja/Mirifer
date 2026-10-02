@@ -25,6 +25,7 @@
 
 import type { RequestHandler } from './$types';
 import { env } from '$env/dynamic/private';
+import { createLimiter, tooMany, verifiedUser } from '$lib/server/rate-limit';
 import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
 
 // Two-voice dialogue: voice A reads the learner's lines ("sent"), voice B the
@@ -355,8 +356,21 @@ export const OPTIONS: RequestHandler = async ({ request }) => {
 	});
 };
 
-export const GET: RequestHandler = async ({ url, request }) => {
+/** Free voices (Edge, browser fallbacks) are open to guests, such as the /try demo, within a per-client burst limit. */
+const guestLimit = createLimiter(60, 60_000);
+const memberLimit = createLimiter(200, 60_000);
+
+export const GET: RequestHandler = async ({ url, request, locals, getClientAddress }) => {
 	const origin = request.headers.get('origin') || '';
+	let client = 'ip:';
+	try { client += getClientAddress(); } catch { client += 'unknown'; }
+	if (!guestLimit(client)) return tooMany();
+	/**
+	 * The paid or quota-limited engines (ElevenLabs, Azure, AiVOOV) only serve
+	 * verified signed-in learners, so an anonymous script cannot spend credits.
+	 */
+	let member: Promise<boolean> | undefined;
+	const paidAllowed = () => (member ??= verifiedUser(locals).then(user => !!user && memberLimit(`user:${user.id}`)));
 	const text = url.searchParams.get('q');
 	let lang = url.searchParams.get('tl') || 'de';
 
@@ -400,7 +414,7 @@ export const GET: RequestHandler = async ({ url, request }) => {
 		// down, then clamp to ElevenLabs' 0.7–1.2 and quantize so cache
 		// variants stay bounded.
 		const speed = Math.round(Math.min(1.2, Math.max(0.7, rate * 0.8)) * 100) / 100;
-		const elevenAudio = await tryElevenLabs(text, isB ? ELEVEN_VOICE_B : ELEVEN_VOICE_A, speed);
+		const elevenAudio = !(await paidAllowed()) ? null : await tryElevenLabs(text, isB ? ELEVEN_VOICE_B : ELEVEN_VOICE_A, speed);
 		if (elevenAudio) {
 			return new Response(elevenAudio, {
 				status: 200,
@@ -451,7 +465,7 @@ export const GET: RequestHandler = async ({ url, request }) => {
 
 		// 1) Azure direct — free F0 tier, preferred when configured.
 		const azureVoice = wantVoiceB ? AZURE_VOICE_FA_B : AZURE_VOICE_FA_A;
-		const azureAudio = await tryAzureFa(text, azureVoice, rate);
+		const azureAudio = !(await paidAllowed()) ? null : await tryAzureFa(text, azureVoice, rate);
 		if (azureAudio) {
 			return new Response(azureAudio, {
 				status: 200,
@@ -483,7 +497,7 @@ export const GET: RequestHandler = async ({ url, request }) => {
 		}
 
 		// 3) AiVOOV — spends character credits, works without an Azure account.
-		const aivoovVoices = await getAiVoovFaVoices();
+		const aivoovVoices = (await paidAllowed()) ? await getAiVoovFaVoices() : null;
 		if (aivoovVoices) {
 			const aivoovAudio = await tryAiVoov(
 				text,
