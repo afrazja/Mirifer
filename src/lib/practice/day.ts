@@ -37,7 +37,7 @@ export const DAY_ONE = {
 	checkInMinutes: 2,
 	recapMinutes: 2,
 	modules: [
-		{ id: 'listen-act', title: { en: 'Listen and act', fa: 'گوش بده و عمل کن' }, does: { en: 'Hear instructions once, then do exactly what they say.', fa: 'دستورها را یک بار بشنو و دقیقاً انجامشان بده.' }, skill: 'listening', minutes: { 15: 5, 20: 5 }, built: false },
+		{ id: 'listen-act', title: { en: 'Listen and act', fa: 'گوش بده و عمل کن' }, does: { en: 'Hear instructions, then do exactly what they say.', fa: 'دستورها را بشنو و دقیقاً انجامشان بده.' }, skill: 'listening', minutes: { 15: 5, 20: 5 }, built: true },
 		{ id: 'scenario', title: { en: 'Scene with a twist', fa: 'صحنه با یک غافلگیری' }, does: { en: 'Solve a problem at the hotel desk when something unexpected happens.', fa: 'در پذیرش هتل مشکلی را حل کن، وقتی اتفاق غیرمنتظره‌ای می‌افتد.' }, skill: 'speaking', minutes: { 20: 6 }, built: false },
 		{ id: 'say-it-better', title: { en: 'Say it again, better', fa: 'دوباره بگو، بهتر' }, does: { en: 'Tell a short story about a problem you had, then tell it a second time, clearer.', fa: 'ماجرای کوتاه یک مشکل را بگو، بعد دوباره و روشن‌تر بگو.' }, skill: 'speaking', minutes: { 15: 6, 20: 5 }, built: false }
 	] satisfies DayModule[]
@@ -69,6 +69,8 @@ export const DaySessionSchema = z.object({
 	stage: z.enum(['modules', 'recap', 'done']),
 	done: z.array(z.enum(MODULE_IDS)).max(8),
 	skipped: z.array(z.enum(MODULE_IDS)).max(8),
+	/** Result of each finished module: how many parts were right. Numbers only. */
+	scores: z.partialRecord(z.enum(MODULE_IDS), z.object({ correct: z.number().int().min(0).max(20), total: z.number().int().min(1).max(20) })).optional(),
 	startedAt: z.string().datetime(),
 	completedAt: z.string().datetime().optional()
 }).strict();
@@ -83,9 +85,9 @@ export function currentModule(session: DaySession): DayModule | null {
 	return modulesFor(session.length).find(module => !session.done.includes(module.id as ModuleId) && !session.skipped.includes(module.id as ModuleId)) ?? null;
 }
 
-export function finishModule(session: DaySession, id: ModuleId, outcome: 'done' | 'skipped'): DaySession {
+export function finishModule(session: DaySession, id: ModuleId, outcome: 'done' | 'skipped', score?: { correct: number; total: number }): DaySession {
 	if (session.stage !== 'modules' || session.done.includes(id) || session.skipped.includes(id)) return session;
-	const next = { ...session, [outcome]: [...session[outcome], id] } as DaySession;
+	const next = { ...session, [outcome]: [...session[outcome], id], ...(score && outcome === 'done' ? { scores: { ...session.scores, [id]: score } } : {}) } as DaySession;
 	return currentModule(next) ? next : { ...next, stage: 'recap' };
 }
 
@@ -112,6 +114,8 @@ export interface Recommendation { title: DisplayText; why: DisplayText }
  */
 export function recommend(session: DaySession): Recommendation {
 	const skipped = DAY_ONE.modules.find(module => session.skipped.includes(module.id));
+	const weak = DAY_ONE.modules.find(module => { const score = session.scores?.[module.id]; return score && score.correct / score.total < 0.6; });
+	if (weak && !session.skipped.includes(weak.id)) return { title: { en: `Next time: ${weak.title.en} again`, fa: `دفعهٔ بعد: دوباره ${weak.title.fa}` }, why: { en: 'It was the hardest part today, so you get another go with new details.', fa: 'امروز سخت‌ترین بخش بود، پس با جزئیات تازه دوباره امتحانش می‌کنی.' } };
 	if (skipped) return { title: { en: `Next time: ${skipped.title.en}`, fa: `دفعهٔ بعد: ${skipped.title.fa}` }, why: { en: 'You skipped it today, so it comes back first.', fa: 'امروز ردش کردی، پس اول از همه برمی‌گردد.' } };
 	return { title: { en: 'Next time: a new theme', fa: 'دفعهٔ بعد: یک موضوع تازه' }, why: { en: 'You finished every step today, so you move on.', fa: 'امروز همهٔ مرحله‌ها را تمام کردی، پس جلو می‌روی.' } };
 }

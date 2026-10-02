@@ -3,6 +3,7 @@
 	import type { PageProps } from './$types';
 	import AppHeader from '$lib/components/AppHeader.svelte';
 	import EnglishModuleTabs from '$lib/components/EnglishModuleTabs.svelte';
+	import ListenAndAct from '$lib/components/ListenAndAct.svelte';
 	import EnglishSpeechInput from '$lib/components/EnglishSpeechInput.svelte';
 	import { getLanguage } from '$services/data-layer';
 	import {
@@ -43,7 +44,7 @@
 	}
 	function sendAnswer() { if (answer.trim()) replied = checkInReply(answer); }
 	const begin = () => save(startSession(length));
-	const finish = (outcome: 'done' | 'skipped') => { if (session && step) void save(finishModule(session, step.id as ModuleId, outcome)); };
+	const finish = (outcome: 'done' | 'skipped', score?: { correct: number; total: number }) => { if (session && step) void save(finishModule(session, step.id as ModuleId, outcome, score)); };
 	const finishRecap = () => { if (session) void save(completeSession(session)); };
 	function again() { answer = ''; replied = null; void save(null); }
 	const greeting = $derived(data.name ? (isFa ? `سلام ${data.name}` : `Hello, ${data.name}`) : (isFa ? 'سلام' : 'Hello'));
@@ -98,16 +99,19 @@
 			<p class="eyebrow">{isFa ? `مرحلهٔ ${stepNumber} از ${stepCount}` : `STEP ${stepNumber} OF ${stepCount}`} · {step.skill === 'listening' ? (isFa ? 'شنیدن' : 'LISTENING') : (isFa ? 'صحبت کردن' : 'SPEAKING')}</p>
 			<h1 id="step-title">{text(step.title)}</h1>
 			<p>{text(step.does)}</p>
-			{#if !step.built}
+			{#if step.id === 'listen-act' && step.built}
+				{#key step.id}<ListenAndAct {isFa} onDone={score => finish('done', score)} />{/key}
+				<button class="text-button" type="button" onclick={() => finish('skipped')}>{isFa ? 'این مرحله را رد کن' : 'Skip this step'}</button>
+			{:else}
 				<div class="card stand-in" role="note">
 					<strong>{isFa ? 'این بخش هنوز ساخته نشده.' : 'This step is not built yet.'}</strong>
 					<p>{isFa ? 'جای آن را نگه داشته‌ایم تا ترتیب و زمان‌بندی روز را ببینی.' : 'It holds its place so you can see the order and timing of the day.'}</p>
 				</div>
+				<div class="row">
+					<button class="primary" type="button" onclick={() => finish('done')}>{isFa ? 'ادامه' : 'Continue'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
+					<button class="text-button" type="button" onclick={() => finish('skipped')}>{isFa ? 'این مرحله را رد کن' : 'Skip this step'}</button>
+				</div>
 			{/if}
-			<div class="row">
-				<button class="primary" type="button" onclick={() => finish('done')}>{isFa ? 'ادامه' : 'Continue'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
-				<button class="text-button" type="button" onclick={() => finish('skipped')}>{isFa ? 'این مرحله را رد کن' : 'Skip this step'}</button>
-			</div>
 		</section>
 
 	{:else if session.stage === 'recap'}
@@ -118,7 +122,7 @@
 			<h1 id="recap-title">{isFa ? 'کار امروز' : 'What you did today'}</h1>
 			<ul class="done-list">
 				{#each DAY_ONE.modules.filter(m => m.minutes[session!.length] !== undefined) as item}
-					<li>{text(item.title)} <span class="min">{session.done.includes(item.id) ? (isFa ? 'انجام شد' : 'done') : (isFa ? 'رد شد' : 'skipped')}</span></li>
+					<li>{text(item.title)} <span class="min">{session.done.includes(item.id) ? (session.scores?.[item.id] ? `${session.scores[item.id]?.correct}/${session.scores[item.id]?.total}` : (isFa ? 'انجام شد' : 'done')) : (isFa ? 'رد شد' : 'skipped')}</span></li>
 				{/each}
 			</ul>
 			<div class="card">
