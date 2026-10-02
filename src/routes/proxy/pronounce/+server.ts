@@ -19,6 +19,7 @@
 
 import type { RequestHandler } from './$types';
 import { env } from '$env/dynamic/private';
+import { createLimiter, tooMany, verifiedUser } from '$lib/server/rate-limit';
 
 /** ~10s of 16 kHz mono PCM is ~320 KB; leave room and reject the rest. */
 const MAX_AUDIO_BYTES = 2_000_000;
@@ -79,13 +80,20 @@ interface AzureWord {
 	Phonemes?: Array<{ Phoneme?: string; PronunciationAssessment?: { AccuracyScore?: number } }>;
 }
 
-export const POST: RequestHandler = async ({ request, url }) => {
+/** Paid engines: signed-in learners only, a few requests a minute (one per spoken answer). */
+const allow = createLimiter(20, 60_000);
+
+export const POST: RequestHandler = async ({ request, url, locals }) => {
 	const origin = request.headers.get('origin') || '';
 	const json = (body: unknown, status = 200, extra: Record<string, string> = {}) =>
 		new Response(JSON.stringify(body), {
 			status,
 			headers: { 'Content-Type': 'application/json', ...corsHeaders(origin), ...extra }
 		});
+
+	const user = await verifiedUser(locals);
+	if (!user) return json({ error: 'Sign in required' }, 401);
+	if (!allow(user.id)) return tooMany();
 
 	const key = env.AZURE_SPEECH_KEY;
 	const region = env.AZURE_SPEECH_REGION;
