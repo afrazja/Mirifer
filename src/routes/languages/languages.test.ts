@@ -74,13 +74,13 @@ describe('course entry and persistence', () => {
 	it('starts the English pilot without German onboarding or shared progress writes', async () => {
 		for (const target of [undefined, 'de']) {
 			const f = fixture(target); f.form.set('language', 'en');
-			await expect(actions.default(f.event())).rejects.toMatchObject({ location: '/practice/english' });
+			await expect(actions.default(f.event())).rejects.toMatchObject({ location: '/practice/english/today' });
 			expect(f.supabase.auth.updateUser).toHaveBeenCalledExactlyOnceWith({ data: { target_language: 'en', learning: target ? [target, 'en'] : ['en'] } });
 		}
-		await expect(home(fixture('en').event())).rejects.toMatchObject({ location: '/practice/english' });
+		await expect(home(fixture('en').event())).rejects.toMatchObject({ location: '/practice/english/today' });
 	});
 	it('isolates English and German learning routes while keeping account and landing pages accessible', () => {
-		for (const path of ['/home', '/lesson', '/lessons', '/review/quiz', '/basics', '/drill/sprechen', '/check-in', '/vocabulary']) expect(courseRedirect(path, 'en')).toBe('/practice/english');
+		for (const path of ['/home', '/lesson', '/lessons', '/review/quiz', '/basics', '/drill/sprechen', '/check-in', '/vocabulary']) expect(courseRedirect(path, 'en')).toBe('/practice/english/today');
 		for (const path of ['/', '/fa', '/languages', '/settings', '/admin', '/api/analytics', '/practice/english']) expect(courseRedirect(path, 'en')).toBeNull();
 		expect(courseRedirect('/practice/english', 'de')).toBe('/languages');
 		expect(courseRedirect('/practice/english', undefined)).toBe('/languages');
@@ -97,7 +97,7 @@ describe('course entry and persistence', () => {
 		const event = f.event(); event.url = new URL('https://mirifer.test/onboarding?language=de');
 		expect(await onboarding(event)).toEqual({ targetLanguage: 'de' });
 		const back = fixture('de'); (back.user.user_metadata as any).learning = ['en', 'de']; back.form.set('language', 'en');
-		await expect(actions.default(back.event())).rejects.toMatchObject({ location: '/practice/english' });
+		await expect(actions.default(back.event())).rejects.toMatchObject({ location: '/practice/english/today' });
 		expect(back.supabase.auth.updateUser).toHaveBeenCalledExactlyOnceWith({ data: { target_language: 'en', learning: ['de', 'en'] } });
 	});
 });

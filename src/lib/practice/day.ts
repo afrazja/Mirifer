@@ -1,0 +1,125 @@
+/**
+ * The English daily session: a fixed shell (check-in, modules, recap) around
+ * a day's theme. Day 1 is "Handle a problem while travelling".
+ *
+ * The shell knows nothing about what a module teaches; it only keeps the
+ * order, the time budget and the saved checkpoint. Modules are added to
+ * `DAY_ONE.modules` one at a time, each after the owner has checked it.
+ */
+import { z } from 'zod';
+import type { DisplayText } from './hotel';
+
+export const DAY_ID = 'day-1';
+export const LENGTHS = [15, 20] as const;
+export type Length = (typeof LENGTHS)[number];
+export const DEFAULT_LENGTH: Length = 15;
+
+export type ModuleSkill = 'listening' | 'speaking';
+export interface DayModule {
+	id: string;
+	title: DisplayText;
+	/** One line that says what the learner will do. */
+	does: DisplayText;
+	skill: ModuleSkill;
+	/** Minutes per session length; a missing length means "not in that session". */
+	minutes: Partial<Record<Length, number>>;
+	/** False until the module has been built and checked. The shell shows a stand-in. */
+	built: boolean;
+}
+
+export const DAY_ONE = {
+	id: DAY_ID,
+	theme: { en: 'Handle a problem while travelling', fa: 'حل یک مشکل در سفر' } satisfies DisplayText,
+	goal: {
+		en: 'By the end, you can explain a problem, ask for help, and say it clearly.',
+		fa: 'در پایان می‌توانی یک مشکل را توضیح بدهی، کمک بخواهی و روشن بگویی.'
+	} satisfies DisplayText,
+	checkInMinutes: 2,
+	recapMinutes: 2,
+	modules: [
+		{ id: 'listen-act', title: { en: 'Listen and act', fa: 'گوش بده و عمل کن' }, does: { en: 'Hear instructions once, then do exactly what they say.', fa: 'دستورها را یک بار بشنو و دقیقاً انجامشان بده.' }, skill: 'listening', minutes: { 15: 5, 20: 5 }, built: false },
+		{ id: 'scenario', title: { en: 'Scene with a twist', fa: 'صحنه با یک غافلگیری' }, does: { en: 'Solve a problem at the hotel desk when something unexpected happens.', fa: 'در پذیرش هتل مشکلی را حل کن، وقتی اتفاق غیرمنتظره‌ای می‌افتد.' }, skill: 'speaking', minutes: { 20: 6 }, built: false },
+		{ id: 'say-it-better', title: { en: 'Say it again, better', fa: 'دوباره بگو، بهتر' }, does: { en: 'Tell a short story about a problem you had, then tell it a second time, clearer.', fa: 'ماجرای کوتاه یک مشکل را بگو، بعد دوباره و روشن‌تر بگو.' }, skill: 'speaking', minutes: { 15: 6, 20: 5 }, built: false }
+	] satisfies DayModule[]
+} as const;
+
+export type ModuleId = (typeof DAY_ONE.modules)[number]['id'];
+const MODULE_IDS = DAY_ONE.modules.map(module => module.id) as [ModuleId, ...ModuleId[]];
+
+/** The modules in today's session, in order. */
+export function modulesFor(length: Length): DayModule[] {
+	return DAY_ONE.modules.filter(module => module.minutes[length] !== undefined);
+}
+
+export interface AgendaItem { id: string; title: DisplayText; minutes: number }
+/** Every step with its minutes, check-in first and recap last. The total equals `length`. */
+export function agendaFor(length: Length): AgendaItem[] {
+	return [
+		{ id: 'check-in', title: { en: 'Check-in', fa: 'شروع' }, minutes: DAY_ONE.checkInMinutes },
+		...modulesFor(length).map(module => ({ id: module.id, title: module.title, minutes: module.minutes[length] as number })),
+		{ id: 'recap', title: { en: 'Recap', fa: 'مرور' }, minutes: DAY_ONE.recapMinutes }
+	];
+}
+export const agendaMinutes = (length: Length) => agendaFor(length).reduce((sum, item) => sum + item.minutes, 0);
+
+/** Saved checkpoint. Holds progress only, never what the learner said. */
+export const DaySessionSchema = z.object({
+	day: z.literal(DAY_ID),
+	length: z.union([z.literal(15), z.literal(20)]),
+	stage: z.enum(['modules', 'recap', 'done']),
+	done: z.array(z.enum(MODULE_IDS)).max(8),
+	skipped: z.array(z.enum(MODULE_IDS)).max(8),
+	startedAt: z.string().datetime(),
+	completedAt: z.string().datetime().optional()
+}).strict();
+export type DaySession = z.infer<typeof DaySessionSchema>;
+
+export function startSession(length: Length, now = new Date()): DaySession {
+	return { day: DAY_ID, length, stage: 'modules', done: [], skipped: [], startedAt: now.toISOString() };
+}
+
+/** The first module of the session that is neither done nor skipped, or null when all are. */
+export function currentModule(session: DaySession): DayModule | null {
+	return modulesFor(session.length).find(module => !session.done.includes(module.id as ModuleId) && !session.skipped.includes(module.id as ModuleId)) ?? null;
+}
+
+export function finishModule(session: DaySession, id: ModuleId, outcome: 'done' | 'skipped'): DaySession {
+	if (session.stage !== 'modules' || session.done.includes(id) || session.skipped.includes(id)) return session;
+	const next = { ...session, [outcome]: [...session[outcome], id] } as DaySession;
+	return currentModule(next) ? next : { ...next, stage: 'recap' };
+}
+
+export function completeSession(session: DaySession, now = new Date()): DaySession {
+	return { ...session, stage: 'done', completedAt: now.toISOString() };
+}
+
+/** How far through the session, 0–1, by minutes. Check-in counts once the session has started. */
+export function sessionProgress(session: DaySession): number {
+	const total = agendaMinutes(session.length);
+	if (session.stage === 'done') return 1;
+	let spent: number = DAY_ONE.checkInMinutes;
+	for (const module of modulesFor(session.length)) {
+		if (session.done.includes(module.id as ModuleId) || session.skipped.includes(module.id as ModuleId)) spent += module.minutes[session.length] as number;
+	}
+	return Math.min(1, spent / total);
+}
+
+export interface Recommendation { title: DisplayText; why: DisplayText }
+/**
+ * Tomorrow's suggestion. Until modules report results, the only signal is
+ * what the learner skipped: that comes back first. With nothing skipped the
+ * learner moves on to the next theme.
+ */
+export function recommend(session: DaySession): Recommendation {
+	const skipped = DAY_ONE.modules.find(module => session.skipped.includes(module.id));
+	if (skipped) return { title: { en: `Next time: ${skipped.title.en}`, fa: `دفعهٔ بعد: ${skipped.title.fa}` }, why: { en: 'You skipped it today, so it comes back first.', fa: 'امروز ردش کردی، پس اول از همه برمی‌گردد.' } };
+	return { title: { en: 'Next time: a new theme', fa: 'دفعهٔ بعد: یک موضوع تازه' }, why: { en: 'You finished every step today, so you move on.', fa: 'امروز همهٔ مرحله‌ها را تمام کردی، پس جلو می‌روی.' } };
+}
+
+/** Kind, fixed reaction to the check-in answer. No AI: it works offline and never says anything surprising. */
+export function checkInReply(answer: string): DisplayText {
+	const text = answer.toLowerCase();
+	if (/\b(tired|exhausted|sleepy|busy|stress|hard|long)\b/.test(text)) return { en: 'That sounds like a full day. A short, focused session is a good way to finish it.', fa: 'روز پرکاری بوده. یک جلسهٔ کوتاه و متمرکز راه خوبی برای ادامه‌اش است.' };
+	if (/\b(good|great|nice|fine|happy|well|amazing|fun)\b/.test(text)) return { en: 'Good to hear. Let’s use that energy.', fa: 'خوشحالم. از همین انرژی استفاده کنیم.' };
+	return { en: 'Thanks for sharing. Let’s begin.', fa: 'ممنون که گفتی. شروع کنیم.' };
+}

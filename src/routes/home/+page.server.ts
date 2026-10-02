@@ -17,7 +17,7 @@ export async function load({ locals }: RequestEvent) {
 	if (!isAvailableCourse(targetLang)) {
 		throw redirect(303, '/languages');
 	}
-	if (targetLang === 'en') redirect(303, '/practice/english');
+	if (targetLang === 'en') redirect(303, '/practice/english/today');
 
 	try {
 		const rows = await ownAssessments(locals.supabase, locals.user!.id);
