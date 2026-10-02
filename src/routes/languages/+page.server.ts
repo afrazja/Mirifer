@@ -16,7 +16,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 	};
 };
 
-const courseHome = (language: string) => (language === 'en' ? '/practice/english' : '/home');
+const courseHome = (language: string) => (language === 'en' ? '/practice/english/today' : '/home');
 
 export const actions: Actions = {
 	/** Continue a language, or start a new one. Nothing is ever reset. */
