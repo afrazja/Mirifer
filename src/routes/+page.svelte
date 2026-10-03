@@ -606,42 +606,44 @@
 		</ul>
 	</section>
 
-	<!-- ══ PHILOSOPHY ════════════════════════════════════ -->
-	<section class="band">
-		<p class="label">Our philosophy</p>
-		<h2>Four ideas Mirifer is built on.</h2>
-		<div class="ideas">
-			<div>
-				<h3>You learn a language in sentences, not words.</h3>
-				<p>
-					A word list gives you words. A sentence gives you a word, its
-					gender, its place in the order, and the shape of the thing around
-					it. You learn <em lang="de">ich hätte gern einen Kaffee</em> — not
-					<em>coffee</em>.
-				</p>
-			</div>
-			<div>
-				<h3>Daily beats intense.</h3>
-				<p>
-					Fifteen minutes today does more than two hours on Sunday. Missed a
-					day? Just pick up where you left off — no penalty, no lost streak.
-				</p>
-			</div>
-			<div>
-				<h3>You speak from the first lesson.</h3>
-				<p>
-					Not after an intro grammar course. On day one you say a German
-					sentence out loud and hear what the app heard — the gap between
-					those two is where the learning happens.
-				</p>
-			</div>
-			<div>
-				<h3>Saying it wrong out loud beats saying it right in your head.</h3>
-				<p>
-					Silent accuracy does not survive contact with a real conversation.
-					Speak, be corrected, speak again. That only works if you make the
-					mistakes.
-				</p>
+	<!-- ══ PHILOSOPHY — full-bleed green, like the method ══ -->
+	<section class="bleed bleed-green" id="philosophy">
+		<div class="bleed-inner">
+			<p class="label">Our philosophy</p>
+			<h2>Four ideas Mirifer is built on.</h2>
+			<div class="ideas">
+				<div>
+					<h3>You learn a language in sentences, not words.</h3>
+					<p>
+						A word list gives you words. A sentence gives you a word, its
+						gender, its place in the order, and the shape of the thing around
+						it. You learn <em lang="de">ich hätte gern einen Kaffee</em> — not
+						<em>coffee</em>.
+					</p>
+				</div>
+				<div>
+					<h3>Daily beats intense.</h3>
+					<p>
+						Fifteen minutes today does more than two hours on Sunday. Missed a
+						day? Just pick up where you left off — no penalty, no lost streak.
+					</p>
+				</div>
+				<div>
+					<h3>You speak from the first lesson.</h3>
+					<p>
+						Not after an intro grammar course. On day one you say a German
+						sentence out loud and hear what the app heard — the gap between
+						those two is where the learning happens.
+					</p>
+				</div>
+				<div>
+					<h3>Saying it wrong out loud beats saying it right in your head.</h3>
+					<p>
+						Silent accuracy does not survive contact with a real conversation.
+						Speak, be corrected, speak again. That only works if you make the
+						mistakes.
+					</p>
+				</div>
 			</div>
 		</div>
 	</section>
@@ -1080,6 +1082,15 @@
 	.bleed .lede,
 	.bleed p {
 		color: rgba(247, 245, 240, 0.76);
+	}
+
+	/* The ideas grid is shared with the light Audience band; on green it needs light text. */
+	.bleed .ideas p {
+		color: rgba(247, 245, 240, 0.76);
+	}
+
+	.bleed .ideas em {
+		color: #f7f5f0;
 	}
 
 	.bleed .num {
