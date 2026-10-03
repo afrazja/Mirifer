@@ -613,7 +613,6 @@
 
 	function handleDaySelectChange(e: Event) {
 		const val = (e.target as HTMLSelectElement).value;
-		showOptions = false;
 		if (val.startsWith("exam") || val.startsWith("talk")) {
 			// Exams/conversations start immediately — dismiss the start
 			// overlay if it's still up (picked straight from the dropdown).
@@ -629,18 +628,18 @@
 		}
 	}
 
-	function handleSpeedSelectChange(e: Event) {
-		const val = parseFloat((e.target as HTMLSelectElement).value);
+	/** Voice speed and Blind Mode sit on each sentence card; both toggle and are remembered. */
+	function toggleVoiceSpeed() {
+		const val = prefs.voiceSpeed === 1 ? 0.75 : 1;
 		preferencesStore.update((s) => ({ ...s, voiceSpeed: val }));
 		setVoiceSpeed(val);
 	}
 
-	function handleBlindModeChange(e: Event) {
-		const checked = (e.target as HTMLInputElement).checked;
-		if (!checked && prefs.blindMode && currentTeachStep && !exam.isExamMode && !exam.isConversation) {
+	function toggleBlindMode() {
+		if (prefs.blindMode && currentTeachStep && !exam.isExamMode && !exam.isConversation) {
 			void trackEvent('answer_revealed', { day: app.currentDay, metadata: { index: app.currentSentenceIndex, mode: 'lesson' } });
 		}
-		preferencesStore.update((s) => ({ ...s, blindMode: checked }));
+		preferencesStore.update((s) => ({ ...s, blindMode: !prefs.blindMode }));
 	}
 
 	function handleHintToggle() {
@@ -714,15 +713,6 @@
 	// when a new step or block arrives. If the learner has scrolled up to read
 	// earlier lines, a new step does not pull the view away: a "back to current"
 	// button appears instead.
-	/** The day picker, Blind Mode and voice speed live in a sheet, not in the header. */
-	let showOptions = $state(false);
-	let optionsTrigger: HTMLButtonElement | undefined = $state();
-	let optionsClose: HTMLButtonElement | undefined = $state();
-	function closeOptions() {
-		showOptions = false;
-		optionsTrigger?.focus();
-	}
-
 	let awayFromCurrent = $state(false);
 	let ignoreScrollUntil = 0;
 
@@ -865,8 +855,7 @@
      is a trap for anyone not using a mouse. -->
 <svelte:window
 	onkeydown={(e) => {
-		if (e.key === "Escape" && showOptions) closeOptions();
-		else if (e.key === "Escape" && practiceSentence) closePractice();
+		if (e.key === "Escape" && practiceSentence) closePractice();
 	}}
 />
 
@@ -948,16 +937,10 @@
 	</div>
 {/if}
 
-{#snippet lessonSecondaryControls()}
-	<div class="lesson-toolbar-content">
-		<div class="lesson-toolbar-primary">
-			<div class="day-selection-control">
-				<label for="day-select">
-					<span aria-hidden="true">📅</span>
-					{prefs.language === "fa" ? "روز:" : "Day:"}
-				</label>
+{#snippet lessonCenter()}
 			<select
 				id="day-select"
+				class="day-select"
 				aria-label={prefs.language === "fa" ? "انتخاب روز" : "Select day"}
 				onchange={handleDaySelectChange}
 				value={app.currentDay.toString()}
@@ -1005,90 +988,15 @@
 					</optgroup>
 				{/each}
 			</select>
-		</div>
-		</div>
-
-		<div class="lesson-toolbar-options">
-			<div class="blind-mode-control">
-				<input
-					type="checkbox"
-					id="blind-mode-toggle"
-					checked={prefs.blindMode}
-					onchange={handleBlindModeChange}
-				/>
-				<label for="blind-mode-toggle">
-					🙈 <span>{prefs.language === "fa" ? "حالت پنهان" : "Blind Mode"}</span>
-				</label>
-			</div>
-
-			<div class="speed-control">
-				<select
-					id="speed-select"
-					aria-label={prefs.language === "fa"
-						? "سرعت صدای آلمانی"
-						: "German voice speed"}
-					title={prefs.language === "fa"
-						? "سرعت صدای آلمانی"
-						: "German voice speed"}
-					value={prefs.voiceSpeed.toString()}
-					onchange={handleSpeedSelectChange}
-				>
-					<option value="1">{"🔊 🇩🇪 1x"}</option>
-					<option value="0.75">{"🔉 🇩🇪 0.75x"}</option>
-				</select>
-			</div>
-
-		</div>
-	</div>
 {/snippet}
 
-{#snippet lessonHeaderActions()}
-	<button
-		type="button"
-		class="options-btn"
-		bind:this={optionsTrigger}
-		aria-haspopup="dialog"
-		aria-expanded={showOptions}
-		onclick={() => {
-			showOptions = true;
-			void tick().then(() => optionsClose?.focus());
-		}}
-	>
-		<span aria-hidden="true">⚙</span>
-		<span class="options-label">{prefs.language === "fa" ? "گزینه‌ها" : "Options"}</span>
-	</button>
-{/snippet}
-
-{#if showOptions}
-	<div class="options-backdrop" role="presentation" onclick={closeOptions}></div>
-	<div
-		class="options-sheet"
-		role="dialog"
-		aria-modal="true"
-		aria-label={prefs.language === "fa" ? "گزینه‌های درس" : "Lesson options"}
-		dir={prefs.language === "fa" ? "rtl" : "ltr"}
-	>
-		<div class="options-head">
-			<h2>{prefs.language === "fa" ? "گزینه‌های درس" : "Lesson options"}</h2>
-			<button
-				type="button"
-				class="options-close"
-				bind:this={optionsClose}
-				aria-label={prefs.language === "fa" ? "بستن" : "Close"}
-				onclick={closeOptions}>✕</button
-			>
-		</div>
-		{@render lessonSecondaryControls()}
-	</div>
-{/if}
-
-<div class="container" class:hidden={showOverlay} inert={showOptions}>
+<div class="container" class:hidden={showOverlay}>
 	<AppHeader
 		title={prefs.language === "fa" ? "درس‌های روزانه" : "Daily Lessons"}
 		icon="📖"
 		backHref="/home"
 		backLabel={prefs.language === "fa" ? "خانه" : "Home"}
-		actions={lessonHeaderActions}
+		center={lessonCenter}
 		sticky
 		logo={false}
 		direction={prefs.language === "fa" ? "rtl" : "ltr"}
@@ -1538,6 +1446,25 @@
 												? "🔊 دوباره"
 												: "🔊 Replay"}
 										{/if}
+									</button>
+									<button
+										class="btn-hint btn-blind"
+										class:active={prefs.blindMode}
+										type="button"
+										aria-pressed={prefs.blindMode}
+										onclick={toggleBlindMode}
+									>
+										🙈 {prefs.language === "fa" ? "حالت پنهان" : "Blind Mode"}
+									</button>
+									<button
+										class="btn-hint btn-speed"
+										type="button"
+										aria-label={prefs.language === "fa"
+											? `سرعت صدای آلمانی: ${prefs.voiceSpeed === 1 ? "۱" : "۰٫۷۵"} برابر. برای تغییر بزن`
+											: `German voice speed: ${prefs.voiceSpeed === 1 ? "1x" : "0.75x"}. Press to change`}
+										onclick={toggleVoiceSpeed}
+									>
+										{prefs.voiceSpeed === 1 ? "🔊 1x" : "🔉 0.75x"}
 									</button>
 									{#if currentTeachStep.role === "sent" && (currentTeachStep.hint || currentTeachStep.hintFa)}
 										<button
@@ -2542,38 +2469,11 @@
 		overflow: hidden;
 	}
 
-	.lesson-toolbar-content {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-		width: 100%;
-		min-width: 0;
-	}
-
-	.lesson-toolbar-primary {
-		flex: 1 1 320px;
-		min-width: 240px;
-	}
-
-	.lesson-toolbar-options {
-		display: flex;
-		align-items: center;
-		justify-content: flex-end;
-		gap: 8px;
-		flex-wrap: wrap;
-	}
-
-	.day-selection-control,
-	.blind-mode-control,
-	.speed-control {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-	}
-
-	.lesson-toolbar-content select {
+	/* The day picker sits in the middle of the header. */
+	.day-select {
 		min-height: 44px;
+		width: min(100%, 360px);
+		max-width: 100%;
 		color: var(--ink);
 		background: var(--control);
 		border: 1px solid var(--control-border);
@@ -2581,60 +2481,19 @@
 		padding: 7px 10px;
 		font-family: inherit;
 		font-weight: 600;
+		text-overflow: ellipsis;
 		cursor: pointer;
 	}
 
-	.lesson-toolbar-content select:hover,
-	.lesson-toolbar-content select:focus-visible {
+	.day-select:hover,
+	.day-select:focus-visible {
 		border-color: var(--accent);
 		outline: none;
 	}
 
-	.lesson-toolbar-content select option {
+	.day-select option {
 		background: var(--paper-raised);
 		color: var(--ink);
-	}
-
-	/* Cap widths so the header stays on one row */
-	.speed-control select {
-		max-width: 132px;
-		min-width: 116px;
-	}
-	.day-selection-control select {
-		width: min(100%, 360px);
-		max-width: 360px;
-	}
-
-	.blind-mode-control {
-		min-height: 44px;
-		padding: 7px 10px;
-		background: var(--paper-raised);
-		border: 1px solid var(--line);
-		border-radius: 10px;
-		white-space: nowrap;
-	}
-
-	.blind-mode-control input {
-		width: 16px;
-		height: 16px;
-		margin: 0;
-		accent-color: var(--leaf);
-	}
-
-	.lesson-toolbar-content label {
-		font-weight: 600;
-		cursor: pointer;
-		font-size: 0.84rem;
-		/* Stated, never inherited: the header band behind these is brand green
-		   with white text, so inheriting painted the Blind Mode label white on
-		   its white pill — 1.00:1, invisible in light mode and only survivable
-		   in dark because --paper-raised is near-black there. */
-		color: var(--ink);
-	}
-
-	/* The one label that really is on the band rather than in a pill. */
-	.day-selection-control label {
-		color: var(--on-brand);
 	}
 
 	.progress-info {
@@ -3067,71 +2926,6 @@
 		outline-offset: 2px;
 	}
 
-	.options-btn {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		padding: 0 14px;
-		border: 1px solid var(--control-border);
-		border-radius: 999px;
-		background: var(--control);
-		color: var(--ink);
-		font: inherit;
-		font-weight: 600;
-		cursor: pointer;
-	}
-
-	.options-btn:focus-visible,
-	.options-close:focus-visible {
-		outline: 3px solid var(--accent);
-		outline-offset: 2px;
-	}
-
-	.options-backdrop {
-		position: fixed;
-		inset: 0;
-		z-index: 300;
-		background: rgb(0 0 0 / 0.4);
-	}
-
-	.options-sheet {
-		position: fixed;
-		inset-inline: 0;
-		inset-block-end: 0;
-		z-index: 301;
-		max-width: 560px;
-		margin-inline: auto;
-		padding: 16px 16px calc(20px + env(safe-area-inset-bottom));
-		border-radius: 20px 20px 0 0;
-		background: var(--paper-raised);
-		color: var(--ink);
-		box-shadow: 0 -12px 40px rgb(0 0 0 / 0.25);
-	}
-
-	.options-head {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		margin-bottom: 12px;
-	}
-
-	.options-head h2 {
-		margin: 0;
-		font-family: var(--font-display);
-		font-size: 1.1rem;
-	}
-
-	.options-close {
-		inline-size: 44px;
-		block-size: 44px;
-		border: 1px solid var(--control-border);
-		border-radius: 50%;
-		background: var(--control);
-		color: var(--ink);
-		font-size: 1rem;
-		cursor: pointer;
-	}
-
 	.message-composer {
 		flex: 1;
 		padding: 10px 16px;
@@ -3486,9 +3280,20 @@
 		white-space: nowrap;
 	}
 
-	.btn-hint:hover {
+	.btn-hint:hover,
+	.btn-hint.active {
 		background: var(--accent-deep);
 		color: var(--on-accent);
+	}
+
+	.btn-hint {
+		min-height: 44px;
+	}
+
+	.btn-blind,
+	.btn-speed {
+		padding-inline: 12px;
+		font-weight: 600;
 	}
 
 	/* Bookmark button - Star */
@@ -3878,70 +3683,11 @@
 		background: rgba(0, 0, 0, 0.08);
 	}
 
-	@media (max-width: 980px) {
-		.lesson-toolbar-content {
-			align-items: stretch;
-			flex-wrap: wrap;
-		}
-
-		.lesson-toolbar-primary {
-			flex-basis: 100%;
-		}
-
-		.day-selection-control select {
-			width: 100%;
-			max-width: none;
-		}
-
-		.lesson-toolbar-options {
-			width: 100%;
-			justify-content: flex-start;
-		}
-	}
-
 	/* Responsive */
 	@media (max-width: 600px) {
-		.lesson-toolbar-content {
-			flex-direction: column;
-			gap: 8px;
-		}
-
-		.lesson-toolbar-primary {
-			min-width: 0;
-			width: 100%;
-		}
-
-		.day-selection-control {
-			display: grid;
-			grid-template-columns: auto minmax(0, 1fr);
-			width: 100%;
-		}
-
-		.lesson-toolbar-options {
-			display: grid;
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-			gap: 6px;
-		}
-
-		/* The interface language is set in Settings; the lesson toolbar keeps
-		   only the day, Blind Mode and the voice speed. */
-
-		.speed-control,
-		.speed-control select,
-		.blind-mode-control {
-			justify-content: center;
-			padding-inline: 6px;
-		}
-
 		.progress-info {
 			display: none;
 		}
-
 	}
 
-	@media (max-width: 360px) {
-		.lesson-toolbar-options {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
-	}
 </style>
