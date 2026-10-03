@@ -21,6 +21,7 @@
 		backLabel = "Home",
 		onBack,
 		actions,
+		center,
 		secondary,
 		secondaryLabel = "Page controls",
 		sticky = false,
@@ -37,6 +38,8 @@
 		backLabel?: string;
 		onBack?: () => void;
 		actions?: Snippet;
+		/** The middle of the bar, between the title and the controls (the lesson's day picker). */
+		center?: Snippet;
 		secondary?: Snippet;
 		secondaryLabel?: string;
 		sticky?: boolean;
@@ -62,7 +65,7 @@
 {/snippet}
 
 <div class="header-stack" class:sticky dir={direction}>
-	<header class="app-header" class:connected={secondary} class:has-actions={!!actions}>
+	<header class="app-header" class:connected={secondary} class:has-actions={!!actions} class:has-center={!!center}>
 		{#if logo}
 			<a class="brand" href="/languages" aria-label={isFa ? "میریفر: زبان‌های من" : "Mirifer: my languages"}>
 				<BrandLogo />
@@ -91,6 +94,8 @@
 				{#if subtitle}<p class="subtitle">{subtitle}</p>{/if}
 			</div>
 		{/if}
+
+		{#if center}<div class="center">{@render center()}</div>{/if}
 
 		<div class="top-end">
 			{#if actions}<div class="actions">{@render actions()}</div>{/if}
@@ -272,6 +277,17 @@
 		white-space: nowrap;
 	}
 
+	.center {
+		display: flex;
+		flex: 1 1 auto;
+		justify-content: center;
+		min-width: 0;
+	}
+
+	.app-header.has-center .title-block {
+		flex: 0 1 auto;
+	}
+
 	.top-end {
 		display: flex;
 		align-items: center;
@@ -348,6 +364,15 @@
 
 		.subtitle {
 			display: none;
+		}
+
+		.app-header.has-center .title-block {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			overflow: hidden;
+			clip-path: inset(50%);
+			white-space: nowrap;
 		}
 	}
 
