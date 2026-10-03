@@ -11,7 +11,7 @@
 	import { getLanguage } from '$services/data-layer';
 	import {
 		DAY_ONE, DEFAULT_LENGTH, LENGTHS, agendaFor, agendaMinutes, checkInReply, completeSession, currentModule,
-		finishModule, moduleBefore, modulesFor, recommend, sessionProgress, startSession, type DaySession, type Length, type ModuleId
+		completeLater, finishModule, moduleBefore, modulesFor, recommend, sessionProgress, startSession, type DaySession, type Length, type ModuleId
 	} from '$lib/practice/day';
 	import type { DisplayText } from '$lib/practice/hotel';
 	import type { DayModule } from '$lib/practice/day';
@@ -31,6 +31,8 @@
 	let reviewing = $state<string | null>(null);
 	/** Back at the check-in (greeting, plan) after the session has started. The plan is read-only then. */
 	let showCheckIn = $state(false);
+	/** Doing a skipped module now, from the look-back view. */
+	let doingNow = $state(false);
 	const reviewed = $derived(reviewing && session ? modulesFor(session.length).find(m => m.id === reviewing) ?? null : null);
 
 	const agenda = $derived(agendaFor(length));
@@ -62,7 +64,14 @@
 		if (record) saveRecord(session.startedAt, step.id, record);
 		void save(finishModule(session, step.id as ModuleId, outcome, score));
 	};
-	const finishRecap = () => { if (session) void save(completeSession(session)); };
+	const finishRecap = () => { if (!session) return; clearRecords(); void save(completeSession(session)); };
+	/** Finishes a module that was skipped earlier, then goes back to where the learner was. */
+	function finishLater(id: string, score?: { correct: number; total: number }, record?: unknown) {
+		if (!session) return;
+		if (record) saveRecord(session.startedAt, id, record);
+		doingNow = false; reviewing = null;
+		void save(completeLater(session, id as ModuleId, score));
+	}
 	function again() { answer = ''; replied = null; clearRecords(); void save(null); }
 	const greeting = $derived(data.name ? (isFa ? `سلام ${data.name}` : `Hello, ${data.name}`) : (isFa ? 'سلام' : 'Hello'));
 </script>
@@ -92,9 +101,9 @@
 
 {#snippet backButton()}
 	{#if previous}
-		<button class="back" type="button" onclick={() => (reviewing = previous?.id ?? null)}><span aria-hidden="true">{isFa ? '→' : '←'}</span> {isFa ? `قبلی: ${text(previous.title)}` : `Back: ${text(previous.title)}`}</button>
+		<button class="back" type="button" onclick={() => { doingNow = false; reviewing = previous?.id ?? null; }}><span aria-hidden="true">{isFa ? '→' : '←'}</span> {isFa ? `قبلی: ${text(previous.title)}` : `Back: ${text(previous.title)}`}</button>
 	{:else if session && session.stage !== 'done'}
-		<button class="back" type="button" onclick={() => { reviewing = null; showCheckIn = true; }}><span aria-hidden="true">{isFa ? '→' : '←'}</span> {isFa ? 'قبلی: شروع' : 'Back: Check-in'}</button>
+		<button class="back" type="button" onclick={() => { doingNow = false; reviewing = null; showCheckIn = true; }}><span aria-hidden="true">{isFa ? '→' : '←'}</span> {isFa ? 'قبلی: شروع' : 'Back: Check-in'}</button>
 	{/if}
 {/snippet}
 
@@ -152,9 +161,18 @@
 			{@render backButton()}
 			<p class="eyebrow">{isFa ? 'مرور مرحلهٔ قبلی' : 'REVIEWING AN EARLIER STEP'}</p>
 			<h1 id="review-title">{text(reviewed.title)}</h1>
-			<p class="small">{isFa ? 'فقط خواندنی: این همان کاری است که کردی. دوباره انجام دادن ممکن نیست.' : 'Read-only: this is what you did. It can’t be redone.'}</p>
-			{@render reviewBody(reviewed)}
-			<button class="primary" type="button" onclick={() => (reviewing = null)}>{isFa ? 'برگشت به جایی که بودم' : 'Back to where I was'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
+			{#if doingNow && session.skipped.includes(reviewed.id as ModuleId)}
+				{@render moduleBody(reviewed, (score, record) => finishLater(reviewed.id, score, record))}
+			{:else}
+				{#if session.skipped.includes(reviewed.id as ModuleId)}
+					{@render reviewBody(reviewed)}
+					<button class="primary" type="button" onclick={() => (doingNow = true)}>{isFa ? 'همین حالا انجامش بده' : 'Do this step now'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
+				{:else}
+					<p class="small">{isFa ? 'فقط خواندنی: این همان کاری است که کردی. دوباره انجام دادن ممکن نیست.' : 'Read-only: this is what you did. It can’t be redone.'}</p>
+					{@render reviewBody(reviewed)}
+				{/if}
+				<button class={session.skipped.includes(reviewed.id as ModuleId) ? 'text-button' : 'primary'} type="button" onclick={() => (reviewing = null)}>{isFa ? 'برگشت به جایی که بودم' : 'Back to where I was'}</button>
+			{/if}
 		</section>
 
 	{:else if session.stage === 'modules' && step}
@@ -177,7 +195,9 @@
 			<h1 id="recap-title">{isFa ? 'کار امروز' : 'What you did today'}</h1>
 			<ul class="done-list">
 				{#each DAY_ONE.modules.filter(m => m.minutes[session!.length] !== undefined) as item}
-					<li>{text(item.title)} <span class="min">{session.done.includes(item.id) ? (session.scores?.[item.id] ? `${session.scores[item.id]?.correct}/${session.scores[item.id]?.total}` : (isFa ? 'انجام شد' : 'done')) : (isFa ? 'رد شد' : 'skipped')}</span></li>
+					<li>{text(item.title)}
+						{#if session.done.includes(item.id)}<span class="min">{session.scores?.[item.id] ? `${session.scores[item.id]?.correct}/${session.scores[item.id]?.total}` : (isFa ? 'انجام شد' : 'done')}</span>
+						{:else}<button class="text-button inline" type="button" onclick={() => { doingNow = true; reviewing = item.id; }}>{isFa ? 'رد شد · همین حالا انجامش بده' : 'Skipped · do it now'}</button>{/if}</li>
 				{/each}
 			</ul>
 			<div class="card">
@@ -235,5 +255,6 @@
 	.secondary { min-height: 48px; padding: 12px 18px; background: var(--paper-raised); border: 1px solid var(--control-border); border-radius: 10px; color: var(--ink); }
 	.text-button { min-height: 44px; padding: 8px 4px; background: none; border: 0; color: var(--accent-deep); }
 	.back { display: inline-flex; gap: 8px; align-items: center; min-height: 44px; padding: 8px 4px; margin-bottom: 4px; background: none; border: 0; color: var(--accent-deep); font-weight: 600; }
+	.inline { min-height: 44px; padding: 8px 0; }
 	.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 </style>

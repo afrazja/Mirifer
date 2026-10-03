@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { moduleBefore, LENGTHS, agendaFor, agendaMinutes, completeSession, currentModule, finishModule, modulesFor, recommend, sessionProgress, startSession, DaySessionSchema } from './day';
+import { completeLater, moduleBefore, LENGTHS, agendaFor, agendaMinutes, completeSession, currentModule, finishModule, modulesFor, recommend, sessionProgress, startSession, DaySessionSchema } from './day';
 
 describe('English day shell', () => {
 	it('fills each session length exactly', () => { for (const length of LENGTHS) expect(agendaMinutes(length)).toBe(length); });
@@ -36,5 +36,13 @@ describe('English day shell', () => {
 		expect(moduleBefore(15, null)?.id).toBe('say-it-better');
 		expect(moduleBefore(20, 'say-it-better')?.id).toBe('scenario');
 		expect(moduleBefore(20, null)?.id).toBe('say-it-better');
+	});
+	it('lets a skipped module be done later, keeping the score', () => {
+		let s = finishModule(startSession(15), 'listen-act', 'skipped');
+		s = completeLater(s, 'listen-act', { correct: 7, total: 10 });
+		expect(s.skipped).toEqual([]); expect(s.done).toEqual(['listen-act']); expect(s.scores?.['listen-act']).toEqual({ correct: 7, total: 10 });
+		expect(DaySessionSchema.safeParse(s).success).toBe(true);
+		expect(completeLater(s, 'listen-act')).toBe(s); // not skipped any more
+		expect(recommend(s).title.en).not.toContain('Listen and act');
 	});
 });
