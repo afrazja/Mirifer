@@ -103,7 +103,7 @@ export async function signUp(
 				//
 				// The callback already exchanges the code and honours `next`;
 				// it is the same path Google sign-in takes.
-				emailRedirectTo: window.location.origin + '/proxy/auth/callback?next=/home'
+				emailRedirectTo: window.location.origin + '/proxy/auth/callback?next=/languages'
 			}
 		});
 		if (error) return { user: null, error: error.message };

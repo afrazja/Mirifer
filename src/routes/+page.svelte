@@ -100,13 +100,8 @@
 				authName = "";
 				// Navigate immediately — server guards handle the exact destination.
 				// Heavy background work (profile sync, UI refresh) runs after navigation.
-				const targetLang = result.user?.user_metadata?.target_language;
-				goto(
-					targetLang === "de" || targetLang === "fr"
-						? "/home"
-						: "/onboarding",
-					{ invalidateAll: true },
-				);
+				// Everyone lands on the languages page, which sends them on to their course.
+				goto("/languages", { invalidateAll: true });
 				// Fire-and-forget: don't await these before navigating
 				if (result.user) auth.ensureProfile(result.user);
 				dataLayer.syncOnLogin();
@@ -383,7 +378,7 @@
 						: "Create Free Account"}
 			</button>
 
-			<GoogleSignIn next="/home" onError={(m) => (authError = m)} />
+			<GoogleSignIn next="/languages" onError={(m) => (authError = m)} />
 
 			{#if authMode === "signin"}
 				<!-- This modal is a separate form from /login, so the reset

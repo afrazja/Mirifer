@@ -99,7 +99,7 @@
 			</p>
 			<div class="actions">
 				{#if isAuthenticated}
-					<a class="btn primary" href="/home">رفتن به درس‌ها ←</a>
+					<a class="btn primary" href="/languages">رفتن به درس‌ها ←</a>
 				{:else}
 					<a class="btn primary" href="/try">🎙️ یک درس را همین حالا امتحان کن</a>
 				{/if}

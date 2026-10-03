@@ -572,7 +572,7 @@
 						: "Sign Up"}
 			</button>
 			<GoogleSignIn
-				next="/home"
+				next="/languages"
 				lang={language}
 				onError={(m) => (authError = m)}
 			/>
