@@ -3,8 +3,8 @@
 	 * The landing pages' header, English and Persian.
 	 *
 	 * Always visible, on every screen size: the logo, Log in and Sign up. On
-	 * phones the rest (page sections, the free trial, the other language and
-	 * Install app) lives in the Menu button, so nothing has to be hunted for.
+	 * tablets the rest (page sections, the free trial, the other language and
+	 * Install app) lives in the Menu button; phones have no Menu button.
 	 * On wide screens the sections and Install app sit in the bar itself.
 	 *
 	 * The English page opens its sign-in dialog, so it passes `onLogin` and
@@ -301,7 +301,13 @@
 		}
 	}
 
+	/* Phones: no Menu button. The free trial and the language links are on the page itself. */
 	@media (max-width: 640px) {
+		.menu-btn,
+		.menu {
+			display: none;
+		}
+
 		.navbar,
 		.navbar.scrolled {
 			padding: 10px 14px;
