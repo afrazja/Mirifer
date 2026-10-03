@@ -766,26 +766,6 @@
 			</p>
 		</details>
 	</section>
-
-	<!-- ══ CTA ═══════════════════════════════════════════ -->
-	<section class="band cta" id="cta">
-		<h2>Ready to speak German?</h2>
-		<p class="lede">
-			Start with day one. Hear a conversation, understand it, and practise
-			your reply out loud.
-		</p>
-		<div class="hero-actions center">
-			{#if isAuthenticated}
-				<a href="/home" class="pill pill-solid">Go to my lessons →</a>
-			{:else}
-				<button class="pill pill-solid" onclick={openSignUp}>
-					Create your free account
-				</button>
-				<a href="/try" class="pill pill-outline">See a lesson first</a>
-			{/if}
-		</div>
-		<p class="fine">No credit card · Free during early access</p>
-	</section>
 </main>
 
 <footer class="site-footer">
@@ -920,17 +900,6 @@
 		background: var(--accent-deep);
 	}
 
-	.pill-outline {
-		border-color: var(--control-edge);
-		color: var(--ink);
-		background: transparent;
-	}
-
-	.pill-outline:hover {
-		border-color: var(--accent);
-		color: var(--accent);
-	}
-
 	/* ── Hero ────────────────────────────────────────── */
 	.hero {
 		display: grid;
@@ -988,10 +957,6 @@
 		gap: 14px;
 		margin-top: 34px;
 		flex-wrap: wrap;
-	}
-
-	.hero-actions.center {
-		justify-content: center;
 	}
 
 	.hero-trust {
@@ -1303,26 +1268,6 @@
 		color: var(--ink-soft);
 		line-height: var(--leading-body);
 		max-inline-size: 68ch;
-	}
-
-	/* ── CTA ─────────────────────────────────────────── */
-	.cta {
-		text-align: center;
-	}
-
-	.cta h2 {
-		max-inline-size: none;
-		font-size: clamp(2rem, 4vw, 2.9rem);
-	}
-
-	.cta .lede {
-		margin-inline: auto;
-	}
-
-	.fine {
-		margin-top: 20px;
-		font-size: 0.85rem;
-		color: var(--ink-faint);
 	}
 
 	/* ── Footer ──────────────────────────────────────── */
