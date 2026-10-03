@@ -98,6 +98,12 @@ export function finishModule(session: DaySession, id: ModuleId, outcome: 'done' 
 	return currentModule(next) ? next : { ...next, stage: 'recap' };
 }
 
+/** A module skipped earlier, done now: it moves from skipped to done and keeps its score. */
+export function completeLater(session: DaySession, id: ModuleId, score?: { correct: number; total: number }): DaySession {
+	if (session.stage === 'done' || !session.skipped.includes(id)) return session;
+	return { ...session, skipped: session.skipped.filter(item => item !== id), done: [...session.done, id], ...(score ? { scores: { ...session.scores, [id]: score } } : {}) };
+}
+
 export function completeSession(session: DaySession, now = new Date()): DaySession {
 	return { ...session, stage: 'done', completedAt: now.toISOString() };
 }
