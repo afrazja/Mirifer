@@ -586,27 +586,6 @@
 		</div>
 	</section>
 
-	<!-- ══ PROGRESS ══════════════════════════════════════ -->
-	<section class="band split">
-		<div>
-			<p class="label">Know exactly where you stand</p>
-			<h2>See which skill is holding you back.</h2>
-		</div>
-		<div class="split-body">
-			<p>
-				A Goethe A1 readiness estimate built from your own lesson history —
-				listening, reading, writing and speaking scored separately. Listening
-				and speaking come from the lessons; reading and writing come from the
-				review questions, where you pick the meaning or type the missing word.
-				Until you have answered those, the app labels the score an estimate.
-			</p>
-			<p>
-				The sentences
-				you keep missing come back first.
-			</p>
-		</div>
-	</section>
-
 	<!-- ══ GRAMMAR ═══════════════════════════════════════ -->
 	<section class="band">
 		<p class="label">When you need the grammar</p>
@@ -1148,20 +1127,6 @@
 		font-size: 0.95rem;
 	}
 
-	/* ── Split ───────────────────────────────────────── */
-	.split {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 60px;
-		align-items: start;
-	}
-
-	.split-body p {
-		margin: 0 0 16px;
-		color: var(--ink-soft);
-		line-height: var(--leading-body);
-	}
-
 	/* ── Chips ───────────────────────────────────────── */
 	.chips {
 		display: flex;
@@ -1324,8 +1289,7 @@
 			justify-self: center;
 		}
 
-		.hero,
-		.split {
+		.hero {
 			grid-template-columns: 1fr;
 			gap: 44px;
 		}
