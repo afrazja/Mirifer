@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { LENGTHS, agendaFor, agendaMinutes, completeSession, currentModule, finishModule, modulesFor, recommend, sessionProgress, startSession, DaySessionSchema } from './day';
+import { moduleBefore, LENGTHS, agendaFor, agendaMinutes, completeSession, currentModule, finishModule, modulesFor, recommend, sessionProgress, startSession, DaySessionSchema } from './day';
 
 describe('English day shell', () => {
 	it('fills each session length exactly', () => { for (const length of LENGTHS) expect(agendaMinutes(length)).toBe(length); });
@@ -29,5 +29,12 @@ describe('English day shell', () => {
 		expect(DaySessionSchema.safeParse({ ...startSession(20), answer: 'text' }).success).toBe(false);
 		expect(DaySessionSchema.safeParse({ ...startSession(20), done: ['nope'] }).success).toBe(false);
 		expect(DaySessionSchema.safeParse({ ...startSession(20), length: 35 }).success).toBe(false);
+	});
+	it('finds the module before another, or before the recap', () => {
+		expect(moduleBefore(15, 'listen-act')).toBeNull();
+		expect(moduleBefore(15, 'say-it-better')?.id).toBe('listen-act');
+		expect(moduleBefore(15, null)?.id).toBe('say-it-better');
+		expect(moduleBefore(20, 'say-it-better')?.id).toBe('scenario');
+		expect(moduleBefore(20, null)?.id).toBe('say-it-better');
 	});
 });
