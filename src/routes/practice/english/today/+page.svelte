@@ -26,6 +26,8 @@
 	let saveFailed = $state(false);
 	/** A finished module the learner went back to look at again. Its result is not saved a second time. */
 	let reviewing = $state<string | null>(null);
+	/** Back at the check-in (greeting, plan) after the session has started. The plan is read-only then. */
+	let showCheckIn = $state(false);
 	const reviewed = $derived(reviewing && session ? modulesFor(session.length).find(m => m.id === reviewing) ?? null : null);
 
 	const agenda = $derived(agendaFor(length));
@@ -71,6 +73,8 @@
 {#snippet backButton()}
 	{#if previous}
 		<button class="back" type="button" onclick={() => (reviewing = previous?.id ?? null)}><span aria-hidden="true">{isFa ? '→' : '←'}</span> {isFa ? `قبلی: ${text(previous.title)}` : `Back: ${text(previous.title)}`}</button>
+	{:else if session && session.stage !== 'done'}
+		<button class="back" type="button" onclick={() => { reviewing = null; showCheckIn = true; }}><span aria-hidden="true">{isFa ? '→' : '←'}</span> {isFa ? 'قبلی: شروع' : 'Back: Check-in'}</button>
 	{/if}
 {/snippet}
 
@@ -83,7 +87,7 @@
 	<AppHeader backHref="/languages" backLabel={isFa ? 'زبان‌ها' : 'Languages'} direction={isFa ? 'rtl' : 'ltr'} />
 	<EnglishModuleTabs current="today" {isFa} />
 
-	{#if !session}
+	{#if !session || showCheckIn}
 		<section aria-labelledby="start-title">
 			<p class="eyebrow">{isFa ? 'انگلیسی · روز ۱' : 'ENGLISH · DAY 1'}</p>
 			<h1 id="start-title">{greeting}</h1>
@@ -107,14 +111,20 @@
 			<fieldset class="lengths">
 				<legend class="sr-only">{isFa ? 'مدت جلسه' : 'Session length'}</legend>
 				{#each LENGTHS as option}
-					<label class:selected={length === option}><input type="radio" name="length" value={option} bind:group={length} /> {option} {isFa ? 'دقیقه' : 'min'}</label>
+					<label class:selected={length === option}><input type="radio" name="length" value={option} bind:group={length} disabled={!!session} /> {option} {isFa ? 'دقیقه' : 'min'}</label>
 				{/each}
 			</fieldset>
 			<ol class="agenda">
 				{#each agenda as item}<li><span>{text(item.title)}</span><span class="min">{item.minutes} {isFa ? 'دقیقه' : 'min'}</span></li>{/each}
 			</ol>
 			<p class="small">{isFa ? 'هر مرحله ذخیره می‌شود؛ هر وقت برگشتی از همان‌جا ادامه می‌دهی.' : 'Each step is saved, so you can come back and carry on where you stopped.'}</p>
-			<button class="primary" type="button" onclick={begin}>{isFa ? `شروع (${agendaMinutes(length)} دقیقه)` : `Start (${agendaMinutes(length)} min)`} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
+			{#if session}
+				<p class="small">{isFa ? 'مدت جلسه بعد از شروع عوض نمی‌شود. برای تغییر، جلسه را از اول شروع کن.' : 'The length can’t change once you have started. To change it, start the session again.'}</p>
+				<button class="primary" type="button" onclick={() => (showCheckIn = false)}>{isFa ? 'ادامه' : 'Continue'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
+				<button class="text-button" type="button" onclick={() => { showCheckIn = false; again(); }}>{isFa ? 'شروع دوباره' : 'Start again'}</button>
+			{:else}
+				<button class="primary" type="button" onclick={begin}>{isFa ? `شروع (${agendaMinutes(length)} دقیقه)` : `Start (${agendaMinutes(length)} min)`} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
+			{/if}
 		</section>
 
 	{:else if reviewed}
