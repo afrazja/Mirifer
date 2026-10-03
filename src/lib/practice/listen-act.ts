@@ -68,3 +68,18 @@ export function scoreSteps(expected: Step[], given: Step[]): { results: boolean[
 	const results = expected.map((step, index) => given[index]?.thing === step.thing && given[index]?.place === step.place);
 	return { results, correct: results.filter(Boolean).length };
 }
+
+/** What a finished module keeps for Back: the learner's steps and how each was marked, per round. */
+export interface ActRecord { rounds: { id: string; steps: Step[]; results: boolean[] }[] }
+
+const THING_IDS = Object.keys(THINGS), PLACE_IDS = Object.keys(PLACES);
+/** Checks a saved record, since it comes back from storage the learner (or a bug) could have changed. */
+export function asActRecord(value: unknown): ActRecord | null {
+	const rounds = (value as ActRecord | null)?.rounds;
+	if (!Array.isArray(rounds) || rounds.length > ACT_ROUNDS.length) return null;
+	for (const round of rounds) {
+		if (!ACT_ROUNDS.some(known => known.id === round?.id) || !Array.isArray(round.steps) || round.steps.length > 8 || !Array.isArray(round.results)) return null;
+		if (!round.steps.every(step => THING_IDS.includes(step?.thing) && PLACE_IDS.includes(step?.place))) return null;
+	}
+	return { rounds };
+}
