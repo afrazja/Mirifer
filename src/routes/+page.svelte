@@ -264,7 +264,7 @@
 				name: "What level of German does Mirifer teach?",
 				acceptedAnswer: {
 					"@type": "Answer",
-					text: "The 120-day path runs from A1 (complete beginner) through A2 and on toward B1. The readiness estimate covers the Goethe A1 exam; the later lessons build toward B1 but are not a B1 exam guarantee.",
+					text: "The 120 lessons run from A1 (complete beginner) through A2 and on toward B1. The readiness estimate covers the Goethe A1 exam; the later lessons build toward B1 but are not a B1 exam guarantee.",
 				},
 			},
 		],
@@ -667,45 +667,6 @@
 		</div>
 	</section>
 
-	<!-- ══ PATH — full-bleed navy ════════════════════════ -->
-	<section class="bleed bleed-navy" id="path">
-		<div class="bleed-inner">
-			<p class="label">Your learning path</p>
-			<h2>One hundred and twenty days, from your first sentence toward real conversation.</h2>
-			<p class="lede">
-				No more wondering what to do today. Each day has a name, a scene, and
-				sentences that build on everything before it.
-			</p>
-			<div class="levels">
-				<div class="level">
-					<span class="level-days">Days 1 — 30</span>
-					<h3>A1 · Getting by</h3>
-					<p>
-						Introducing yourself, ordering, asking prices, telling time, and
-						the first hundred verbs in the mouth rather than on a page.
-					</p>
-				</div>
-				<div class="level">
-					<span class="level-days">Days 31 — 65</span>
-					<h3>A2 · Daily life</h3>
-					<p>
-						Shopping, travel, appointments, work, weekends, habits — the
-						situations that fill an ordinary week.
-					</p>
-				</div>
-				<div class="level">
-					<span class="level-days">Days 66 — 120</span>
-					<h3>Toward B1 · Opinions</h3>
-					<p>
-						Opinions, stories, and handling the conversation when it turns —
-						the groundwork for B1, not a finish line.
-					</p>
-				</div>
-			</div>
-			<a class="pill pill-leaf" href="/try">Begin day 1 — it is free</a>
-		</div>
-	</section>
-
 	<!-- ══ AUDIENCE ══════════════════════════════════════ -->
 	<section class="band">
 		<p class="label">Who it is for</p>
@@ -970,15 +931,6 @@
 		color: var(--accent);
 	}
 
-	.pill-leaf {
-		background: var(--leaf);
-		color: #fff;
-	}
-
-	.pill-leaf:hover {
-		background: var(--leaf-deep);
-	}
-
 	/* ── Hero ────────────────────────────────────────── */
 	.hero {
 		display: grid;
@@ -1172,10 +1124,6 @@
 		background: var(--accent-deep);
 	}
 
-	.bleed-navy {
-		background: #10121f;
-	}
-
 	.bleed h2,
 	.bleed h3 {
 		color: #f7f5f0;
@@ -1201,39 +1149,6 @@
 	.bleed h2 {
 		font-size: clamp(1.9rem, 3.6vw, 2.6rem);
 		max-inline-size: 22ch;
-	}
-
-	.levels {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-		gap: 22px;
-		margin: 44px 0 36px;
-	}
-
-	.level {
-		background: rgba(247, 245, 240, 0.06);
-		border: 1px solid rgba(247, 245, 240, 0.14);
-		border-radius: var(--radius-card);
-		padding: 24px 22px;
-	}
-
-	.level-days {
-		font-family: var(--font-mono);
-		font-size: var(--type-label);
-		letter-spacing: var(--tracking-label);
-		text-transform: uppercase;
-		color: rgba(247, 245, 240, 0.6);
-	}
-
-	.level h3 {
-		font-size: var(--type-title);
-		margin: 8px 0 8px;
-	}
-
-	.level p {
-		margin: 0;
-		font-size: 0.92rem;
-		line-height: var(--leading-body);
 	}
 
 	/* ── Trio ────────────────────────────────────────── */
