@@ -32,7 +32,6 @@
 	const sections = [
 		{ href: "#session", label: "The session" },
 		{ href: "#method", label: "Method" },
-		{ href: "#path", label: "120-day path" },
 		{ href: "#faq", label: "FAQ" },
 	];
 
