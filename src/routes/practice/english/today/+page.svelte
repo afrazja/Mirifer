@@ -8,9 +8,10 @@
 	import { getLanguage } from '$services/data-layer';
 	import {
 		DAY_ONE, DEFAULT_LENGTH, LENGTHS, agendaFor, agendaMinutes, checkInReply, completeSession, currentModule,
-		finishModule, recommend, sessionProgress, startSession, type DaySession, type Length, type ModuleId
+		finishModule, moduleBefore, modulesFor, recommend, sessionProgress, startSession, type DaySession, type Length, type ModuleId
 	} from '$lib/practice/day';
 	import type { DisplayText } from '$lib/practice/hotel';
+	import type { DayModule } from '$lib/practice/day';
 
 	let { data }: PageProps = $props();
 	let language = $state<'en' | 'fa'>('en');
@@ -23,9 +24,14 @@
 	let length = $state<Length>(data.session?.length ?? DEFAULT_LENGTH);
 	let answer = $state(''), replied = $state<DisplayText | null>(null);
 	let saveFailed = $state(false);
+	/** A finished module the learner went back to look at again. Its result is not saved a second time. */
+	let reviewing = $state<string | null>(null);
+	const reviewed = $derived(reviewing && session ? modulesFor(session.length).find(m => m.id === reviewing) ?? null : null);
 
 	const agenda = $derived(agendaFor(length));
 	const step = $derived(session?.stage === 'modules' ? currentModule(session) : null);
+	/** The module before the one on screen: before the current step, before the recap, or before the one being reviewed. */
+	const previous = $derived(session && session.stage !== 'done' ? moduleBefore(session.length, reviewed ? reviewed.id : step ? step.id : null) : null);
 	const stepNumber = $derived(session && step ? (session.done.length + session.skipped.length + 1) : 0);
 	const stepCount = $derived(agenda.length - 2);
 	const share = $derived(session ? sessionProgress(session) : 0);
@@ -49,6 +55,24 @@
 	function again() { answer = ''; replied = null; void save(null); }
 	const greeting = $derived(data.name ? (isFa ? `سلام ${data.name}` : `Hello, ${data.name}`) : (isFa ? 'سلام' : 'Hello'));
 </script>
+
+{#snippet moduleBody(mod: DayModule, onDone: (score?: { correct: number; total: number }) => void)}
+	{#if mod.id === 'listen-act' && mod.built}
+		{#key mod.id}<ListenAndAct {isFa} {onDone} />{/key}
+	{:else}
+		<div class="card stand-in" role="note">
+			<strong>{isFa ? 'این بخش هنوز ساخته نشده.' : 'This step is not built yet.'}</strong>
+			<p>{isFa ? 'جای آن را نگه داشته‌ایم تا ترتیب و زمان‌بندی روز را ببینی.' : 'It holds its place so you can see the order and timing of the day.'}</p>
+		</div>
+		<button class="primary" type="button" onclick={() => onDone()}>{isFa ? 'ادامه' : 'Continue'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
+	{/if}
+{/snippet}
+
+{#snippet backButton()}
+	{#if previous}
+		<button class="back" type="button" onclick={() => (reviewing = previous?.id ?? null)}><span aria-hidden="true">{isFa ? '→' : '←'}</span> {isFa ? `قبلی: ${text(previous.title)}` : `Back: ${text(previous.title)}`}</button>
+	{/if}
+{/snippet}
 
 <svelte:head>
 	<title>{isFa ? 'امروز | تمرین انگلیسی' : 'Today | English practice'} — Mirifer</title>
@@ -93,30 +117,31 @@
 			<button class="primary" type="button" onclick={begin}>{isFa ? `شروع (${agendaMinutes(length)} دقیقه)` : `Start (${agendaMinutes(length)} min)`} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
 		</section>
 
+	{:else if reviewed}
+		<section aria-labelledby="review-title">
+			{@render backButton()}
+			<p class="eyebrow">{isFa ? 'مرور مرحلهٔ قبلی' : 'REVIEWING AN EARLIER STEP'}</p>
+			<h1 id="review-title">{text(reviewed.title)}</h1>
+			<p class="small">{isFa ? 'این بار نتیجه ذخیره نمی‌شود.' : 'This time your result is not saved.'}</p>
+			{@render moduleBody(reviewed, () => (reviewing = null))}
+			<button class="text-button" type="button" onclick={() => (reviewing = null)}>{isFa ? 'برگشت به جایی که بودم' : 'Back to where I was'}</button>
+		</section>
+
 	{:else if session.stage === 'modules' && step}
 		<section aria-labelledby="step-title">
+			{@render backButton()}
 			<div class="bar" role="progressbar" aria-label={isFa ? 'پیشرفت جلسه' : 'Session progress'} aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(share * 100)}><span style:width="{share * 100}%"></span></div>
 			<p class="eyebrow">{isFa ? `مرحلهٔ ${stepNumber} از ${stepCount}` : `STEP ${stepNumber} OF ${stepCount}`} · {step.skill === 'listening' ? (isFa ? 'شنیدن' : 'LISTENING') : (isFa ? 'صحبت کردن' : 'SPEAKING')}</p>
 			<h1 id="step-title">{text(step.title)}</h1>
 			<p>{text(step.does)}</p>
-			{#if step.id === 'listen-act' && step.built}
-				{#key step.id}<ListenAndAct {isFa} onDone={score => finish('done', score)} />{/key}
-				<button class="text-button" type="button" onclick={() => finish('skipped')}>{isFa ? 'این مرحله را رد کن' : 'Skip this step'}</button>
-			{:else}
-				<div class="card stand-in" role="note">
-					<strong>{isFa ? 'این بخش هنوز ساخته نشده.' : 'This step is not built yet.'}</strong>
-					<p>{isFa ? 'جای آن را نگه داشته‌ایم تا ترتیب و زمان‌بندی روز را ببینی.' : 'It holds its place so you can see the order and timing of the day.'}</p>
-				</div>
-				<div class="row">
-					<button class="primary" type="button" onclick={() => finish('done')}>{isFa ? 'ادامه' : 'Continue'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
-					<button class="text-button" type="button" onclick={() => finish('skipped')}>{isFa ? 'این مرحله را رد کن' : 'Skip this step'}</button>
-				</div>
-			{/if}
+			{@render moduleBody(step, score => finish('done', score))}
+			<button class="text-button" type="button" onclick={() => finish('skipped')}>{isFa ? 'این مرحله را رد کن' : 'Skip this step'}</button>
 		</section>
 
 	{:else if session.stage === 'recap'}
 		{@const next = recommend(session)}
 		<section aria-labelledby="recap-title">
+			{@render backButton()}
 			<div class="bar"><span style:width="{share * 100}%"></span></div>
 			<p class="eyebrow">{isFa ? 'مرور' : 'RECAP'}</p>
 			<h1 id="recap-title">{isFa ? 'کار امروز' : 'What you did today'}</h1>
@@ -179,5 +204,6 @@
 	.primary:hover:not(:disabled) { background: var(--accent-deep); }
 	.secondary { min-height: 48px; padding: 12px 18px; background: var(--paper-raised); border: 1px solid var(--control-border); border-radius: 10px; color: var(--ink); }
 	.text-button { min-height: 44px; padding: 8px 4px; background: none; border: 0; color: var(--accent-deep); }
+	.back { display: inline-flex; gap: 8px; align-items: center; min-height: 44px; padding: 8px 4px; margin-bottom: 4px; background: none; border: 0; color: var(--accent-deep); font-weight: 600; }
 	.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 </style>

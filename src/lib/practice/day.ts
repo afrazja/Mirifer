@@ -51,6 +51,13 @@ export function modulesFor(length: Length): DayModule[] {
 	return DAY_ONE.modules.filter(module => module.minutes[length] !== undefined);
 }
 
+/** The module just before `id` in today's session; `null` as `id` means "the end", so the last module. */
+export function moduleBefore(length: Length, id: string | null): DayModule | null {
+	const list = modulesFor(length);
+	const index = id === null ? list.length : list.findIndex(module => module.id === id);
+	return index > 0 ? list[index - 1] : null;
+}
+
 export interface AgendaItem { id: string; title: DisplayText; minutes: number }
 /** Every step with its minutes, check-in first and recap last. The total equals `length`. */
 export function agendaFor(length: Length): AgendaItem[] {
