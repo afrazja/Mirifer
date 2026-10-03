@@ -4,6 +4,9 @@
 	import AppHeader from '$lib/components/AppHeader.svelte';
 	import EnglishModuleTabs from '$lib/components/EnglishModuleTabs.svelte';
 	import ListenAndAct from '$lib/components/ListenAndAct.svelte';
+	import ListenAndActReview from '$lib/components/ListenAndActReview.svelte';
+	import { clearRecords, loadRecord, saveRecord } from '$lib/practice/day-records';
+	import { asActRecord, type ActRecord } from '$lib/practice/listen-act';
 	import EnglishSpeechInput from '$lib/components/EnglishSpeechInput.svelte';
 	import { getLanguage } from '$services/data-layer';
 	import {
@@ -33,6 +36,8 @@
 	const agenda = $derived(agendaFor(length));
 	const step = $derived(session?.stage === 'modules' ? currentModule(session) : null);
 	/** The module before the one on screen: before the current step, before the recap, or before the one being reviewed. */
+	/** What the learner did in the module being looked back at (this browser only). */
+	const reviewedRecord = $derived(reviewed && session ? loadRecord(session.startedAt, reviewed.id) : null);
 	const previous = $derived(session && session.stage !== 'done' ? moduleBefore(session.length, reviewed ? reviewed.id : step ? step.id : null) : null);
 	const stepNumber = $derived(session && step ? (session.done.length + session.skipped.length + 1) : 0);
 	const stepCount = $derived(agenda.length - 2);
@@ -51,14 +56,18 @@
 		} catch { saveFailed = true; }
 	}
 	function sendAnswer() { if (answer.trim()) replied = checkInReply(answer); }
-	const begin = () => save(startSession(length));
-	const finish = (outcome: 'done' | 'skipped', score?: { correct: number; total: number }) => { if (session && step) void save(finishModule(session, step.id as ModuleId, outcome, score)); };
+	const begin = () => { clearRecords(); return save(startSession(length)); };
+	const finish = (outcome: 'done' | 'skipped', score?: { correct: number; total: number }, record?: unknown) => {
+		if (!session || !step) return;
+		if (record) saveRecord(session.startedAt, step.id, record);
+		void save(finishModule(session, step.id as ModuleId, outcome, score));
+	};
 	const finishRecap = () => { if (session) void save(completeSession(session)); };
-	function again() { answer = ''; replied = null; void save(null); }
+	function again() { answer = ''; replied = null; clearRecords(); void save(null); }
 	const greeting = $derived(data.name ? (isFa ? `سلام ${data.name}` : `Hello, ${data.name}`) : (isFa ? 'سلام' : 'Hello'));
 </script>
 
-{#snippet moduleBody(mod: DayModule, onDone: (score?: { correct: number; total: number }) => void)}
+{#snippet moduleBody(mod: DayModule, onDone: (score?: { correct: number; total: number }, record?: ActRecord) => void)}
 	{#if mod.id === 'listen-act' && mod.built}
 		{#key mod.id}<ListenAndAct {isFa} {onDone} />{/key}
 	{:else}
@@ -67,6 +76,17 @@
 			<p>{isFa ? 'جای آن را نگه داشته‌ایم تا ترتیب و زمان‌بندی روز را ببینی.' : 'It holds its place so you can see the order and timing of the day.'}</p>
 		</div>
 		<button class="primary" type="button" onclick={() => onDone()}>{isFa ? 'ادامه' : 'Continue'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
+	{/if}
+{/snippet}
+
+{#snippet reviewBody(mod: DayModule)}
+	{@const actRecord = mod.id === 'listen-act' ? asActRecord(reviewedRecord) : null}
+	{#if actRecord}
+		<ListenAndActReview {isFa} record={actRecord} />
+	{:else if session?.skipped.includes(mod.id as ModuleId)}
+		<div class="card" role="note"><p>{isFa ? 'این مرحله را رد کردی، پس چیزی برای دیدن نیست.' : 'You skipped this step, so there is nothing to look back at.'}</p></div>
+	{:else}
+		<div class="card" role="note"><p>{isFa ? 'چیزی از این مرحله روی این دستگاه ذخیره نشده است.' : 'Nothing from this step is saved on this device.'}</p></div>
 	{/if}
 {/snippet}
 
@@ -132,9 +152,9 @@
 			{@render backButton()}
 			<p class="eyebrow">{isFa ? 'مرور مرحلهٔ قبلی' : 'REVIEWING AN EARLIER STEP'}</p>
 			<h1 id="review-title">{text(reviewed.title)}</h1>
-			<p class="small">{isFa ? 'این بار نتیجه ذخیره نمی‌شود.' : 'This time your result is not saved.'}</p>
-			{@render moduleBody(reviewed, () => (reviewing = null))}
-			<button class="text-button" type="button" onclick={() => (reviewing = null)}>{isFa ? 'برگشت به جایی که بودم' : 'Back to where I was'}</button>
+			<p class="small">{isFa ? 'فقط خواندنی: این همان کاری است که کردی. دوباره انجام دادن ممکن نیست.' : 'Read-only: this is what you did. It can’t be redone.'}</p>
+			{@render reviewBody(reviewed)}
+			<button class="primary" type="button" onclick={() => (reviewing = null)}>{isFa ? 'برگشت به جایی که بودم' : 'Back to where I was'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
 		</section>
 
 	{:else if session.stage === 'modules' && step}
@@ -144,7 +164,7 @@
 			<p class="eyebrow">{isFa ? `مرحلهٔ ${stepNumber} از ${stepCount}` : `STEP ${stepNumber} OF ${stepCount}`} · {step.skill === 'listening' ? (isFa ? 'شنیدن' : 'LISTENING') : (isFa ? 'صحبت کردن' : 'SPEAKING')}</p>
 			<h1 id="step-title">{text(step.title)}</h1>
 			<p>{text(step.does)}</p>
-			{@render moduleBody(step, score => finish('done', score))}
+			{@render moduleBody(step, (score, record) => finish('done', score, record))}
 			<button class="text-button" type="button" onclick={() => finish('skipped')}>{isFa ? 'این مرحله را رد کن' : 'Skip this step'}</button>
 		</section>
 

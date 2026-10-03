@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
 	import { playAudioPromise, stopAllAudio, ttsIsPlaying, ENGLISH_VOICES, type TTSVoice } from '$services/tts';
-	import { ACT_ROUNDS, MAX_PLAYS, PLACES, PLAYBACK_RATE, THINGS, scoreSteps, type PlaceId, type Step, type ThingId } from '$lib/practice/listen-act';
+	import { ACT_ROUNDS, MAX_PLAYS, PLACES, PLAYBACK_RATE, THINGS, scoreSteps, type ActRecord, type PlaceId, type Step, type ThingId } from '$lib/practice/listen-act';
 	import type { DisplayText } from '$lib/practice/hotel';
 
-	let { isFa = false, onDone }: { isFa?: boolean; onDone: (score: { correct: number; total: number }) => void } = $props();
+	let { isFa = false, onDone }: { isFa?: boolean; onDone: (score: { correct: number; total: number }, record: ActRecord) => void } = $props();
 	const text = (value: DisplayText) => (isFa ? value.fa : value.en);
 
 	let round = $state(0);
@@ -14,6 +14,7 @@
 	let checked = $state<boolean[] | null>(null);
 	let totals = $state({ correct: 0, total: 0 });
 	let finished = $state(false);
+	let rounds = $state<ActRecord['rounds']>([]);
 	const voice: TTSVoice = ENGLISH_VOICES[Math.floor(Math.random() * ENGLISH_VOICES.length)].id;
 	const current = $derived(ACT_ROUNDS[round]);
 	const playing = $derived($ttsIsPlaying);
@@ -33,6 +34,7 @@
 	function check() {
 		stopAllAudio();
 		const { results, correct } = scoreSteps(current.steps, steps);
+		rounds = [...rounds, { id: current.id, steps: $state.snapshot(steps), results }];
 		checked = results; totals = { correct: totals.correct + correct, total: totals.total + current.steps.length };
 	}
 	function next() {
@@ -49,7 +51,7 @@
 	<section class="la" aria-live="polite">
 		<h2>{isFa ? 'تمام شد' : 'Finished'}</h2>
 		<p class="score">{totals.correct} / {totals.total} {isFa ? 'کار درست' : 'actions right'}</p>
-		<button class="primary" type="button" onclick={() => onDone(totals)}>{isFa ? 'ادامه' : 'Continue'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
+		<button class="primary" type="button" onclick={() => onDone(totals, { rounds })}>{isFa ? 'ادامه' : 'Continue'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
 	</section>
 {:else}
 	<section class="la" aria-labelledby="la-title">
