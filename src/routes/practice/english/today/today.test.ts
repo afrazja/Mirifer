@@ -3,7 +3,8 @@ import { load, actions } from './+page.server';
 import { startSession } from '$lib/practice/day';
 
 function fixture(target = 'en', meta: Record<string, unknown> = {}, session?: unknown) {
-	const user = { id: 'u1', user_metadata: { target_language: target, display_name: 'Sam', ...meta } };
+	const profile = { reason: 'travel', comfort: 'simple', minutes: 20, skipped: false, completedAt: '2026-10-01T10:00:00.000Z' };
+	const user = { id: 'u1', user_metadata: { target_language: target, display_name: 'Sam', english_profile_v1: profile, ...meta } };
 	const supabase = { auth: { getUser: vi.fn().mockResolvedValue({ data: { user }, error: null }), updateUser: vi.fn().mockResolvedValue({ error: null }) } };
 	const body = new FormData(); if (session !== undefined) body.set('session', typeof session === 'string' ? session : JSON.stringify(session));
 	return { supabase, event: () => ({ locals: { supabase }, request: new Request('https://mirifer.test/practice/english/today?/save', { method: 'POST', body }) }) as any };
@@ -15,6 +16,9 @@ describe('English today page', () => {
 		await expect(load(f.event())).rejects.toMatchObject({ location: '/login' });
 		await expect(load(fixture('de').event())).rejects.toMatchObject({ location: '/languages' });
 		expect(await actions.save(fixture('de', {}, startSession(15)).event())).toMatchObject({ status: 409 });
+	});
+	it('sends a learner without a profile to onboarding first', async () => {
+		await expect(load(fixture('en', { english_profile_v1: undefined }).event())).rejects.toMatchObject({ location: '/practice/english/start' });
 	});
 	it('loads the saved checkpoint and ignores a damaged one', async () => {
 		const saved = startSession(20);
