@@ -1,14 +1,18 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { DaySessionSchema } from '$lib/practice/day';
+import { readEnglishProfile } from '$lib/practice/english-profile';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	const { data: { user }, error } = await locals.supabase.auth.getUser();
 	if (error || !user) redirect(303, '/login');
 	if (user.user_metadata?.target_language !== 'en') redirect(303, '/languages');
+	// First visit: the three onboarding questions come before the first session.
+	const profile = readEnglishProfile(user.user_metadata);
+	if (!profile) redirect(303, '/practice/english/start');
 	const session = DaySessionSchema.safeParse(user.user_metadata?.english_day_v1);
 	const name = typeof user.user_metadata?.display_name === 'string' ? user.user_metadata.display_name.slice(0, 40) : '';
-	return { name, session: session.success ? session.data : null };
+	return { name, profile, session: session.success ? session.data : null };
 };
 
 export const actions: Actions = {

@@ -24,7 +24,7 @@
 	// svelte-ignore state_referenced_locally
 	let session = $state<DaySession | null>(data.session);
 	// svelte-ignore state_referenced_locally
-	let length = $state<Length>(data.session?.length ?? DEFAULT_LENGTH);
+	let length = $state<Length>(data.session?.length ?? data.profile?.minutes ?? DEFAULT_LENGTH);
 	let answer = $state(''), replied = $state<DisplayText | null>(null);
 	let saveFailed = $state(false);
 	/** A finished module the learner went back to look at again. Its result is not saved a second time. */
