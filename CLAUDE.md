@@ -141,6 +141,7 @@ Independent, read-only reviewers live in `.claude/agents/`. Before building or c
 |---|---|
 | `learning-ux-reviewer` | Lesson flow, pacing, exercises, focus on one thing at a time, mobile-first layout |
 | `german-content-reviewer` | Correct, natural, level-appropriate German; exercise distractors; glosses |
+| `english-coach-reviewer` | Natural, level-appropriate English (A2–B1); coaching tone and feedback; quality of AI instructions |
 | `persian-localization-reviewer` | Natural Persian, RTL and mixed-direction rendering |
 | `accessibility-reviewer` | WCAG 2.2 AA: labels, keyboard, contrast, tap targets, motion |
 | `qa-tester` | Edge cases: mic denied, offline, reload mid-lesson, bad data |
