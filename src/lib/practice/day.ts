@@ -44,7 +44,7 @@ export const DAY_ONE = {
 	recapMinutes: 2,
 	modules: [
 		{ id: 'listen-act', title: { en: 'Listen and act', fa: 'گوش بده و عمل کن' }, does: { en: 'Hear instructions, then do exactly what they say.', fa: 'دستورها را بشنو و دقیقاً انجامشان بده.' }, skill: 'listening', minutes: { 15: 5, 20: 5 }, built: true,
-			intro: { en: 'In this part, you’ll hear a few short instructions. Listen carefully, then do them in the same order. You can listen twice.', fa: 'در این بخش چند دستور کوتاه می‌شنوی. با دقت گوش بده و بعد آن‌ها را به همان ترتیب انجام بده. دو بار می‌توانی گوش بدهی.' } },
+			intro: { en: 'In this part, you’ll hear a few short instructions. Listen carefully, then do what they ask. You can listen twice.', fa: 'در این بخش چند دستور کوتاه می‌شنوی. با دقت گوش بده و بعد آن‌ها را انجام بده. دو بار می‌توانی گوش بدهی.' } },
 		{ id: 'scenario', title: { en: 'Scene with a twist', fa: 'صحنه با یک غافلگیری' }, does: { en: 'Solve a problem at the hotel desk when something unexpected happens.', fa: 'در پذیرش هتل مشکلی را حل کن، وقتی اتفاق غیرمنتظره‌ای می‌افتد.' }, skill: 'speaking', minutes: { 20: 6 }, built: false,
 			intro: { en: 'You’re at a hotel desk with a problem. Talk to the receptionist and sort it out. Something unexpected will happen, so take your time.', fa: 'در پذیرش هتل هستی و مشکلی داری. با مسئول پذیرش حرف بزن و حلش کن. یک اتفاق غیرمنتظره هم می‌افتد، پس عجله نکن.' } },
 		{ id: 'say-it-better', title: { en: 'Say it again, better', fa: 'دوباره بگو، بهتر' }, does: { en: 'Tell a short story about a problem you had, then tell it a second time, clearer.', fa: 'ماجرای کوتاه یک مشکل را بگو، بعد دوباره و روشن‌تر بگو.' }, skill: 'speaking', minutes: { 15: 6, 20: 5 }, built: false,

@@ -30,7 +30,8 @@
 		if (checked || !pickedThing || steps.length >= current.steps.length + 2) return;
 		steps = [...steps, { thing: pickedThing, place: id }]; pickedThing = null;
 	}
-	const undo = () => { if (!checked) { steps = steps.slice(0, -1); pickedThing = null; } };
+	/** Removes one step (the × on each step). */
+	const remove = (index: number) => { if (!checked) steps = steps.filter((_, i) => i !== index); };
 	function check() {
 		stopAllAudio();
 		const { results, correct } = scoreSteps(current.steps, steps);
@@ -56,7 +57,7 @@
 {:else}
 	<section class="la" aria-labelledby="la-title">
 		<p class="small" id="la-title">{isFa ? `دور ${round + 1} از ${ACT_ROUNDS.length}` : `Round ${round + 1} of ${ACT_ROUNDS.length}`} · {current.level}</p>
-		<p>{isFa ? `به دستورها گوش بده، بعد ${current.steps.length} کار را به ترتیب انجام بده. حداکثر ${MAX_PLAYS} بار می‌توانی گوش بدهی.` : `Listen to the instructions, then do ${current.steps.length} things in order. You can listen up to ${MAX_PLAYS} times.`}</p>
+		<p>{isFa ? `به دستورها گوش بده، بعد ${current.steps.length} کار را انجام بده. حداکثر ${MAX_PLAYS} بار می‌توانی گوش بدهی.` : `Listen to the instructions, then do the ${current.steps.length} things they ask. You can listen up to ${MAX_PLAYS} times.`}</p>
 
 		<button class="play" type="button" onclick={play} disabled={plays >= MAX_PLAYS || playing || !!checked}>
 			<span aria-hidden="true">{playing ? '🔊' : '▶'}</span>
@@ -82,7 +83,8 @@
 			{#each steps as step, index}
 				<li class:right={checked?.[index] === true} class:wrong={checked && checked[index] !== true}>
 					{stepLabel(step)}
-					{#if checked}<span class="mark">{checked[index] ? (isFa ? ' ✓ درست' : ' ✓ right') : (isFa ? ' ✗ نادرست' : ' ✗ not right')}</span>{/if}
+					{#if checked}<span class="mark">{checked[index] ? (isFa ? ' ✓ درست' : ' ✓ right') : (isFa ? ' ✗ نادرست' : ' ✗ not right')}</span>
+					{:else}<button class="remove" type="button" onclick={() => remove(index)} aria-label={isFa ? `حذف: ${stepLabel(step)}` : `Remove: ${stepLabel(step)}`}>×</button>{/if}
 				</li>
 			{:else}<li class="empty">{pickedThing ? (isFa ? 'حالا مکان را انتخاب کن.' : 'Now pick where it goes.') : (isFa ? 'هنوز کاری اضافه نکرده‌ای.' : 'No steps yet.')}</li>{/each}
 		</ol>
@@ -90,12 +92,11 @@
 		{#if !checked}
 			<div class="row">
 				<button class="primary" type="button" onclick={check} disabled={!steps.length || !heard}>{isFa ? 'بررسی کن' : 'Check my steps'}</button>
-				<button class="text-button" type="button" onclick={undo} disabled={!steps.length}>{isFa ? 'آخرین کار را بردار' : 'Undo last step'}</button>
 			</div>
 			{#if !heard}<p class="small">{isFa ? 'اول یک بار گوش بده.' : 'Listen once first.'}</p>{/if}
 		{:else}
 			<div class="card" role="status">
-				<p class="eyebrow">{isFa ? 'درست‌ها به ترتیب' : 'THE RIGHT ORDER'}</p>
+				<p class="eyebrow">{isFa ? 'جواب‌های درست' : 'THE RIGHT ANSWERS'}</p>
 				<ol class="steps">{#each current.steps as step}<li>{stepLabel(step)}</li>{/each}</ol>
 				<p class="script" lang="en" dir="ltr">“{current.script}”</p>
 				<p class="small">{isFa ? 'به این گوش بده:' : 'Listen for:'} {text(current.listenFor)}</p>
@@ -118,11 +119,13 @@
 	.tile { min-height: 48px; padding: 10px 12px; border: 1px solid var(--control-border); border-radius: 10px; background: var(--paper-raised); color: var(--ink); font: inherit; text-align: start; cursor: pointer; }
 	.tile.on { border: 2px solid var(--accent); background: var(--accent-wash); font-weight: 600; }
 	.steps { margin: 0; padding-inline-start: 22px; display: grid; gap: 6px; }
-	.steps li { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper-raised); }
+	.steps li { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper-raised); }
 	.steps li.empty { list-style: none; margin-inline-start: -22px; color: var(--ink-soft); border-style: dashed; }
 	.steps li.right { border-color: var(--leaf); background: var(--leaf-wash); }
 	.steps li.wrong { border-color: var(--miss); }
 	.mark { font-weight: 600; }
+	.remove { margin-inline-start: auto; display: grid; place-items: center; inline-size: 36px; block-size: 36px; border: 0; border-radius: 50%; background: none; color: var(--ink-soft); font-size: 1.3rem; line-height: 1; cursor: pointer; }
+	.remove:hover { background: var(--paper-sunken); color: var(--ink); }
 	.card { display: grid; gap: 8px; padding: 14px; border: 1px solid var(--control-border); border-radius: 14px; background: var(--paper-raised); }
 	.eyebrow { font-size: .76rem; letter-spacing: .12em; font-weight: 600; color: var(--accent-deep); }
 	.script { color: var(--ink); font-style: italic; }
@@ -131,5 +134,4 @@
 	button:disabled { opacity: .55; cursor: default; }
 	button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 	.primary { display: inline-flex; gap: 14px; align-items: center; justify-content: center; min-height: 48px; padding: 12px 22px; background: var(--accent); color: var(--on-accent); border: 1px solid var(--accent); border-radius: 10px; font-weight: 600; }
-	.text-button { min-height: 44px; padding: 8px 4px; background: none; border: 0; color: var(--accent-deep); }
 </style>

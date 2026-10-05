@@ -19,7 +19,7 @@
 				<li class:right={done.results[i] === true} class:wrong={done.results[i] !== true}>{label(step)} <strong>{done.results[i] ? (isFa ? '✓ درست' : '✓ right') : (isFa ? '✗ نادرست' : '✗ not right')}</strong></li>
 			{:else}<li class="none">{isFa ? 'کاری انجام ندادی.' : 'No steps were added.'}</li>{/each}
 		</ol>
-		<p class="label">{isFa ? 'درست‌ها به ترتیب' : 'The right order'}</p>
+		<p class="label">{isFa ? 'جواب‌های درست' : 'The right answers'}</p>
 		<ol>{#each round.steps as step}<li>{label(step)}</li>{/each}</ol>
 		<p class="script" lang="en" dir="ltr">“{round.script}”</p>
 	</section>
