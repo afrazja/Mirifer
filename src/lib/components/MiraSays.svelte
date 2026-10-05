@@ -8,12 +8,12 @@
 	 */
 	import { onDestroy, onMount } from 'svelte';
 	import { playAudioPromise, stopAllAudio, ttsIsPlaying } from '$services/tts';
-	import { COACH_VOICE } from '$lib/practice/coach';
+	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
 	import type { DisplayText } from '$lib/practice/hotel';
 
 	let { line, isFa = false, autoplay = true }: { line: DisplayText; isFa?: boolean; autoplay?: boolean } = $props();
 	const playing = $derived($ttsIsPlaying);
-	function play() { void playAudioPromise(line.en, 0.95, 'en-US', undefined, COACH_VOICE).catch(() => {}); }
+	function play() { void playAudioPromise(line.en, COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {}); }
 	function toggle() { if (playing) stopAllAudio(); else play(); }
 	onMount(() => { if (autoplay) play(); });
 	onDestroy(stopAllAudio);

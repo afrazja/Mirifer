@@ -10,7 +10,7 @@
 	import CoachGreeting from '$lib/components/CoachGreeting.svelte';
 	import SayAgain from '$lib/components/SayAgain.svelte';
 	import MiraSays from '$lib/components/MiraSays.svelte';
-	import { COACH_VOICE, loadGreeting, localDate, planLine, type GreetingRecord } from '$lib/practice/coach';
+	import { COACH_RATE, COACH_VOICE, loadGreeting, localDate, planLine, type GreetingRecord } from '$lib/practice/coach';
 	import { playAudioPromise, stopAllAudio, ttsIsPlaying } from '$services/tts';
 	import { getLanguage } from '$services/data-layer';
 	import {
@@ -42,7 +42,7 @@
 	const miraPlaying = $derived($ttsIsPlaying);
 	function speakPlan() {
 		if (miraPlaying) { stopAllAudio(); return; }
-		void playAudioPromise(plan.en, 0.95, 'en-US', undefined, COACH_VOICE).catch(() => {});
+		void playAudioPromise(plan.en, COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {});
 	}
 	/** From Mira's greeting to the plan: the tap on Next lets her read it aloud. */
 	function toPlan() { startStep = 'plan'; speakPlan(); }
