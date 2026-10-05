@@ -12,7 +12,7 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { playAudioPromise, stopAllAudio, ttsIsPlaying } from '$services/tts';
 	import {
-		COACH_VOICE, DAY_ONE_LINES, firstSentence, greetingMode, isFirstSentenceAttempt, loadGreeting, localDate, daysSince,
+		COACH_RATE, COACH_VOICE, DAY_ONE_LINES, firstSentence, greetingMode, isFirstSentenceAttempt, loadGreeting, localDate, daysSince,
 		saveGreeting, scriptedOpening, scriptedReply, type GreetingMode, type GreetingRecord
 	} from '$lib/practice/coach';
 	import type { EnglishProfile } from '$lib/practice/english-profile';
@@ -109,7 +109,7 @@
 
 	async function hear(line: string) {
 		if (playing) { stopAllAudio(); return; }
-		try { await playAudioPromise(line, 0.95, 'en-US', undefined, COACH_VOICE); } catch { /* the text is on screen */ }
+		try { await playAudioPromise(line, COACH_RATE, 'en-US', undefined, COACH_VOICE); } catch { /* the text is on screen */ }
 	}
 
 	/** Takes what the learner said or typed. */

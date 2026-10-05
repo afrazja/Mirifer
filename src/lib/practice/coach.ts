@@ -11,6 +11,8 @@ import type { EnglishProgress } from './english-progress';
 export const COACH_NAME = 'Mira';
 /** Mira's voice: one of the free English voices (Ava). */
 export const COACH_VOICE = 'b' as const;
+/** Mira's speaking speed: 10% faster than the earlier 0.95, the owner's choice. */
+export const COACH_RATE = 1.05;
 
 export type GreetingMode = 'first' | 'returning' | 'again-today';
 
