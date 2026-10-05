@@ -3,6 +3,7 @@
 	import type { PageProps } from './$types';
 	import AppHeader from '$lib/components/AppHeader.svelte';
 	import EnglishModuleTabs from '$lib/components/EnglishModuleTabs.svelte';
+	import { RECORDED_ENGLISH_RATE } from '$lib/practice/english-voice';
 	import { RETELL_PIECES, MAX_LISTENS, PLAYBACK_RATE, pieceImage, formatDuration, listenSeconds, speakLimit, type RetellPiece } from '$lib/practice/retell';
 	import type { DisplayText } from '$lib/practice/hotel';
 	import type { RetellRecord } from '$lib/practice/progress';
@@ -164,7 +165,7 @@
 	}
 	function listenTo(upgrade: Upgrade) {
 		const sig = upgrade.voiceSig ? `&sig=${encodeURIComponent(upgrade.voiceSig)}` : '';
-		void playAudioUrl(`/api/english/voice?v=1&voice=${voice}&text=${encodeURIComponent(upgrade.better)}${sig}`);
+		void playAudioUrl(`/api/english/voice?v=1&voice=${voice}&text=${encodeURIComponent(upgrade.better)}${sig}`, undefined, RECORDED_ENGLISH_RATE);
 	}
 	function tryAgain() { if (piece) open(piece); }
 </script>
