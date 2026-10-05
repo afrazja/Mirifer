@@ -22,8 +22,7 @@
 <div class="mira">
 	<span class="avatar" aria-hidden="true">M</span>
 	<div class="said">
-		<p class="en" lang="en" dir="ltr">{line.en}</p>
-		{#if isFa}<p class="fa" lang="fa" dir="rtl">{line.fa}</p>{/if}
+		{#if isFa}<p class="fa" lang="fa" dir="rtl">{line.fa}</p>{:else}<p class="en" lang="en" dir="ltr">{line.en}</p>{/if}
 	</div>
 	<button class="hear" type="button" onclick={toggle} aria-label={playing ? (isFa ? 'توقف صدا' : 'Stop') : (isFa ? 'شنیدن صدای میرا' : 'Hear Mira')}><span aria-hidden="true">{playing ? '■' : '▶'}</span></button>
 </div>
@@ -34,7 +33,7 @@
 	.said { display: grid; gap: 6px; min-width: 0; }
 	p { margin: 0; line-height: 1.55; }
 	.en { font-size: 1.04rem; text-align: left; }
-	.fa { color: var(--ink-soft); font-size: .92rem; }
+	.fa { font-size: 1.04rem; }
 	.hear { display: grid; place-items: center; inline-size: 44px; block-size: 44px; border: 1.5px solid var(--accent); border-radius: 50%; background: var(--paper-raised); color: var(--accent-deep); cursor: pointer; }
 	.hear:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 </style>
