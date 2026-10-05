@@ -41,6 +41,9 @@
 	let showFa = $state(false), typing = $state(false), draft = $state('');
 	let listening = $state(false), micProblem = $state<'blocked' | 'unsupported' | 'none' | null>(null);
 	let speakOpen = $state(false);
+	/** Waiting for Mira's AI line (a typing indicator shows; the script takes over after a few seconds). */
+	let thinking = $state(false);
+	let feedback = { improved: null as string | null, noteEn: null as string | null, noteFa: null as string | null };
 	let recognition: Recognition | null = null;
 	let stopTimer: ReturnType<typeof setTimeout> | undefined;
 	const playing = $derived($ttsIsPlaying);
@@ -58,18 +61,43 @@
 		const saved = loadGreeting(localDate(now));
 		if (saved && saved.mode === mode) {
 			record = saved; opening = saved.opening; reply = saved.reply; answer = saved.answer ?? ''; typed = saved.typed;
+			feedback = { improved: saved.improved, noteEn: saved.noteEn, noteFa: saved.noteFa };
 			heard = mode === 'first' && !!saved.answer; speakOpen = true;
 		} else {
 			opening = mode === 'first' ? DAY_ONE_LINES.welcome(name) : scriptedOpening(mode, name, daysSince(progress.lastCompletedAt, now), question);
 			if (mode === 'again-today') finish(null, null);
+			if (mode === 'returning' && !readOnly) void openWithAi();
 		}
 		ready = true;
 	});
 	onDestroy(() => { clearTimeout(stopTimer); recognition?.abort(); stopAllAudio(); });
 
 	function finish(said: string | null, mira: DisplayText | null) {
-		record = { date: localDate(new Date()), mode, opening, answer: said, typed, reply: mira, improved: null, noteEn: null, noteFa: null };
+		record = { date: localDate(new Date()), mode, opening, answer: said, typed, reply: mira, ...feedback };
 		saveGreeting(record);
+	}
+
+	const timeZone = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch { return 'UTC'; } };
+	/** Asks Mira's AI route; null on any problem or after `wait` ms, so the scripted line stays. */
+	async function askMira(body: Record<string, unknown>, wait: number): Promise<Record<string, unknown> | null> {
+		const controller = new AbortController();
+		const timer = setTimeout(() => controller.abort(), wait);
+		try {
+			const response = await fetch('/api/english/greeting', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, timeZone: timeZone() }), signal: controller.signal });
+			return response.ok ? await response.json() : null;
+		} catch { return null; }
+		finally { clearTimeout(timer); }
+	}
+	const asLine = (value: Record<string, unknown> | null): DisplayText | null =>
+		value && typeof value.line === 'string' ? { en: value.line, fa: typeof value.lineFa === 'string' ? value.lineFa : value.line } : null;
+
+	async function openWithAi() {
+		thinking = true;
+		const line = asLine(await askMira({ kind: 'open' }, 6_000));
+		thinking = false;
+		if (answer) return; // they answered the scripted line first; the reply saves the day
+		if (line) opening = line;
+		finish(null, null); // keeps today's opening, so a reload doesn't ask again
 	}
 
 	async function hear(line: string) {
@@ -86,10 +114,17 @@
 		if (mode === 'first') {
 			if (!isFirstSentenceAttempt(said)) { tooShort = true; return; }
 			tooShort = false; heard = true; finish(said, null);
-		} else {
-			reply = scriptedReply(name, true);
-			finish(said, reply);
-		}
+		} else void replyWithAi(said);
+	}
+
+	async function replyWithAi(said: string) {
+		thinking = true;
+		const result = await askMira({ kind: 'reply', opening: opening.en, answer: said }, 4_000);
+		thinking = false;
+		reply = asLine(result) ?? scriptedReply(name, true);
+		const improved = typeof result?.improved === 'string' ? result.improved : null;
+		feedback = { improved, noteEn: improved && typeof result?.noteEn === 'string' ? result.noteEn : null, noteFa: improved && typeof result?.noteFa === 'string' ? result.noteFa : null };
+		finish(said, reply);
 	}
 	function skipAnswer() { reply = scriptedReply(name, false); finish(null, reply); }
 
@@ -152,13 +187,19 @@
 		{#if isFa}<button class="toggle" type="button" aria-pressed={showFa} onclick={() => (showFa = !showFa)}>{showFa ? 'نمایش انگلیسی' : 'نمایش ترجمه'}</button>{/if}
 	</div>
 
-	{#if ready}
+	{#if !ready}
+		<div class="bubble mira typing" aria-hidden="true"><span></span><span></span><span></span></div>
+	{:else}
+		{#if thinking && !answer}
+			<div class="bubble mira typing" role="status" aria-label={isFa ? 'میرا در حال نوشتن است' : 'Mira is typing'}><span></span><span></span><span></span></div>
+		{:else}
 		<div class="bubble mira" class:stack={mode === 'first' && !speakOpen && !readOnly}>
 			<div class="body"><p lang={lineLang} dir={lineDir}>{text(opening)}</p></div>
 			<button class="hear" class:big={mode === 'first' && !speakOpen && !readOnly} type="button" onclick={() => hear(opening.en)} aria-label={playing ? (isFa ? 'توقف صدا' : 'Stop') : (isFa ? 'شنیدن صدای میرا' : 'Hear Mira')}>
 				<span aria-hidden="true">{playing ? '■' : '▶'}</span>{#if mode === 'first' && !speakOpen && !readOnly}&nbsp;{isFa ? 'بزن تا صدای میرا را بشنوی' : 'Tap to hear Mira'}{/if}
 			</button>
 		</div>
+		{/if}
 
 		{#if mode === 'first'}
 			{#if !speakOpen && !readOnly}
@@ -186,6 +227,8 @@
 			{#if reply}
 				<div class="bubble mira" role="status"><div class="body"><p lang={lineLang} dir={lineDir}>{text(reply)}</p></div>
 					<button class="hear" type="button" onclick={() => reply && hear(reply.en)} aria-label={isFa ? 'شنیدن صدای میرا' : 'Hear Mira'}><span aria-hidden="true">▶</span></button></div>
+			{:else if thinking}
+				{#if answer}<div class="bubble mira typing" role="status" aria-label={isFa ? 'میرا در حال نوشتن است' : 'Mira is typing'}><span></span><span></span><span></span></div>{/if}
 			{:else if !readOnly}
 				<div class="answer">{@render mic()}</div>
 				<button class="link" type="button" onclick={skipAnswer}>{isFa ? 'رد شدن و رفتن به برنامه' : 'Skip to plan'}</button>
@@ -223,5 +266,11 @@
 	.note { margin: 0; color: var(--ink-soft); font-size: .9rem; line-height: 1.5; }
 	button:disabled { opacity: .55; cursor: default; }
 	button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+	.typing { display: inline-flex; gap: 5px; padding: 16px 18px; grid-template-columns: none; }
+	.typing span { inline-size: 8px; block-size: 8px; border-radius: 50%; background: var(--ink-soft); animation: blink 1.2s infinite ease-in-out; }
+	.typing span:nth-child(2) { animation-delay: .2s; }
+	.typing span:nth-child(3) { animation-delay: .4s; }
+	@keyframes blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+	@media (prefers-reduced-motion: reduce) { .typing span { animation: none; opacity: .6; } }
 	.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 </style>

@@ -8,6 +8,8 @@
 	import { clearRecords, loadRecord, saveRecord } from '$lib/practice/day-records';
 	import { asActRecord, type ActRecord } from '$lib/practice/listen-act';
 	import CoachGreeting from '$lib/components/CoachGreeting.svelte';
+	import SayAgain from '$lib/components/SayAgain.svelte';
+	import { loadGreeting, localDate, type GreetingRecord } from '$lib/practice/coach';
 	import { getLanguage } from '$services/data-layer';
 	import {
 		DAY_ONE, DEFAULT_LENGTH, LENGTHS, agendaFor, agendaMinutes, completeSession, currentModule,
@@ -30,6 +32,9 @@
 	let reviewing = $state<string | null>(null);
 	/** Back at the check-in (greeting, plan) after the session has started. The plan is read-only then. */
 	let showCheckIn = $state(false);
+	/** Today's chat with Mira, for the recap's one correction (kept in this browser). */
+	let chat = $state<GreetingRecord | null>(null);
+	$effect(() => { if (session?.stage === 'recap') chat = loadGreeting(localDate(new Date())); });
 	/** Doing a skipped module now, from the look-back view. */
 	let doingNow = $state(false);
 	const reviewed = $derived(reviewing && session ? modulesFor(session.length).find(m => m.id === reviewing) ?? null : null);
@@ -192,6 +197,15 @@
 						{:else}<button class="text-button inline" type="button" onclick={() => { doingNow = true; reviewing = item.id; }}>{isFa ? 'رد شد · همین حالا انجامش بده' : 'Skipped · do it now'}</button>{/if}</li>
 				{/each}
 			</ul>
+			{#if chat?.improved && chat.answer}
+				<div class="card">
+					<p class="eyebrow">{isFa ? 'از گفت‌وگویت با میرا' : 'FROM YOUR CHAT WITH MIRA'}</p>
+					<p><span class="small">{isFa ? 'گفتی:' : 'You said:'}</span> <bdi lang="en" class="said">“{chat.answer}”</bdi></p>
+					<p><span class="small">{isFa ? 'این‌طور بگو:' : 'Try:'}</span> <bdi lang="en" class="better">“{chat.improved}”</bdi></p>
+					{#if (isFa ? chat.noteFa : chat.noteEn)}<p class="small">{isFa ? chat.noteFa : chat.noteEn}</p>{/if}
+					<SayAgain sentence={chat.improved} {isFa} />
+				</div>
+			{/if}
 			<div class="card">
 				<p class="eyebrow">{isFa ? 'پیشنهاد برای دفعهٔ بعد' : 'NEXT TIME'}</p>
 				<strong>{text(next.title)}</strong>
@@ -249,5 +263,7 @@
 	.plan h2 { margin-top: 0; }
 	.start-bar { position: fixed; inset-inline: 0; inset-block-end: 0; z-index: 20; padding: 12px 20px calc(14px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--paper) 35%); }
 	.primary.wide { display: flex; inline-size: 100%; max-inline-size: 680px; margin-inline: auto; min-height: 54px; font-size: 1.05rem; }
+	.said { color: var(--ink-soft); }
+	.better { font-weight: 600; color: var(--accent-deep); }
 	.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 </style>
