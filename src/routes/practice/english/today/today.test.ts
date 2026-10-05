@@ -34,4 +34,17 @@ describe('English today page', () => {
 		const clear = fixture('en', {}, ''); await actions.save(clear.event());
 		expect(clear.supabase.auth.updateUser).toHaveBeenCalledWith({ data: { english_day_v1: null } });
 	});
+	it('counts a finished session once towards progress', async () => {
+		const done = { ...startSession(15), stage: 'done', done: ['listen-act'], scores: { 'listen-act': { correct: 9, total: 10 } }, completedAt: new Date().toISOString() };
+		const first = fixture('en', {}, done);
+		await actions.save(first.event());
+		expect(first.supabase.auth.updateUser).toHaveBeenCalledWith({ data: { english_day_v1: expect.objectContaining({ stage: 'done' }), english_progress_v1: expect.objectContaining({ sessionsCompleted: 1, lastResult: 'strong' }) } });
+		const again = fixture('en', { english_day_v1: done }, done);
+		await actions.save(again.event());
+		expect(again.supabase.auth.updateUser).toHaveBeenCalledWith({ data: { english_day_v1: expect.anything() } });
+		const midway = fixture('en', {}, startSession(15));
+		await actions.save(midway.event());
+		expect(midway.supabase.auth.updateUser).toHaveBeenCalledWith({ data: { english_day_v1: expect.anything() } });
+	});
 });
+

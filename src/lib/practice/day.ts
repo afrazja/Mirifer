@@ -30,6 +30,10 @@ export interface DayModule {
 export const DAY_ONE = {
 	id: DAY_ID,
 	theme: { en: 'Handle a problem while travelling', fa: 'حل یک مشکل در سفر' } satisfies DisplayText,
+	/** How the coach names today's theme in a sentence ("Today is about …"). */
+	themePhrase: 'travel problems',
+	/** The coach's theme-linked warm-up question for this day (Day 2+ greeting). */
+	question: 'Has anything ever gone wrong for you on a trip?',
 	goal: {
 		en: 'By the end, you can explain a problem, ask for help, and say it clearly.',
 		fa: 'در پایان می‌توانی یک مشکل را توضیح بدهی، کمک بخواهی و روشن بگویی.'
@@ -131,12 +135,4 @@ export function recommend(session: DaySession): Recommendation {
 	if (weak && !session.skipped.includes(weak.id)) return { title: { en: `Next time: ${weak.title.en} again`, fa: `دفعهٔ بعد: دوباره ${weak.title.fa}` }, why: { en: 'It was the hardest part today, so you get another go with new details.', fa: 'امروز سخت‌ترین بخش بود، پس با جزئیات تازه دوباره امتحانش می‌کنی.' } };
 	if (skipped) return { title: { en: `Next time: ${skipped.title.en}`, fa: `دفعهٔ بعد: ${skipped.title.fa}` }, why: { en: 'You skipped it today, so it comes back first.', fa: 'امروز ردش کردی، پس اول از همه برمی‌گردد.' } };
 	return { title: { en: 'Next time: a new theme', fa: 'دفعهٔ بعد: یک موضوع تازه' }, why: { en: 'You finished every step today, so you move on.', fa: 'امروز همهٔ مرحله‌ها را تمام کردی، پس جلو می‌روی.' } };
-}
-
-/** Kind, fixed reaction to the check-in answer. No AI: it works offline and never says anything surprising. */
-export function checkInReply(answer: string): DisplayText {
-	const text = answer.toLowerCase();
-	if (/\b(tired|exhausted|sleepy|busy|stress|hard|long)\b/.test(text)) return { en: 'That sounds like a full day. A short, focused session is a good way to finish it.', fa: 'روز پرکاری بوده. یک جلسهٔ کوتاه و متمرکز راه خوبی برای ادامه‌اش است.' };
-	if (/\b(good|great|nice|fine|happy|well|amazing|fun)\b/.test(text)) return { en: 'Good to hear. Let’s use that energy.', fa: 'خوشحالم. از همین انرژی استفاده کنیم.' };
-	return { en: 'Thanks for sharing. Let’s begin.', fa: 'ممنون که گفتی. شروع کنیم.' };
 }

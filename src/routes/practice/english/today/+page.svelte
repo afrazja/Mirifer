@@ -7,10 +7,10 @@
 	import ListenAndActReview from '$lib/components/ListenAndActReview.svelte';
 	import { clearRecords, loadRecord, saveRecord } from '$lib/practice/day-records';
 	import { asActRecord, type ActRecord } from '$lib/practice/listen-act';
-	import EnglishSpeechInput from '$lib/components/EnglishSpeechInput.svelte';
+	import CoachGreeting from '$lib/components/CoachGreeting.svelte';
 	import { getLanguage } from '$services/data-layer';
 	import {
-		DAY_ONE, DEFAULT_LENGTH, LENGTHS, agendaFor, agendaMinutes, checkInReply, completeSession, currentModule,
+		DAY_ONE, DEFAULT_LENGTH, LENGTHS, agendaFor, agendaMinutes, completeSession, currentModule,
 		completeLater, finishModule, moduleBefore, modulesFor, recommend, sessionProgress, startSession, type DaySession, type Length, type ModuleId
 	} from '$lib/practice/day';
 	import type { DisplayText } from '$lib/practice/hotel';
@@ -25,7 +25,6 @@
 	let session = $state<DaySession | null>(data.session);
 	// svelte-ignore state_referenced_locally
 	let length = $state<Length>(data.session?.length ?? data.profile?.minutes ?? DEFAULT_LENGTH);
-	let answer = $state(''), replied = $state<DisplayText | null>(null);
 	let saveFailed = $state(false);
 	/** A finished module the learner went back to look at again. Its result is not saved a second time. */
 	let reviewing = $state<string | null>(null);
@@ -57,7 +56,6 @@
 			if (!response.ok) saveFailed = true;
 		} catch { saveFailed = true; }
 	}
-	function sendAnswer() { if (answer.trim()) replied = checkInReply(answer); }
 	const begin = () => { clearRecords(); return save(startSession(length)); };
 	const finish = (outcome: 'done' | 'skipped', score?: { correct: number; total: number }, record?: unknown) => {
 		if (!session || !step) return;
@@ -72,8 +70,7 @@
 		doingNow = false; reviewing = null;
 		void save(completeLater(session, id as ModuleId, score));
 	}
-	function again() { answer = ''; replied = null; clearRecords(); void save(null); }
-	const greeting = $derived(data.name ? (isFa ? `سلام ${data.name}` : `Hello, ${data.name}`) : (isFa ? 'سلام' : 'Hello'));
+	function again() { clearRecords(); void save(null); }
 </script>
 
 {#snippet moduleBody(mod: DayModule, onDone: (score?: { correct: number; total: number }, record?: ActRecord) => void)}
@@ -117,43 +114,38 @@
 	<EnglishModuleTabs current="today" {isFa} />
 
 	{#if !session || showCheckIn}
-		<section aria-labelledby="start-title">
-			<p class="eyebrow">{isFa ? 'انگلیسی · روز ۱' : 'ENGLISH · DAY 1'}</p>
-			<h1 id="start-title">{greeting}</h1>
-			<p class="theme"><strong>{isFa ? 'موضوع امروز:' : 'Today’s theme:'}</strong> {text(DAY_ONE.theme)}</p>
-			<p class="goal">{text(DAY_ONE.goal)}</p>
+		<section aria-labelledby="start-title" class="start">
+			<p class="eyebrow">{isFa ? 'انگلیسی · امروز' : 'ENGLISH · TODAY'}</p>
+			<h1 id="start-title" class="theme-title">{text(DAY_ONE.theme)}</h1>
 
-			<div class="card">
-				<label for="mood">{isFa ? 'امروزت چطور بود؟ (اختیاری)' : 'How was your day so far? (optional)'}</label>
-				<textarea id="mood" rows="3" maxlength="300" bind:value={answer} disabled={!!replied} lang="en" dir="ltr" placeholder={isFa ? 'به انگلیسی بنویس یا بگو' : 'Write or say it in English'}></textarea>
-				{#if !replied}
-					<div class="row">
-						<EnglishSpeechInput {isFa} onTranscript={value => (answer = value)} />
-						<button class="secondary" type="button" onclick={sendAnswer} disabled={!answer.trim()}>{isFa ? 'بفرست' : 'Send'}</button>
-					</div>
-				{:else}
-					<p class="reply" role="status">{text(replied)}</p>
+			<CoachGreeting {isFa} name={data.name} profile={data.profile} progress={data.progress} question={DAY_ONE.question} readOnly={!!session} />
+
+			<div class="card plan" id="plan">
+				<h2>{isFa ? 'برنامهٔ امروز' : 'Today’s plan'}</h2>
+				<p class="goal">{text(DAY_ONE.goal)}</p>
+				<fieldset class="lengths">
+					<legend class="sr-only">{isFa ? 'مدت جلسه' : 'Session length'}</legend>
+					{#each LENGTHS as option}
+						<label class:selected={length === option}><input type="radio" name="length" value={option} bind:group={length} disabled={!!session} /> {option} {isFa ? 'دقیقه' : 'min'}</label>
+					{/each}
+				</fieldset>
+				<ol class="agenda">
+					{#each agenda as item}<li><span>{text(item.title)}</span><span class="min">{item.minutes} {isFa ? 'دقیقه' : 'min'}</span></li>{/each}
+				</ol>
+				<p class="small">{isFa ? 'هر مرحله ذخیره می‌شود؛ هر وقت برگشتی از همان‌جا ادامه می‌دهی.' : 'Each step is saved, so you can come back and carry on where you stopped.'}</p>
+				{#if session}
+					<p class="small">{isFa ? 'مدت جلسه بعد از شروع عوض نمی‌شود. برای تغییر، جلسه را از اول شروع کن.' : 'The length can’t change once you have started. To change it, start the session again.'}</p>
+					<button class="text-button" type="button" onclick={() => { showCheckIn = false; again(); }}>{isFa ? 'شروع دوباره' : 'Start again'}</button>
 				{/if}
 			</div>
 
-			<h2>{isFa ? 'برنامهٔ امروز' : 'Today’s plan'}</h2>
-			<fieldset class="lengths">
-				<legend class="sr-only">{isFa ? 'مدت جلسه' : 'Session length'}</legend>
-				{#each LENGTHS as option}
-					<label class:selected={length === option}><input type="radio" name="length" value={option} bind:group={length} disabled={!!session} /> {option} {isFa ? 'دقیقه' : 'min'}</label>
-				{/each}
-			</fieldset>
-			<ol class="agenda">
-				{#each agenda as item}<li><span>{text(item.title)}</span><span class="min">{item.minutes} {isFa ? 'دقیقه' : 'min'}</span></li>{/each}
-			</ol>
-			<p class="small">{isFa ? 'هر مرحله ذخیره می‌شود؛ هر وقت برگشتی از همان‌جا ادامه می‌دهی.' : 'Each step is saved, so you can come back and carry on where you stopped.'}</p>
-			{#if session}
-				<p class="small">{isFa ? 'مدت جلسه بعد از شروع عوض نمی‌شود. برای تغییر، جلسه را از اول شروع کن.' : 'The length can’t change once you have started. To change it, start the session again.'}</p>
-				<button class="primary" type="button" onclick={() => (showCheckIn = false)}>{isFa ? 'ادامه' : 'Continue'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
-				<button class="text-button" type="button" onclick={() => { showCheckIn = false; again(); }}>{isFa ? 'شروع دوباره' : 'Start again'}</button>
-			{:else}
-				<button class="primary" type="button" onclick={begin}>{isFa ? `شروع (${agendaMinutes(length)} دقیقه)` : `Start (${agendaMinutes(length)} min)`} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
-			{/if}
+			<div class="start-bar">
+				{#if session}
+					<button class="primary wide" type="button" onclick={() => (showCheckIn = false)}>{isFa ? 'ادامه' : 'Continue'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
+				{:else}
+					<button class="primary wide" type="button" onclick={begin}>{isFa ? `شروع · ${agendaMinutes(length)} دقیقه` : `Start · ${agendaMinutes(length)} min`} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
+				{/if}
+			</div>
 		</section>
 
 	{:else if reviewed}
@@ -227,14 +219,10 @@
 	h1 { font-family: var(--font-display); font-weight: 500; font-size: clamp(1.8rem, 5vw, 2.6rem); line-height: 1.15; margin: 0 0 14px; }
 	h2 { font-family: var(--font-display); font-weight: 500; font-size: 1.25rem; margin: 26px 0 10px; }
 	p { line-height: 1.65; }
-	.theme { font-size: 1.1rem; margin: 0 0 4px; }
 	.goal { color: var(--ink-soft); margin-top: 0; }
 	.card { display: grid; gap: 10px; padding: 16px; margin: 18px 0; border: 1px solid var(--control-border); border-radius: 14px; background: var(--paper-raised); }
 	.card p { margin: 0; }
-	textarea { width: 100%; box-sizing: border-box; padding: 12px; font: inherit; border: 1px solid var(--control-border); border-radius: 10px; background: var(--control); color: var(--ink); resize: vertical; }
 	label { font-weight: 600; }
-	.row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 8px; }
-	.reply { color: var(--accent-deep); font-weight: 600; }
 	.lengths { display: flex; gap: 10px; border: 0; padding: 0; margin: 0 0 14px; }
 	.lengths label { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 10px 16px; border: 1px solid var(--control-border); border-radius: 10px; background: var(--paper-raised); font-weight: 500; cursor: pointer; }
 	.lengths label.selected { border-color: var(--accent); background: var(--accent-wash); font-weight: 600; }
@@ -256,5 +244,10 @@
 	.text-button { min-height: 44px; padding: 8px 4px; background: none; border: 0; color: var(--accent-deep); }
 	.back { display: inline-flex; gap: 8px; align-items: center; min-height: 44px; padding: 8px 4px; margin-bottom: 4px; background: none; border: 0; color: var(--accent-deep); font-weight: 600; }
 	.inline { min-height: 44px; padding: 8px 0; }
+	.start { padding-bottom: 96px; }
+	.theme-title { font-size: clamp(1.5rem, 5vw, 2.1rem); }
+	.plan h2 { margin-top: 0; }
+	.start-bar { position: fixed; inset-inline: 0; inset-block-end: 0; z-index: 20; padding: 12px 20px calc(14px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--paper) 35%); }
+	.primary.wide { display: flex; inline-size: 100%; max-inline-size: 680px; margin-inline: auto; min-height: 54px; font-size: 1.05rem; }
 	.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 </style>
