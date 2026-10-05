@@ -9,11 +9,12 @@
 	import { asActRecord, type ActRecord } from '$lib/practice/listen-act';
 	import CoachGreeting from '$lib/components/CoachGreeting.svelte';
 	import SayAgain from '$lib/components/SayAgain.svelte';
+	import MiraSays from '$lib/components/MiraSays.svelte';
 	import { COACH_VOICE, loadGreeting, localDate, planLine, type GreetingRecord } from '$lib/practice/coach';
 	import { playAudioPromise, stopAllAudio, ttsIsPlaying } from '$services/tts';
 	import { getLanguage } from '$services/data-layer';
 	import {
-		DAY_ONE, DEFAULT_LENGTH, agendaFor, agendaMinutes, completeSession, currentModule,
+		DAY_ONE, RECAP_INTRO, DEFAULT_LENGTH, agendaFor, agendaMinutes, completeSession, currentModule,
 		completeLater, finishModule, moduleBefore, modulesFor, recommend, sessionProgress, startSession, type DaySession, type Length, type ModuleId
 	} from '$lib/practice/day';
 	import type { DisplayText } from '$lib/practice/hotel';
@@ -192,7 +193,7 @@
 			<div class="bar" role="progressbar" aria-label={isFa ? 'پیشرفت جلسه' : 'Session progress'} aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(share * 100)}><span style:width="{share * 100}%"></span></div>
 			<p class="eyebrow">{isFa ? `مرحلهٔ ${stepNumber} از ${stepCount}` : `STEP ${stepNumber} OF ${stepCount}`} · {step.skill === 'listening' ? (isFa ? 'شنیدن' : 'LISTENING') : (isFa ? 'صحبت کردن' : 'SPEAKING')}</p>
 			<h1 id="step-title">{text(step.title)}</h1>
-			<p>{text(step.does)}</p>
+			{#key step.id}<MiraSays line={step.intro} {isFa} />{/key}
 			{@render moduleBody(step, (score, record) => finish('done', score, record))}
 			<button class="text-button" type="button" onclick={() => finish('skipped')}>{isFa ? 'این مرحله را رد کن' : 'Skip this step'}</button>
 		</section>
@@ -204,6 +205,7 @@
 			<div class="bar"><span style:width="{share * 100}%"></span></div>
 			<p class="eyebrow">{isFa ? 'مرور' : 'RECAP'}</p>
 			<h1 id="recap-title">{isFa ? 'کار امروز' : 'What you did today'}</h1>
+			<MiraSays line={RECAP_INTRO} {isFa} />
 			<ul class="done-list">
 				{#each DAY_ONE.modules.filter(m => m.minutes[session!.length] !== undefined) as item}
 					<li>{text(item.title)}

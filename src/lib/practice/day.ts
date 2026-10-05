@@ -25,6 +25,8 @@ export interface DayModule {
 	minutes: Partial<Record<Length, number>>;
 	/** False until the module has been built and checked. The shell shows a stand-in. */
 	built: boolean;
+	/** Mira's spoken introduction, as a teacher would say it (shown and read aloud). */
+	intro: DisplayText;
 }
 
 export const DAY_ONE = {
@@ -41,11 +43,17 @@ export const DAY_ONE = {
 	checkInMinutes: 2,
 	recapMinutes: 2,
 	modules: [
-		{ id: 'listen-act', title: { en: 'Listen and act', fa: 'گوش بده و عمل کن' }, does: { en: 'Hear instructions, then do exactly what they say.', fa: 'دستورها را بشنو و دقیقاً انجامشان بده.' }, skill: 'listening', minutes: { 15: 5, 20: 5 }, built: true },
-		{ id: 'scenario', title: { en: 'Scene with a twist', fa: 'صحنه با یک غافلگیری' }, does: { en: 'Solve a problem at the hotel desk when something unexpected happens.', fa: 'در پذیرش هتل مشکلی را حل کن، وقتی اتفاق غیرمنتظره‌ای می‌افتد.' }, skill: 'speaking', minutes: { 20: 6 }, built: false },
-		{ id: 'say-it-better', title: { en: 'Say it again, better', fa: 'دوباره بگو، بهتر' }, does: { en: 'Tell a short story about a problem you had, then tell it a second time, clearer.', fa: 'ماجرای کوتاه یک مشکل را بگو، بعد دوباره و روشن‌تر بگو.' }, skill: 'speaking', minutes: { 15: 6, 20: 5 }, built: false }
+		{ id: 'listen-act', title: { en: 'Listen and act', fa: 'گوش بده و عمل کن' }, does: { en: 'Hear instructions, then do exactly what they say.', fa: 'دستورها را بشنو و دقیقاً انجامشان بده.' }, skill: 'listening', minutes: { 15: 5, 20: 5 }, built: true,
+			intro: { en: 'In this part, you’ll hear a few short instructions. Listen carefully, then do them in the same order. You can listen twice.', fa: 'در این بخش چند دستور کوتاه می‌شنوی. با دقت گوش بده و بعد آن‌ها را به همان ترتیب انجام بده. دو بار می‌توانی گوش بدهی.' } },
+		{ id: 'scenario', title: { en: 'Scene with a twist', fa: 'صحنه با یک غافلگیری' }, does: { en: 'Solve a problem at the hotel desk when something unexpected happens.', fa: 'در پذیرش هتل مشکلی را حل کن، وقتی اتفاق غیرمنتظره‌ای می‌افتد.' }, skill: 'speaking', minutes: { 20: 6 }, built: false,
+			intro: { en: 'You’re at a hotel desk with a problem. Talk to the receptionist and sort it out. Something unexpected will happen, so take your time.', fa: 'در پذیرش هتل هستی و مشکلی داری. با مسئول پذیرش حرف بزن و حلش کن. یک اتفاق غیرمنتظره هم می‌افتد، پس عجله نکن.' } },
+		{ id: 'say-it-better', title: { en: 'Say it again, better', fa: 'دوباره بگو، بهتر' }, does: { en: 'Tell a short story about a problem you had, then tell it a second time, clearer.', fa: 'ماجرای کوتاه یک مشکل را بگو، بعد دوباره و روشن‌تر بگو.' }, skill: 'speaking', minutes: { 15: 6, 20: 5 }, built: false,
+			intro: { en: 'Now it’s your turn to talk. Tell me about a problem you had on a trip. Then you’ll hear a clearer way to say it, and you can try again.', fa: 'حالا نوبت توست که حرف بزنی. از مشکلی که در یک سفر داشتی برایم بگو. بعد شکل روشن‌ترش را می‌شنوی و می‌توانی دوباره امتحان کنی.' } }
 	] satisfies DayModule[]
 } as const;
+
+/** Mira's line when the recap opens. */
+export const RECAP_INTRO: DisplayText = { en: 'Well done. Here’s what you did today, and what comes next.', fa: 'آفرین. این کارهایی است که امروز انجام دادی، و قدم بعدی.' };
 
 export type ModuleId = (typeof DAY_ONE.modules)[number]['id'];
 const MODULE_IDS = DAY_ONE.modules.map(module => module.id) as [ModuleId, ...ModuleId[]];
