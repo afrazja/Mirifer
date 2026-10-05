@@ -61,7 +61,8 @@ export const ACT_ROUNDS: ActRound[] = [
 ];
 
 export const MAX_PLAYS = 2;
-export const PLAYBACK_RATE: Record<ActRound['level'], number> = { A2: 0.85, B1: 0.9 };
+/** Same pace as Mira for every level (owner's choice). */
+export { ENGLISH_RATE as PLAYBACK_RATE_ALL } from './english-voice';
 
 /** Step-by-step: step i is right only if the learner's i-th step equals the expected i-th step. Extra steps are not rewarded. */
 export function scoreSteps(expected: Step[], given: Step[]): { results: boolean[]; correct: number } {

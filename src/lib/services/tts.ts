@@ -331,7 +331,7 @@ function playWebAudio(
  * play, so the caller can fall back to the ordinary voice. The load timeout
  * is generous: the first play of a line may be generated on demand.
  */
-export function playAudioUrl(url: string, loadTimeoutMs = 12_000): Promise<boolean> {
+export function playAudioUrl(url: string, loadTimeoutMs = 12_000, playbackRate = 1): Promise<boolean> {
 	const myGen = ttsGeneration;
 	releasePlayer();
 	return new Promise((resolve) => {
@@ -353,7 +353,7 @@ export function playAudioUrl(url: string, loadTimeoutMs = 12_000): Promise<boole
 		const cancel = () => end(true);
 		const audio = player();
 		audio.src = url;
-		audio.defaultPlaybackRate = audio.playbackRate = 1;
+		audio.defaultPlaybackRate = audio.playbackRate = playbackRate;
 		currentAudio = audio;
 		settleCurrent = cancel;
 		ttsIsPlaying.set(true);

@@ -9,6 +9,7 @@
 	import { GOALS, GOAL_IDS, HOTEL_ID, MAX_REPLY, MAX_TURNS, learnerTurns, startHotel, wordCount, type Correction, type DisplayText, type GoalId, type HotelState, type Variant } from '$lib/practice/hotel';
 	import { getLanguage, setLanguage, loadPracticeDraft, savePracticeDraft, clearPracticeDraft } from '$services/data-layer';
 	import { trackEvent } from '$services/analytics';
+	import { ENGLISH_RATE, RECORDED_ENGLISH_RATE } from '$lib/practice/english-voice';
 	import { playAudioPromise, playAudioUrl, stopAllAudio, ENGLISH_VOICES, type TTSVoice } from '$services/tts';
 
 	let { data, form }: PageProps = $props();
@@ -53,7 +54,7 @@
 		const voice = jamieVoice;
 		const sig = voiceSigs[line];
 		const url = `/api/english/voice?v=1&voice=${voice}&text=${encodeURIComponent(line)}${sig ? `&sig=${encodeURIComponent(sig)}` : ''}`;
-		if (!(await playAudioUrl(url))) void playAudioPromise(line, 1, 'en-US', undefined, voice);
+		if (!(await playAudioUrl(url, undefined, RECORDED_ENGLISH_RATE))) void playAudioPromise(line, ENGLISH_RATE, 'en-US', undefined, voice);
 	}
 	function toggleReceptionVoice() {
 		voiceOn = !voiceOn;

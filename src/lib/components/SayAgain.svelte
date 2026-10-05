@@ -5,7 +5,7 @@
 	 */
 	import { onDestroy } from 'svelte';
 	import { playAudioPromise, stopAllAudio } from '$services/tts';
-	import { COACH_VOICE } from '$lib/practice/coach';
+	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
 
 	let { sentence, isFa = false }: { sentence: string; isFa?: boolean } = $props();
 	type Recognition = { lang: string; interimResults: boolean; onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null; onerror: (() => void) | null; onend: (() => void) | null; start(): void; stop(): void; abort(): void };
@@ -32,7 +32,7 @@
 </script>
 
 <div class="say">
-	<button type="button" class="hear" onclick={() => void playAudioPromise(sentence, 0.9, 'en-US', undefined, COACH_VOICE)}><span aria-hidden="true">▶</span> {isFa ? 'بشنو' : 'Hear it'}</button>
+	<button type="button" class="hear" onclick={() => void playAudioPromise(sentence, COACH_RATE, 'en-US', undefined, COACH_VOICE)}><span aria-hidden="true">▶</span> {isFa ? 'بشنو' : 'Hear it'}</button>
 	{#if !unavailable}<button type="button" class="mic" class:on={listening} aria-pressed={listening} onclick={listen}>{listening ? (isFa ? 'گوش می‌دهم…' : 'Listening…') : (isFa ? 'بلند بگو' : 'Say it')}</button>{/if}
 </div>
 {#if heard}<p class="heard" role="status"><span>{isFa ? 'شنیدم:' : 'I heard:'}</span> <bdi lang="en">“{heard}”</bdi>{matched ? (isFa ? ' — دقیقاً همین.' : ' — that’s it.') : ''}</p>{/if}

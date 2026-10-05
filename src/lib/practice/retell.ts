@@ -9,6 +9,7 @@
  * against them rather than judging freely.
  */
 import type { DisplayText } from './hotel';
+import { RECORDED_ENGLISH_RATE } from './english-voice';
 
 export const RETELL_ID = 'retell-v1';
 
@@ -26,10 +27,10 @@ export interface RetellPiece {
 export const pieceImage = (piece: Pick<RetellPiece, 'id'>, small = false) => `/images/retell/${piece.id}${small ? '-sm' : ''}.webp`;
 
 /**
- * The narration comes out at about 185 words a minute, too fast for
- * learners, so the browser slows playback (pitch is preserved).
+ * The narration comes out at about 185 words a minute; it plays at the
+ * course-wide English pace (english-voice.ts), the same as Mira.
  */
-export const PLAYBACK_RATE: Record<RetellPiece['level'], number> = { A2: 0.85, B1: 0.9, B2: 1 };
+export const PLAYBACK_RATE: Record<RetellPiece['level'], number> = { A2: RECORDED_ENGLISH_RATE, B1: RECORDED_ENGLISH_RATE, B2: RECORDED_ENGLISH_RATE };
 const NARRATION_WORDS_PER_SECOND = 3.1;
 
 /** Listening time at the piece's playback rate. */
@@ -39,11 +40,22 @@ export function listenSeconds(piece: Pick<RetellPiece, 'text' | 'level'>): numbe
 }
 
 /**
- * The most a learner may speak for a piece: 90 seconds for short listening
- * (up to 1:30), 2 minutes for anything longer, however long it is.
+ * How long a piece is, measured at the pace it was written for (slower for
+ * lower levels). Speaking time follows the piece's length, not how fast the
+ * voice happens to read it.
+ */
+const WRITTEN_PACE: Record<RetellPiece['level'], number> = { A2: 0.85, B1: 0.9, B2: 1 };
+function pieceSeconds(piece: Pick<RetellPiece, 'text' | 'level'>): number {
+	const words = piece.text.trim().split(/\s+/).length;
+	return Math.round(words / (NARRATION_WORDS_PER_SECOND * WRITTEN_PACE[piece.level]));
+}
+
+/**
+ * The most a learner may speak for a piece: 90 seconds for a short piece
+ * (up to 1:30 at its written pace), 2 minutes for anything longer.
  */
 export function speakLimit(piece: Pick<RetellPiece, 'text' | 'level'>): number {
-	return listenSeconds(piece) <= 90 ? 90 : 120;
+	return pieceSeconds(piece) <= 90 ? 90 : 120;
 }
 
 /** Plays allowed before retelling. */

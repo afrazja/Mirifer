@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
 	import { playAudioPromise, stopAllAudio, ttsIsPlaying, ENGLISH_VOICES, type TTSVoice } from '$services/tts';
-	import { ACT_ROUNDS, MAX_PLAYS, PLACES, PLAYBACK_RATE, THINGS, scoreSteps, type ActRecord, type PlaceId, type Step, type ThingId } from '$lib/practice/listen-act';
+	import { ACT_ROUNDS, MAX_PLAYS, PLACES, PLAYBACK_RATE_ALL, THINGS, scoreSteps, type ActRecord, type PlaceId, type Step, type ThingId } from '$lib/practice/listen-act';
 	import type { DisplayText } from '$lib/practice/hotel';
 
 	let { isFa = false, onDone }: { isFa?: boolean; onDone: (score: { correct: number; total: number }, record: ActRecord) => void } = $props();
@@ -22,7 +22,7 @@
 	async function play() {
 		if (plays >= MAX_PLAYS || playing || checked) return;
 		plays += 1; audioFailed = false;
-		try { await playAudioPromise(current.script, PLAYBACK_RATE[current.level], 'en-US', undefined, voice); heard = true; }
+		try { await playAudioPromise(current.script, PLAYBACK_RATE_ALL, 'en-US', undefined, voice); heard = true; }
 		catch { audioFailed = true; heard = true; }
 	}
 	function pickThing(id: ThingId) { if (!checked) pickedThing = pickedThing === id ? null : id; }
