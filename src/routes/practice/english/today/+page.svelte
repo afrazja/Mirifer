@@ -146,7 +146,7 @@
 			{/if}
 			<div class="plan-head">
 				<span class="avatar" aria-hidden="true">M</span>
-				<p class="mira-name">Mira</p>
+				<p class="mira-name">{isFa ? 'میرا' : 'Mira'}</p>
 				<button class="hear" type="button" onclick={speakPlan} aria-label={miraPlaying ? (isFa ? 'توقف صدا' : 'Stop') : (isFa ? 'شنیدن برنامه' : 'Hear the plan')}><span aria-hidden="true">{miraPlaying ? '■' : '▶'}</span></button>
 			</div>
 			<h1 id="start-title" class="plan-title">{isFa ? `امروز ${['یک', 'دو', 'سه', 'چهار', 'پنج', 'شش'][parts.length - 1]} بخش داریم.` : plan.en.split('.')[0] + '.'}</h1>

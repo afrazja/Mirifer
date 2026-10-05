@@ -44,7 +44,7 @@
 	let opening = $state<DisplayText>({ en: '', fa: '' });
 	let reply = $state<DisplayText | null>(null);
 	let answer = $state(''), typed = $state(false), skipped = $state(false), tooShort = $state(false);
-	let showFa = $state(false), typing = $state(false), draft = $state('');
+	let typing = $state(false), draft = $state('');
 	let listening = $state(false), micProblem = $state<'blocked' | 'unsupported' | 'none' | null>(null);
 	let thinking = $state(false);
 	let feedback = { improved: null as string | null, noteEn: null as string | null, noteFa: null as string | null };
@@ -52,16 +52,17 @@
 	let stopTimer: ReturnType<typeof setTimeout> | undefined;
 	let heading: HTMLElement | undefined = $state();
 	const playing = $derived($ttsIsPlaying);
-	const text = (value: DisplayText) => (isFa && showFa ? value.fa : value.en);
-	const lineLang = $derived(isFa && showFa ? 'fa' : 'en');
-	const lineDir = $derived(isFa && showFa ? 'rtl' : 'ltr');
+	/** Mira's lines show in the interface language only; her voice is always English. */
+	const persian = (value: DisplayText) => isFa && !!value.fa && value.fa !== value.en;
+	const text = (value: DisplayText) => (persian(value) ? value.fa : value.en);
+	const langOf = (value: DisplayText) => (persian(value) ? 'fa' : 'en');
+	const dirOf = (value: DisplayText) => (persian(value) ? 'rtl' : 'ltr');
 	// svelte-ignore state_referenced_locally
 	const target = firstSentence(name, profile.reason);
 
 	onMount(() => {
 		const now = new Date();
 		mode = greetingMode(progress, now);
-		showFa = profile.comfort === 'hard';
 		const saved = loadGreeting(localDate(now));
 		if (saved && saved.mode === mode) {
 			record = saved; opening = saved.opening; reply = saved.reply; answer = saved.answer ?? ''; typed = saved.typed;
@@ -168,7 +169,7 @@
 
 {#snippet mira(line: DisplayText, hearable = true)}
 	<div class="mira-line">
-		<p class="line" lang={lineLang} dir={lineDir}>{text(line)}</p>
+		<p class="line" lang={langOf(line)} dir={dirOf(line)}>{text(line)}</p>
 		{#if hearable}
 			<button class="hear" type="button" onclick={() => hear(line.en)} aria-label={playing ? (isFa ? 'توقف صدا' : 'Stop') : (isFa ? 'شنیدن صدای میرا' : 'Hear Mira')}>
 				<span aria-hidden="true">{playing ? '■' : '▶'}</span>
@@ -200,17 +201,16 @@
 	<section class="log" aria-label={isFa ? 'خوشامد میرا' : 'Mira’s greeting'}>
 		{#if ready}
 			<p class="who"><span class="avatar small" aria-hidden="true">M</span> Mira</p>
-			<p class="line small-line" lang={lineLang} dir={lineDir}>{text(opening)}</p>
+			<p class="line small-line" lang={langOf(opening)} dir={dirOf(opening)}>{text(opening)}</p>
 			{#if answer}<p class="you" lang="en" dir="ltr">“{answer}”</p>{/if}
-			{#if reply}<p class="line small-line" lang={lineLang} dir={lineDir}>{text(reply)}</p>{/if}
+			{#if reply}<p class="line small-line" lang={langOf(reply)} dir={dirOf(reply)}>{text(reply)}</p>{/if}
 		{/if}
 	</section>
 {:else}
 	<section class="screen" aria-labelledby="coach-step">
 		<div class="top">
 			<span class="avatar" aria-hidden="true">M</span>
-			<p class="name">Mira <small>{isFa ? 'مربی انگلیسی تو' : 'your English coach'}</small></p>
-			{#if isFa}<button class="toggle" type="button" aria-pressed={showFa} onclick={() => (showFa = !showFa)}>{showFa ? 'انگلیسی' : 'ترجمه'}</button>{/if}
+			<p class="name">{isFa ? 'میرا' : 'Mira'} <small>{isFa ? 'مربی انگلیسی تو' : 'your English coach'}</small></p>
 		</div>
 
 		<div class="middle" aria-live="polite">
@@ -258,7 +258,6 @@
 	.avatar.small { inline-size: 28px; block-size: 28px; font-size: .9rem; display: inline-grid; }
 	.name { margin: 0; display: grid; font-weight: 700; line-height: 1.2; }
 	.name small { color: var(--ink-soft); font-weight: 400; font-size: .82rem; }
-	.toggle { margin-inline-start: auto; min-height: 40px; padding: 6px 14px; border: 1px solid var(--control-border); border-radius: 999px; background: var(--control); color: var(--ink); font: inherit; font-size: .85rem; cursor: pointer; }
 	.middle { display: grid; align-content: center; justify-items: center; gap: 22px; text-align: center; }
 	.mira-line { display: grid; justify-items: center; gap: 16px; }
 	.line { margin: 0; font-family: var(--font-display); font-size: clamp(1.45rem, 6vw, 1.9rem); line-height: 1.35; color: var(--ink); }
