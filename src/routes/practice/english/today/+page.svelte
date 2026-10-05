@@ -32,6 +32,8 @@
 	let reviewing = $state<string | null>(null);
 	/** Back at the check-in (greeting, plan) after the session has started. The plan is read-only then. */
 	let showCheckIn = $state(false);
+	/** Before a session starts: Mira first, then today's plan (one focused screen each). */
+	let startStep = $state<'greeting' | 'plan'>('greeting');
 	/** Today's chat with Mira, for the recap's one correction (kept in this browser). */
 	let chat = $state<GreetingRecord | null>(null);
 	$effect(() => { if (session?.stage === 'recap') chat = loadGreeting(localDate(new Date())); });
@@ -49,7 +51,10 @@
 	const stepCount = $derived(agenda.length - 2);
 	const share = $derived(session ? sessionProgress(session) : 0);
 
-	onMount(() => { void getLanguage().then(value => { if (value === 'fa' || value === 'en') language = value; }); });
+	onMount(() => {
+		void getLanguage().then(value => { if (value === 'fa' || value === 'en') language = value; });
+		if (loadGreeting(localDate(new Date()))?.done) startStep = 'plan';
+	});
 
 	/** Saves the checkpoint. A failed save never blocks the learner; they get a quiet note. */
 	async function save(next: DaySession | null) {
@@ -116,33 +121,34 @@
 
 <main id="main-content" class="today" dir={isFa ? 'rtl' : 'ltr'}>
 	<AppHeader backHref="/languages" backLabel={isFa ? 'زبان‌ها' : 'Languages'} direction={isFa ? 'rtl' : 'ltr'} />
-	<EnglishModuleTabs current="today" {isFa} />
+	{#if !session && startStep === 'plan'}<EnglishModuleTabs current="today" {isFa} />{/if}
 
-	{#if !session || showCheckIn}
+	{#if !session && startStep === 'greeting'}
+		<h1 class="sr-only">{isFa ? 'امروز' : 'Today'}</h1>
+		<CoachGreeting {isFa} name={data.name} profile={data.profile} progress={data.progress} question={DAY_ONE.question} onDone={() => (startStep = 'plan')} />
+
+	{:else if !session || showCheckIn}
 		<section aria-labelledby="start-title" class="start">
-			<p class="eyebrow">{isFa ? 'انگلیسی · امروز' : 'ENGLISH · TODAY'}</p>
+			{#if session}
+				<CoachGreeting {isFa} name={data.name} profile={data.profile} progress={data.progress} question={DAY_ONE.question} readOnly />
+			{/if}
+			<p class="eyebrow">{isFa ? 'برنامهٔ امروز' : 'TODAY’S PLAN'}</p>
 			<h1 id="start-title" class="theme-title">{text(DAY_ONE.theme)}</h1>
-
-			<CoachGreeting {isFa} name={data.name} profile={data.profile} progress={data.progress} question={DAY_ONE.question} readOnly={!!session} />
-
-			<div class="card plan" id="plan">
-				<h2>{isFa ? 'برنامهٔ امروز' : 'Today’s plan'}</h2>
-				<p class="goal">{text(DAY_ONE.goal)}</p>
-				<fieldset class="lengths">
-					<legend class="sr-only">{isFa ? 'مدت جلسه' : 'Session length'}</legend>
-					{#each LENGTHS as option}
-						<label class:selected={length === option}><input type="radio" name="length" value={option} bind:group={length} disabled={!!session} /> {option} {isFa ? 'دقیقه' : 'min'}</label>
-					{/each}
-				</fieldset>
-				<ol class="agenda">
-					{#each agenda as item}<li><span>{text(item.title)}</span><span class="min">{item.minutes} {isFa ? 'دقیقه' : 'min'}</span></li>{/each}
-				</ol>
-				<p class="small">{isFa ? 'هر مرحله ذخیره می‌شود؛ هر وقت برگشتی از همان‌جا ادامه می‌دهی.' : 'Each step is saved, so you can come back and carry on where you stopped.'}</p>
-				{#if session}
-					<p class="small">{isFa ? 'مدت جلسه بعد از شروع عوض نمی‌شود. برای تغییر، جلسه را از اول شروع کن.' : 'The length can’t change once you have started. To change it, start the session again.'}</p>
-					<button class="text-button" type="button" onclick={() => { showCheckIn = false; again(); }}>{isFa ? 'شروع دوباره' : 'Start again'}</button>
-				{/if}
-			</div>
+			<p class="goal">{text(DAY_ONE.goal)}</p>
+			<fieldset class="lengths">
+				<legend class="sr-only">{isFa ? 'مدت جلسه' : 'Session length'}</legend>
+				{#each LENGTHS as option}
+					<label class:selected={length === option}><input type="radio" name="length" value={option} bind:group={length} disabled={!!session} /> {option} {isFa ? 'دقیقه' : 'min'}</label>
+				{/each}
+			</fieldset>
+			<ol class="agenda">
+				{#each agenda as item}<li><span>{text(item.title)}</span><span class="min">{item.minutes} {isFa ? 'دقیقه' : 'min'}</span></li>{/each}
+			</ol>
+			{#if session}
+				<button class="text-button" type="button" onclick={() => { showCheckIn = false; again(); }}>{isFa ? 'شروع دوباره' : 'Start again'}</button>
+			{:else}
+				<button class="text-button" type="button" onclick={() => (startStep = 'greeting')}><span aria-hidden="true">{isFa ? '→' : '←'}</span> {isFa ? 'میرا' : 'Mira'}</button>
+			{/if}
 
 			<div class="start-bar">
 				{#if session}
@@ -231,7 +237,6 @@
 	.today { max-width: 720px; margin: 0 auto; padding: 24px 20px 64px; color: var(--ink); }
 	.eyebrow { font-size: .76rem; letter-spacing: .12em; font-weight: 600; color: var(--accent-deep); margin: 18px 0 10px; }
 	h1 { font-family: var(--font-display); font-weight: 500; font-size: clamp(1.8rem, 5vw, 2.6rem); line-height: 1.15; margin: 0 0 14px; }
-	h2 { font-family: var(--font-display); font-weight: 500; font-size: 1.25rem; margin: 26px 0 10px; }
 	p { line-height: 1.65; }
 	.goal { color: var(--ink-soft); margin-top: 0; }
 	.card { display: grid; gap: 10px; padding: 16px; margin: 18px 0; border: 1px solid var(--control-border); border-radius: 14px; background: var(--paper-raised); }
@@ -260,7 +265,6 @@
 	.inline { min-height: 44px; padding: 8px 0; }
 	.start { padding-bottom: 96px; }
 	.theme-title { font-size: clamp(1.5rem, 5vw, 2.1rem); }
-	.plan h2 { margin-top: 0; }
 	.start-bar { position: fixed; inset-inline: 0; inset-block-end: 0; z-index: 20; padding: 12px 20px calc(14px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--paper) 35%); }
 	.primary.wide { display: flex; inline-size: 100%; max-inline-size: 680px; margin-inline: auto; min-height: 54px; font-size: 1.05rem; }
 	.said { color: var(--ink-soft); }

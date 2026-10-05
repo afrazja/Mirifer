@@ -133,6 +133,17 @@ The shared integration branch is `main` on `origin`; do not assume another lapto
 
 ---
 
+## Design principles (owner's rule)
+
+Mirifer is mobile-first and minimal. Every screen has one focused thing to do:
+- Few elements at a time; never several cards, choices and instructions on one screen.
+- Go step by step: one message, one action, then the next screen (for example Mira's greeting: her line and Next; then the sentence to say with the mic and Skip; then the result; then today's plan).
+- One primary button per screen, at the bottom, in thumb reach; secondary actions are quiet text buttons.
+- Navigation and other modules (tabs, menus) stay off focused flows.
+Reviewers judge every screen against this.
+
+---
+
 ## Review agents
 
 Independent, read-only reviewers live in `.claude/agents/`. Before building or changing something significant, run the ones that fit, in parallel, and weigh their reports against the plan. They report; they never edit. Brief each one on every screen of the flow it is judging (for a lesson: warm-up, the dialogue with several steps on screen, exercises, completion), with screenshots; a reviewer only sees what it is given.
