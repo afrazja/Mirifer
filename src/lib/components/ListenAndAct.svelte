@@ -57,7 +57,6 @@
 {:else}
 	<section class="la" aria-labelledby="la-title">
 		<p class="small" id="la-title">{isFa ? `دور ${round + 1} از ${ACT_ROUNDS.length}` : `Round ${round + 1} of ${ACT_ROUNDS.length}`} · {current.level}</p>
-		<p>{isFa ? `به دستورها گوش بده، بعد ${current.steps.length} کار را انجام بده. حداکثر ${MAX_PLAYS} بار می‌توانی گوش بدهی.` : `Listen to the instructions, then do the ${current.steps.length} things they ask. You can listen up to ${MAX_PLAYS} times.`}</p>
 
 		<button class="play" type="button" onclick={play} disabled={plays >= MAX_PLAYS || playing || !!checked}>
 			<span aria-hidden="true">{playing ? '🔊' : '▶'}</span>
