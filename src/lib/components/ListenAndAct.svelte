@@ -92,7 +92,6 @@
 			<div class="row">
 				<button class="primary" type="button" onclick={check} disabled={!steps.length || !heard}>{isFa ? 'بررسی کن' : 'Check my steps'}</button>
 			</div>
-			{#if !heard}<p class="small">{isFa ? 'اول یک بار گوش بده.' : 'Listen once first.'}</p>{/if}
 		{:else}
 			<div class="card" role="status">
 				<p class="eyebrow">{isFa ? 'جواب‌های درست' : 'THE RIGHT ANSWERS'}</p>
