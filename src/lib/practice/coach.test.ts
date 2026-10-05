@@ -38,7 +38,7 @@ describe('Mira the coach', () => {
 		for (const line of [scriptedOpening('returning', 'Sam', 2, q).en, scriptedOpening('returning', 'Sam', 30, q).en]) expect(line.split('?').length - 1).toBe(1);
 	});
 	it('keeps the day’s greeting for that day only', () => {
-		const record = { date: '2026-10-05', mode: 'first' as const, opening: { en: 'Hi', fa: 'سلام' }, answer: 'Hi I am Sam', typed: false, reply: null, improved: null, noteEn: null, noteFa: null };
+		const record = { date: '2026-10-05', mode: 'first' as const, opening: { en: 'Hi', fa: 'سلام' }, answer: 'Hi I am Sam', typed: false, reply: null, done: true, improved: null, noteEn: null, noteFa: null };
 		saveGreeting(record);
 		expect(loadGreeting('2026-10-05')).toEqual(record);
 		expect(loadGreeting('2026-10-06')).toBeNull();

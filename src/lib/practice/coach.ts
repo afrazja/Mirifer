@@ -86,6 +86,8 @@ export interface GreetingRecord {
 	answer: string | null;
 	typed: boolean;
 	reply: DisplayText | null;
+	/** True once the learner has gone through the greeting (answered or skipped). */
+	done: boolean;
 	/** Feedback kept for the recap (later days). */
 	improved: string | null;
 	noteEn: string | null;
@@ -99,7 +101,7 @@ export function loadGreeting(today: string): GreetingRecord | null {
 		const raw = localStorage.getItem(KEY);
 		if (!raw) return null;
 		const value = JSON.parse(raw) as GreetingRecord;
-		return value && value.date === today && typeof value.opening?.en === 'string' ? value : null;
+		return value && value.date === today && typeof value.opening?.en === 'string' ? { ...value, done: value.done === true } : null;
 	} catch { return null; }
 }
 
