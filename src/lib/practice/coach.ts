@@ -108,3 +108,16 @@ export function loadGreeting(today: string): GreetingRecord | null {
 export function saveGreeting(record: GreetingRecord): void {
 	try { localStorage.setItem(KEY, JSON.stringify(record)); } catch { /* the greeting just runs again after a reload */ }
 }
+
+const NUMBER_EN = ['One', 'Two', 'Three', 'Four', 'Five', 'Six'];
+const NUMBER_FA = ['یک', 'دو', 'سه', 'چهار', 'پنج', 'شش'];
+const COUNT_EN = ['', 'one part', 'two parts', 'three parts', 'four parts', 'five parts', 'six parts'];
+
+/** Mira reads today's plan: "Today we have three parts. One: …. Two: …. Three: …." */
+export function planLine(parts: DisplayText[]): DisplayText {
+	const items = parts.slice(0, 6);
+	return {
+		en: `Today we have ${COUNT_EN[items.length]}. ${items.map((part, index) => `${NUMBER_EN[index]}: ${part.en}.`).join(' ')}`,
+		fa: `امروز ${NUMBER_FA[items.length - 1]} بخش داریم. ${items.map((part, index) => `${NUMBER_FA[index]}: ${part.fa}.`).join(' ')}`
+	};
+}

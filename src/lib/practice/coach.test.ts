@@ -45,3 +45,12 @@ describe('Mira the coach', () => {
 		expect(localDate(at('2026-10-05T12:00:00'))).toBe('2026-10-05');
 	});
 });
+
+import { planLine } from './coach';
+describe('Mira reads the plan', () => {
+	it('numbers the parts in order', () => {
+		const line = planLine([{ en: 'Listen and act', fa: 'گوش بده و عمل کن' }, { en: 'Say it again, better', fa: 'دوباره بگو، بهتر' }, { en: 'A short recap', fa: 'یک مرور کوتاه' }]);
+		expect(line.en).toBe('Today we have three parts. One: Listen and act. Two: Say it again, better. Three: A short recap.');
+		expect(line.fa).toBe('امروز سه بخش داریم. یک: گوش بده و عمل کن. دو: دوباره بگو، بهتر. سه: یک مرور کوتاه.');
+	});
+});

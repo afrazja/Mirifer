@@ -9,10 +9,11 @@
 	import { asActRecord, type ActRecord } from '$lib/practice/listen-act';
 	import CoachGreeting from '$lib/components/CoachGreeting.svelte';
 	import SayAgain from '$lib/components/SayAgain.svelte';
-	import { loadGreeting, localDate, type GreetingRecord } from '$lib/practice/coach';
+	import { COACH_VOICE, loadGreeting, localDate, planLine, type GreetingRecord } from '$lib/practice/coach';
+	import { playAudioPromise, stopAllAudio, ttsIsPlaying } from '$services/tts';
 	import { getLanguage } from '$services/data-layer';
 	import {
-		DAY_ONE, DEFAULT_LENGTH, LENGTHS, agendaFor, agendaMinutes, completeSession, currentModule,
+		DAY_ONE, DEFAULT_LENGTH, agendaFor, agendaMinutes, completeSession, currentModule,
 		completeLater, finishModule, moduleBefore, modulesFor, recommend, sessionProgress, startSession, type DaySession, type Length, type ModuleId
 	} from '$lib/practice/day';
 	import type { DisplayText } from '$lib/practice/hotel';
@@ -34,6 +35,16 @@
 	let showCheckIn = $state(false);
 	/** Before a session starts: Mira first, then today's plan (one focused screen each). */
 	let startStep = $state<'greeting' | 'plan'>('greeting');
+	/** Today's parts after the greeting, in order, and Mira's line that reads them. */
+	const parts = $derived([...modulesFor(length).map(module => module.title), { en: 'A short recap', fa: 'یک مرور کوتاه' }]);
+	const plan = $derived(planLine(parts));
+	const miraPlaying = $derived($ttsIsPlaying);
+	function speakPlan() {
+		if (miraPlaying) { stopAllAudio(); return; }
+		void playAudioPromise(plan.en, 0.95, 'en-US', undefined, COACH_VOICE).catch(() => {});
+	}
+	/** From Mira's greeting to the plan: the tap on Next lets her read it aloud. */
+	function toPlan() { startStep = 'plan'; speakPlan(); }
 	/** Today's chat with Mira, for the recap's one correction (kept in this browser). */
 	let chat = $state<GreetingRecord | null>(null);
 	$effect(() => { if (session?.stage === 'recap') chat = loadGreeting(localDate(new Date())); });
@@ -121,28 +132,25 @@
 
 <main id="main-content" class="today" dir={isFa ? 'rtl' : 'ltr'}>
 	<AppHeader backHref="/languages" backLabel={isFa ? 'زبان‌ها' : 'Languages'} direction={isFa ? 'rtl' : 'ltr'} />
-	{#if !session && startStep === 'plan'}<EnglishModuleTabs current="today" {isFa} />{/if}
+	{#if session?.stage === 'done'}<EnglishModuleTabs current="today" {isFa} />{/if}
 
 	{#if !session && startStep === 'greeting'}
 		<h1 class="sr-only">{isFa ? 'امروز' : 'Today'}</h1>
-		<CoachGreeting {isFa} name={data.name} profile={data.profile} progress={data.progress} question={DAY_ONE.question} onDone={() => (startStep = 'plan')} />
+		<CoachGreeting {isFa} name={data.name} profile={data.profile} progress={data.progress} question={DAY_ONE.question} onDone={toPlan} />
 
 	{:else if !session || showCheckIn}
 		<section aria-labelledby="start-title" class="start">
 			{#if session}
 				<CoachGreeting {isFa} name={data.name} profile={data.profile} progress={data.progress} question={DAY_ONE.question} readOnly />
 			{/if}
-			<p class="eyebrow">{isFa ? 'برنامهٔ امروز' : 'TODAY’S PLAN'}</p>
-			<h1 id="start-title" class="theme-title">{text(DAY_ONE.theme)}</h1>
-			<p class="goal">{text(DAY_ONE.goal)}</p>
-			<fieldset class="lengths">
-				<legend class="sr-only">{isFa ? 'مدت جلسه' : 'Session length'}</legend>
-				{#each LENGTHS as option}
-					<label class:selected={length === option}><input type="radio" name="length" value={option} bind:group={length} disabled={!!session} /> {option} {isFa ? 'دقیقه' : 'min'}</label>
-				{/each}
-			</fieldset>
-			<ol class="agenda">
-				{#each agenda as item}<li><span>{text(item.title)}</span><span class="min">{item.minutes} {isFa ? 'دقیقه' : 'min'}</span></li>{/each}
+			<div class="plan-head">
+				<span class="avatar" aria-hidden="true">M</span>
+				<p class="mira-name">Mira</p>
+				<button class="hear" type="button" onclick={speakPlan} aria-label={miraPlaying ? (isFa ? 'توقف صدا' : 'Stop') : (isFa ? 'شنیدن برنامه' : 'Hear the plan')}><span aria-hidden="true">{miraPlaying ? '■' : '▶'}</span></button>
+			</div>
+			<h1 id="start-title" class="plan-title">{isFa ? `امروز ${['یک', 'دو', 'سه', 'چهار', 'پنج', 'شش'][parts.length - 1]} بخش داریم.` : plan.en.split('.')[0] + '.'}</h1>
+			<ol class="parts">
+				{#each parts as part, index}<li><span class="num" aria-hidden="true">{isFa ? (index + 1).toLocaleString('fa-IR') : index + 1}</span>{text(part)}</li>{/each}
 			</ol>
 			{#if session}
 				<button class="text-button" type="button" onclick={() => { showCheckIn = false; again(); }}>{isFa ? 'شروع دوباره' : 'Start again'}</button>
@@ -154,7 +162,7 @@
 				{#if session}
 					<button class="primary wide" type="button" onclick={() => (showCheckIn = false)}>{isFa ? 'ادامه' : 'Continue'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
 				{:else}
-					<button class="primary wide" type="button" onclick={begin}>{isFa ? `شروع · ${agendaMinutes(length)} دقیقه` : `Start · ${agendaMinutes(length)} min`} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
+					<button class="primary wide" type="button" onclick={begin}>{isFa ? `شروع · ${agendaMinutes(length).toLocaleString('fa-IR')} دقیقه` : `Start · ${agendaMinutes(length)} min`} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
 				{/if}
 			</div>
 		</section>
@@ -238,16 +246,10 @@
 	.eyebrow { font-size: .76rem; letter-spacing: .12em; font-weight: 600; color: var(--accent-deep); margin: 18px 0 10px; }
 	h1 { font-family: var(--font-display); font-weight: 500; font-size: clamp(1.8rem, 5vw, 2.6rem); line-height: 1.15; margin: 0 0 14px; }
 	p { line-height: 1.65; }
-	.goal { color: var(--ink-soft); margin-top: 0; }
 	.card { display: grid; gap: 10px; padding: 16px; margin: 18px 0; border: 1px solid var(--control-border); border-radius: 14px; background: var(--paper-raised); }
 	.card p { margin: 0; }
-	label { font-weight: 600; }
-	.lengths { display: flex; gap: 10px; border: 0; padding: 0; margin: 0 0 14px; }
-	.lengths label { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 10px 16px; border: 1px solid var(--control-border); border-radius: 10px; background: var(--paper-raised); font-weight: 500; cursor: pointer; }
-	.lengths label.selected { border-color: var(--accent); background: var(--accent-wash); font-weight: 600; }
-	.lengths label:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 2px; }
-	.agenda, .done-list { list-style: none; padding: 0; margin: 0 0 14px; display: grid; gap: 8px; }
-	.agenda li, .done-list li { display: flex; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper-raised); }
+	.done-list { list-style: none; padding: 0; margin: 0 0 14px; display: grid; gap: 8px; }
+	.done-list li { display: flex; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper-raised); }
 	.min { color: var(--ink-soft); font-size: .88rem; white-space: nowrap; }
 	.small { color: var(--ink-soft); font-size: .88rem; }
 	.warn { color: var(--attention); }
@@ -264,10 +266,17 @@
 	.back { display: inline-flex; gap: 8px; align-items: center; min-height: 44px; padding: 8px 4px; margin-bottom: 4px; background: none; border: 0; color: var(--accent-deep); font-weight: 600; }
 	.inline { min-height: 44px; padding: 8px 0; }
 	.start { padding-bottom: 96px; }
-	.theme-title { font-size: clamp(1.5rem, 5vw, 2.1rem); }
 	.start-bar { position: fixed; inset-inline: 0; inset-block-end: 0; z-index: 20; padding: 12px 20px calc(14px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--paper) 35%); }
 	.primary.wide { display: flex; inline-size: 100%; max-inline-size: 680px; margin-inline: auto; min-height: 54px; font-size: 1.05rem; }
 	.said { color: var(--ink-soft); }
 	.better { font-weight: 600; color: var(--accent-deep); }
+	.plan-head { display: flex; align-items: center; gap: 10px; margin: 18px 0 6px; }
+	.avatar { display: grid; place-items: center; inline-size: 44px; block-size: 44px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-family: var(--font-display); font-weight: 700; font-size: 1.2rem; }
+	.mira-name { margin: 0; font-weight: 700; }
+	.hear { display: grid; place-items: center; inline-size: 44px; block-size: 44px; margin-inline-start: auto; border: 1.5px solid var(--accent); border-radius: 50%; background: var(--paper-raised); color: var(--accent-deep); cursor: pointer; }
+	.plan-title { margin: 18px 0 20px; font-size: clamp(1.6rem, 6.5vw, 2.1rem); }
+	.parts { list-style: none; margin: 0 0 18px; padding: 0; display: grid; gap: 12px; }
+	.parts li { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 16px; background: var(--paper-raised); border: 1px solid var(--line); font-size: 1.1rem; font-weight: 500; }
+	.num { display: grid; place-items: center; inline-size: 32px; block-size: 32px; flex: none; border-radius: 50%; background: var(--accent-wash); color: var(--accent-deep); font-weight: 700; }
 	.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 </style>
