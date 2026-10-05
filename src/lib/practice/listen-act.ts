@@ -56,7 +56,7 @@ export const ACT_ROUNDS: ActRound[] = [
 		id: 'b1-lost', level: 'B1',
 		script: 'Before you give your passport to the agent, put your phone in the red bag. Don’t put your wallet in the blue bag. Put it on the desk instead. Finally, give the agent your ticket.',
 		steps: [{ thing: 'phone', place: 'red-bag' }, { thing: 'passport', place: 'agent' }, { thing: 'wallet', place: 'desk' }, { thing: 'ticket', place: 'agent' }],
-		listenFor: { en: '“Before” changes the order. “Don’t… instead” means the second place is the right one.', fa: '«Before» ترتیب را عوض می‌کند. «Don’t… instead» یعنی مکان دوم درست است.' }
+		listenFor: { en: '“Don’t… instead” means the second place is the right one.', fa: '«Don’t… instead» یعنی مکان دوم درست است.' }
 	}
 ];
 
@@ -65,8 +65,19 @@ export const MAX_PLAYS = 2;
 export { ENGLISH_RATE as PLAYBACK_RATE_ALL } from './english-voice';
 
 /** Step-by-step: step i is right only if the learner's i-th step equals the expected i-th step. Extra steps are not rewarded. */
+/**
+ * Order doesn't matter (owner's rule): each of the learner's steps is right if
+ * it matches one of the expected steps not already matched. `results` is one
+ * mark per given step; extra or repeated steps are simply not right.
+ */
 export function scoreSteps(expected: Step[], given: Step[]): { results: boolean[]; correct: number } {
-	const results = expected.map((step, index) => given[index]?.thing === step.thing && given[index]?.place === step.place);
+	const unused = [...expected];
+	const results = given.map(step => {
+		const at = unused.findIndex(item => item.thing === step.thing && item.place === step.place);
+		if (at === -1) return false;
+		unused.splice(at, 1);
+		return true;
+	});
 	return { results, correct: results.filter(Boolean).length };
 }
 

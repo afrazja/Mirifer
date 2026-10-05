@@ -3,12 +3,14 @@ import { ACT_ROUNDS, scoreSteps } from './listen-act';
 import { startSession, finishModule, recommend, DaySessionSchema } from './day';
 
 describe('Listen and act', () => {
-	it('scores each step by position', () => {
+	it('scores each step whatever the order', () => {
 		const round = ACT_ROUNDS[0];
 		expect(scoreSteps(round.steps, round.steps)).toMatchObject({ correct: 3, results: [true, true, true] });
-		expect(scoreSteps(round.steps, [round.steps[1], round.steps[0], round.steps[2]]).correct).toBe(1);
+		expect(scoreSteps(round.steps, [round.steps[1], round.steps[0], round.steps[2]])).toMatchObject({ correct: 3, results: [true, true, true] });
 		expect(scoreSteps(round.steps, []).correct).toBe(0);
-		expect(scoreSteps(round.steps, [...round.steps, round.steps[0]]).correct).toBe(3);
+		// A repeated step counts once.
+		expect(scoreSteps(round.steps, [...round.steps, round.steps[0]])).toMatchObject({ correct: 3, results: [true, true, true, false] });
+		expect(scoreSteps(round.steps, [{ thing: 'umbrella', place: 'desk' }, round.steps[2]])).toMatchObject({ correct: 1, results: [false, true] });
 	});
 	it('every round names real things and places, and its script mentions them', () => {
 		for (const round of ACT_ROUNDS) expect(round.steps.length).toBeGreaterThanOrEqual(3);
