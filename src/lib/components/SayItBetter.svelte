@@ -18,7 +18,8 @@
 		initial?: SayRecord | null;
 		onSave?: (record: SayRecord) => void;
 		/** true once the task screen is left, so Mira's long intro can fold away. */
-		onFocus?: (compact: boolean) => void;
+		/** How much of Mira's introduction the page shows: all of it on the task, one line while recording, none once the answer is in. */
+		onFocus?: (intro: 'full' | 'compact' | 'hidden') => void;
 		onDone: (score: { correct: number; total: number } | undefined, record: SayRecord) => void;
 	} = $props();
 
@@ -46,7 +47,8 @@
 		return () => document.removeEventListener('visibilitychange', onHidden);
 	});
 	onDestroy(() => { clearInterval(timer); recorder?.state === 'recording' && recorder.stop(); stream?.getTracks().forEach(t => t.stop()); stopAllAudio(); });
-	$effect(() => { onFocus?.(stage !== 'task'); });
+	// Once hidden it stays hidden: showing it again would replay Mira's intro, even over the second recording.
+	$effect(() => { onFocus?.(stage === 'task' ? 'full' : attempt === 1 && ['recording', 'short', 'interrupted', 'denied'].includes(stage) ? 'compact' : 'hidden'); });
 
 	function persist() { onSave?.($state.snapshot(record)); }
 	function onHidden() { if (document.hidden && recorder?.state === 'recording') { interrupted = true; recorder.stop(); } }
@@ -57,7 +59,7 @@
 		try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
 		catch { stage = 'denied'; return; }
 		const mimeType = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm', 'audio/ogg;codecs=opus'].find(type => MediaRecorder.isTypeSupported(type));
-		recorder = new MediaRecorder(stream, { ...(mimeType ? { mimeType } : {}), audioBitsPerSecond: 32_000 });
+		recorder = new MediaRecorder(stream, { ...(mimeType ? { mimeType } : {}), audioBitsPerSecond: 64_000 });
 		chunks = []; interrupted = false; blob = null;
 		recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
 		recorder.onstop = finishRecording;

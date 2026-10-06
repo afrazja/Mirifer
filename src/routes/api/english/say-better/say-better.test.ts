@@ -29,6 +29,7 @@ describe('/api/english/say-better', () => {
 		const f = fixture(audioForm(), '');
 		const res = await POST(f.event);
 		expect(await res.json()).toEqual({ transcript: T });
+		expect(transcribeMock).toHaveBeenCalledWith(expect.anything(), 'English say-better', expect.stringContaining('a problem you had on a trip'));
 		expect(f.inserted).toHaveLength(0);
 	});
 	it('refuses recordings over a minute and when the daily allowance is used up', async () => {

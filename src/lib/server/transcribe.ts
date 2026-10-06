@@ -9,13 +9,18 @@ export const AUDIO_EXTENSIONS: Record<string, string> = { 'audio/webm': 'webm', 
 
 export const transcriptionConfigured = () => !!env.OPENAI_API_KEY;
 
-/** The transcript (whitespace tidied), or null on any failure. */
-export async function transcribe(audio: File, label: string): Promise<string | null> {
+/**
+ * The transcript (whitespace tidied), or null on any failure. `context` tells
+ * the model what the learner is talking about, which helps a lot with accented
+ * speech; it is also told to keep the learner's mistakes, not tidy them.
+ */
+export async function transcribe(audio: File, label: string, context?: string): Promise<string | null> {
 	const type = audio.type.split(';')[0];
 	const body = new FormData();
 	body.set('file', audio, `speech.${AUDIO_EXTENSIONS[type] ?? 'webm'}`);
-	body.set('model', env.OPENAI_TRANSCRIBE_MODEL || 'gpt-4o-mini-transcribe');
+	body.set('model', env.OPENAI_TRANSCRIBE_MODEL || 'gpt-4o-transcribe');
 	body.set('language', 'en');
+	body.set('prompt', `${context ? `${context} ` : ''}The speaker is an adult Persian speaker learning English. Write exactly what they say, word for word, keeping their grammar mistakes; never correct or improve them.`);
 	body.set('response_format', 'json');
 	const controller = new AbortController();
 	const timeout = setTimeout(() => controller.abort(), 40_000);

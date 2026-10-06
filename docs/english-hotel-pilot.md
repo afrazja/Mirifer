@@ -32,7 +32,7 @@ Speaking time has no minimum. Each piece has a maximum, shown on the list, on th
 - 2:00 for anything longer, however long the listening.
 
 `POST /api/english/retell` handles the feedback step:
-- It sends the recording to OpenAI `gpt-4o-mini-transcribe` (or `OPENAI_TRANSCRIBE_MODEL`) and discards it.
+- It sends the recording to OpenAI `gpt-4o-transcribe` (or `OPENAI_TRANSCRIBE_MODEL`) and discards it.
 - It then asks the provider chain for:
   - the key points covered;
   - up to 4 contradictions of the piece;

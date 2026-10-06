@@ -18,7 +18,7 @@ import { createLimiter, tooMany } from '$lib/server/rate-limit';
 import { readEnglishProfile } from '$lib/practice/english-profile';
 import { levelFor } from '$lib/server/coach-ai';
 import { MAX_SECONDS } from '$lib/practice/say-better';
-import { RawFeedbackSchema, asAnswer, checkFeedback, feedbackPrompt, feedbackSchemas, type RawFeedback } from '$lib/server/say-better-ai';
+import { QUESTION, RawFeedbackSchema, asAnswer, checkFeedback, feedbackPrompt, feedbackSchemas, type RawFeedback } from '$lib/server/say-better-ai';
 
 export const config = { maxDuration: 60 };
 /** A minute at 32 kbps is about 0.25 MB; this leaves room for other codecs. */
@@ -41,7 +41,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		if (!Number.isFinite(seconds) || seconds < 0 || seconds > MAX_SECONDS + 10) return json({ error: 'Invalid recording' }, { status: 400 });
 		const refused = await checkAllowance(locals, user);
 		if (refused) return refused;
-		const transcript = await transcribe(audio, 'English say-better');
+		const transcript = await transcribe(audio, 'English say-better', `They are answering: "${QUESTION}"`);
 		if (transcript === null) return json({ error: 'Transcription unavailable' }, { status: 502 });
 		return json({ transcript });
 	}
