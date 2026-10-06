@@ -28,8 +28,8 @@ export async function englishLearner(request: Request, locals: Locals): Promise<
 	return user;
 }
 
-/** Records one AI request against today's allowance, or returns the error response. */
-export async function spendAllowance(locals: Locals, user: User, index: number): Promise<Response | null> {
+/** Whether the learner may make another AI request today; the error response if not. Records nothing. */
+export async function checkAllowance(locals: Locals, user: User): Promise<Response | null> {
 	const today = new Date(); today.setUTCHours(0, 0, 0, 0);
 	const { count, error: countError } = await locals.supabase.from('events').select('id', { count: 'exact', head: true })
 		.eq('user_id', user.id).eq('event_name', 'english_ai_requested').gte('created_at', today.toISOString());
@@ -42,12 +42,24 @@ export async function spendAllowance(locals: Locals, user: User, index: number):
 		}
 		if (!adminTester || count >= MAX_ADMIN_DAILY_TURNS) return json({ error: 'Daily AI limit reached' }, { status: 429 });
 	}
-	const { error: insertError } = await locals.supabase.from('events').insert({
+	return null;
+}
+
+/** Counts one AI request against today's allowance. */
+export async function recordAllowance(locals: Locals, user: User, index: number, scenario = 'hotel-quiet-room-v1'): Promise<boolean> {
+	const { error } = await locals.supabase.from('events').insert({
 		user_id: user.id, event_id: crypto.randomUUID(), session_id: crypto.randomUUID(), attempt_id: null,
 		event_name: 'english_ai_requested', day: null, occurred_at: new Date().toISOString(), schema_version: 2,
-		metadata: { course: 'en', scenario: 'hotel-quiet-room-v1', mode: 'conversation', index }
+		metadata: { course: 'en', scenario, mode: 'conversation', index }
 	});
-	return insertError ? json({ error: 'AI temporarily unavailable' }, { status: 503 }) : null;
+	return !error;
+}
+
+/** Records one AI request against today's allowance, or returns the error response. */
+export async function spendAllowance(locals: Locals, user: User, index: number): Promise<Response | null> {
+	const refused = await checkAllowance(locals, user);
+	if (refused) return refused;
+	return (await recordAllowance(locals, user, index)) ? null : json({ error: 'AI temporarily unavailable' }, { status: 503 });
 }
 
 export interface ChainRequest<T> {

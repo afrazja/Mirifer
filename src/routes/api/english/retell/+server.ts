@@ -20,13 +20,13 @@ import { getPiece, speakLimit } from '$lib/practice/retell';
 import { RetellRecordSchema } from '$lib/practice/progress';
 import { askChain, englishLearner, spendAllowance } from '$lib/server/english-ai';
 import { signJamieLine } from '$lib/server/jamie-line';
+import { transcribe } from '$lib/server/transcribe';
 
 /** Transcription and feedback together can take a while for a 2-minute answer. */
 export const config = { maxDuration: 60 };
 
 /** Vercel caps request bodies at 4.5 MB; a 2-minute recording at 32 kbps is about 0.5 MB. */
 const MAX_AUDIO_BYTES = 4_000_000;
-const EXTENSIONS: Record<string, string> = { 'audio/webm': 'webm', 'audio/ogg': 'ogg', 'audio/mp4': 'mp4', 'audio/mpeg': 'mp3', 'audio/wav': 'wav', 'audio/x-m4a': 'm4a', 'audio/aac': 'm4a' };
 
 const FeedbackSchema = z.object({
 	covered: z.array(z.number().int()).max(20),
@@ -69,28 +69,6 @@ YOUR JOB
 
 const normalise = (text: string) => text.toLowerCase().replace(/[’‘]/g, "'").replace(/[^a-z0-9']+/g, ' ').trim();
 
-async function transcribe(audio: File): Promise<string | null> {
-	const type = audio.type.split(';')[0];
-	const body = new FormData();
-	body.set('file', audio, `retell.${EXTENSIONS[type] ?? 'webm'}`);
-	body.set('model', env.OPENAI_TRANSCRIBE_MODEL || 'gpt-4o-mini-transcribe');
-	body.set('language', 'en');
-	body.set('response_format', 'json');
-	const controller = new AbortController();
-	const timeout = setTimeout(() => controller.abort(), 40_000);
-	try {
-		const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-			method: 'POST', headers: { Authorization: `Bearer ${env.OPENAI_API_KEY}` }, body, signal: controller.signal
-		});
-		if (!response.ok) { console.error(`English retell: transcription failed: ${response.status}`); return null; }
-		const data = await response.json();
-		return typeof data?.text === 'string' ? data.text.replace(/\s+/g, ' ').trim() : null;
-	} catch (err) {
-		console.error(`English retell: transcription: ${(err as Error).message}`);
-		return null;
-	} finally { clearTimeout(timeout); }
-}
-
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const user = await englishLearner(request, locals);
 	if (user instanceof Response) return user;
@@ -111,7 +89,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const refused = await spendAllowance(locals, user, 0);
 	if (refused) return refused;
 
-	const transcript = await transcribe(audio);
+	const transcript = await transcribe(audio, 'English retell');
 	if (transcript === null) return json({ error: 'Transcription unavailable' }, { status: 502 });
 	const words = transcript ? transcript.split(' ').length : 0;
 	const base = { transcript, words, seconds: Math.round(spoken), wordsPerMinute: spoken >= 5 ? Math.round(words / (spoken / 60)) : null, total: piece.keyPoints.length };

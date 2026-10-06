@@ -47,8 +47,8 @@ export const DAY_ONE = {
 			intro: { en: 'In this part, you’ll hear a few short instructions. Listen carefully, then do what they ask. You can listen twice.', fa: 'در این بخش چند دستور کوتاه می‌شنوی. با دقت گوش بده و بعد آن‌ها را انجام بده. دو بار می‌توانی گوش بدهی.' } },
 		{ id: 'scenario', title: { en: 'Scene with a twist', fa: 'صحنه با یک غافلگیری' }, does: { en: 'Solve a problem at the hotel desk when something unexpected happens.', fa: 'در پذیرش هتل مشکلی را حل کن، وقتی اتفاق غیرمنتظره‌ای می‌افتد.' }, skill: 'speaking', minutes: { 20: 6 }, built: false,
 			intro: { en: 'You’re at a hotel desk with a problem. Talk to the receptionist and sort it out. Something unexpected will happen, so take your time.', fa: 'در پذیرش هتل هستی و مشکلی داری. با مسئول پذیرش حرف بزن و حلش کن. یک اتفاق غیرمنتظره هم می‌افتد، پس عجله نکن.' } },
-		{ id: 'say-it-better', title: { en: 'Say it again, better', fa: 'دوباره بگو، بهتر' }, does: { en: 'Tell a short story about a problem you had, then tell it a second time, clearer.', fa: 'ماجرای کوتاه یک مشکل را بگو، بعد دوباره و روشن‌تر بگو.' }, skill: 'speaking', minutes: { 15: 6, 20: 5 }, built: false,
-			intro: { en: 'Now it’s your turn to talk. Tell me about a problem you had on a trip. Then you’ll hear a clearer way to say it, and you can try again.', fa: 'حالا نوبت توست که حرف بزنی. از مشکلی که در یک سفر داشتی برایم بگو. بعد شکل روشن‌ترش را می‌شنوی و می‌توانی دوباره امتحان کنی.' } }
+		{ id: 'say-it-better', title: { en: 'Say it again, better', fa: 'دوباره بگو، بهتر' }, does: { en: 'Tell a short story about a problem you had, then tell it a second time, clearer.', fa: 'ماجرای کوتاه یک مشکل را بگو، بعد دوباره و روشن‌تر بگو.' }, skill: 'speaking', minutes: { 15: 6, 20: 5 }, built: true,
+			intro: { en: 'Now it’s your turn to talk. Tell me about a problem you had on a trip. You have one minute. Then you’ll see how to say it better, and you can try again.', fa: 'حالا نوبت توست که حرف بزنی. از مشکلی که در یک سفر داشتی برایم بگو. یک دقیقه وقت داری. بعد می‌بینی چطور بهترش بگویی و می‌توانی دوباره امتحان کنی.' } }
 	] satisfies DayModule[]
 } as const;
 
