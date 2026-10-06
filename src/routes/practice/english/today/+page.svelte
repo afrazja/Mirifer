@@ -10,6 +10,9 @@
 	import CoachGreeting from '$lib/components/CoachGreeting.svelte';
 	import SayAgain from '$lib/components/SayAgain.svelte';
 	import MiraSays from '$lib/components/MiraSays.svelte';
+	import SayItBetter from '$lib/components/SayItBetter.svelte';
+	import SayItBetterReview from '$lib/components/SayItBetterReview.svelte';
+	import { asSayRecord } from '$lib/practice/say-better';
 	import { COACH_RATE, COACH_VOICE, loadGreeting, localDate, planLine, type GreetingRecord } from '$lib/practice/coach';
 	import { playAudioPromise, stopAllAudio, ttsIsPlaying } from '$services/tts';
 	import { getLanguage } from '$services/data-layer';
@@ -36,6 +39,8 @@
 	let showCheckIn = $state(false);
 	/** Before a session starts: Mira first, then today's plan (one focused screen each). */
 	let startStep = $state<'greeting' | 'plan'>('greeting');
+	/** A module has moved past its first screen: Mira's introduction folds to one line. */
+	let introCompact = $state(false);
 	/** Today's parts after the greeting, in order, and Mira's line that reads them. */
 	const parts = $derived([...modulesFor(length).map(module => module.title), { en: 'A short recap', fa: 'یک مرور کوتاه' }]);
 	const plan = $derived(planLine(parts));
@@ -81,6 +86,7 @@
 	const begin = () => { clearRecords(); return save(startSession(length)); };
 	const finish = (outcome: 'done' | 'skipped', score?: { correct: number; total: number }, record?: unknown) => {
 		if (!session || !step) return;
+		introCompact = false;
 		if (record) saveRecord(session.startedAt, step.id, record);
 		void save(finishModule(session, step.id as ModuleId, outcome, score));
 	};
@@ -95,9 +101,11 @@
 	function again() { clearRecords(); void save(null); }
 </script>
 
-{#snippet moduleBody(mod: DayModule, onDone: (score?: { correct: number; total: number }, record?: ActRecord) => void)}
+{#snippet moduleBody(mod: DayModule, onDone: (score?: { correct: number; total: number }, record?: unknown) => void)}
 	{#if mod.id === 'listen-act' && mod.built}
 		{#key mod.id}<ListenAndAct {isFa} {onDone} />{/key}
+	{:else if mod.id === 'say-it-better' && mod.built && session}
+		{#key mod.id}<SayItBetter {isFa} initial={asSayRecord(loadRecord(session.startedAt, mod.id))} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} onFocus={compact => (introCompact = compact)} {onDone} />{/key}
 	{:else}
 		<div class="card stand-in" role="note">
 			<strong>{isFa ? 'این بخش هنوز ساخته نشده.' : 'This step is not built yet.'}</strong>
@@ -109,8 +117,11 @@
 
 {#snippet reviewBody(mod: DayModule)}
 	{@const actRecord = mod.id === 'listen-act' ? asActRecord(reviewedRecord) : null}
+	{@const sayRecord = mod.id === 'say-it-better' ? asSayRecord(reviewedRecord) : null}
 	{#if actRecord}
 		<ListenAndActReview {isFa} record={actRecord} />
+	{:else if sayRecord}
+		<SayItBetterReview {isFa} record={sayRecord} />
 	{:else if session?.skipped.includes(mod.id as ModuleId)}
 		<div class="card" role="note"><p>{isFa ? 'این مرحله را رد کردی، پس چیزی برای دیدن نیست.' : 'You skipped this step, so there is nothing to look back at.'}</p></div>
 	{:else}
@@ -193,9 +204,9 @@
 			<div class="bar" role="progressbar" aria-label={isFa ? 'پیشرفت جلسه' : 'Session progress'} aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(share * 100)}><span style:width="{share * 100}%"></span></div>
 			<p class="eyebrow">{isFa ? `مرحلهٔ ${stepNumber} از ${stepCount}` : `STEP ${stepNumber} OF ${stepCount}`} · {step.skill === 'listening' ? (isFa ? 'شنیدن' : 'LISTENING') : (isFa ? 'صحبت کردن' : 'SPEAKING')}</p>
 			<h1 id="step-title">{text(step.title)}</h1>
-			{#key step.id}<MiraSays line={step.intro} {isFa} />{/key}
+			{#key step.id}<MiraSays line={step.intro} {isFa} compact={introCompact} />{/key}
 			{@render moduleBody(step, (score, record) => finish('done', score, record))}
-			<button class="text-button" type="button" onclick={() => finish('skipped')}>{isFa ? 'این مرحله را رد کن' : 'Skip this step'}</button>
+			{#if !introCompact}<button class="text-button" type="button" onclick={() => finish('skipped')}>{isFa ? 'این مرحله را رد کن' : 'Skip this step'}</button>{/if}
 		</section>
 
 	{:else if session.stage === 'recap'}

@@ -11,7 +11,7 @@
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
 	import type { DisplayText } from '$lib/practice/hotel';
 
-	let { line, isFa = false, autoplay = true }: { line: DisplayText; isFa?: boolean; autoplay?: boolean } = $props();
+	let { line, isFa = false, autoplay = true, compact = false }: { line: DisplayText; isFa?: boolean; autoplay?: boolean; /** Folded to one line once the learner has moved on. */ compact?: boolean } = $props();
 	const playing = $derived($ttsIsPlaying);
 	function play() { void playAudioPromise(line.en, COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {}); }
 	function toggle() { if (playing) stopAllAudio(); else play(); }
@@ -19,6 +19,13 @@
 	onDestroy(stopAllAudio);
 </script>
 
+{#if compact}
+<div class="mira compact">
+	<span class="avatar" aria-hidden="true">M</span>
+	<span class="fold">{isFa ? 'میرا' : 'Mira'}</span>
+	<button class="hear" type="button" onclick={toggle} aria-label={playing ? (isFa ? 'توقف صدا' : 'Stop') : (isFa ? 'شنیدن دوبارهٔ میرا' : 'Hear Mira again')}><span aria-hidden="true">{playing ? '■' : '▶'}</span></button>
+</div>
+{:else}
 <div class="mira">
 	<span class="avatar" aria-hidden="true">M</span>
 	<div class="said">
@@ -26,6 +33,7 @@
 	</div>
 	<button class="hear" type="button" onclick={toggle} aria-label={playing ? (isFa ? 'توقف صدا' : 'Stop') : (isFa ? 'شنیدن صدای میرا' : 'Hear Mira')}><span aria-hidden="true">{playing ? '■' : '▶'}</span></button>
 </div>
+{/if}
 
 <style>
 	.mira { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: start; padding: 14px; margin: 6px 0 18px; border-radius: 16px; background: var(--paper-raised); border: 1px solid var(--line); }
@@ -35,5 +43,7 @@
 	.en { font-size: 1.04rem; text-align: left; }
 	.fa { font-size: 1.04rem; }
 	.hear { display: grid; place-items: center; inline-size: 44px; block-size: 44px; border: 1.5px solid var(--accent); border-radius: 50%; background: var(--paper-raised); color: var(--accent-deep); cursor: pointer; }
+	.compact { padding: 8px 12px; align-items: center; }
+	.fold { font-weight: 700; }
 	.hear:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 </style>
