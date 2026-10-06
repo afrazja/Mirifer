@@ -41,7 +41,8 @@ describe('/api/english/retell', () => {
 		const body = await (await POST(f.event)).json();
 		expect(fetchMock.mock.calls[0][0]).toBe('https://api.openai.com/v1/audio/transcriptions');
 		const upload = fetchMock.mock.calls[0][1].body as FormData;
-		expect(upload.get('model')).toBe('gpt-4o-mini-transcribe');
+		expect(upload.get('model')).toBe('gpt-4o-transcribe');
+		expect(upload.get('prompt')).toContain('keeping their grammar mistakes');
 		expect((upload.get('file') as File).name).toBe('speech.webm');
 		expect(JSON.stringify(fetchMock.mock.calls[1][1].body)).toContain('Maria took a taxi home');
 		expect(body).toMatchObject({ transcript: TRANSCRIPT, covered: [1, 2, 4, 5], total: 5, seconds: 48, feedback: { en: 'Good job covering the main events.' }, saved: true });

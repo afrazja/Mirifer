@@ -45,7 +45,7 @@ Back from a later module: screens 4–8 read-only (browser only, for the day).
 
 ## AI (one call per first attempt; none for the second)
 
-Transcription: OpenAI gpt-4o-mini-transcribe, English. Audio is not stored. `<` and `>` are stripped
+Transcription: OpenAI gpt-4o-transcribe, English, told the question and to keep the learner's mistakes word for word. Audio is not stored. `<` and `>` are stripped
 from the transcript before it goes to the model.
 
 Prompt (feedback on attempt 1):
