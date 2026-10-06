@@ -14,7 +14,7 @@ List the problems first. Each fix: {"type": "mistake" or "natural", "original": 
 - Mistakes come first, in this order of importance: past tense kept steady through the story, he/she, articles, prepositions, word order, wrong word.
 - Only add a "natural" fix if a fluent listener would actually notice the original sounds odd. Synonyms, more formal words and style changes are not fixes. Suggestions stay at B1 or below.
 - At most ${MAX_FIXES} fixes. Returning no fixes is a good result. Never add a fix just to fill the list.
-"better": the whole answer with exactly these fixes applied and nothing else changed (null if there are no fixes).
+"better": the whole answer, fully correct (null if there are no fixes). It must contain every fix above word for word, and also correct every other mistake, even ones not in the list (a wrong word, he/she, singular/plural, tense). Keep the learner's own words, ideas and order wherever they are already correct; don't add new ideas or harder words, and stay at B1 or below.
 "praiseEn" and "praiseFa": one sentence that quotes 2 to 6 of the learner's own words in double quotes and says what was good about them. Never use "great", "excellent", "fluent", "perfect", and never mention levels, scores or IELTS. praiseFa is the same sentence in natural Persian (informal, using تو), keeping the quoted English words in English.
 "onTopic": true only if the answer, in English, tells about a problem they had while travelling.
 If the answer is off-topic, mostly Persian, or under ${TOO_SHORT_WORDS} words: "onTopic": false, "fixes": [], "better": null.`;

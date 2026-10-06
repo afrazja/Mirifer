@@ -26,7 +26,7 @@ Mira's spoken intro shows in full on the task screen only; later screens show a 
    fix spots marked (no explanations yet). English transcript isolated LTR in the Persian UI.
 5. **Fix 1 / 2 / 3** (one per screen): original -> better, and one short reason (Persian reason first in
    the Persian UI). Bottom: Next fix.
-6. **Better version**: the learner's answer with the fixes applied and nothing else changed; Mira reads it
+6. **Better version**: the learner's answer made fully correct: the fixes applied, plus any other mistake corrected (v3, owner-approved: a "better" version must never keep a mistake), with their own words and ideas kept and nothing harder added; Mira reads it
    aloud (replay). Bottom: Try again.
 7. **Second attempt**: the better version is hidden; only the fixes show as chips, with "Tell it again in
    your own words. Try to use these." Same 1-minute recording.
@@ -60,7 +60,7 @@ copied from the transcript), better: change as few words as possible, whyEn, why
 - Only add a "natural" fix if a fluent listener would actually notice the original sounds odd.
   Synonyms, more formal words and style changes are not fixes. Suggestions stay at B1 or below.
 - At most 3 fixes. Returning no fixes is a good result. Never add a fix just to fill the list.
-"better": the whole answer with exactly these fixes applied and nothing else changed (null if no fixes).
+"better": the whole answer, fully correct (null if no fixes): every fix word for word, plus every other mistake corrected; the learner's words, ideas and order kept where already correct; nothing harder added.
 "praiseEn"/"praiseFa": one sentence that quotes 2–6 of the learner's own words in double quotes and says
 what was good about them. Never use "great", "excellent", "fluent", "perfect", and never mention levels,
 scores or IELTS.
