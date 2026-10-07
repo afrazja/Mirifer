@@ -44,31 +44,23 @@
 	/** Before a session starts: Mira first, then today's plan (one focused screen each). */
 	let startStep = $state<'greeting' | 'plan'>('greeting');
 	/**
-	 * Modules whose instruction Mira has given on this visit. Each time a module opens
-	 * on a visit (also after a reload or coming back later), she gives it on its own
-	 * screen, spoken, with Next; that tap also starts the module's first sound, which
-	 * phones only allow from a tap. Going Back and returning doesn't repeat it.
+	 * Mira's instruction sits at the top of a module, on the same screen as the module
+	 * itself, while it is on its first screen ('full'); the module hides it once the
+	 * learner gets going. She says it on her own, from the tap that opens the module
+	 * where possible (phones only allow sound from a tap), once per module per visit.
 	 */
-	let briefed = $state<string[]>([]);
-	/** Mira says a module's instruction. Called from the tap that opens it where possible, so phones allow the sound. */
+	let intro = $state<'full' | 'compact' | 'hidden'>('full');
 	let spokenFor: string | null = null;
+	/** Mira's spoken instruction for the module now opening; resolves when she stops. */
+	let introPlay = $state<Promise<void> | null>(null);
 	function brief(mod: DayModule | null) {
-		if (!mod || briefed.includes(mod.id) || spokenFor === mod.id) return;
+		if (!mod || spokenFor === mod.id) return;
 		spokenFor = mod.id;
-		stopAllAudio(); void playAudioPromise(mod.intro.en, COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {});
-	}
-	/** What a module says first, from where the learner is in it, started by the Next tap that opens it. */
-	function firstLine(id: string): string | null {
-		if (id !== 'phrases') return null;
-		const saved = session ? asPhraseRecord(loadRecord(session.startedAt, id)) : null;
-		return saved?.done ? null : PHRASES[saved?.index ?? 0].sentence;
-	}
-	function briefDone(id: string) {
 		stopAllAudio();
-		const line = firstLine(id);
-		if (line) void playAudioPromise(line, COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {});
-		briefed = [...briefed, id];
+		introPlay = playAudioPromise(mod.intro.en, COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {});
 	}
+	/** Leaving a module another way than finishing it (Back): nothing keeps talking. */
+	function leaveModule() { stopAllAudio(); }
 	/** Natural phrases: the sentence on screen (0-based), shown in the eyebrow instead of a second counter. */
 	let phraseStep = $state<number | null>(null);
 	/** Today's parts after the greeting, in order, and Mira's line that reads them. */
@@ -112,10 +104,10 @@
 			if (!response.ok) saveFailed = true;
 		} catch { saveFailed = true; }
 	}
-	const begin = () => { clearRecords(); briefed = []; spokenFor = null; const next = startSession(length); brief(currentModule(next)); return save(next); };
+	const begin = () => { clearRecords(); spokenFor = null; const next = startSession(length); brief(currentModule(next)); return save(next); };
 	const finish = (outcome: 'done' | 'skipped', score?: { correct: number; total: number }, record?: unknown) => {
 		if (!session || !step) return;
-		phraseStep = null;
+		phraseStep = null; intro = 'full';
 		if (record) saveRecord(session.startedAt, step.id, record);
 		const next = finishModule(session, step.id as ModuleId, outcome, score);
 		if (next.stage === 'modules') brief(currentModule(next)); else stopAllAudio();
@@ -147,22 +139,20 @@
 	{/if}
 {/snippet}
 
-{#snippet instruction(mod: DayModule, onSkip: () => void)}
+{#snippet instruction(mod: DayModule)}
 	<div class="brief">
-		<p class="brief-who"><span class="avatar" aria-hidden="true">M</span> {isFa ? 'میرا' : 'Mira'}</p>
+		<span class="avatar" aria-hidden="true">M</span>
 		<p class="brief-line" lang={isFa ? 'fa' : 'en'} dir={isFa ? 'rtl' : 'ltr'}>{text(mod.intro)}</p>
 	</div>
-	<button class="text-button" type="button" onclick={() => { stopAllAudio(); onSkip(); }}>{isFa ? 'این مرحله را رد کن' : 'Skip this step'}</button>
-	<div class="start-bar"><button class="primary wide" type="button" onclick={() => briefDone(mod.id)}>{isFa ? 'بعدی' : 'Next'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button></div>
 {/snippet}
 
 {#snippet moduleBody(mod: DayModule, onDone: (score?: { correct: number; total: number }, record?: unknown) => void)}
 	{#if mod.id === 'listen-act' && mod.built}
 		{#key mod.id}<ListenAndAct {isFa} {onDone} />{/key}
 	{:else if mod.id === 'phrases' && mod.built && session}
-		{#key mod.id}<PhrasePractice {isFa} initial={asPhraseRecord(loadRecord(session.startedAt, mod.id))} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} onStep={index => (phraseStep = index)} {onDone} />{/key}
+		{#key mod.id}<PhrasePractice {isFa} initial={asPhraseRecord(loadRecord(session.startedAt, mod.id))} afterIntro={introPlay} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} onStep={index => (phraseStep = index)} {onDone} />{/key}
 	{:else if mod.id === 'say-it-better' && mod.built && session}
-		{#key mod.id}<SayItBetter {isFa} initial={asSayRecord(loadRecord(session.startedAt, mod.id))} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} {onDone} />{/key}
+		{#key mod.id}<SayItBetter {isFa} initial={asSayRecord(loadRecord(session.startedAt, mod.id))} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} {onDone} />{/key}
 	{:else}
 		<div class="card stand-in" role="note">
 			<strong>{isFa ? 'این بخش هنوز ساخته نشده.' : 'This step is not built yet.'}</strong>
@@ -191,9 +181,9 @@
 
 {#snippet backButton()}
 	{#if previous}
-		<button class="back" type="button" onclick={() => { doingNow = false; reviewing = previous?.id ?? null; }}><span aria-hidden="true">{isFa ? '→' : '←'}</span> {isFa ? `قبلی: ${text(previous.title)}` : `Back: ${text(previous.title)}`}</button>
+		<button class="back" type="button" onclick={() => { leaveModule(); doingNow = false; reviewing = previous?.id ?? null; }}><span aria-hidden="true">{isFa ? '→' : '←'}</span> {isFa ? `قبلی: ${text(previous.title)}` : `Back: ${text(previous.title)}`}</button>
 	{:else if session && session.stage !== 'done'}
-		<button class="back" type="button" onclick={() => { doingNow = false; reviewing = null; showCheckIn = true; }}><span aria-hidden="true">{isFa ? '→' : '←'}</span> {isFa ? 'قبلی: شروع' : 'Back: Check-in'}</button>
+		<button class="back" type="button" onclick={() => { leaveModule(); doingNow = false; reviewing = null; showCheckIn = true; }}><span aria-hidden="true">{isFa ? '→' : '←'}</span> {isFa ? 'قبلی: شروع' : 'Back: Check-in'}</button>
 	{/if}
 {/snippet}
 
@@ -244,20 +234,17 @@
 			<p class="eyebrow">{isFa ? 'مرور مرحلهٔ قبلی' : 'REVIEWING AN EARLIER STEP'}</p>
 			<h1 id="review-title">{text(reviewed.title)}</h1>
 			{#if doingNow && session.skipped.includes(reviewed.id as ModuleId)}
-				{#if !briefed.includes(reviewed.id)}
-					{@render instruction(reviewed, () => { doingNow = false; })}
-				{:else}
-					{@render moduleBody(reviewed, (score, record) => finishLater(reviewed.id, score, record))}
-				{/if}
+				{#if intro === 'full'}{@render instruction(reviewed)}{/if}
+				{@render moduleBody(reviewed, (score, record) => finishLater(reviewed.id, score, record))}
 			{:else}
 				{#if session.skipped.includes(reviewed.id as ModuleId)}
 					{@render reviewBody(reviewed)}
-					<button class="primary" type="button" onclick={() => { doingNow = true; spokenFor = null; brief(reviewed); }}>{isFa ? 'همین حالا انجامش بده' : 'Do this step now'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
+					<button class="primary" type="button" onclick={() => { doingNow = true; intro = 'full'; spokenFor = null; brief(reviewed); }}>{isFa ? 'همین حالا انجامش بده' : 'Do this step now'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
 				{:else}
 					<p class="small">{isFa ? 'فقط خواندنی: این همان کاری است که کردی. دوباره انجام دادن ممکن نیست.' : 'Read-only: this is what you did. It can’t be redone.'}</p>
 					{@render reviewBody(reviewed)}
 				{/if}
-				<button class={session.skipped.includes(reviewed.id as ModuleId) ? 'text-button' : 'primary'} type="button" onclick={() => (reviewing = null)}>{isFa ? 'برگشت به جایی که بودم' : 'Back to where I was'}</button>
+				<button class={session.skipped.includes(reviewed.id as ModuleId) ? 'text-button' : 'primary'} type="button" onclick={() => { stopAllAudio(); reviewing = null; }}>{isFa ? 'برگشت به جایی که بودم' : 'Back to where I was'}</button>
 			{/if}
 		</section>
 
@@ -267,11 +254,9 @@
 			{@render strip()}
 			<p class="eyebrow">{isFa ? `مرحلهٔ ${stepNumber.toLocaleString('fa-IR')} از ${stepCount.toLocaleString('fa-IR')}` : `STEP ${stepNumber} OF ${stepCount}`}{#if step.id === 'phrases' && phraseStep !== null}{' · '}{isFa ? `${(phraseStep + 1).toLocaleString('fa-IR')} از ${PHRASES.length.toLocaleString('fa-IR')}` : `${phraseStep + 1}/${PHRASES.length}`}{/if} · {step.skill === 'listening' ? (isFa ? 'شنیدن' : 'LISTENING') : (isFa ? 'صحبت کردن' : 'SPEAKING')}</p>
 			<h1 id="step-title">{text(step.title)}</h1>
-			{#if !briefed.includes(step.id)}
-				{@render instruction(step, () => finish('skipped'))}
-			{:else}
-				{@render moduleBody(step, (score, record) => finish('done', score, record))}
-			{/if}
+			{#if intro === 'full'}{@render instruction(step)}{/if}
+			{@render moduleBody(step, (score, record) => finish('done', score, record))}
+			{#if intro === 'full'}<button class="text-button" type="button" onclick={() => { stopAllAudio(); finish('skipped'); }}>{isFa ? 'این مرحله را رد کن' : 'Skip this step'}</button>{/if}
 		</section>
 
 	{:else if session.stage === 'recap'}
@@ -350,10 +335,9 @@
 	.strip .skipped .seg { background: var(--gold); }
 	.strip .now .seg { background: transparent; box-shadow: inset 0 0 0 2px var(--accent); }
 	.strip .now .lab { color: var(--ink); font-weight: 700; }
-	.brief { display: grid; gap: 14px; margin: 18px 0 8px; }
-	.brief-who { display: flex; align-items: center; gap: 10px; margin: 0; font-weight: 700; }
-	.brief-who .avatar { display: grid; place-items: center; inline-size: 40px; block-size: 40px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-family: var(--font-display); font-weight: 700; }
-	.brief-line { margin: 0; font-family: var(--font-display); font-size: clamp(1.35rem, 5.6vw, 1.75rem); line-height: 1.4; }
+	.brief { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start; margin: 8px 0 16px; padding: 14px; border-radius: 16px; background: var(--paper-raised); border: 1px solid var(--line); }
+	.brief .avatar { display: grid; place-items: center; inline-size: 40px; block-size: 40px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-family: var(--font-display); font-weight: 700; }
+	.brief-line { margin: 0; font-size: 1.04rem; line-height: 1.55; }
 	.start-bar { position: fixed; inset-inline: 0; inset-block-end: 0; z-index: 20; padding: 12px 20px calc(14px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--paper) 35%); }
 	.primary.wide { display: flex; inline-size: 100%; max-inline-size: 680px; margin-inline: auto; min-height: 54px; font-size: 1.05rem; }
 	.said { color: var(--ink-soft); }

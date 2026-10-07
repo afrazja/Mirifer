@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
-	import { playAudioPromise, stopAllAudio, ttsIsPlaying, ENGLISH_VOICES, type TTSVoice } from '$services/tts';
+	import { playAudioPromise, stopAllAudio, ENGLISH_VOICES, type TTSVoice } from '$services/tts';
 	import { ACT_ROUNDS, MAX_PLAYS, PLACES, PLAYBACK_RATE_ALL, THINGS, scoreSteps, type ActRecord, type PlaceId, type Step, type ThingId } from '$lib/practice/listen-act';
 	import type { DisplayText } from '$lib/practice/hotel';
 
@@ -17,13 +16,16 @@
 	let rounds = $state<ActRecord['rounds']>([]);
 	const voice: TTSVoice = ENGLISH_VOICES[Math.floor(Math.random() * ENGLISH_VOICES.length)].id;
 	const current = $derived(ACT_ROUNDS[round]);
-	const playing = $derived($ttsIsPlaying);
+	/** This module's own recording is playing (not Mira's instruction above it). */
+	let playing = $state(false);
 
 	async function play() {
 		if (plays >= MAX_PLAYS || playing || checked) return;
-		plays += 1; audioFailed = false;
+		plays += 1; audioFailed = false; playing = true;
+		stopAllAudio(); // Mira may still be giving the instruction
 		try { await playAudioPromise(current.script, PLAYBACK_RATE_ALL, 'en-US', undefined, voice); heard = true; }
 		catch { audioFailed = true; heard = true; }
+		finally { playing = false; }
 	}
 	function pickThing(id: ThingId) { if (!checked) pickedThing = pickedThing === id ? null : id; }
 	function pickPlace(id: PlaceId) {
@@ -43,7 +45,6 @@
 		if (round + 1 >= ACT_ROUNDS.length) { finished = true; return; }
 		round += 1; plays = 0; heard = false; audioFailed = false; steps = []; pickedThing = null; checked = null;
 	}
-	onDestroy(stopAllAudio);
 
 	const stepLabel = (step: Step) => `${text(THINGS[step.thing].label)} → ${text(PLACES[step.place].label)}`;
 </script>
