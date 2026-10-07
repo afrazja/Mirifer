@@ -13,7 +13,8 @@
 	import { onMount } from 'svelte';
 	import { dev } from '$app/environment';
 	import { page, updated } from '$app/state';
-	import { beforeNavigate, afterNavigate } from '$app/navigation';
+	import { beforeNavigate, afterNavigate, goto } from '$app/navigation';
+	import { trackActivity } from '$services/away';
 	import { setAnalyticsUser, startAnalyticsListeners, trackEvent, clearLessonContext } from '$services/analytics';
 	import { getSupabaseBrowserClient } from '$lib/supabase/client';
 	import { authStore } from '$stores/auth';
@@ -53,6 +54,9 @@
 	// The inline script in app.html already painted the right theme before
 	// first paint; this just syncs the stores so the toggle shows the
 	// correct state and starts following the OS when 'system' is chosen.
+	// Back after a break: the language page, not the middle of the last module.
+	onMount(() => trackActivity(() => void goto('/languages', { replaceState: true })));
+
 	onMount(() => {
 		initTheme();
 		// The boot script set lang/dir from localStorage. For a signed-in
