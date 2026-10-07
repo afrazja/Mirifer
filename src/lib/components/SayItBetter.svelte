@@ -177,6 +177,7 @@
 		{:else if stage === 'retry'}
 			<p class="lead">{T('Tell it once more, in your own words.', 'یک بار دیگر با کلمات خودت تعریف کن.')}</p>
 		{:else}
+			<p class="lead">{T('Tell me about a problem you had on a trip.', 'از مشکلی که در یک سفر داشتی برایم بگو.')}</p>
 			<button class="link" type="button" onclick={() => (showIdeas = !showIdeas)} aria-expanded={showIdeas}>{T('Need ideas?', 'ایده می‌خواهی؟')}</button>
 			{#if showIdeas}<ul class="ideas" lang="en" dir="ltr"><li>Where were you?</li><li>What went wrong?</li><li>What did you do?</li></ul>{/if}
 		{/if}
