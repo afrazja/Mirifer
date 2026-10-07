@@ -194,7 +194,7 @@
 			</div>
 			<p class="hint">{T('Recording… it stops by itself at 1:00', 'در حال ضبط… در ۱:۰۰ خودش تمام می‌شود')}</p>
 		</div>
-		{@render bottom(T('Stop', 'تمام'), stopRecording)}
+		{@render bottom(T('Stop', 'پایان ضبط'), stopRecording)}
 
 	{:else if stage === 'short'}
 		<p class="lead">{T('That was very short. Try to say a bit more.', 'خیلی کوتاه بود. سعی کن کمی بیشتر بگویی.')}</p>
