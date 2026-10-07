@@ -57,8 +57,12 @@
 		spokenFor = mod.id;
 		stopAllAudio(); void playAudioPromise(mod.intro.en, COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {});
 	}
+	/** What a module says first, started by the Next tap that opens it (phones only allow sound that starts inside a tap). */
+	const FIRST_LINE: Record<string, string> = { phrases: PHRASES[0].sentence };
 	function briefDone(id: string) {
 		stopAllAudio();
+		const fresh = !session || loadRecord(session.startedAt, id) === null;
+		if (FIRST_LINE[id] && fresh) void playAudioPromise(FIRST_LINE[id], COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {});
 		briefed = [...briefed, id];
 		if (session) saveRecord(session.startedAt, 'briefed', briefed);
 	}

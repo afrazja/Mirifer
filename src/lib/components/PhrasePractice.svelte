@@ -40,8 +40,8 @@
 	$effect(() => { onFocus?.('hidden'); });
 	$effect(() => { onStep?.(record.index); });
 	onMount(() => {
-		// Fresh start, straight from Next on Mira's instruction: the first sentence plays. After a reload it waits for a tap.
-		if (!initial) say();
+		// The first sentence is started by the page, from the Next tap on Mira's instruction:
+		// starting it here, after the tap, is blocked on phones. After a reload it waits for a tap.
 		const onHidden = () => { if (document.hidden && recorder?.state === 'recording') { discard = true; recorder.stop(); } };
 		document.addEventListener('visibilitychange', onHidden);
 		return () => document.removeEventListener('visibilitychange', onHidden);
