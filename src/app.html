@@ -30,6 +30,14 @@
 					var fa = localStorage.getItem('mirifer_language') === 'fa';
 					document.documentElement.setAttribute('lang', fa ? 'fa' : 'en');
 					document.documentElement.setAttribute('dir', fa ? 'rtl' : 'ltr');
+					// Back after a break (the browser reopened the last tab):
+					// start at the language page, not mid-module. Must match
+					// src/lib/services/away.ts.
+					var last = Number(localStorage.getItem('mirifer_last_active'));
+					if (last && Date.now() - last > 1800000 && /^\/(?:home|lesson|lessons|review|vocabulary|drill|check-in|practice)(?:\/|$)/.test(window.location.pathname)) {
+						localStorage.setItem('mirifer_last_active', String(Date.now()));
+						window.location.replace('/languages');
+					}
 				} catch (e) {
 					document.documentElement.setAttribute('data-theme', 'light');
 				}
