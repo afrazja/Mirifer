@@ -22,11 +22,11 @@
 		onDone: (score: undefined, record: PhraseRecord) => void;
 	} = $props();
 
-	type Stage = 'start' | 'listen' | 'recording' | 'result';
+	type Stage = 'listen' | 'recording' | 'result';
 	// svelte-ignore state_referenced_locally
 	let record = $state<PhraseRecord>(initial ?? emptyPhraseRecord());
 	// svelte-ignore state_referenced_locally
-	let stage = $state<Stage>(initial && (initial.index > 0 || initial.items[0].tries > 0) ? 'listen' : 'start');
+	let stage = $state<Stage>('listen');
 	let micOff = $state(false), check = $state<'checking' | 'caught' | 'missed' | 'failed' | null>(null);
 	let elapsed = $state(0), clipUrl = $state<string | null>(null), selfPlaying = $state(false);
 	let recorder: MediaRecorder | null = null, stream: MediaStream | null = null, chunks: Blob[] = [];
@@ -37,9 +37,11 @@
 	const last = $derived(record.index === PHRASES.length - 1);
 	const T = (en: string, fa: string) => (isFa ? fa : en);
 
-	$effect(() => { onFocus?.(stage === 'start' ? 'full' : 'hidden'); });
-	$effect(() => { onStep?.(stage === 'start' ? null : record.index); });
+	$effect(() => { onFocus?.('hidden'); });
+	$effect(() => { onStep?.(record.index); });
 	onMount(() => {
+		// Fresh start, straight from Next on Mira's instruction: the first sentence plays. After a reload it waits for a tap.
+		if (!initial) say();
 		const onHidden = () => { if (document.hidden && recorder?.state === 'recording') { discard = true; recorder.stop(); } };
 		document.addEventListener('visibilitychange', onHidden);
 		return () => document.removeEventListener('visibilitychange', onHidden);
@@ -51,8 +53,6 @@
 	function say(rate = COACH_RATE) { stopSelf(); stopAllAudio(); void playAudioPromise(phrase.sentence, rate, 'en-US', undefined, COACH_VOICE).catch(() => {}); }
 	function stopSelf() { self?.pause(); self = null; selfPlaying = false; }
 	function dropClip() { if (clipUrl) URL.revokeObjectURL(clipUrl); clipUrl = null; }
-
-	function start() { stage = 'listen'; say(); }
 
 	async function startRecording() {
 		stopAllAudio(); stopSelf(); // Mira's voice must never end up in the recording
@@ -143,9 +143,6 @@
 {/snippet}
 
 <section class="phrases" aria-live="polite">
-	{#if stage === 'start'}
-		{@render bottom(T('Start', 'شروع'), start)}
-	{:else}
 		<p class="situation">{isFa ? phrase.situation.fa : phrase.situation.en}</p>
 		<p class="sentence" lang="en" dir="ltr">{#each shownParts(phrase.shown) as part}{#if part.tie}<span class="tie" aria-hidden="true"></span>{:else if part.bold}<strong>{part.text}</strong>{:else}{part.text}{/if}{/each}</p>
 		<p class="tip">{#each tipParts(isFa ? phrase.tip.fa : phrase.tip.en) as part}{#if part.english}<bdi class="en" lang="en" dir="ltr">{part.text}</bdi>{:else}{part.text}{/if}{/each}</p>
@@ -182,7 +179,6 @@
 			</div>
 			{@render bottom(last ? T('Finish', 'تمام') : T('Next', 'بعدی'), next)}
 		{/if}
-	{/if}
 </section>
 
 <style>
