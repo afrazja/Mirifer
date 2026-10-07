@@ -4,7 +4,6 @@
 	 * Signed-out visitors get a Sign in link instead.
 	 */
 	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { signOut } from '$services/auth';
 
@@ -26,7 +25,8 @@
 
 	async function leave() {
 		signingOut = true;
-		try { await signOut(); } finally { open = false; signingOut = false; await goto('/login', { invalidateAll: true }); }
+		// A full load of the landing page, so nothing from the signed-in app stays in memory.
+		try { await signOut(); } finally { open = false; window.location.assign(isFa ? '/fa' : '/'); }
 	}
 </script>
 
