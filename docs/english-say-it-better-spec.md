@@ -60,7 +60,7 @@ copied from the transcript), better: change as few words as possible, whyEn, why
 - Only add a "natural" fix if a fluent listener would actually notice the original sounds odd.
   Synonyms, more formal words and style changes are not fixes. Suggestions stay at B1 or below.
 - At most 3 fixes. Returning no fixes is a good result. Never add a fix just to fill the list.
-"better": the whole answer, fully correct (null if no fixes): every fix word for word, plus every other mistake corrected; the learner's words, ideas and order kept where already correct; nothing harder added.
+"allMistakes" (written first): every mistake in the answer, however small, each {original, better}; a part that makes no sense gets better "" (left out). "better": the whole answer, fully correct (null if no fixes); the server rejects it (retry) unless every allMistakes correction is in it and every left-out part is gone: every fix word for word, plus every other mistake corrected; the learner's words, ideas and order kept where already correct; nothing harder added.
 "praiseEn"/"praiseFa": one sentence that quotes 2–6 of the learner's own words in double quotes and says
 what was good about them. Never use "great", "excellent", "fluent", "perfect", and never mention levels,
 scores or IELTS.
