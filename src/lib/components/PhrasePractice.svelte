@@ -10,10 +10,12 @@
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
 	import { MAX_CLIP_SECONDS, MAX_TRIES, PHRASES, caught, emptyPhraseRecord, shownParts, tipParts, type PhraseRecord } from '$lib/practice/phrases';
 
-	let { isFa = false, initial = null, onSave, onFocus, onStep, onDone }: {
+	let { isFa = false, initial = null, afterIntro = null, onSave, onFocus, onStep, onDone }: {
 		isFa?: boolean;
 		/** What was saved earlier today (reload). */
 		initial?: PhraseRecord | null;
+		/** Mira's spoken instruction, started by the tap that opened the module; the first sentence follows it. */
+		afterIntro?: Promise<void> | null;
 		onSave?: (record: PhraseRecord) => void;
 		/** Mira's introduction shows in full on the start screen only. */
 		onFocus?: (intro: 'full' | 'compact' | 'hidden') => void;
@@ -37,24 +39,28 @@
 	const last = $derived(record.index === PHRASES.length - 1);
 	const T = (en: string, fa: string) => (isFa ? fa : en);
 
-	$effect(() => { onFocus?.('hidden'); });
+	/** Mira's instruction stays above the first sentence until the learner starts. */
+	$effect(() => { onFocus?.(record.index === 0 && record.items[0].tries === 0 && stage === 'listen' ? 'full' : 'hidden'); });
+	let acted = false;
 	$effect(() => { onStep?.(record.index); });
 	onMount(() => {
-		// The first sentence is started by the page, from the Next tap on Mira's instruction:
-		// starting it here, after the tap, is blocked on phones. After a reload it waits for a tap.
+		// Fresh start: the first sentence follows Mira's instruction (the tap that opened the module
+		// unlocked the sound). After a reload it waits for a tap on Again.
+		if (!initial && afterIntro) void afterIntro.then(() => { if (!acted && stage === 'listen' && record.index === 0) say(); });
 		const onHidden = () => { if (document.hidden && recorder?.state === 'recording') { discard = true; recorder.stop(); } };
 		document.addEventListener('visibilitychange', onHidden);
 		return () => document.removeEventListener('visibilitychange', onHidden);
 	});
-	onDestroy(() => { clearInterval(timer); if (recorder?.state === 'recording') { discard = true; recorder.stop(); } stream?.getTracks().forEach(t => t.stop()); stopSelf(); stopAllAudio(); dropClip(); });
+	onDestroy(() => { clearInterval(timer); if (recorder?.state === 'recording') { discard = true; recorder.stop(); } stream?.getTracks().forEach(t => t.stop()); stopSelf(); dropClip(); }); // not stopAllAudio: the next module's instruction may already be starting from this tap
 
 	function persist() { onSave?.($state.snapshot(record)); }
 	/** Mira says the sentence. Called inside a tap, so phones allow the sound. */
-	function say(rate = COACH_RATE) { stopSelf(); stopAllAudio(); void playAudioPromise(phrase.sentence, rate, 'en-US', undefined, COACH_VOICE).catch(() => {}); }
+	function say(rate = COACH_RATE) { acted = true; stopSelf(); stopAllAudio(); void playAudioPromise(phrase.sentence, rate, 'en-US', undefined, COACH_VOICE).catch(() => {}); }
 	function stopSelf() { self?.pause(); self = null; selfPlaying = false; }
 	function dropClip() { if (clipUrl) URL.revokeObjectURL(clipUrl); clipUrl = null; }
 
 	async function startRecording() {
+		acted = true;
 		stopAllAudio(); stopSelf(); // Mira's voice must never end up in the recording
 		if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') { micOff = true; return; }
 		try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
