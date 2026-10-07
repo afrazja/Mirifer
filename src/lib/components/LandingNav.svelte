@@ -5,10 +5,12 @@
 	 * Always visible, on every screen size: the logo, Log in and Sign up. On
 	 * tablets the rest (page sections, the free trial, the other language and
 	 * Install app) lives in the Menu button; phones have no Menu button.
-	 * On wide screens the sections and Install app sit in the bar itself.
+	 * On wide screens the bar holds only the other language, Install app,
+	 * Log in and Sign up (owner's rule: nothing else up there).
 	 *
 	 * The English page opens its sign-in dialog, so it passes `onLogin` and
-	 * `onSignup`; without them the buttons link to /login.
+	 * `onSignup`; without them the buttons link to /login. Signed-in visitors
+	 * never see this bar: the landing pages send them to /languages.
 	 */
 	import { onMount } from "svelte";
 	import BrandLogo from "./BrandLogo.svelte";
@@ -16,13 +18,11 @@
 
 	let {
 		lang = "en",
-		isAuthenticated = false,
 		scrolled = false,
 		onLogin,
 		onSignup,
 	}: {
 		lang?: "en" | "fa";
-		isAuthenticated?: boolean;
 		scrolled?: boolean;
 		onLogin?: () => void;
 		onSignup?: () => void;
@@ -62,33 +62,21 @@
 		<BrandLogo />
 	</a>
 
-	{#if !fa}
-		<div class="nav-links">
-			{#each sections as section}
-				<a href={section.href}>{section.label}</a>
-			{/each}
-		</div>
-	{/if}
-
 	<div class="navbar-right">
 		<a href={fa ? "/" : "/fa"} class="lang-link" lang={fa ? "en" : "fa"} hreflang={fa ? "en" : "fa"}>
 			{fa ? "English" : "فارسی"}
 		</a>
 		<span class="install-desktop"><InstallAppButton {lang} /></span>
 
-		{#if isAuthenticated}
-			<a href="/home" class="btn btn-primary">{fa ? "رفتن به درس‌ها ←" : "Open app →"}</a>
+		{#if onLogin}
+			<button type="button" class="btn btn-login" onclick={onLogin}>{fa ? "ورود" : "Log in"}</button>
 		{:else}
-			{#if onLogin}
-				<button type="button" class="btn btn-login" onclick={onLogin}>{fa ? "ورود" : "Log in"}</button>
-			{:else}
-				<a href="/login" class="btn btn-login">{fa ? "ورود" : "Log in"}</a>
-			{/if}
-			{#if onSignup}
-				<button type="button" class="btn btn-primary" onclick={onSignup}>{fa ? "ثبت‌نام" : "Sign up"}</button>
-			{:else}
-				<a href="/login?mode=signup" class="btn btn-primary">{fa ? "ثبت‌نام" : "Sign up"}</a>
-			{/if}
+			<a href="/login" class="btn btn-login">{fa ? "ورود" : "Log in"}</a>
+		{/if}
+		{#if onSignup}
+			<button type="button" class="btn btn-primary" onclick={onSignup}>{fa ? "ثبت‌نام" : "Sign up"}</button>
+		{:else}
+			<a href="/login?mode=signup" class="btn btn-primary">{fa ? "ثبت‌نام" : "Sign up"}</a>
 		{/if}
 
 		<button
@@ -153,21 +141,6 @@
 		align-items: center;
 		flex: none;
 		text-decoration: none;
-	}
-
-	.nav-links {
-		display: flex;
-		gap: 26px;
-		font-size: 0.92rem;
-	}
-
-	.nav-links a {
-		color: var(--ink-soft);
-		text-decoration: none;
-	}
-
-	.nav-links a:hover {
-		color: var(--accent);
 	}
 
 	.navbar-right {
@@ -286,7 +259,6 @@
 	/* Below wide screens the sections, language and Install move into the
 	   Menu; Log in and Sign up stay in the bar. */
 	@media (max-width: 1000px) {
-		.nav-links,
 		.lang-link,
 		.install-desktop {
 			display: none;

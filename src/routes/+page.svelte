@@ -413,7 +413,7 @@
 <!-- ════════════════════════════════════════════════════════ -->
 <!--  NAVBAR                                                  -->
 <!-- ════════════════════════════════════════════════════════ -->
-<LandingNav lang="en" {isAuthenticated} {scrolled} onLogin={openSignIn} onSignup={openSignUp} />
+<LandingNav lang="en" {scrolled} onLogin={openSignIn} onSignup={openSignUp} />
 
 <main id="main-content" tabindex="-1">
 	<!-- ══ HERO ══════════════════════════════════════════ -->
@@ -429,11 +429,7 @@
 				when you are about to forget it.
 			</p>
 			<div class="hero-actions">
-				{#if isAuthenticated}
-					<a href="/home" class="pill pill-solid">Go to my lessons →</a>
-				{:else}
-					<a href="/try" class="pill pill-solid">Try a lesson now — no signup</a>
-				{/if}
+				<a href="/try" class="pill pill-solid">Try a lesson now — no signup</a>
 			</div>
 			<ul class="hero-trust">
 				<li>No credit card</li>
