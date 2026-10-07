@@ -44,12 +44,12 @@
 	/** Before a session starts: Mira first, then today's plan (one focused screen each). */
 	let startStep = $state<'greeting' | 'plan'>('greeting');
 	/**
-	 * Modules whose instruction Mira has given this session. The first time a module
-	 * opens, she gives it on its own screen (spoken, with Next); after that the module
-	 * starts straight away. Kept in this browser with the day's records.
+	 * Modules whose instruction Mira has given on this visit. Each time a module opens
+	 * on a visit (also after a reload or coming back later), she gives it on its own
+	 * screen, spoken, with Next; that tap also starts the module's first sound, which
+	 * phones only allow from a tap. Going Back and returning doesn't repeat it.
 	 */
 	let briefed = $state<string[]>([]);
-	$effect(() => { if (session) { const saved = loadRecord(session.startedAt, 'briefed'); briefed = Array.isArray(saved) ? saved.filter(id => typeof id === 'string') : []; } });
 	/** Mira says a module's instruction. Called from the tap that opens it where possible, so phones allow the sound. */
 	let spokenFor: string | null = null;
 	function brief(mod: DayModule | null) {
@@ -57,14 +57,17 @@
 		spokenFor = mod.id;
 		stopAllAudio(); void playAudioPromise(mod.intro.en, COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {});
 	}
-	/** What a module says first, started by the Next tap that opens it (phones only allow sound that starts inside a tap). */
-	const FIRST_LINE: Record<string, string> = { phrases: PHRASES[0].sentence };
+	/** What a module says first, from where the learner is in it, started by the Next tap that opens it. */
+	function firstLine(id: string): string | null {
+		if (id !== 'phrases') return null;
+		const saved = session ? asPhraseRecord(loadRecord(session.startedAt, id)) : null;
+		return saved?.done ? null : PHRASES[saved?.index ?? 0].sentence;
+	}
 	function briefDone(id: string) {
 		stopAllAudio();
-		const fresh = !session || loadRecord(session.startedAt, id) === null;
-		if (FIRST_LINE[id] && fresh) void playAudioPromise(FIRST_LINE[id], COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {});
+		const line = firstLine(id);
+		if (line) void playAudioPromise(line, COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {});
 		briefed = [...briefed, id];
-		if (session) saveRecord(session.startedAt, 'briefed', briefed);
 	}
 	/** Natural phrases: the sentence on screen (0-based), shown in the eyebrow instead of a second counter. */
 	let phraseStep = $state<number | null>(null);
