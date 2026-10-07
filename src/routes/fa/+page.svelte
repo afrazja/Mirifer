@@ -16,19 +16,8 @@
 	 * them from Iran, and 10 from Google in total. The app converts badly
 	 * AND nobody arrives; this is the second problem.
 	 */
-	import { onMount } from 'svelte';
-	import * as auth from '$services/auth';
 	import LandingNav from '$lib/components/LandingNav.svelte';
 
-	let isAuthenticated = $state(false);
-
-	onMount(async () => {
-		try {
-			isAuthenticated = await auth.isAuthenticated();
-		} catch {
-			// Signed out is the default and the common case.
-		}
-	});
 
 	const faqs = [
 		{
@@ -80,7 +69,7 @@
 </svelte:head>
 
 <div class="fa-page" lang="fa" dir="rtl">
-	<LandingNav lang="fa" {isAuthenticated} />
+	<LandingNav lang="fa" />
 
 	<section class="hero">
 		<!-- Ambient blobs, same treatment as the English hero. Purely
@@ -98,11 +87,7 @@
 				توضیح‌ها به فارسی. از روز اول صحبت می‌کنی، نه بعد از ماه‌ها گرامر.
 			</p>
 			<div class="actions">
-				{#if isAuthenticated}
-					<a class="btn primary" href="/languages">رفتن به درس‌ها ←</a>
-				{:else}
-					<a class="btn primary" href="/try">🎙️ یک درس را همین حالا امتحان کن</a>
-				{/if}
+				<a class="btn primary" href="/try">🎙️ یک درس را همین حالا امتحان کن</a>
 			</div>
 			<p class="note">بدون کارت بانکی · بدون هزینه</p>
 		</div>
