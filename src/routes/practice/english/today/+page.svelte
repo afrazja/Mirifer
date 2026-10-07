@@ -17,7 +17,7 @@
 	import PhrasePracticeReview from '$lib/components/PhrasePracticeReview.svelte';
 	import { PHRASES, asPhraseRecord } from '$lib/practice/phrases';
 	import { COACH_RATE, COACH_VOICE, loadGreeting, localDate, planLine, type GreetingRecord } from '$lib/practice/coach';
-	import { playAudioPromise, stopAllAudio, ttsIsPlaying } from '$services/tts';
+	import { playAudioPromise, stopAllAudio } from '$services/tts';
 	import { getLanguage } from '$services/data-layer';
 	import {
 		DAY_ONE, RECAP_INTRO, DEFAULT_LENGTH, agendaFor, agendaMinutes, completeSession, currentModule,
@@ -34,7 +34,8 @@
 	// svelte-ignore state_referenced_locally
 	let session = $state<DaySession | null>(data.session);
 	// svelte-ignore state_referenced_locally
-	let length = $state<Length>(data.session?.length ?? data.profile?.minutes ?? DEFAULT_LENGTH);
+	/** Every session has the default length (owner's decision); an existing session keeps its own. */
+	let length = $state<Length>(data.session?.length ?? DEFAULT_LENGTH);
 	let saveFailed = $state(false);
 	/** A finished module the learner went back to look at again. Its result is not saved a second time. */
 	let reviewing = $state<string | null>(null);
@@ -48,12 +49,10 @@
 	let phraseStep = $state<number | null>(null);
 	/** Today's parts after the greeting, in order, and Mira's line that reads them. */
 	const parts = $derived([...modulesFor(length).map(module => module.title), { en: 'A short recap', fa: 'یک مرور کوتاه' }]);
+	/** The same parts with their estimated minutes, for the plan screen. */
+	const partMinutes = $derived([...modulesFor(length).map(module => module.minutes[length] as number), DAY_ONE.recapMinutes]);
 	const plan = $derived(planLine(parts));
-	const miraPlaying = $derived($ttsIsPlaying);
-	function speakPlan() {
-		if (miraPlaying) { stopAllAudio(); return; }
-		void playAudioPromise(plan.en, COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {});
-	}
+	function speakPlan() { stopAllAudio(); void playAudioPromise(plan.en, COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {}); }
 	/** From Mira's greeting to the plan: the tap on Next lets her read it aloud. */
 	function toPlan() { startStep = 'plan'; speakPlan(); }
 	/** Today's chat with Mira, for the recap's one correction (kept in this browser). */
@@ -168,11 +167,10 @@
 			<div class="plan-head">
 				<span class="avatar" aria-hidden="true">M</span>
 				<p class="mira-name">{isFa ? 'میرا' : 'Mira'}</p>
-				<button class="hear" type="button" onclick={speakPlan} aria-label={miraPlaying ? (isFa ? 'توقف صدا' : 'Stop') : (isFa ? 'شنیدن برنامه' : 'Hear the plan')}><span aria-hidden="true">{miraPlaying ? '■' : '▶'}</span></button>
 			</div>
 			<h1 id="start-title" class="plan-title">{isFa ? `امروز ${['یک', 'دو', 'سه', 'چهار', 'پنج', 'شش'][parts.length - 1]} بخش داریم.` : plan.en.split('.')[0] + '.'}</h1>
 			<ol class="parts">
-				{#each parts as part, index}<li><span class="num" aria-hidden="true">{isFa ? (index + 1).toLocaleString('fa-IR') : index + 1}</span>{text(part)}</li>{/each}
+				{#each parts as part, index}<li><span class="num" aria-hidden="true">{isFa ? (index + 1).toLocaleString('fa-IR') : index + 1}</span><span class="part">{text(part)}</span><span class="mins">{isFa ? `${partMinutes[index].toLocaleString('fa-IR')} دقیقه` : `${partMinutes[index]} min`}</span></li>{/each}
 			</ol>
 			{#if session}
 				<button class="text-button" type="button" onclick={() => { showCheckIn = false; again(); }}>{isFa ? 'شروع دوباره' : 'Start again'}</button>
@@ -296,10 +294,11 @@
 	.plan-head { display: flex; align-items: center; gap: 10px; margin: 18px 0 6px; }
 	.avatar { display: grid; place-items: center; inline-size: 44px; block-size: 44px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-family: var(--font-display); font-weight: 700; font-size: 1.2rem; }
 	.mira-name { margin: 0; font-weight: 700; }
-	.hear { display: grid; place-items: center; inline-size: 44px; block-size: 44px; margin-inline-start: auto; border: 1.5px solid var(--accent); border-radius: 50%; background: var(--paper-raised); color: var(--accent-deep); cursor: pointer; }
 	.plan-title { margin: 18px 0 20px; font-size: clamp(1.6rem, 6.5vw, 2.1rem); }
 	.parts { list-style: none; margin: 0 0 18px; padding: 0; display: grid; gap: 12px; }
 	.parts li { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 16px; background: var(--paper-raised); border: 1px solid var(--line); font-size: 1.1rem; font-weight: 500; }
+	.part { flex: 1; }
+	.mins { flex: none; color: var(--ink-soft); font-size: .92rem; font-weight: 400; }
 	.num { display: grid; place-items: center; inline-size: 32px; block-size: 32px; flex: none; border-radius: 50%; background: var(--accent-wash); color: var(--accent-deep); font-weight: 700; }
 	.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 </style>

@@ -1,28 +1,28 @@
 <script lang="ts">
 	/**
-	 * Mira's greeting at the start of Today, one focused screen at a time.
+	 * Mira's greeting at the start of Today, one focused screen at a time, and she
+	 * speaks on her own (no play buttons; the text is on screen too):
 	 *
-	 * Day 1:  welcome (hear Mira) -> say your first sentence (mic, or skip) -> done.
-	 * Later:  Mira's line with one question (mic, or skip) -> her reply -> done.
-	 * Same day again: one line -> done.
+	 *   hello (her line, once, with the name) -> mic check (say one sentence, or
+	 *   skip) -> "your mic works" -> today's plan.
 	 *
-	 * The day's exchange is kept in this browser, so a reload doesn't run it
+	 * The day's greeting is kept in this browser, so a reload doesn't run it
 	 * twice. `readOnly` shows what happened, for looking back from a module.
 	 */
 	import { onDestroy, onMount } from 'svelte';
-	import { playAudioPromise, stopAllAudio, ttsIsPlaying } from '$services/tts';
+	import { playAudioPromise, stopAllAudio } from '$services/tts';
 	import {
-		COACH_RATE, COACH_VOICE, DAY_ONE_LINES, firstSentence, greetingMode, isFirstSentenceAttempt, loadGreeting, localDate, daysSince,
-		saveGreeting, scriptedOpening, scriptedReply, type GreetingMode, type GreetingRecord
+		COACH_RATE, COACH_VOICE, MIRA_LINES, daysSince, greetingMode, isMicAttempt, loadGreeting, localDate, micSentence, opening as helloLine,
+		saveGreeting, type GreetingMode, type GreetingRecord
 	} from '$lib/practice/coach';
 	import type { EnglishProfile } from '$lib/practice/english-profile';
 	import type { EnglishProgress } from '$lib/practice/english-progress';
 	import type { DisplayText } from '$lib/practice/hotel';
 
-	let { isFa = false, name, profile, progress, question, readOnly = false, onDone }: {
+	let { isFa = false, name, profile, progress, readOnly = false, onDone }: {
 		isFa?: boolean; name: string; profile: EnglishProfile; progress: EnglishProgress;
-		/** Today's theme-linked question (from the day pack). */
-		question: string;
+		/** Unused since the greeting no longer asks a question; kept so callers stay simple. */
+		question?: string;
 		readOnly?: boolean;
 		/** The learner has finished the greeting: show today's plan. */
 		onDone?: () => void;
@@ -34,107 +34,61 @@
 		onerror: ((event: { error: string }) => void) | null; onend: (() => void) | null;
 		start(): void; stop(): void; abort(): void;
 	};
-	/** hello: Mira's line. speak: say something (or skip). result: what was heard / Mira's reply. */
-	type Step = 'hello' | 'speak' | 'result';
+	/** hello: Mira's line. mic: say the sentence (or skip). result: the mic works. */
+	type Step = 'hello' | 'mic' | 'result';
 
 	let ready = $state(false);
 	let mode = $state<GreetingMode>('first');
 	let step = $state<Step>('hello');
-	let record = $state<GreetingRecord | null>(null);
 	let opening = $state<DisplayText>({ en: '', fa: '' });
-	let reply = $state<DisplayText | null>(null);
-	let answer = $state(''), typed = $state(false), skipped = $state(false), tooShort = $state(false);
+	let answer = $state(''), typed = $state(false), tooShort = $state(false);
 	let typing = $state(false), draft = $state('');
 	let listening = $state(false), micProblem = $state<'blocked' | 'unsupported' | 'none' | null>(null);
-	let thinking = $state(false);
-	let feedback = { improved: null as string | null, noteEn: null as string | null, noteFa: null as string | null };
 	let recognition: Recognition | null = null;
 	let stopTimer: ReturnType<typeof setTimeout> | undefined;
 	let heading: HTMLElement | undefined = $state();
-	const playing = $derived($ttsIsPlaying);
 	/** Mira's lines show in the interface language only; her voice is always English. */
 	const persian = (value: DisplayText) => isFa && !!value.fa && value.fa !== value.en;
 	const text = (value: DisplayText) => (persian(value) ? value.fa : value.en);
 	const langOf = (value: DisplayText) => (persian(value) ? 'fa' : 'en');
 	const dirOf = (value: DisplayText) => (persian(value) ? 'rtl' : 'ltr');
-	// svelte-ignore state_referenced_locally
-	const target = firstSentence(name, profile.reason);
+	const target = $derived(micSentence(mode === 'first', profile.reason));
+	const done = $derived(typed ? MIRA_LINES.typed : MIRA_LINES.heard);
 
 	onMount(() => {
 		const now = new Date();
 		mode = greetingMode(progress, now);
 		const saved = loadGreeting(localDate(now));
 		if (saved && saved.mode === mode) {
-			record = saved; opening = saved.opening; reply = saved.reply; answer = saved.answer ?? ''; typed = saved.typed;
-			feedback = { improved: saved.improved, noteEn: saved.noteEn, noteFa: saved.noteFa };
-			skipped = saved.done && !saved.answer;
-			step = saved.done ? 'result' : mode === 'returning' ? 'speak' : 'hello';
+			opening = saved.opening; answer = saved.answer ?? ''; typed = saved.typed;
+			step = saved.done ? 'result' : 'hello';
 		} else {
-			opening = mode === 'first' ? DAY_ONE_LINES.welcome(name) : scriptedOpening(mode, name, daysSince(progress.lastCompletedAt, now), question);
-			step = mode === 'returning' ? 'speak' : 'hello';
-			if (mode === 'returning' && !readOnly) void openWithAi();
+			opening = helloLine(mode, name, daysSince(progress.lastCompletedAt, now));
 		}
 		ready = true;
+		// Mira speaks on her own. Phones may block sound that no tap started; her words are on screen anyway.
+		if (!readOnly && step === 'hello') say(opening.en);
 	});
 	onDestroy(() => { clearTimeout(stopTimer); recognition?.abort(); stopAllAudio(); });
 
-	function save(done: boolean) {
-		record = { date: localDate(new Date()), mode, opening, answer: answer || null, typed, reply, done, ...feedback };
+	function say(line: string) { stopAllAudio(); void playAudioPromise(line, COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {}); }
+	function save(finished: boolean) {
+		const record: GreetingRecord = { date: localDate(new Date()), mode, opening, answer: answer || null, typed, reply: answer ? done : null, done: finished, improved: null, noteEn: null, noteFa: null };
 		saveGreeting(record);
 	}
 	function go(next: Step) { stopAllAudio(); step = next; queueMicrotask(() => heading?.focus()); }
-	function finish() { stopAllAudio(); if (!record?.done) save(true); onDone?.(); }
-
-	const timeZone = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch { return 'UTC'; } };
-	/** Asks Mira's AI route; null on any problem or after `wait` ms, so the scripted line stays. */
-	async function askMira(body: Record<string, unknown>, wait: number): Promise<Record<string, unknown> | null> {
-		const controller = new AbortController();
-		const timer = setTimeout(() => controller.abort(), wait);
-		try {
-			const response = await fetch('/api/english/greeting', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, timeZone: timeZone() }), signal: controller.signal });
-			return response.ok ? await response.json() : null;
-		} catch { return null; }
-		finally { clearTimeout(timer); }
-	}
-	const asLine = (value: Record<string, unknown> | null): DisplayText | null =>
-		value && typeof value.line === 'string' ? { en: value.line, fa: typeof value.lineFa === 'string' ? value.lineFa : value.line } : null;
-
-	async function openWithAi() {
-		thinking = true;
-		const line = asLine(await askMira({ kind: 'open' }, 6_000));
-		thinking = false;
-		if (answer || skipped) return;
-		if (line) opening = line;
-		save(false); // keeps today's opening, so a reload doesn't ask again
-	}
-
-	async function hear(line: string) {
-		if (playing) { stopAllAudio(); return; }
-		try { await playAudioPromise(line, COACH_RATE, 'en-US', undefined, COACH_VOICE); } catch { /* the text is on screen */ }
-	}
+	/** Next on Mira's hello: the tap lets her speak the mic check. */
+	function toMic() { go('mic'); say(`${MIRA_LINES.ask.en} ${target}`); }
+	function finish() { stopAllAudio(); save(true); onDone?.(); }
+	function skip() { answer = ''; finish(); }
 
 	/** Takes what the learner said or typed. */
 	function take(value: string, wasTyped: boolean) {
 		const said = value.trim().slice(0, 300);
 		if (!said) return;
-		if (mode === 'first' && !isFirstSentenceAttempt(said)) { tooShort = true; return; }
+		if (!isMicAttempt(said)) { tooShort = true; return; }
 		tooShort = false; typed = wasTyped; answer = said;
-		if (mode === 'first') { save(true); go('result'); }
-		else void replyWithAi(said);
-	}
-	async function replyWithAi(said: string) {
-		go('result'); thinking = true;
-		const result = await askMira({ kind: 'reply', opening: opening.en, answer: said }, 4_000);
-		thinking = false;
-		reply = asLine(result) ?? scriptedReply(name, true);
-		const improved = typeof result?.improved === 'string' ? result.improved : null;
-		feedback = { improved, noteEn: improved && typeof result?.noteEn === 'string' ? result.noteEn : null, noteFa: improved && typeof result?.noteFa === 'string' ? result.noteFa : null };
-		save(true);
-	}
-	function skip() {
-		skipped = true;
-		if (mode === 'returning') { reply = scriptedReply(name, false); save(true); go('result'); }
-		else { save(true); finish(); }
+		save(false); go('result'); say(done.en);
 	}
 
 	function listen() {
@@ -167,15 +121,8 @@
 	function sendTyped() { take(draft, true); draft = ''; }
 </script>
 
-{#snippet mira(line: DisplayText, hearable = true)}
-	<div class="mira-line">
-		<p class="line" lang={langOf(line)} dir={dirOf(line)}>{text(line)}</p>
-		{#if hearable}
-			<button class="hear" type="button" onclick={() => hear(line.en)} aria-label={playing ? (isFa ? 'توقف صدا' : 'Stop') : (isFa ? 'شنیدن صدای میرا' : 'Hear Mira')}>
-				<span aria-hidden="true">{playing ? '■' : '▶'}</span>
-			</button>
-		{/if}
-	</div>
+{#snippet mira(line: DisplayText)}
+	<p class="line" lang={langOf(line)} dir={dirOf(line)}>{text(line)}</p>
 {/snippet}
 
 {#snippet speakArea()}
@@ -191,7 +138,7 @@
 			<button class="send" type="submit" disabled={!draft.trim()}>{isFa ? 'بفرست' : 'Send'}</button>
 		</form>
 	{/if}
-	{#if tooShort}<p class="note" role="status">{text(DAY_ONE_LINES.short)}</p>
+	{#if tooShort}<p class="note" role="status">{text(MIRA_LINES.short)}</p>
 	{:else if micProblem === 'blocked'}<p class="note" role="status">{isFa ? 'میکروفون بسته است. در تنظیمات سایت اجازه بده، یا بنویس.' : 'Your microphone is blocked. Allow it in site settings, or type instead.'}</p>
 	{:else if micProblem === 'unsupported'}<p class="note" role="status">{isFa ? 'این مرورگر نمی‌تواند گوش بدهد. بنویس.' : 'This browser can’t listen. Type instead.'}</p>
 	{:else if micProblem === 'none'}<p class="note" role="status">{isFa ? 'صدایی نشنیدم. دوباره امتحان کن.' : 'I didn’t hear anything. Try again.'}</p>{/if}
@@ -203,7 +150,6 @@
 			<p class="who"><span class="avatar small" aria-hidden="true">M</span> Mira</p>
 			<p class="line small-line" lang={langOf(opening)} dir={dirOf(opening)}>{text(opening)}</p>
 			{#if answer}<p class="you" lang="en" dir="ltr">“{answer}”</p>{/if}
-			{#if reply}<p class="line small-line" lang={langOf(reply)} dir={dirOf(reply)}>{text(reply)}</p>{/if}
 		{/if}
 	</section>
 {:else}
@@ -215,36 +161,27 @@
 
 		<div class="middle" aria-live="polite">
 			<h2 id="coach-step" class="sr-only" tabindex="-1" bind:this={heading}>{isFa ? 'میرا' : 'Mira'}</h2>
-			{#if !ready || (thinking && (step === 'speak' ? !answer : !reply))}
-				<div class="dots" role="status" aria-label={isFa ? 'میرا در حال نوشتن است' : 'Mira is typing'}><span></span><span></span><span></span></div>
+			{#if !ready}
+				<div class="dots" role="status" aria-label={isFa ? 'یک لحظه' : 'One moment'}><span></span><span></span><span></span></div>
 			{:else if step === 'hello'}
 				{@render mira(opening)}
-			{:else if step === 'speak'}
-				{#if mode === 'first'}
-					<p class="ask">{text(DAY_ONE_LINES.ask)}</p>
-					<p class="target" lang="en" dir="ltr">“{target}”</p>
-				{:else}
-					{@render mira(opening)}
-				{/if}
+			{:else if step === 'mic'}
+				<p class="ask">{text(MIRA_LINES.ask)}</p>
+				<p class="target" lang="en" dir="ltr">“{target}”</p>
 				<div class="speak">{@render speakArea()}</div>
-			{:else if mode === 'first'}
-				{#if answer}<p class="heard"><span>{typed ? (isFa ? 'نوشتی' : 'You wrote') : (isFa ? 'شنیدم' : 'I heard')}</span> <bdi lang="en">“{answer}”</bdi></p>{/if}
-				{@render mira(typed ? DAY_ONE_LINES.typed : DAY_ONE_LINES.heard, false)}
-			{:else if mode === 'returning'}
-				{#if answer}<p class="heard"><bdi lang="en">“{answer}”</bdi></p>{/if}
-				{#if reply}{@render mira(reply)}{/if}
 			{:else}
-				{@render mira(opening)}
+				{#if answer}<p class="heard"><span>{typed ? (isFa ? 'نوشتی' : 'You wrote') : (isFa ? 'شنیدم' : 'I heard')}</span> <bdi lang="en">“{answer}”</bdi></p>{/if}
+				{@render mira(done)}
 			{/if}
 		</div>
 
 		<div class="bottom">
 			{#if ready && step === 'hello'}
-				<button class="primary" type="button" onclick={() => (mode === 'first' ? go('speak') : finish())}>{isFa ? 'بعدی' : 'Next'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
-			{:else if ready && step === 'speak'}
+				<button class="primary" type="button" onclick={toMic}>{isFa ? 'بعدی' : 'Next'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
+			{:else if ready && step === 'mic'}
 				{#if !typing && (micProblem === null || micProblem === 'none')}<button class="text" type="button" onclick={() => (typing = true)}>{isFa ? 'به‌جایش بنویس' : 'Type instead'}</button>{/if}
 				<button class="text" type="button" onclick={skip}>{isFa ? 'رد شو' : 'Skip'}</button>
-			{:else if ready && step === 'result' && !thinking}
+			{:else if ready && step === 'result'}
 				<button class="primary" type="button" onclick={finish}>{isFa ? 'بعدی' : 'Next'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
 			{/if}
 		</div>
@@ -259,9 +196,7 @@
 	.name { margin: 0; display: grid; font-weight: 700; line-height: 1.2; }
 	.name small { color: var(--ink-soft); font-weight: 400; font-size: .82rem; }
 	.middle { display: grid; align-content: center; justify-items: center; gap: 22px; text-align: center; }
-	.mira-line { display: grid; justify-items: center; gap: 16px; }
 	.line { margin: 0; font-family: var(--font-display); font-size: clamp(1.45rem, 6vw, 1.9rem); line-height: 1.35; color: var(--ink); }
-	.hear { display: grid; place-items: center; inline-size: 52px; block-size: 52px; border: 1.5px solid var(--accent); border-radius: 50%; background: var(--paper-raised); color: var(--accent-deep); font-size: 1.1rem; cursor: pointer; }
 	.ask { margin: 0; color: var(--ink-soft); font-size: 1.05rem; }
 	.target { margin: 0; font-family: var(--font-display); font-size: clamp(1.4rem, 6vw, 1.8rem); line-height: 1.35; color: var(--accent-deep); }
 	.speak { display: grid; justify-items: center; gap: 10px; margin-top: 8px; inline-size: 100%; }

@@ -41,42 +41,42 @@ const REASON_ENDING: Record<NonNullable<EnglishProfile['reason']>, string> = {
 	travel: 'for travel', work: 'for work', exam: 'for an exam', abroad: 'to live abroad', everyday: 'to speak with more confidence'
 };
 
-/** Day 1: the sentence the learner says first. Names go in as typed; nothing else from the learner. */
-export function firstSentence(name: string, reason: EnglishProfile['reason']): string {
-	const ending = reason ? ` ${REASON_ENDING[reason]}` : '';
-	return name ? `Hi, I'm ${name}, and I'm learning English${ending}.` : `Hi, I'm learning English${ending}.`;
+/**
+ * The sentence the learner says to check the microphone. Day 1 uses their
+ * onboarding reason; later days a short ready line. No name in it: Mira has
+ * already said it once.
+ */
+export function micSentence(first: boolean, reason: EnglishProfile['reason']): string {
+	if (!first) return "I'm ready for today's practice.";
+	return `I'm learning English${reason ? ` ${REASON_ENDING[reason]}` : ''}.`;
 }
 
 export function wordCount(text: string): number {
 	return text.trim().split(/\s+/).filter(Boolean).length;
 }
 
-/** Any attempt of three or more words counts: a misheard name is never "wrong". */
-export const isFirstSentenceAttempt = (heard: string) => wordCount(heard) >= 3;
+/** Any attempt of three or more words counts: the mic check is not a test. */
+export const isMicAttempt = (heard: string) => wordCount(heard) >= 3;
 
 /** Puts the name in, or drops it cleanly ("Welcome back, Sam." / "Welcome back."). */
 const fill = (line: string, name: string) => (name ? line.replaceAll('{name}', name) : line.replace(/[,،]? ?\{name\}/g, ''));
 const hello = (name: string, en: string, fa: string): DisplayText => ({ en: fill(en, name), fa: fill(fa, name) });
 
-export const DAY_ONE_LINES = {
+/** Mira's lines around the greeting: her hello, then a mic check, then on to the plan. */
+export const MIRA_LINES = {
 	welcome: (name: string) => hello(name, 'Hi {name}, I’m Mira, your English coach. Welcome to your first session.', 'سلام {name}، من میرا هستم، مربی انگلیسی تو. به اولین جلسه‌ات خوش آمدی.'),
-	ask: { en: 'Let’s hear your voice. Tap the mic and say:', fa: 'بیا صدایت را بشنویم. دکمهٔ میکروفون را بزن و بگو:' } satisfies DisplayText,
-	heard: { en: 'Great, your mic works. That’s your first sentence.', fa: 'عالی، میکروفونت کار می‌کند. این اولین جمله‌ات بود.' } satisfies DisplayText,
-	typed: { en: 'Nice, that’s your first sentence. In speaking steps you can type too.', fa: 'خوب بود، این اولین جمله‌ات بود. در مرحله‌های صحبت هم می‌توانی بنویسی.' } satisfies DisplayText,
+	ask: { en: 'Before we start, let’s check your microphone. Tap the mic and say:', fa: 'قبل از شروع، میکروفونت را امتحان کنیم. دکمهٔ میکروفون را بزن و بگو:' } satisfies DisplayText,
+	heard: { en: 'Great, your mic works. Here’s today’s plan.', fa: 'عالی، میکروفونت کار می‌کند. این برنامهٔ امروز است.' } satisfies DisplayText,
+	typed: { en: 'Okay. In the speaking steps you can type too.', fa: 'باشه. در مرحله‌های صحبت هم می‌توانی بنویسی.' } satisfies DisplayText,
 	short: { en: 'I only caught a few words. Try once more?', fa: 'فقط چند کلمه شنیدم. یک بار دیگر امتحان می‌کنی؟' } satisfies DisplayText
 };
 
-/** Scripted openings: used when the AI is not available, and as the model's fallback. */
-export function scriptedOpening(mode: GreetingMode, name: string, days: number | null, question: string): DisplayText {
+/** Mira's hello: one line, with the name said once. */
+export function opening(mode: GreetingMode, name: string, days: number | null): DisplayText {
+	if (mode === 'first') return MIRA_LINES.welcome(name);
 	if (mode === 'again-today') return hello(name, 'Back for more, {name}? Let’s go.', 'دوباره آمدی {name}؟ برویم.');
-	if (days !== null && days >= 7) return hello(name, `Good to see you again, {name}. We’ll start with something easy. ${question}`, 'خوشحالم دوباره می‌بینمت {name}. با یک چیز آسان شروع می‌کنیم.');
-	return hello(name, `Welcome back, {name}. ${question}`, 'خوش برگشتی {name}.');
-}
-
-export function scriptedReply(name: string, answered: boolean): DisplayText {
-	return answered
-		? hello(name, 'Thanks, {name}. Let’s start today’s practice.', 'ممنون {name}. تمرین امروز را شروع کنیم.')
-		: { en: 'Okay, let’s start today’s practice.', fa: 'باشه، تمرین امروز را شروع کنیم.' };
+	if (days !== null && days >= 7) return hello(name, 'Good to see you again, {name}. We’ll start with something easy.', 'خوشحالم دوباره می‌بینمت {name}. با یک چیز آسان شروع می‌کنیم.');
+	return hello(name, 'Welcome back, {name}. Good to see you again.', 'خوش برگشتی {name}. خوشحالم دوباره می‌بینمت.');
 }
 
 /** Today's greeting as it happened, kept in this browser for the day only. */

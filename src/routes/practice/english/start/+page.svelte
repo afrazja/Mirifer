@@ -33,9 +33,8 @@
 	let step = $state(1);
 	let reason = $state<Reason | null>(saved?.reason ?? null);
 	let comfort = $state<Comfort | null>(saved?.comfort ?? null);
-	let minutes = $state<15 | 20>(saved?.minutes ?? 15);
-	/** Shown as selected only once tapped (or answered before), so 15 isn't pre-ticked. */
-	let minutesChosen = $state(!!saved);
+	/** Every session has the default length now (owner's decision); the learner no longer chooses. */
+	const minutes = 15;
 	let saving = $state(false), saveFailed = $state(false), advancing = $state(false);
 	let heading: HTMLHeadingElement | undefined = $state();
 
@@ -73,21 +72,21 @@
 
 <main id="main-content" class="start" dir={isFa ? 'rtl' : 'ltr'}>
 	<div class="top">
-		{#if step > 1 && step <= 4}
+		{#if step > 1 && step <= 3}
 			<button class="icon-btn" type="button" onclick={back} disabled={saving} aria-label={isFa ? 'قبلی' : 'Back'}>
 				<svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><path d="M12.5 4.5 7 10l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg>
 			</button>
 		{:else}
 			<span class="logo"><BrandLogo /></span>
 		{/if}
-		{#if step <= 3}
-			<p class="count" aria-live="polite">{isFa ? `${num(step)} از ${num(3)}` : `${step} of 3`}</p>
+		{#if step <= 2}
+			<p class="count" aria-live="polite">{isFa ? `${num(step)} از ${num(2)}` : `${step} of 2`}</p>
 		{/if}
-		{#if step <= 3}
+		{#if step <= 2}
 			<button class="skip" type="button" onclick={skip} disabled={saving}>{isFa ? 'فعلاً بگذر' : 'Skip for now'}</button>
 		{:else}<span></span>{/if}
 	</div>
-	<div class="bar" aria-hidden="true"><span style:width="{Math.min(step, 3) / 3 * 100}%"></span></div>
+	<div class="bar" aria-hidden="true"><span style:width="{Math.min(step, 2) / 2 * 100}%"></span></div>
 
 	{#if step === 1}
 		<section class="screen" aria-labelledby="q1">
@@ -114,16 +113,6 @@
 			<p class="reassure">{isFa ? 'لازم نیست دقیق جواب بدهی. این فقط نقطهٔ شروع است؛ ما تمام تلاشمان را می‌کنیم که سختی هر درس با عملکرد واقعی‌ات جور شود.' : 'You don’t need to get this exactly right. It’s only a starting point: we do our best to match every lesson to how you actually do.'}</p>
 		</section>
 
-	{:else if step === 3}
-		<section class="screen" aria-labelledby="q3">
-			<h1 id="q3" tabindex="-1" bind:this={heading}>{isFa ? 'بیشتر روزها چقدر وقت برای تمرین داری؟' : 'How much time can you practise most days?'}</h1>
-			<div class="options" role="group" aria-labelledby="q3">
-				<button class="option" class:selected={minutesChosen && minutes === 15} type="button" aria-pressed={minutesChosen && minutes === 15} onclick={() => choose(() => { minutes = 15; minutesChosen = true; })}>{isFa ? `${num(15)} دقیقه (پیشنهادی)` : '15 minutes (recommended)'}</button>
-				<button class="option" class:selected={minutesChosen && minutes === 20} type="button" aria-pressed={minutesChosen && minutes === 20} onclick={() => choose(() => { minutes = 20; minutesChosen = true; })}>{isFa ? `${num(20)} دقیقه` : '20 minutes'}</button>
-			</div>
-			<p class="note">{isFa ? 'هر روز قبل از شروع می‌توانی عوضش کنی.' : 'You can change it any day before you start.'}</p>
-		</section>
-
 	{:else}
 		<section class="screen done" aria-labelledby="done">
 			<p class="check" aria-hidden="true">✓</p>
@@ -131,7 +120,7 @@
 			<ul class="summary">
 				{#if summary}<li>{text(summary)}</li>{/if}
 				<li>{isFa ? 'ما تمام تلاشمان را می‌کنیم که هر درس با سطح تو جور باشد: هر جا برایت سخت است آسان‌تر، و هر جا قوی‌تری سخت‌تر.' : 'We do our best to match every lesson to you: easier where you struggle, harder where you’re strong.'}</li>
-				<li>{isFa ? `روزی ${num(minutes)} دقیقه. هر روز می‌توانی عوضش کنی.` : `${minutes} minutes a day. You can change it any day.`}</li>
+				<li>{isFa ? `هر جلسه حدود ${num(minutes)} دقیقه است.` : `Each session takes about ${minutes} minutes.`}</li>
 			</ul>
 			<button class="text-link" type="button" onclick={() => { step = 1; }} disabled={saving}>{isFa ? 'تغییر پاسخ‌ها' : 'Change my answers'}</button>
 		</section>
@@ -139,7 +128,7 @@
 
 	{#if saveFailed}<p class="error" role="alert">{isFa ? 'ذخیره نشد. اتصال اینترنت را بررسی کن و دوباره امتحان کن.' : 'That didn’t save. Check your connection and try again.'}</p>{/if}
 
-	{#if step === 4}
+	{#if step === 3}
 		<div class="bottom">
 			<button class="primary" type="button" onclick={finish} disabled={saving}>{saving ? (isFa ? 'در حال ذخیره…' : 'Saving…') : (isFa ? 'شروع اولین جلسه' : 'Start my first session')} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
 		</div>
