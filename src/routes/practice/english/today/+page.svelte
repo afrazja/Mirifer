@@ -20,8 +20,8 @@
 	import { playAudioPromise, stopAllAudio } from '$services/tts';
 	import { getLanguage } from '$services/data-layer';
 	import {
-		DAY_ONE, RECAP_INTRO, DEFAULT_LENGTH, agendaFor, agendaMinutes, completeSession, currentModule,
-		completeLater, finishModule, moduleBefore, modulesFor, recommend, sessionProgress, startSession, type DaySession, type Length, type ModuleId
+		DAY_ONE, RECAP_INTRO, RECAP_SHORT, DEFAULT_LENGTH, agendaFor, agendaMinutes, completeSession, currentModule,
+		completeLater, finishModule, moduleBefore, modulesFor, recommend, startSession, type DaySession, type Length, type ModuleId
 	} from '$lib/practice/day';
 	import type { DisplayText } from '$lib/practice/hotel';
 	import type { DayModule } from '$lib/practice/day';
@@ -87,7 +87,6 @@
 	const previous = $derived(session && session.stage !== 'done' ? moduleBefore(session.length, reviewed ? reviewed.id : step ? step.id : null) : null);
 	const stepNumber = $derived(session && step ? (session.done.length + session.skipped.length + 1) : 0);
 	const stepCount = $derived(agenda.length - 2);
-	const share = $derived(session ? sessionProgress(session) : 0);
 
 	$effect(() => { if (step && session?.stage === 'modules' && !reviewed) brief(step); });
 
@@ -125,6 +124,21 @@
 	}
 	function again() { clearRecords(); void save(null); }
 </script>
+
+{#snippet strip()}
+	{#if session}
+		<ol class="strip" aria-label={isFa ? 'پیشرفت جلسه' : 'Session progress'}>
+			{#each modulesFor(session.length) as mod}
+				{@const state = session.done.includes(mod.id as ModuleId) ? 'done' : session.skipped.includes(mod.id as ModuleId) ? 'skipped' : session.stage === 'modules' && step?.id === mod.id ? 'now' : 'later'}
+				<li class={state} aria-current={state === 'now' ? 'step' : undefined}>
+					<span class="seg" aria-hidden="true"></span>
+					<span class="lab">{text(mod.short)}<span class="sr-only">{state === 'done' ? (isFa ? '، انجام شد' : ', done') : state === 'skipped' ? (isFa ? '، رد شد' : ', skipped') : state === 'now' ? (isFa ? '، الان' : ', now') : ''}</span></span>
+				</li>
+			{/each}
+			<li class={session.stage === 'recap' ? 'now' : 'later'} aria-current={session.stage === 'recap' ? 'step' : undefined}><span class="seg" aria-hidden="true"></span><span class="lab">{text(RECAP_SHORT)}</span></li>
+		</ol>
+	{/if}
+{/snippet}
 
 {#snippet instruction(mod: DayModule, onSkip: () => void)}
 	<div class="brief">
@@ -243,7 +257,7 @@
 	{:else if session.stage === 'modules' && step}
 		<section aria-labelledby="step-title">
 			{@render backButton()}
-			<div class="bar" role="progressbar" aria-label={isFa ? 'پیشرفت جلسه' : 'Session progress'} aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(share * 100)}><span style:width="{share * 100}%"></span></div>
+			{@render strip()}
 			<p class="eyebrow">{isFa ? `مرحلهٔ ${stepNumber.toLocaleString('fa-IR')} از ${stepCount.toLocaleString('fa-IR')}` : `STEP ${stepNumber} OF ${stepCount}`}{#if step.id === 'phrases' && phraseStep !== null}{' · '}{isFa ? `${(phraseStep + 1).toLocaleString('fa-IR')} از ${PHRASES.length.toLocaleString('fa-IR')}` : `${phraseStep + 1}/${PHRASES.length}`}{/if} · {step.skill === 'listening' ? (isFa ? 'شنیدن' : 'LISTENING') : (isFa ? 'صحبت کردن' : 'SPEAKING')}</p>
 			<h1 id="step-title">{text(step.title)}</h1>
 			{#if !briefed.includes(step.id)}
@@ -257,7 +271,7 @@
 		{@const next = recommend(session)}
 		<section aria-labelledby="recap-title">
 			{@render backButton()}
-			<div class="bar"><span style:width="{share * 100}%"></span></div>
+			{@render strip()}
 			<p class="eyebrow">{isFa ? 'مرور' : 'RECAP'}</p>
 			<h1 id="recap-title">{isFa ? 'کار امروز' : 'What you did today'}</h1>
 			<MiraSays line={RECAP_INTRO} {isFa} />
@@ -310,8 +324,6 @@
 	.min { color: var(--ink-soft); font-size: .88rem; white-space: nowrap; }
 	.small { color: var(--ink-soft); font-size: .88rem; }
 	.warn { color: var(--attention); }
-	.bar { height: 8px; border-radius: 99px; background: var(--paper-sunken); overflow: hidden; margin-top: 8px; }
-	.bar span { display: block; height: 100%; background: var(--accent); border-radius: 99px; transition: width .3s; }
 	.stand-in { background: var(--paper-sunken); }
 	button { font: inherit; cursor: pointer; }
 	button:disabled { opacity: .55; cursor: default; }
@@ -323,6 +335,14 @@
 	.back { display: inline-flex; gap: 8px; align-items: center; min-height: 44px; padding: 8px 4px; margin-bottom: 4px; background: none; border: 0; color: var(--accent-deep); font-weight: 600; }
 	.inline { min-height: 44px; padding: 8px 0; }
 	.start { padding-bottom: 96px; }
+	.strip { list-style: none; display: flex; gap: 6px; margin: 10px 0 14px; padding: 0; }
+	.strip li { flex: 1; display: grid; gap: 5px; min-width: 0; }
+	.seg { block-size: 6px; border-radius: 999px; background: var(--paper-sunken); }
+	.lab { font-size: .72rem; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	.strip .done .seg { background: var(--leaf); }
+	.strip .skipped .seg { background: var(--gold); }
+	.strip .now .seg { background: transparent; box-shadow: inset 0 0 0 2px var(--accent); }
+	.strip .now .lab { color: var(--ink); font-weight: 700; }
 	.brief { display: grid; gap: 14px; margin: 18px 0 8px; }
 	.brief-who { display: flex; align-items: center; gap: 10px; margin: 0; font-weight: 700; }
 	.brief-who .avatar { display: grid; place-items: center; inline-size: 40px; block-size: 40px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-family: var(--font-display); font-weight: 700; }
