@@ -18,6 +18,8 @@ export type ModuleSkill = 'listening' | 'speaking';
 export interface DayModule {
 	id: string;
 	title: DisplayText;
+	/** One or two words for the session's progress bar. */
+	short: DisplayText;
 	/** One line that says what the learner will do. */
 	does: DisplayText;
 	skill: ModuleSkill;
@@ -43,16 +45,19 @@ export const DAY_ONE = {
 	checkInMinutes: 2,
 	recapMinutes: 2,
 	modules: [
-		{ id: 'listen-act', title: { en: 'Listen and act', fa: 'گوش بده و عمل کن' }, does: { en: 'Hear instructions, then do exactly what they say.', fa: 'دستورها را بشنو و دقیقاً انجامشان بده.' }, skill: 'listening', minutes: { 15: 3, 20: 4 }, built: true,
+		{ id: 'listen-act', title: { en: 'Listen and act', fa: 'گوش بده و عمل کن' }, short: { en: 'Listen', fa: 'گوش دادن' }, does: { en: 'Hear instructions, then do exactly what they say.', fa: 'دستورها را بشنو و دقیقاً انجامشان بده.' }, skill: 'listening', minutes: { 15: 3, 20: 4 }, built: true,
 			intro: { en: 'In this part, you’ll hear a few short instructions. Listen carefully, then do what they ask. You can listen twice.', fa: 'در این بخش چند دستور کوتاه می‌شنوی. با دقت گوش بده و بعد آن‌ها را انجام بده. دو بار می‌توانی گوش بدهی.' } },
-		{ id: 'scenario', title: { en: 'Scene with a twist', fa: 'صحنه با یک غافلگیری' }, does: { en: 'Solve a problem at the hotel desk when something unexpected happens.', fa: 'در پذیرش هتل مشکلی را حل کن، وقتی اتفاق غیرمنتظره‌ای می‌افتد.' }, skill: 'speaking', minutes: { 20: 4 }, built: false,
+		{ id: 'scenario', title: { en: 'Scene with a twist', fa: 'صحنه با یک غافلگیری' }, short: { en: 'Scene', fa: 'صحنه' }, does: { en: 'Solve a problem at the hotel desk when something unexpected happens.', fa: 'در پذیرش هتل مشکلی را حل کن، وقتی اتفاق غیرمنتظره‌ای می‌افتد.' }, skill: 'speaking', minutes: { 20: 4 }, built: false,
 			intro: { en: 'You’re at a hotel desk with a problem. Talk to the receptionist and sort it out. Something unexpected will happen, so take your time.', fa: 'در پذیرش هتل هستی و مشکلی داری. با مسئول پذیرش حرف بزن و حلش کن. یک اتفاق غیرمنتظره هم می‌افتد، پس عجله نکن.' } },
-		{ id: 'phrases', title: { en: 'Natural phrases', fa: 'عبارت‌های طبیعی' }, does: { en: 'Hear five sentences that tell a short travel story, and say each one after Mira.', fa: 'پنج جمله بشنو که با هم داستان کوتاهی از یک سفر را تعریف می‌کنند و هر کدام را بعد از میرا تکرار کن.' }, skill: 'speaking', minutes: { 15: 4, 20: 4 }, built: true,
+		{ id: 'phrases', title: { en: 'Natural phrases', fa: 'عبارت‌های طبیعی' }, short: { en: 'Phrases', fa: 'عبارت‌ها' }, does: { en: 'Hear five sentences that tell a short travel story, and say each one after Mira.', fa: 'پنج جمله بشنو که با هم داستان کوتاهی از یک سفر را تعریف می‌کنند و هر کدام را بعد از میرا تکرار کن.' }, skill: 'speaking', minutes: { 15: 4, 20: 4 }, built: true,
 			intro: { en: 'In this part, you’ll hear five short sentences. Together they tell a travel story. Listen, then say each one after me. Notice the phrases in bold.', fa: 'در این بخش پنج جملهٔ کوتاه می‌شنوی که با هم داستان یک سفر را تعریف می‌کنند. گوش بده و هر جمله را بعد از من تکرار کن. به عبارت‌های پررنگ دقت کن.' } },
-		{ id: 'say-it-better', title: { en: 'Say it again, better', fa: 'دوباره بگو، بهتر' }, does: { en: 'Tell a short story about a problem you had, then tell it a second time, clearer.', fa: 'ماجرای کوتاه یک مشکل را بگو، بعد دوباره و روشن‌تر بگو.' }, skill: 'speaking', minutes: { 15: 4, 20: 4 }, built: true,
+		{ id: 'say-it-better', title: { en: 'Say it again, better', fa: 'دوباره بگو، بهتر' }, short: { en: 'Story', fa: 'داستان' }, does: { en: 'Tell a short story about a problem you had, then tell it a second time, clearer.', fa: 'ماجرای کوتاه یک مشکل را بگو، بعد دوباره و روشن‌تر بگو.' }, skill: 'speaking', minutes: { 15: 4, 20: 4 }, built: true,
 			intro: { en: 'Now it’s your turn to talk. Tell me about a problem you had on a trip. You have one minute. Then you’ll see how to say it better, and you can try again.', fa: 'حالا نوبت توست که حرف بزنی. از مشکلی که در یک سفر داشتی برایم بگو. یک دقیقه وقت داری. بعد می‌بینی چطور بهترش بگویی و می‌توانی دوباره امتحان کنی.' } }
 	] satisfies DayModule[]
 } as const;
+
+/** The recap's name in the session's progress bar. */
+export const RECAP_SHORT: DisplayText = { en: 'Recap', fa: 'مرور' };
 
 /** Mira's line when the recap opens. */
 export const RECAP_INTRO: DisplayText = { en: 'Well done. Here’s what you did today, and what comes next.', fa: 'آفرین. این کارهایی است که امروز انجام دادی، و قدم بعدی.' };
