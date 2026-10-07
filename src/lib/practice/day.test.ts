@@ -32,9 +32,11 @@ describe('English day shell', () => {
 	});
 	it('finds the module before another, or before the recap', () => {
 		expect(moduleBefore(15, 'listen-act')).toBeNull();
-		expect(moduleBefore(15, 'say-it-better')?.id).toBe('listen-act');
+		expect(moduleBefore(15, 'phrases')?.id).toBe('listen-act');
+		expect(moduleBefore(15, 'say-it-better')?.id).toBe('phrases');
 		expect(moduleBefore(15, null)?.id).toBe('say-it-better');
-		expect(moduleBefore(20, 'say-it-better')?.id).toBe('scenario');
+		expect(moduleBefore(20, 'phrases')?.id).toBe('scenario');
+		expect(moduleBefore(20, 'say-it-better')?.id).toBe('phrases');
 		expect(moduleBefore(20, null)?.id).toBe('say-it-better');
 	});
 	it('lets a skipped module be done later, keeping the score', () => {

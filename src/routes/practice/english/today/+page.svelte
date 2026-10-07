@@ -13,6 +13,9 @@
 	import SayItBetter from '$lib/components/SayItBetter.svelte';
 	import SayItBetterReview from '$lib/components/SayItBetterReview.svelte';
 	import { asSayRecord } from '$lib/practice/say-better';
+	import PhrasePractice from '$lib/components/PhrasePractice.svelte';
+	import PhrasePracticeReview from '$lib/components/PhrasePracticeReview.svelte';
+	import { PHRASES, asPhraseRecord } from '$lib/practice/phrases';
 	import { COACH_RATE, COACH_VOICE, loadGreeting, localDate, planLine, type GreetingRecord } from '$lib/practice/coach';
 	import { playAudioPromise, stopAllAudio, ttsIsPlaying } from '$services/tts';
 	import { getLanguage } from '$services/data-layer';
@@ -41,6 +44,8 @@
 	let startStep = $state<'greeting' | 'plan'>('greeting');
 	/** Mira's introduction: in full on a module's first screen, one line while recording, gone once the answer is in. */
 	let intro = $state<'full' | 'compact' | 'hidden'>('full');
+	/** Natural phrases: the sentence on screen (0-based), shown in the eyebrow instead of a second counter. */
+	let phraseStep = $state<number | null>(null);
 	/** Today's parts after the greeting, in order, and Mira's line that reads them. */
 	const parts = $derived([...modulesFor(length).map(module => module.title), { en: 'A short recap', fa: 'یک مرور کوتاه' }]);
 	const plan = $derived(planLine(parts));
@@ -86,7 +91,7 @@
 	const begin = () => { clearRecords(); return save(startSession(length)); };
 	const finish = (outcome: 'done' | 'skipped', score?: { correct: number; total: number }, record?: unknown) => {
 		if (!session || !step) return;
-		intro = 'full';
+		intro = 'full'; phraseStep = null;
 		if (record) saveRecord(session.startedAt, step.id, record);
 		void save(finishModule(session, step.id as ModuleId, outcome, score));
 	};
@@ -104,6 +109,8 @@
 {#snippet moduleBody(mod: DayModule, onDone: (score?: { correct: number; total: number }, record?: unknown) => void)}
 	{#if mod.id === 'listen-act' && mod.built}
 		{#key mod.id}<ListenAndAct {isFa} {onDone} />{/key}
+	{:else if mod.id === 'phrases' && mod.built && session}
+		{#key mod.id}<PhrasePractice {isFa} initial={asPhraseRecord(loadRecord(session.startedAt, mod.id))} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} onFocus={mode => (intro = mode)} onStep={index => (phraseStep = index)} {onDone} />{/key}
 	{:else if mod.id === 'say-it-better' && mod.built && session}
 		{#key mod.id}<SayItBetter {isFa} initial={asSayRecord(loadRecord(session.startedAt, mod.id))} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} onFocus={mode => (intro = mode)} {onDone} />{/key}
 	{:else}
@@ -118,10 +125,13 @@
 {#snippet reviewBody(mod: DayModule)}
 	{@const actRecord = mod.id === 'listen-act' ? asActRecord(reviewedRecord) : null}
 	{@const sayRecord = mod.id === 'say-it-better' ? asSayRecord(reviewedRecord) : null}
+	{@const phraseRecord = mod.id === 'phrases' ? asPhraseRecord(reviewedRecord) : null}
 	{#if actRecord}
 		<ListenAndActReview {isFa} record={actRecord} />
 	{:else if sayRecord}
 		<SayItBetterReview {isFa} record={sayRecord} />
+	{:else if phraseRecord}
+		<PhrasePracticeReview {isFa} record={phraseRecord} />
 	{:else if session?.skipped.includes(mod.id as ModuleId)}
 		<div class="card" role="note"><p>{isFa ? 'این مرحله را رد کردی، پس چیزی برای دیدن نیست.' : 'You skipped this step, so there is nothing to look back at.'}</p></div>
 	{:else}
@@ -202,7 +212,7 @@
 		<section aria-labelledby="step-title">
 			{@render backButton()}
 			<div class="bar" role="progressbar" aria-label={isFa ? 'پیشرفت جلسه' : 'Session progress'} aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(share * 100)}><span style:width="{share * 100}%"></span></div>
-			<p class="eyebrow">{isFa ? `مرحلهٔ ${stepNumber} از ${stepCount}` : `STEP ${stepNumber} OF ${stepCount}`} · {step.skill === 'listening' ? (isFa ? 'شنیدن' : 'LISTENING') : (isFa ? 'صحبت کردن' : 'SPEAKING')}</p>
+			<p class="eyebrow">{isFa ? `مرحلهٔ ${stepNumber.toLocaleString('fa-IR')} از ${stepCount.toLocaleString('fa-IR')}` : `STEP ${stepNumber} OF ${stepCount}`}{#if step.id === 'phrases' && phraseStep !== null} · {isFa ? `${(phraseStep + 1).toLocaleString('fa-IR')} از ${PHRASES.length.toLocaleString('fa-IR')}` : `${phraseStep + 1}/${PHRASES.length}`}{/if} · {step.skill === 'listening' ? (isFa ? 'شنیدن' : 'LISTENING') : (isFa ? 'صحبت کردن' : 'SPEAKING')}</p>
 			<h1 id="step-title">{text(step.title)}</h1>
 			{#if intro !== 'hidden'}{#key step.id}<MiraSays line={step.intro} {isFa} compact={intro === 'compact'} />{/key}{/if}
 			{@render moduleBody(step, (score, record) => finish('done', score, record))}

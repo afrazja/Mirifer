@@ -1,6 +1,12 @@
-# "Phrases for your story" (shadowing): spec v2
+# "Natural phrases" (shadowing): spec v2
 
-Status: for owner approval. v1 was reviewed by the English-coach and learning-UX reviewers, and their
+Status: **approved by the owner, built without the story link.** The owner asked to keep this module
+separate for now, to judge its quality on its own. Not built yet: the "Plan your story" screen, the
+link to "Say it again, better" (its intro line, the "Today's phrases" group, detection, the AI phrase
+suggestion and the recap line). They stay below for later. Built: the intro, the five sentence screens,
+the word check and read-only review.
+
+Status before approval: for owner approval. v1 was reviewed by the English-coach and learning-UX reviewers, and their
 points are applied (see "What changed from v1" at the end).
 
 Owner's decisions:
@@ -106,8 +112,9 @@ in the eyebrow. There is no second counter.
 - The check is shown to the learner, but it is not a progress measure: speech-to-text tidies speech, so
   nearly everyone passes.
 - Failure or offline: "I couldn't check this one." Next works anyway.
-- Shadowing clips have **their own** small allowance: 10 per session, ≤ 10 s and ≤ 300 KB each. They
-  can never use up the story's feedback allowance.
+- Practice clips (≤ 10 s, ≤ 300 KB) are refused once the day's AI allowance is used up, but never
+  spend it, so practice can never use up the story's feedback. A separate rate limit (20 a minute)
+  applies.
 
 ## Link to "Say it again, better"
 
