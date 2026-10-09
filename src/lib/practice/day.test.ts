@@ -21,7 +21,7 @@ describe('English day shell', () => {
 	it('recommends a skipped module first', () => {
 		let s = startSession(15);
 		s = finishModule(s, 'listen-act', 'skipped');
-		expect(recommend(s).title.en).toContain('Listen and act');
+		expect(recommend(s).title.en).toContain('Listen and connect');
 		expect(recommend(startSession(15)).title.en).toContain('new theme');
 	});
 	it('validates saved checkpoints strictly', () => {

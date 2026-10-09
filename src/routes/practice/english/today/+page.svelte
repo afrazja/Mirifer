@@ -3,10 +3,10 @@
 	import type { PageProps } from './$types';
 	import AppHeader from '$lib/components/AppHeader.svelte';
 	import EnglishModuleTabs from '$lib/components/EnglishModuleTabs.svelte';
-	import ListenAndAct from '$lib/components/ListenAndAct.svelte';
-	import ListenAndActReview from '$lib/components/ListenAndActReview.svelte';
+	import ListenConnect from '$lib/components/ListenConnect.svelte';
+	import ListenConnectReview from '$lib/components/ListenConnectReview.svelte';
 	import { clearRecords, loadRecord, saveRecord } from '$lib/practice/day-records';
-	import { asActRecord, type ActRecord } from '$lib/practice/listen-act';
+	import { asConnectRecord } from '$lib/practice/listen-connect';
 	import CoachGreeting from '$lib/components/CoachGreeting.svelte';
 	import SayAgain from '$lib/components/SayAgain.svelte';
 	import MiraSays from '$lib/components/MiraSays.svelte';
@@ -147,8 +147,8 @@
 {/snippet}
 
 {#snippet moduleBody(mod: DayModule, onDone: (score?: { correct: number; total: number }, record?: unknown) => void)}
-	{#if mod.id === 'listen-act' && mod.built}
-		{#key mod.id}<ListenAndAct {isFa} {onDone} />{/key}
+	{#if mod.id === 'listen-act' && mod.built && session}
+		{#key mod.id}<ListenConnect {isFa} initial={asConnectRecord(loadRecord(session.startedAt, mod.id))} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} {onDone} />{/key}
 	{:else if mod.id === 'phrases' && mod.built && session}
 		{#key mod.id}<PhrasePractice {isFa} initial={asPhraseRecord(loadRecord(session.startedAt, mod.id))} afterIntro={introPlay} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} onStep={index => (phraseStep = index)} {onDone} />{/key}
 	{:else if mod.id === 'say-it-better' && mod.built && session}
@@ -163,11 +163,11 @@
 {/snippet}
 
 {#snippet reviewBody(mod: DayModule)}
-	{@const actRecord = mod.id === 'listen-act' ? asActRecord(reviewedRecord) : null}
+	{@const actRecord = mod.id === 'listen-act' ? asConnectRecord(reviewedRecord) : null}
 	{@const sayRecord = mod.id === 'say-it-better' ? asSayRecord(reviewedRecord) : null}
 	{@const phraseRecord = mod.id === 'phrases' ? asPhraseRecord(reviewedRecord) : null}
 	{#if actRecord}
-		<ListenAndActReview {isFa} record={actRecord} />
+		<ListenConnectReview {isFa} record={actRecord} />
 	{:else if sayRecord}
 		<SayItBetterReview {isFa} record={sayRecord} />
 	{:else if phraseRecord}
@@ -252,7 +252,7 @@
 		<section aria-labelledby="step-title">
 			{@render backButton()}
 			{@render strip()}
-			<p class="eyebrow">{isFa ? `مرحلهٔ ${stepNumber.toLocaleString('fa-IR')} از ${stepCount.toLocaleString('fa-IR')}` : `STEP ${stepNumber} OF ${stepCount}`}{#if step.id === 'phrases' && phraseStep !== null}{' · '}{isFa ? `${(phraseStep + 1).toLocaleString('fa-IR')} از ${PHRASES.length.toLocaleString('fa-IR')}` : `${phraseStep + 1}/${PHRASES.length}`}{/if} · {step.skill === 'listening' ? (isFa ? 'شنیدن' : 'LISTENING') : (isFa ? 'صحبت کردن' : 'SPEAKING')}</p>
+			<p class="eyebrow">{isFa ? `مرحلهٔ ${stepNumber.toLocaleString('fa-IR')} از ${stepCount.toLocaleString('fa-IR')}` : `STEP ${stepNumber} OF ${stepCount}`}{#if step.id === 'phrases' && phraseStep !== null}{isFa ? ' — ' : ' · '}{isFa ? `${(phraseStep + 1).toLocaleString('fa-IR')} از ${PHRASES.length.toLocaleString('fa-IR')}` : `${phraseStep + 1}/${PHRASES.length}`}{/if}{isFa ? ' — ' : ' · '}{step.skill === 'listening' ? (isFa ? 'شنیدن' : 'LISTENING') : (isFa ? 'صحبت کردن' : 'SPEAKING')}</p>
 			<h1 id="step-title">{text(step.title)}</h1>
 			{#if intro === 'full'}{@render instruction(step)}{/if}
 			{@render moduleBody(step, (score, record) => finish('done', score, record))}

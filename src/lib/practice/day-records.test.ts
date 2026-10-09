@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { clearRecords, loadRecord, saveRecord } from './day-records';
-import { ACT_ROUNDS, asActRecord } from './listen-act';
+import { asConnectRecord, emptyConnectRecord } from './listen-connect';
 
 describe('saved module records', () => {
 	it('keeps a record for its own session only', () => {
@@ -20,11 +20,12 @@ describe('saved module records', () => {
 	it('refuses oversized records instead of filling storage', () => {
 		saveRecord('s1', 'big', 'x'.repeat(300_000)); expect(loadRecord('s1', 'big')).toBeNull();
 	});
-	it('checks a saved Listen and act record before showing it', () => {
-		const ok = { rounds: [{ id: ACT_ROUNDS[0].id, steps: ACT_ROUNDS[0].steps, results: [true, true, true] }] };
-		expect(asActRecord(ok)).toEqual(ok);
-		expect(asActRecord(null)).toBeNull();
-		expect(asActRecord({ rounds: [{ id: 'nope', steps: [], results: [] }] })).toBeNull();
-		expect(asActRecord({ rounds: [{ id: ACT_ROUNDS[0].id, steps: [{ thing: 'x', place: 'desk' }], results: [] }] })).toBeNull();
+	it('checks a saved Listen and connect record before showing it', () => {
+		const ok = { ...emptyConnectRecord(), plays: 1, heard: true, connect: [2, 0, null] };
+		expect(asConnectRecord(ok)).toEqual(ok);
+		expect(asConnectRecord(null)).toBeNull();
+		expect(asConnectRecord({ rounds: [] })).toBeNull(); // the old module's record
+		expect(asConnectRecord({ ...ok, plays: 5 })).toBeNull();
+		expect(asConnectRecord({ ...ok, connect: [9, 0, 0] })).toBeNull();
 	});
 });
