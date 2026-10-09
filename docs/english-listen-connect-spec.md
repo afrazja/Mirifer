@@ -1,6 +1,6 @@
 # "Listen and connect" (replaces "Listen and act"): spec v2
 
-Status: for owner approval. v1 was reviewed by the English-coach and learning-UX reviewers, and their points are applied (see "What changed from v1" at the end).
+Status: **approved by the owner and built.** v1 was reviewed by the English-coach and learning-UX reviewers, and their points are applied (see "What changed from v1" at the end).
 
 ## Why the old module goes
 
