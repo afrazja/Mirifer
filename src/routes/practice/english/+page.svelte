@@ -173,7 +173,7 @@
 
 <main id="main-content" class="practice-page" dir={isFa ? 'rtl' : 'ltr'}>
 	<AppHeader backHref="/languages" backLabel={isFa ? 'زبان‌ها' : 'Languages'} direction={isFa ? 'rtl' : 'ltr'} />
-	<EnglishModuleTabs current="conversation" {isFa} />
+	<EnglishModuleTabs current="lab" {isFa} />
 
 	{#if !started}
 		<section class="welcome" aria-labelledby="lesson-title">

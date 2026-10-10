@@ -194,7 +194,8 @@
 
 <main id="main-content" class="today" dir={isFa ? 'rtl' : 'ltr'}>
 	<AppHeader backHref="/languages" backLabel={isFa ? 'زبان‌ها' : 'Languages'} direction={isFa ? 'rtl' : 'ltr'} />
-	{#if session?.stage === 'done'}<EnglishModuleTabs current="today" {isFa} />{/if}
+	<!-- The section switch, off the focused flow: only before a session starts and once it's done. -->
+	{#if !session || session.stage === 'done'}<EnglishModuleTabs current="today" {isFa} />{/if}
 
 	{#if !session && startStep === 'greeting'}
 		<h1 class="sr-only">{isFa ? 'امروز' : 'Today'}</h1>
