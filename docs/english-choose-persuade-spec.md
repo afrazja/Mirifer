@@ -1,6 +1,6 @@
 # "Choose and persuade": spec v2
 
-Status: for owner approval. v1 was reviewed by the English-coach and learning-UX reviewers; their points are applied (see the end). It is a Module lab module, built and judged on its own, and not yet part of a daily lesson.
+Status: **approved by the owner and built (Module lab).** v1 was reviewed by the English-coach and learning-UX reviewers; their points are applied (see the end). It is a Module lab module, built and judged on its own, and not yet part of a daily lesson.
 
 ## Purpose
 
