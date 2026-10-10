@@ -177,7 +177,7 @@
 
 <main id="main-content" class="retell-page" dir={isFa ? 'rtl' : 'ltr'}>
 	<AppHeader backHref="/languages" backLabel={isFa ? 'زبان‌ها' : 'Languages'} direction={isFa ? 'rtl' : 'ltr'} />
-	<EnglishModuleTabs current="retell" {isFa} />
+	<EnglishModuleTabs current="lab" {isFa} />
 
 	{#if stage === 'list' || !piece}
 		<section class="intro">
