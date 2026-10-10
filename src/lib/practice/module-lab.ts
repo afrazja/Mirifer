@@ -9,7 +9,7 @@ export interface LabModule { id: string; name: DisplayText; /** A page where it 
 export const LAB_MODULES: LabModule[] = [
 	{ id: 'role-play-twist', name: { en: 'Role-play with a surprise', fa: 'نقش‌آفرینی با غافلگیری' }, href: '/practice/english' },
 	{ id: 'choose-persuade', name: { en: 'Choose and persuade', fa: 'انتخاب کن و قانع کن' }, href: '/practice/english/lab/choose-persuade' },
-	{ id: 'say-it-better', name: { en: 'Say it again, better', fa: 'دوباره بگو، بهتر' } },
+	{ id: 'say-it-better', name: { en: 'Say it again, better', fa: 'دوباره بگو، بهتر' }, href: '/practice/english/lab/say-better' },
 	{ id: 'missing-info', name: { en: 'Find the missing information', fa: 'اطلاعات گم‌شده را پیدا کن' } },
 	{ id: 'speaking-card', name: { en: 'Speaking card', fa: 'کارت صحبت' } },
 	{ id: 'free-talk', name: { en: '60-second free talk', fa: 'صحبت آزاد ۶۰ ثانیه‌ای' } },
