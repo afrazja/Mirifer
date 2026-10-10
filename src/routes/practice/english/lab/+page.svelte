@@ -16,7 +16,7 @@
 </svelte:head>
 
 <main id="main-content" class="lab" dir={isFa ? 'rtl' : 'ltr'}>
-	<AppHeader backHref="/languages" backLabel={isFa ? 'زبان‌ها' : 'Languages'} direction={isFa ? 'rtl' : 'ltr'} />
+	<AppHeader backHref="/practice/english/home" backLabel={isFa ? "انگلیسی" : "English"} direction={isFa ? 'rtl' : 'ltr'} />
 	<EnglishModuleTabs current="lab" {isFa} />
 	<h1>{isFa ? 'آزمایشگاه بخش‌ها' : 'Module lab'}</h1>
 	<ul class="cards">

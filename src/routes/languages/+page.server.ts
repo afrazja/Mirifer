@@ -16,7 +16,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 	};
 };
 
-const courseHome = (language: string) => (language === 'en' ? '/practice/english/today' : '/home');
+/** English opens on its start page: the two parts for admins, straight to the daily lesson for everyone else. */
+const courseHome = (language: string) => (language === 'en' ? '/practice/english/home' : '/home');
 
 export const actions: Actions = {
 	/** Continue a language, or start a new one. Nothing is ever reset. */
