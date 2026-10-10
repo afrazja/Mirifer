@@ -1,6 +1,6 @@
 # "Say it again, better" (Module lab version): spec v2
 
-Status: for owner approval. v1 was reviewed by the English-coach and learning-UX reviewers, and their points are applied (see the end).
+Status: **approved by the owner and built (Module lab).** v1 was reviewed by the English-coach and learning-UX reviewers, and their points are applied (see the end).
 
 This is the lab version of the module type in the owner's design document: a short answer, one or two corrections the learner can act on at once, then a second attempt, with both attempts played back so the improvement can be heard. The daily lesson's "Tell your story" gets the same transparency changes (see the end).
 
