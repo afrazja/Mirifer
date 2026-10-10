@@ -74,7 +74,7 @@ describe('course entry and persistence', () => {
 	it('starts the English pilot without German onboarding or shared progress writes', async () => {
 		for (const target of [undefined, 'de']) {
 			const f = fixture(target); f.form.set('language', 'en');
-			await expect(actions.default(f.event())).rejects.toMatchObject({ location: '/practice/english/today' });
+			await expect(actions.default(f.event())).rejects.toMatchObject({ location: '/practice/english/home' });
 			expect(f.supabase.auth.updateUser).toHaveBeenCalledExactlyOnceWith({ data: { target_language: 'en', learning: target ? [target, 'en'] : ['en'] } });
 		}
 		await expect(home(fixture('en').event())).rejects.toMatchObject({ location: '/practice/english/today' });
@@ -97,7 +97,7 @@ describe('course entry and persistence', () => {
 		const event = f.event(); event.url = new URL('https://mirifer.test/onboarding?language=de');
 		expect(await onboarding(event)).toEqual({ targetLanguage: 'de' });
 		const back = fixture('de'); (back.user.user_metadata as any).learning = ['en', 'de']; back.form.set('language', 'en');
-		await expect(actions.default(back.event())).rejects.toMatchObject({ location: '/practice/english/today' });
+		await expect(actions.default(back.event())).rejects.toMatchObject({ location: '/practice/english/home' });
 		expect(back.supabase.auth.updateUser).toHaveBeenCalledExactlyOnceWith({ data: { target_language: 'en', learning: ['de', 'en'] } });
 	});
 });

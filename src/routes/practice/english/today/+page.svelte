@@ -193,7 +193,7 @@
 </svelte:head>
 
 <main id="main-content" class="today" dir={isFa ? 'rtl' : 'ltr'}>
-	<AppHeader backHref="/languages" backLabel={isFa ? 'زبان‌ها' : 'Languages'} direction={isFa ? 'rtl' : 'ltr'} />
+	<AppHeader backHref={data.labAccess ? "/practice/english/home" : "/languages"} backLabel={data.labAccess ? (isFa ? "انگلیسی" : "English") : (isFa ? "زبان‌ها" : "Languages")} direction={isFa ? 'rtl' : 'ltr'} />
 	<!-- The section switch, off the focused flow: only before a session starts and once it's done. -->
 	{#if !session || session.stage === 'done'}<EnglishModuleTabs current="today" {isFa} />{/if}
 

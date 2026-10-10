@@ -23,3 +23,11 @@ describe('Module lab', () => {
 		await expect(load({ locals: locals(null), parent: async () => ({ labAccess: false }) } as any)).rejects.toMatchObject({ location: '/login' });
 	});
 });
+
+import { load as homeLoad } from '../home/+page.server';
+describe('English start page', () => {
+	it('shows the two parts to admins and sends learners straight to the daily lesson', async () => {
+		await expect(homeLoad({ locals: locals(learner), parent: async () => ({ labAccess: true }) } as any)).resolves.toEqual({});
+		await expect(homeLoad({ locals: locals(learner), parent: async () => ({ labAccess: false }) } as any)).rejects.toMatchObject({ status: 303, location: '/practice/english/today' });
+	});
+});
