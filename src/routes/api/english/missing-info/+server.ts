@@ -48,7 +48,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		if (!Number.isFinite(seconds) || seconds < 0 || seconds > QUESTION_MAX_SECONDS + 5) return json({ error: 'Invalid recording' }, { status: 400 });
 		const refused = await checkAllowance(locals, user);
 		if (refused) return refused;
-		const transcript = await transcribe(audio, 'English missing-info', 'They are asking a question at a train station ticket desk. Words: Millbrook, Kingsley, platform, return ticket, over 60, bus.');
+		const transcript = await transcribe(audio, 'English missing-info', 'A short question at a train station ticket desk.');
 		if (transcript === null) return json({ error: 'Transcription unavailable' }, { status: 502 });
 		return json({ transcript });
 	}

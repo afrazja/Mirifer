@@ -9,6 +9,7 @@
 	import { playAudioPromise, stopAllAudio, ttsIsPlaying } from '$services/tts';
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
 	import { changedRange, tokens } from '$lib/practice/say-better-lab';
+	import { SILENT_BELOW, measureLevel, type MicLevel } from '$utils/mic-level';
 	import {
 		GAPS, GAP_IDS, GOODBYE, HINT_STARTERS, LIMIT_LINE, MAX_QUESTIONS, OPENING, QKIND_LABEL, QUESTION_MAX_SECONDS, QUESTION_MIN_SECONDS, QUEUE_AT, QUEUE_LINE, TOM,
 		deskState, emptyMIRecord, needsHint, questionCountLine, questionsOf, reaskUse, twistLine,
@@ -31,7 +32,7 @@
 	const NUM = ['①', '②'];
 
 	type Stage = MIStep | 'all' | 'loading';
-	type Status = 'idle' | 'recording' | 'listening' | 'thinking' | 'failed' | 'typing' | 'confirm' | 'denied' | 'interrupted';
+	type Status = 'idle' | 'recording' | 'listening' | 'thinking' | 'failed' | 'typing' | 'confirm' | 'denied' | 'interrupted' | 'silent';
 	// svelte-ignore state_referenced_locally
 	let record = $state<MIRecord>(initial ?? emptyMIRecord());
 	let stage = $state<Stage>('task'), allFrom = $state<Stage>('fix');
@@ -41,6 +42,7 @@
 	let newlyFound = $state<GapId[]>([]);
 	let reaskSaid = $state<string | null>(null);
 	let recorder: MediaRecorder | null = null, stream: MediaStream | null = null, chunks: Blob[] = [];
+	let level: MicLevel | null = null;
 	let startedAt = 0, timer: ReturnType<typeof setInterval> | undefined, interrupted = false;
 	let heading: HTMLElement | undefined = $state(), micButton: HTMLButtonElement | undefined = $state();
 	const playing = $derived($ttsIsPlaying);
@@ -68,7 +70,7 @@
 		document.addEventListener('visibilitychange', onHidden);
 		return () => document.removeEventListener('visibilitychange', onHidden);
 	});
-	onDestroy(() => { clearInterval(timer); if (recorder?.state === 'recording') recorder.stop(); stream?.getTracks().forEach(t => t.stop()); });
+	onDestroy(() => { clearInterval(timer); level?.stop(); if (recorder?.state === 'recording') recorder.stop(); stream?.getTracks().forEach(t => t.stop()); });
 
 	function persist() { onSave?.($state.snapshot(record)); }
 	function go(next: Stage) {
@@ -102,6 +104,7 @@
 		recorder.onstop = finishRecording;
 		const track = stream.getAudioTracks()[0];
 		if (track) track.onmute = track.onended = () => { if (recorder?.state === 'recording') { interrupted = true; recorder.stop(); } };
+		level = measureLevel(stream);
 		recorder.start();
 		startedAt = performance.now(); elapsed = 0; status = 'recording'; announce = '';
 		timer = setInterval(() => {
@@ -112,10 +115,13 @@
 	function finishRecording() {
 		clearInterval(timer);
 		stream?.getTracks().forEach(track => track.stop()); stream = null;
+		const peak = level?.peak() ?? 1; level?.stop(); level = null;
 		const blob = new Blob(chunks, { type: recorder?.mimeType || 'audio/webm' });
 		const seconds = Math.min(QUESTION_MAX_SECONDS, Math.round((performance.now() - startedAt) / 100) / 10);
 		if (interrupted) { status = 'interrupted'; return; }
 		if (seconds < QUESTION_MIN_SECONDS) { status = 'idle'; return; }
+		// Nothing was said (or the microphone heard nothing): never send it, or speech-to-text makes words up.
+		if (peak < SILENT_BELOW) { status = 'silent'; return; }
 		void transcribe(blob, seconds);
 	}
 	async function transcribe(blob: Blob, seconds: number) {
@@ -176,6 +182,16 @@
 		await tomSays(text);
 		if (ending) go('end');
 		else queueMicrotask(() => micButton?.focus());
+	}
+	/** The last question was misheard: take it and Tom's answer back. It isn't counted, and anything it found is undone. */
+	function takeBack() {
+		stopAllAudio();
+		const turns = [...record.turns];
+		if (turns[turns.length - 1]?.who === 'tom') turns.pop();
+		if (turns[turns.length - 1]?.who === 'you') turns.pop();
+		record = { ...record, turns }; persist();
+		newlyFound = []; announce = T('Taken back. Ask again.', 'برداشته شد. دوباره بپرس.');
+		queueMicrotask(() => micButton?.focus());
 	}
 	function sendTyped() { const text = typed.trim(); if (!text) return; typed = ''; failures = 0; void ask(text, true); }
 	function finishNow() { stopAllAudio(); status = 'idle'; go('end'); }
@@ -290,7 +306,10 @@
 				<p class="you"><span class="who">{T('You asked', 'پرسیدی')}</span> “{heardYou || lastYou?.text}”</p>
 				<p class="hint" dir={isFa ? 'rtl' : 'ltr'}>{T('Tom is checking…', 'تام دارد نگاه می‌کند…')}</p>
 			{:else if lastTom}
-				{#if lastYou && lastYou.kind !== 'pending' && record.turns.length > 1}<p class="you"><span class="who">{T('You asked', 'پرسیدی')}</span> “{lastYou.text}”</p>{/if}
+				{#if lastYou && lastYou.kind !== 'pending' && record.turns.length > 1}
+					<p class="you"><span class="who">{T('You asked', 'پرسیدی')}</span> “{lastYou.text}”</p>
+					{#if !lastYou.typed && status === 'idle'}<button class="link quiet" type="button" onclick={takeBack} dir={isFa ? 'rtl' : 'ltr'}>{T('Not what I said', 'این را نگفتم')}</button>{/if}
+				{/if}
 				<p class="tom"><span class="who">Tom</span> {lastTom.text}</p>
 				<button class="link quiet" type="button" onclick={() => hearTom(lastTom.text)}>{playing ? T('Stop', 'توقف') : T('Hear it again', 'دوباره بشنو')}</button>
 			{/if}
@@ -303,6 +322,8 @@
 			<button class="link" type="button" onclick={() => (status = 'typing')}>{T('Type your question instead', 'به‌جایش سؤالت را بنویس')}</button>
 		{:else if status === 'interrupted'}
 			<p class="note">{T('The recording stopped. Ask again when you’re ready.', 'ضبط متوقف شد. هر وقت آماده بودی دوباره بپرس.')}</p>
+		{:else if status === 'silent'}
+			<p class="note">{T('I couldn’t hear anything. Check your microphone, then ask again.', 'چیزی نشنیدم. میکروفونت را بررسی کن و دوباره بپرس.')}</p>
 		{/if}
 		{#if hint && status !== 'typing'}
 			<button class="link quiet" type="button" onclick={() => (showHint = !showHint)} aria-expanded={showHint}>{T('Need a hint?', 'راهنمایی می‌خواهی؟')}</button>
@@ -359,7 +380,8 @@
 		<p class="tom" lang="en" dir="ltr"><span class="who">Tom</span> {lineBefore(fix.question)}</p>
 		<ul class="chips" lang="en" dir="ltr"><li>{fix.better}</li></ul>
 		{#if status === 'listening'}<p class="hint">{T('Listening…', 'دارم گوش می‌دهم…')}</p>
-		{:else if status === 'failed'}<p class="note">{T('Sorry, I couldn’t hear that. Please try again.', 'ببخشید، نتوانستم بشنوم. لطفاً دوباره امتحان کن.')}</p>{/if}
+		{:else if status === 'failed'}<p class="note">{T('Sorry, I couldn’t hear that. Please try again.', 'ببخشید، نتوانستم بشنوم. لطفاً دوباره امتحان کن.')}</p>
+		{:else if status === 'silent'}<p class="note">{T('I couldn’t hear anything. Check your microphone, then ask again.', 'چیزی نشنیدم. میکروفونت را بررسی کن و دوباره بپرس.')}</p>{/if}
 		{#if reaskSaid !== null}
 			<p class="you" lang="en" dir="ltr"><span class="who">{T('You asked', 'پرسیدی')}</span> “{reaskSaid}”</p>
 			<p class={record.uses[record.fixIndex] === 'used' ? 'ok' : 'note'}>{record.uses[record.fixIndex] === 'used' ? T('✓ That’s it.', '✓ همین است.') : T('Not quite. Next time try the words above.', 'هنوز نه. دفعهٔ بعد کلمه‌های بالا را امتحان کن.')}</p>
