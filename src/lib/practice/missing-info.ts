@@ -9,7 +9,8 @@ import { normalise, words, type FixUse } from './say-better';
 
 export const TOM = { name: 'Tom', voice: 'c' as const }; // Brian; Mira is Ava
 export const MAX_QUESTIONS = 14, QUEUE_AT = 12;
-export const QUESTION_MAX_SECONDS = 15, QUESTION_MIN_SECONDS = 1;
+/** A turn can be more than one sentence ("Hi. I'm going to Kingsley on Saturday. What time…?"), so it gets 30 seconds. */
+export const QUESTION_MAX_SECONDS = 30, QUESTION_MIN_SECONDS = 1;
 
 export type GapId = 'train' | 'price' | 'back' | 'platform';
 export const GAP_IDS: GapId[] = ['train', 'price', 'back', 'platform'];
