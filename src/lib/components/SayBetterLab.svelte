@@ -6,6 +6,7 @@
 	 * this browser; the recordings only in memory, for playback, until the page closes.
 	 */
 	import { onDestroy, onMount } from 'svelte';
+	import { SILENT_BELOW, measureLevel, type MicLevel } from '$utils/mic-level';
 	import { playAudioPromise, stopAllAudio, ttsIsPlaying } from '$services/tts';
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
 	import { fixUse } from '$lib/practice/say-better';
@@ -30,7 +31,7 @@
 	const NUM = ['', '①', '②'];
 	const TRIES = [1, 2] as const;
 
-	type Stage = 'question' | 'recording' | 'nudge' | 'short' | 'interrupted' | 'denied' | 'processing' | 'failed' | 'more' | 'heard' | 'fix' | 'better' | 'all' | 'retry' | 'result';
+	type Stage = 'question' | 'recording' | 'nudge' | 'short' | 'silent' | 'interrupted' | 'denied' | 'processing' | 'failed' | 'more' | 'heard' | 'fix' | 'better' | 'all' | 'retry' | 'result';
 	// svelte-ignore state_referenced_locally
 	let record = $state<LabRecord>(initial ?? emptyLabRecord(1));
 	let stage = $state<Stage>('question'), allFrom = $state<Stage>('heard');
@@ -42,7 +43,7 @@
 	let playingTry = $state<1 | 2 | null>(null);
 	let recorder: MediaRecorder | null = null, stream: MediaStream | null = null, chunks: Blob[] = [];
 	let blob: Blob | null = null, startedAt = 0, timer: ReturnType<typeof setInterval> | undefined, interrupted = false, cut = false;
-	let player: HTMLAudioElement | null = null;
+	let player: HTMLAudioElement | null = null, level: MicLevel | null = null;
 	let heading: HTMLElement | undefined = $state();
 	const playing = $derived($ttsIsPlaying);
 	const T = (en: string, fa: string) => (isFa ? fa : en);
@@ -60,7 +61,7 @@
 		return () => document.removeEventListener('visibilitychange', onHidden);
 	});
 	onDestroy(() => {
-		clearInterval(timer);
+		clearInterval(timer); level?.stop();
 		if (recorder?.state === 'recording') recorder.stop();
 		stream?.getTracks().forEach(t => t.stop());
 		player?.pause();
@@ -95,6 +96,7 @@
 		// A muted or lost microphone (a phone call, for example) stops the recording too.
 		const track = stream.getAudioTracks()[0];
 		if (track) track.onmute = track.onended = () => { if (recorder?.state === 'recording') { interrupted = true; recorder.stop(); } };
+		level = measureLevel(stream);
 		recorder.start();
 		startedAt = performance.now(); elapsed = 0; stage = 'recording';
 		timer = setInterval(() => {
@@ -106,9 +108,12 @@
 	function finishRecording() {
 		clearInterval(timer);
 		stream?.getTracks().forEach(track => track.stop()); stream = null;
+		const peak = level?.peak() ?? 1; level?.stop(); level = null;
 		blob = new Blob(chunks, { type: recorder?.mimeType || 'audio/webm' });
 		elapsed = Math.min(LAB_MAX_SECONDS, Math.round((performance.now() - startedAt) / 1000));
 		if (interrupted) { go('interrupted'); return; }
+		// Nothing was heard: never send it, or speech-to-text makes words up.
+		if (peak < SILENT_BELOW) { go('silent'); return; }
 		if (elapsed < LAB_MIN_SECONDS) { go('short'); return; }
 		if (elapsed < LAB_NUDGE_SECONDS) { go('nudge'); return; }
 		void send();
@@ -268,6 +273,10 @@
 		<p class="lead">{T(`That was ${elapsed} seconds.`, `${fa(elapsed)} ثانیه بود.`)}</p>
 		<button class="link" type="button" onclick={recordAgain}>{T('Say a bit more?', 'کمی بیشتر می‌گویی؟')}</button>
 		{@render bottom(T('Send it', 'بفرست'), send)}
+
+	{:else if stage === 'silent'}
+		<p class="lead">{T('I couldn’t hear anything. Check your microphone, then try again.', 'چیزی نشنیدم. میکروفونت را بررسی کن و دوباره امتحان کن.')}</p>
+		{@render bottom(T('Record again', 'دوباره ضبط کن'), recordAgain)}
 
 	{:else if stage === 'short'}
 		<p class="lead">{T('That was very short. Try to say a bit more.', 'خیلی کوتاه بود. سعی کن کمی بیشتر بگویی.')}</p>
