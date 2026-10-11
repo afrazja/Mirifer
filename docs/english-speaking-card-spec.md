@@ -1,6 +1,6 @@
 # "Speaking card": spec v2
 
-Status: for owner approval. v1 was reviewed by the English-coach and learning-UX reviewers, and their points are applied (see the end). Module lab first.
+Status: **approved by the owner and built (Module lab).** v1 was reviewed by the English-coach and learning-UX reviewers, and their points are applied (see the end). Module lab first.
 
 ## Purpose
 
