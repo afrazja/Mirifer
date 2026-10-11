@@ -11,8 +11,8 @@
 	import { changedRange, tokens } from '$lib/practice/say-better-lab';
 	import { SILENT_BELOW, measureLevel, type MicLevel } from '$utils/mic-level';
 	import {
-		GAPS, GAP_IDS, GOODBYE, HINT_STARTERS, LIMIT_LINE, MAX_QUESTIONS, OPENING, QKIND_LABEL, QUESTION_MAX_SECONDS, QUESTION_MIN_SECONDS, QUEUE_AT, QUEUE_LINE, TOM,
-		deskState, emptyMIRecord, needsHint, questionCountLine, questionsOf, reaskUse, twistLine,
+		GAPS, GAP_IDS, GAP_ORDER, GOODBYE, HINT_STARTERS, LIMIT_LINE, MAX_QUESTIONS, OPENING, QKIND_LABEL, QUESTION_MAX_SECONDS, QUESTION_MIN_SECONDS, QUEUE_AT, QUEUE_LINE, TOM,
+		currentGap, deskState, emptyMIRecord, needsHint, questionCountLine, questionsOf, reaskUse, twistLine,
 		type GapId, type MIFeedback, type MIRecord, type MIStep, type Turn
 	} from '$lib/practice/missing-info';
 
@@ -26,8 +26,8 @@
 	} = $props();
 
 	const INSTRUCTION = {
-		en: 'You’re taking your parents on a day trip by train. Ask Tom at the ticket desk, and find out the four things on your card. Ask one question at a time.',
-		fa: 'پدر و مادرت را برای یک سفر یک‌روزه با قطار می‌بری. از تام در باجهٔ بلیت بپرس و چهار چیزِ روی کارتت را پیدا کن. هر بار یک سؤال بپرس.'
+		en: 'You’re taking your parents on a day trip by train. Ask Tom at the ticket desk. I’ll give you four things to find out, one at a time. Ask one question at a time.',
+		fa: 'پدر و مادرت را برای یک سفر یک‌روزه با قطار می‌بری. از تام در باجهٔ بلیت بپرس. چهار چیز را یکی‌یکی به تو می‌دهم تا پیدا کنی. هر بار یک سؤال بپرس.'
 	};
 	const NUM = ['①', '②'];
 
@@ -40,6 +40,10 @@
 	let elapsed = $state(0), failures = $state(0), feedbackFailures = $state(0);
 	let typed = $state(''), announce = $state(''), heardYou = $state('');
 	let newlyFound = $state<GapId[]>([]);
+	/** The thing just found: shown with its answer and a Next button before the next one appears. */
+	let justFound = $state<GapId | null>(null);
+	/** After Next, the previous exchange is cleared: each new item starts on its own. */
+	let exchangeFrom = $state(0);
 	let reaskSaid = $state<string | null>(null);
 	let recorder: MediaRecorder | null = null, stream: MediaStream | null = null, chunks: Blob[] = [];
 	let level: MicLevel | null = null;
@@ -50,6 +54,8 @@
 	const fa = (n: number) => n.toLocaleString('fa-IR');
 	const desk = $derived(deskState(record.turns));
 	const foundCount = $derived(GAP_IDS.filter(g => desk.found[g]).length);
+	const current = $derived(currentGap(desk.found, record.skipped));
+	const position = $derived(Math.min(4, GAP_ORDER.filter(g => desk.found[g] || record.skipped.includes(g)).length + (justFound ? 0 : 1)));
 	const lastTom = $derived([...record.turns].reverse().find(t => t.who === 'tom') as Extract<Turn, { who: 'tom' }> | undefined);
 	const lastYou = $derived([...record.turns].reverse().find(t => t.who === 'you') as Extract<Turn, { who: 'you' }> | undefined);
 	const feedback = $derived(record.feedback);
@@ -168,9 +174,11 @@
 		const before = deskState(turns);
 		const found = reply.found.filter(g => !before.found[g]);
 		const allFound = GAP_IDS.every(g => before.found[g] || found.includes(g));
+		const allDone = GAP_IDS.every(g => before.found[g] || found.includes(g) || record.skipped.includes(g));
+		const wasCurrent = currentGap(before.found, record.skipped);
 		const questions = before.questions;
 		let text = reply.reply;
-		const ending = allFound || questions >= MAX_QUESTIONS;
+		const ending = allDone || questions >= MAX_QUESTIONS;
 		if (allFound && !/trip/i.test(text)) text = `${text} ${GOODBYE}`;
 		else if (!allFound && questions >= MAX_QUESTIONS) text = `${text} ${LIMIT_LINE}`;
 		else if (questions === QUEUE_AT && reply.learner === 'question') text = `${text} ${QUEUE_LINE}`;
@@ -178,6 +186,8 @@
 		record = { ...record, turns }; persist();
 		newlyFound = found;
 		announce = found.length ? T(`Found: ${found.map(g => deskState(turns).found[g]).join(', ')}`, `پیدا شد: ${found.map(g => deskState(turns).found[g]).join('، ')}`) : '';
+		// The one they were working on: show it found, with Next, before the next one appears.
+		justFound = !ending && wasCurrent && found.includes(wasCurrent) ? wasCurrent : null;
 		status = 'idle'; showHint = false;
 		await tomSays(text);
 		if (ending) go('end');
@@ -192,6 +202,19 @@
 		record = { ...record, turns }; persist();
 		newlyFound = []; announce = T('Taken back. Ask again.', 'برداشته شد. دوباره بپرس.');
 		queueMicrotask(() => micButton?.focus());
+	}
+	function nextThing() {
+		justFound = null; newlyFound = []; showHint = false; status = 'idle'; announce = '';
+		exchangeFrom = record.turns.length;
+		queueMicrotask(() => micButton?.focus());
+	}
+	/** Stuck on this one: move on (it shows as not found at the end). */
+	function skipThis() {
+		if (!current) return;
+		stopAllAudio();
+		record = { ...record, skipped: [...record.skipped, current] }; persist();
+		showHint = false;
+		if (!currentGap(desk.found, record.skipped)) go('end');
 	}
 	function sendTyped() { const text = typed.trim(); if (!text) return; typed = ''; failures = 0; void ask(text, true); }
 	function finishNow() { stopAllAudio(); status = 'idle'; go('end'); }
@@ -294,18 +317,26 @@
 
 	{#if stage === 'task'}
 		<div class="brief"><span class="avatar" aria-hidden="true">M</span><p>{isFa ? INSTRUCTION.fa : INSTRUCTION.en}</p></div>
-		{@render card(true, false)}
 		{@render bottom(T('Go to the desk', 'برو سراغ باجه'), toDesk)}
 
 	{:else if stage === 'desk'}
-		<p class="progress">{T(`${foundCount} of 4 found`, `${fa(foundCount)} از ۴ پیدا شد`)}</p>
-		{@render card(false, false)}
+		<p class="progress">{T(`${position} of 4`, `${fa(position)} از ۴`)}</p>
+		{#if justFound}
+			<div class="target found new"><span class="find">{T('Found', 'پیدا شد')}</span>
+				<span class="what">{isFa ? GAPS[justFound].full.fa : GAPS[justFound].full.en}</span>
+				<span class="value"><span aria-hidden="true">✓ </span><bdi lang="en" dir="ltr"><strong>{desk.found[justFound]}</strong></bdi></span></div>
+		{:else if current}
+			{@const partly = rowText(current)}
+			<div class="target"><span class="find">{T('Find out', 'پیدا کن')}</span>
+				<span class="what">{isFa ? GAPS[current].full.fa : GAPS[current].full.en}</span>
+				{#if partly}<span class="value partly">{partly}</span>{/if}</div>
+		{/if}
 		<div class="exchange" lang="en" dir="ltr">
 			{#if status === 'listening'}<p class="hint" dir={isFa ? 'rtl' : 'ltr'}>{T('Tom is listening…', 'تام دارد گوش می‌دهد…')}</p>
 			{:else if status === 'thinking'}
 				<p class="you"><span class="who">{T('You asked', 'پرسیدی')}</span> “{heardYou || lastYou?.text}”</p>
 				<p class="hint" dir={isFa ? 'rtl' : 'ltr'}>{T('Tom is checking…', 'تام دارد نگاه می‌کند…')}</p>
-			{:else if lastTom}
+			{:else if lastTom && record.turns.length > exchangeFrom}
 				{#if lastYou && lastYou.kind !== 'pending' && record.turns.length > 1}
 					<p class="you"><span class="who">{T('You asked', 'پرسیدی')}</span> “{lastYou.text}”</p>
 					{#if !lastYou.typed && status === 'idle'}<button class="link quiet" type="button" onclick={takeBack} dir={isFa ? 'rtl' : 'ltr'}>{T('Not what I said', 'این را نگفتم')}</button>{/if}
@@ -325,11 +356,15 @@
 		{:else if status === 'silent'}
 			<p class="note">{T('I couldn’t hear anything. Check your microphone, then ask again.', 'چیزی نشنیدم. میکروفونت را بررسی کن و دوباره بپرس.')}</p>
 		{/if}
-		{#if hint && status !== 'typing'}
+		{#if hint && status !== 'typing' && !justFound}
 			<button class="link quiet" type="button" onclick={() => (showHint = !showHint)} aria-expanded={showHint}>{T('Need a hint?', 'راهنمایی می‌خواهی؟')}</button>
-			{#if showHint}<p class="starters" lang="en" dir="ltr">{HINT_STARTERS.join(' · ')}</p>{/if}
+			{#if showHint}<p class="starters" lang="en" dir="ltr">{HINT_STARTERS.join(' · ')}</p>
+				<button class="link quiet" type="button" onclick={skipThis}>{T('Skip this one', 'از این یکی بگذر')}</button>{/if}
 		{/if}
-		{#if status === 'confirm'}
+		{#if justFound}
+			{@const next = currentGap(desk.found, record.skipped)}
+			{@render bottom(next ? T(`Next: ${GAPS[next].short.en}`, `بعدی: ${GAPS[next].short.fa}`) : T('Next', 'بعدی'), nextThing)}
+		{:else if status === 'confirm'}
 			<p class="note">{T(`Finish now? You’ve found ${foundCount} of 4.`, `الان تمام کنی؟ ${fa(foundCount)} از ۴ را پیدا کرده‌ای.`)}</p>
 			<button class="link quiet" type="button" onclick={finishNow}>{T('Finish', 'تمام')}</button>
 			{@render bottom(T('Keep asking', 'به پرسیدن ادامه بده'), () => (status = 'idle'))}
@@ -433,6 +468,12 @@
 	.card li.new { animation: flash 1.2s ease-out; }
 	@keyframes flash { from { box-shadow: 0 0 0 3px var(--leaf); } to { box-shadow: 0 0 0 0 transparent; } }
 	.what { font-weight: 600; }
+	.target { display: grid; gap: 4px; padding: 14px 16px; border-radius: 14px; background: var(--paper-raised); border: 1.5px solid var(--accent); }
+	.target .what { font-size: 1.12rem; line-height: 1.4; }
+	.target.found { border-color: var(--leaf); background: var(--leaf-wash); }
+	.target.new { animation: flash 1.2s ease-out; }
+	.find { font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent-deep); }
+	:global([dir='rtl']) .find { letter-spacing: normal; }
 	.value { color: var(--ink); }
 	.value.empty, .value.missed { color: var(--ink-soft); }
 	.value.partly { color: var(--accent-deep); font-style: italic; }
@@ -484,5 +525,5 @@
 	.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 	h2:focus { outline: none; }
 	button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
-	@media (prefers-reduced-motion: reduce) { .dot, .dots span, .card li.new { animation: none; } }
+	@media (prefers-reduced-motion: reduce) { .dot, .dots span, .card li.new, .target.new { animation: none; } }
 </style>
