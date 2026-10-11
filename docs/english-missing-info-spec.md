@@ -180,3 +180,5 @@ The four things are no longer shown together.
 - If Tom happens to give a later thing early, it counts, and that thing is skipped when its turn comes.
 - When the hint shows (two ask-backs in a row, or four questions with nothing new), a quiet "Skip this one" moves on. A skipped thing shows as "Not found", with its answer, at the end.
 - The end screen still shows all four.
+- Above the box, a strip of the four short labels shows the state of each: green ✓ found, outlined for the one you're on now, gold "–" skipped, and grey for the ones still to come.
+- A turn may be several sentences, so a recording now lasts up to 30 seconds. Speech-to-text is told to write every sentence and to split the audio at pauses, so nothing after the first sentence is dropped.

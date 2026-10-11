@@ -55,7 +55,6 @@
 	const desk = $derived(deskState(record.turns));
 	const foundCount = $derived(GAP_IDS.filter(g => desk.found[g]).length);
 	const current = $derived(currentGap(desk.found, record.skipped));
-	const position = $derived(Math.min(4, GAP_ORDER.filter(g => desk.found[g] || record.skipped.includes(g)).length + (justFound ? 0 : 1)));
 	const lastTom = $derived([...record.turns].reverse().find(t => t.who === 'tom') as Extract<Turn, { who: 'tom' }> | undefined);
 	const lastYou = $derived([...record.turns].reverse().find(t => t.who === 'you') as Extract<Turn, { who: 'you' }> | undefined);
 	const feedback = $derived(record.feedback);
@@ -320,7 +319,16 @@
 		{@render bottom(T('Go to the desk', 'برو سراغ باجه'), toDesk)}
 
 	{:else if stage === 'desk'}
-		<p class="progress">{T(`${position} of 4`, `${fa(position)} از ۴`)}</p>
+		<ol class="strip" aria-label={T('Your four things', 'چهار چیزی که باید پیدا کنی')}>
+			{#each GAP_ORDER as gap}
+				{@const st = desk.found[gap] ? 'done' : record.skipped.includes(gap) ? 'skipped' : gap === (justFound ?? current) ? 'now' : 'later'}
+				<li class={st} aria-current={st === 'now' ? 'step' : undefined}>
+					<span aria-hidden="true">{st === 'done' ? '✓' : st === 'skipped' ? '–' : ''}</span>
+					{isFa ? GAPS[gap].short.fa : GAPS[gap].short.en}
+					<span class="sr-only">({st === 'done' ? T('found', 'پیدا شد') : st === 'skipped' ? T('skipped', 'رد شد') : st === 'now' ? T('now', 'الان') : T('next', 'بعداً')})</span>
+				</li>
+			{/each}
+		</ol>
 		{#if justFound}
 			<div class="target found new"><span class="find">{T('Found', 'پیدا شد')}</span>
 				<span class="what">{isFa ? GAPS[justFound].full.fa : GAPS[justFound].full.en}</span>
@@ -468,6 +476,11 @@
 	.card li.new { animation: flash 1.2s ease-out; }
 	@keyframes flash { from { box-shadow: 0 0 0 3px var(--leaf); } to { box-shadow: 0 0 0 0 transparent; } }
 	.what { font-weight: 600; }
+	.strip { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+	.strip li { display: flex; align-items: center; justify-content: center; gap: 4px; min-height: 40px; padding: 4px 6px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--paper-raised); color: var(--ink-soft); font-size: .74rem; font-weight: 600; line-height: 1.2; text-align: center; }
+	.strip li.done { border-color: var(--leaf); background: var(--leaf-wash); color: var(--ink); }
+	.strip li.skipped { border-color: var(--attention); color: var(--ink); }
+	.strip li.now { border-color: var(--accent); color: var(--accent-deep); }
 	.target { display: grid; gap: 4px; padding: 14px 16px; border-radius: 14px; background: var(--paper-raised); border: 1.5px solid var(--accent); }
 	.target .what { font-size: 1.12rem; line-height: 1.4; }
 	.target.found { border-color: var(--leaf); background: var(--leaf-wash); }
