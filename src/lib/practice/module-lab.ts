@@ -11,7 +11,7 @@ export const LAB_MODULES: LabModule[] = [
 	{ id: 'choose-persuade', name: { en: 'Choose and persuade', fa: 'انتخاب کن و قانع کن' }, href: '/practice/english/lab/choose-persuade' },
 	{ id: 'say-it-better', name: { en: 'Say it again, better', fa: 'دوباره بگو، بهتر' }, href: '/practice/english/lab/say-better' },
 	{ id: 'missing-info', name: { en: 'Find the missing information', fa: 'اطلاعات گم‌شده را پیدا کن' }, href: '/practice/english/lab/missing-info' },
-	{ id: 'speaking-card', name: { en: 'Speaking card', fa: 'کارت صحبت' } },
+	{ id: 'speaking-card', name: { en: 'Speaking card', fa: 'کارت صحبت' }, href: '/practice/english/lab/speaking-card' },
 	{ id: 'free-talk', name: { en: '60-second free talk', fa: 'صحبت آزاد ۶۰ ثانیه‌ای' } },
 	{ id: 'shadowing', name: { en: 'Shadowing', fa: 'تکرار همزمان' } },
 	{ id: 'story-chain', name: { en: 'Story chain', fa: 'زنجیرهٔ داستان' } },

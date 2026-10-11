@@ -1,33 +1,53 @@
 /**
- * How loud a recording got. Speech-to-text models invent text when they get a clip with
- * no speech in it (a muted or wrong microphone, or a tap that stopped too soon), so a
- * near-silent recording is never sent: the learner is told they couldn't be heard.
+ * How loud a recording got, and how much of it was speech. Speech-to-text models invent text
+ * when they get a clip with no speech in it (a muted or wrong microphone, or a tap that stopped
+ * too soon), so a near-silent recording is never sent: the learner is told they couldn't be heard.
  */
-export interface MicLevel { peak: () => number; stop: () => void }
-
-/** Starts measuring a stream's loudness (0–1). If the browser can't measure, peak() stays 1, so nothing is blocked. */
-export function measureLevel(stream: MediaStream): MicLevel {
-	const AudioCtx = typeof window !== 'undefined' ? (window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext) : undefined;
-	if (!AudioCtx) return { peak: () => 1, stop: () => {} };
-	let context: AudioContext;
-	try { context = new AudioCtx(); } catch { return { peak: () => 1, stop: () => {} }; }
-	const analyser = context.createAnalyser();
-	analyser.fftSize = 1024;
-	context.createMediaStreamSource(stream).connect(analyser);
-	const data = new Float32Array(analyser.fftSize);
-	let peak = 0, measured = false;
-	const timer = setInterval(() => {
-		analyser.getFloatTimeDomainData(data);
-		let sum = 0;
-		for (const v of data) sum += v * v;
-		peak = Math.max(peak, Math.sqrt(sum / data.length));
-		measured = true;
-	}, 50);
-	return {
-		peak: () => (measured ? peak : 1),
-		stop: () => { clearInterval(timer); void context.close().catch(() => {}); }
-	};
+export interface MicLevel {
+	/** The loudest moment (RMS, 0–1). */
+	peak: () => number;
+	/** Seconds that sounded like speech. */
+	voiced: () => number;
+	/** Seconds since the last sound like speech. */
+	quietFor: () => number;
+	/** While paused, nothing is measured. */
+	setPaused: (paused: boolean) => void;
+	stop: () => void;
 }
 
 /** Below this loudness (RMS) nothing was said: room noise is about 0.002–0.01, quiet speech 0.03+. */
 export const SILENT_BELOW = 0.015;
+/** At or above this, a moment counts as speech. */
+export const SPEECH_LEVEL = 0.02;
+
+/** Starts measuring a stream's loudness. If the browser can't measure, nothing is ever blocked. */
+export function measureLevel(stream: MediaStream): MicLevel {
+	const unmeasured: MicLevel = { peak: () => 1, voiced: () => Infinity, quietFor: () => 0, setPaused: () => {}, stop: () => {} };
+	const AudioCtx = typeof window !== 'undefined' ? (window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext) : undefined;
+	if (!AudioCtx) return unmeasured;
+	let context: AudioContext;
+	try { context = new AudioCtx(); } catch { return unmeasured; }
+	const analyser = context.createAnalyser();
+	analyser.fftSize = 1024;
+	context.createMediaStreamSource(stream).connect(analyser);
+	const data = new Float32Array(analyser.fftSize);
+	const STEP = 0.05;
+	let peak = 0, voiced = 0, quiet = 0, measured = false, paused = false;
+	const timer = setInterval(() => {
+		if (paused) return;
+		analyser.getFloatTimeDomainData(data);
+		let sum = 0;
+		for (const v of data) sum += v * v;
+		const rms = Math.sqrt(sum / data.length);
+		peak = Math.max(peak, rms);
+		if (rms >= SPEECH_LEVEL) { voiced += STEP; quiet = 0; } else quiet += STEP;
+		measured = true;
+	}, STEP * 1000);
+	return {
+		peak: () => (measured ? peak : 1),
+		voiced: () => (measured ? voiced : Infinity),
+		quietFor: () => quiet,
+		setPaused: value => { paused = value; },
+		stop: () => { clearInterval(timer); void context.close().catch(() => {}); }
+	};
+}

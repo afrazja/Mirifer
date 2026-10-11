@@ -1,0 +1,514 @@
+<script lang="ts">
+	/**
+	 * "Speaking card" (docs/english-speaking-card-spec.md, owner-approved v2).
+	 * Card and preparing (one layout) → talk (up to 2:00) → what you covered → making it easier to
+	 * follow (one phrase) → talk again → before and after. Long-turn skills only, never grammar.
+	 * The run is kept in this browser; recordings only in memory, for playback, until the page closes.
+	 */
+	import { onDestroy, onMount } from 'svelte';
+	import { playAudioPromise, stopAllAudio, ttsIsPlaying } from '$services/tts';
+	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
+	import { normalise } from '$lib/practice/say-better';
+	import { SILENT_BELOW, measureLevel, type MicLevel } from '$utils/mic-level';
+	import {
+		CARDS, MIN_VOICED_SECONDS, PAUSE_FROM, PAUSE_UNTIL, PREP_SECONDS, STUCK_AFTER_SECONDS, TALK_MAX_SECONDS, TALK_MIN_SECONDS, TALK_TARGET_SECONDS,
+		cardById, clock, coveredCount, emptyCardRecord, lengthChange, phraseById,
+		type CardFeedback, type CardRecord, type CardStep, type Coverage, type Talk
+	} from '$lib/practice/speaking-card';
+
+	let { isFa = false, initial = null, first = false, onSave, onDone }: {
+		isFa?: boolean;
+		initial?: CardRecord | null;
+		/** A fresh visit: Mira says the instruction as the page opens. */
+		first?: boolean;
+		onSave?: (record: CardRecord) => void;
+		onDone: () => void;
+	} = $props();
+
+	const INSTRUCTION = {
+		en: 'Here’s your topic. You’ve got a minute to think first. Then talk for one to two minutes, and try to cover all four points.',
+		fa: 'این موضوع توست. اول یک دقیقه وقت داری فکر کنی. بعد یک تا دو دقیقه صحبت کن و سعی کن هر چهار نکته را بگویی.'
+	};
+	const NEXT_LINE = { en: 'Here’s your next topic.', fa: 'این موضوع بعدی توست.' };
+
+	type Stage = CardStep | 'talk' | 'short' | 'quiet' | 'interrupted' | 'denied' | 'processing' | 'failed' | 'offtopic' | 'notenglish';
+	// svelte-ignore state_referenced_locally
+	let record = $state<CardRecord>(initial ?? emptyCardRecord(1));
+	let stage = $state<Stage>('card');
+	let fullIntro = $state(true), showFa = $state(false), showNotes = $state(false), reloadNote = $state(false);
+	let now = $state(Date.now()), toneDone = $state(false);
+	let elapsed = $state(0), paused = $state(false), askedToContinue = $state(false), stuck = $state(false);
+	let announce = $state(''), note = $state<'listening' | 'thinking'>('listening'), failedAt = $state<'transcribe' | 'coverage' | 'feedback'>('transcribe');
+	let urls = $state<{ 1: string | null; 2: string | null }>({ 1: null, 2: null });
+	let playingTalk = $state<1 | 2 | null>(null);
+	let recorder: MediaRecorder | null = null, stream: MediaStream | null = null, chunks: Blob[] = [], blob: Blob | null = null;
+	let level: MicLevel | null = null, audio: AudioContext | null = null, player: HTMLAudioElement | null = null;
+	let ranFor = 0, segmentStart = 0, timer: ReturnType<typeof setInterval> | undefined, clockTimer: ReturnType<typeof setInterval> | undefined;
+	let interrupted = false, cutOff = false, said1min = false, said15 = false;
+	let heading: HTMLElement | undefined = $state(), stopButton: HTMLButtonElement | undefined = $state();
+	const playing = $derived($ttsIsPlaying);
+	const T = (en: string, fa: string) => (isFa ? fa : en);
+	const card = $derived(cardById(record.card) ?? CARDS[0]);
+	const attempt = $derived<1 | 2>(record.feedback ? 2 : 1);
+	const prepLeft = $derived(record.prepStartedAt === null ? null : Math.max(0, PREP_SECONDS - Math.floor((now - record.prepStartedAt) / 1000)));
+	const phrase = $derived(record.feedback ? phraseById(record.feedback.phrase) : null);
+	const missed = $derived(record.coverage1?.points.map(p => !p.covered) ?? [false, false, false, false]);
+
+	onMount(() => {
+		// A reload returns to the step it left. A finished AI call is never repeated; an unfinished one runs again.
+		if (record.talk2 && record.coverage2) stage = 'result';
+		else if (record.talk2) void judgeSecond();
+		else if (record.feedback) stage = record.step === 'covered' || record.step === 'follow' ? record.step : 'ready2';
+		else if (record.talk1 && record.coverage1) void getFeedback();
+		else if (record.talk1) void judgeFirst();
+		else if (first) say(INSTRUCTION.en);
+		if (record.talking) { reloadNote = true; record = { ...record, talking: false }; persist(); }
+		clockTimer = setInterval(() => {
+			now = Date.now();
+			if (prepLeft === 0 && !toneDone && stage !== 'talk') { toneDone = true; beep(); }
+		}, 250);
+		document.addEventListener('visibilitychange', onHidden);
+		return () => document.removeEventListener('visibilitychange', onHidden);
+	});
+	onDestroy(() => {
+		clearInterval(timer); clearInterval(clockTimer); level?.stop();
+		if (recorder && recorder.state !== 'inactive') recorder.stop();
+		stream?.getTracks().forEach(t => t.stop());
+		player?.pause(); void audio?.close().catch(() => {});
+		for (const url of [urls[1], urls[2]]) if (url) URL.revokeObjectURL(url);
+	});
+
+	function persist() { onSave?.($state.snapshot(record)); }
+	const STEPS: CardStep[] = ['card', 'covered', 'follow', 'ready2', 'result'];
+	function go(next: Stage) {
+		stage = next;
+		if ((STEPS as string[]).includes(next) && record.step !== next) { record = { ...record, step: next as CardStep }; persist(); }
+		queueMicrotask(() => heading?.focus());
+	}
+	function say(line: string) { stopTalkPlayback(); stopAllAudio(); void playAudioPromise(line.replace(/[’…]/g, m => (m === '’' ? "'" : '')), COACH_RATE, 'en-US', undefined, COACH_VOICE); }
+	function hear(line: string) { if (playing) stopAllAudio(); else say(line); }
+	function onHidden() {
+		if (!document.hidden) return;
+		if (recorder && recorder.state !== 'inactive') { interrupted = true; recorder.stop(); }
+		stopTalkPlayback();
+	}
+	/** A soft tone when the minute is up (audio was unlocked by the "Start preparing" tap; never while recording). */
+	function beep() {
+		if (!audio || stage === 'talk') return;
+		try {
+			const osc = audio.createOscillator(), gain = audio.createGain();
+			osc.frequency.value = 660; gain.gain.setValueAtTime(0.0001, audio.currentTime);
+			gain.gain.exponentialRampToValueAtTime(0.15, audio.currentTime + 0.03); gain.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + 0.5);
+			osc.connect(gain).connect(audio.destination); osc.start(); osc.stop(audio.currentTime + 0.55);
+		} catch { /* the button label is the cue anyway */ }
+	}
+
+	// 1. Card and preparing
+	async function startPreparing() {
+		stopAllAudio();
+		try { audio ??= new AudioContext(); void audio.resume(); } catch { audio = null; }
+		// Ask for the microphone now, so the permission prompt never eats talking time.
+		try { const s = await navigator.mediaDevices?.getUserMedia({ audio: true }); s?.getTracks().forEach(t => t.stop()); } catch { /* asked again on Start talking */ }
+		toneDone = false;
+		record = { ...record, prepStartedAt: Date.now() }; persist();
+	}
+	function anotherCard() {
+		stopAllAudio();
+		for (const url of [urls[1], urls[2]]) if (url) URL.revokeObjectURL(url);
+		urls = { 1: null, 2: null };
+		const next = (record.card % CARDS.length) + 1;
+		record = emptyCardRecord(next); persist();
+		fullIntro = false; showNotes = false; reloadNote = false; toneDone = false;
+		go('card');
+		say(NEXT_LINE.en);
+	}
+
+	// 2. Talk
+	async function startTalking() {
+		stopAllAudio(); stopTalkPlayback(); reloadNote = false;
+		if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') { go('denied'); return; }
+		try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch { go('denied'); return; }
+		const mimeType = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm', 'audio/ogg;codecs=opus'].find(type => MediaRecorder.isTypeSupported(type));
+		recorder = new MediaRecorder(stream, { ...(mimeType ? { mimeType } : {}), audioBitsPerSecond: 64_000 });
+		chunks = []; blob = null; interrupted = false; cutOff = false; said1min = false; said15 = false;
+		recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
+		recorder.onstop = finishTalk;
+		const track = stream.getAudioTracks()[0];
+		if (track) track.onmute = track.onended = () => { if (recorder && recorder.state !== 'inactive') { interrupted = true; recorder.stop(); } };
+		level = measureLevel(stream);
+		recorder.start();
+		// The clock starts only now, after the microphone was allowed; paused time never counts.
+		ranFor = 0; segmentStart = performance.now(); elapsed = 0; paused = false; askedToContinue = false; stuck = false; announce = '';
+		record = { ...record, talking: true }; persist();
+		go('talk');
+		queueMicrotask(() => stopButton?.focus());
+		timer = setInterval(tick, 200);
+	}
+	function tick() {
+		if (paused) return;
+		elapsed = Math.min(TALK_MAX_SECONDS, ranFor + (performance.now() - segmentStart) / 1000);
+		stuck = (level?.quietFor() ?? 0) >= STUCK_AFTER_SECONDS;
+		if (elapsed >= TALK_TARGET_SECONDS && !said1min) { said1min = true; announce = T('One minute', 'یک دقیقه'); }
+		if (elapsed >= TALK_MAX_SECONDS - 15 && !said15) { said15 = true; announce = T('15 seconds left', '۱۵ ثانیه مانده'); }
+		if (elapsed >= TALK_MAX_SECONDS && recorder?.state === 'recording') { cutOff = true; recorder.stop(); }
+	}
+	function stopTalking() {
+		if (!recorder || recorder.state === 'inactive') return;
+		// An early Stop pauses once and asks for more, where the browser can pause.
+		if (!askedToContinue && elapsed >= PAUSE_FROM && elapsed <= PAUSE_UNTIL && recorder.state === 'recording' && typeof recorder.pause === 'function') {
+			try {
+				recorder.pause(); level?.setPaused(true);
+				ranFor = elapsed; paused = true; askedToContinue = true;
+				queueMicrotask(() => heading?.focus());
+				return;
+			} catch { /* can't pause: just stop */ }
+		}
+		recorder.stop();
+	}
+	function keepGoing() {
+		if (!recorder || recorder.state !== 'paused') return;
+		recorder.resume(); level?.setPaused(false);
+		segmentStart = performance.now(); paused = false;
+		queueMicrotask(() => stopButton?.focus());
+	}
+	/** Stays paused until the recording has stopped, so paused time never counts. */
+	function done() { recorder?.stop(); }
+	function finishTalk() {
+		clearInterval(timer);
+		stream?.getTracks().forEach(t => t.stop()); stream = null;
+		record = { ...record, talking: false }; persist();
+		const peak = level?.peak() ?? 1, voiced = level?.voiced() ?? Infinity;
+		level?.stop(); level = null;
+		blob = new Blob(chunks, { type: recorder?.mimeType || 'audio/webm' });
+		const seconds = Math.round(Math.min(TALK_MAX_SECONDS, paused ? ranFor : ranFor + (performance.now() - segmentStart) / 1000));
+		elapsed = seconds; paused = false;
+		if (interrupted) { go('interrupted'); return; }
+		if (seconds < TALK_MIN_SECONDS) { go('short'); return; }
+		// Silence doesn't count as talking, and a near-silent take is never sent.
+		if (peak < SILENT_BELOW || voiced < MIN_VOICED_SECONDS) { go('quiet'); return; }
+		void send(seconds);
+	}
+	function backToReady() { blob = null; go(attempt === 1 ? 'card' : 'ready2'); }
+
+	async function send(seconds = elapsed) {
+		if (!blob) return;
+		go('processing'); note = 'listening';
+		const body = new FormData();
+		body.set('audio', blob, 'speech'); body.set('seconds', String(seconds)); body.set('card', String(record.card));
+		let text: string | null = null;
+		try {
+			const response = await fetch('/api/english/speaking-card', { method: 'POST', body });
+			const data = response.ok ? await response.json() : null;
+			text = typeof data?.transcript === 'string' && data.transcript.trim() ? data.transcript.trim() : null;
+		} catch { text = null; }
+		if (text === null) { failedAt = 'transcribe'; go('failed'); return; }
+		const url = URL.createObjectURL(blob);
+		if (urls[attempt]) URL.revokeObjectURL(urls[attempt]!);
+		urls = { ...urls, [attempt]: url };
+		blob = null;
+		const talk: Talk = { text, seconds, cutOff };
+		if (attempt === 1) { record = { ...record, talk1: talk, coverage1: null, feedback: null }; persist(); await judgeFirst(); }
+		else { record = { ...record, talk2: talk, coverage2: null }; persist(); await judgeSecond(); }
+	}
+
+	async function post<R>(body: object, wait = 30_000): Promise<R | null> {
+		const controller = new AbortController();
+		const timeout = setTimeout(() => controller.abort(), wait);
+		try {
+			const response = await fetch('/api/english/speaking-card', { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: controller.signal, body: JSON.stringify(body) });
+			return response.ok ? await response.json() : null;
+		} catch { return null; }
+		finally { clearTimeout(timeout); }
+	}
+	const talkInput = (t: Talk) => ({ text: t.text, cutOff: t.cutOff });
+
+	async function judgeFirst() {
+		if (!record.talk1) return;
+		go('processing'); note = 'thinking';
+		const result = await post<{ talks: Coverage[] }>({ kind: 'coverage', card: record.card, talks: [talkInput(record.talk1)] });
+		const coverage = result?.talks?.[0];
+		if (!coverage || !Array.isArray(coverage.points)) { failedAt = 'coverage'; go('failed'); return; }
+		if (!coverage.onTopic || !coverage.mostlyEnglish) {
+			record = { ...record, talk1: null }; persist();
+			go(coverage.onTopic ? 'notenglish' : 'offtopic'); return;
+		}
+		record = { ...record, coverage1: coverage }; persist();
+		await getFeedback();
+	}
+	async function getFeedback() {
+		if (!record.talk1 || !record.coverage1) return;
+		go('processing'); note = 'thinking';
+		const result = await post<CardFeedback>({ kind: 'feedback', card: record.card, talk: talkInput(record.talk1), covered: record.coverage1.points.map(p => p.covered) });
+		if (!result || typeof result.phrase !== 'string') { failedAt = 'feedback'; go('failed'); return; }
+		record = { ...record, feedback: result }; persist();
+		go('covered');
+	}
+	async function judgeSecond() {
+		if (!record.talk1 || !record.talk2) return;
+		go('processing'); note = 'thinking';
+		// Both talks are judged again together, so before and after compare like with like.
+		const result = await post<{ talks: Coverage[] }>({ kind: 'coverage', card: record.card, talks: [talkInput(record.talk1), talkInput(record.talk2)] });
+		if (!result?.talks || result.talks.length !== 2) { failedAt = 'coverage'; go('failed'); return; }
+		record = { ...record, coverage2: { first: result.talks[0], second: result.talks[1] } }; persist();
+		go('result');
+	}
+	function retry() {
+		if (failedAt === 'transcribe') void send();
+		else if (failedAt === 'feedback') void getFeedback();
+		else if (record.talk2) void judgeSecond();
+		else void judgeFirst();
+	}
+	function finish() { stopAllAudio(); stopTalkPlayback(); record = { ...record, done: true }; persist(); onDone(); }
+
+	// Before and after: one recording at a time, never over Mira.
+	function playTalk(which: 1 | 2) {
+		const url = urls[which];
+		if (!url) return;
+		if (playingTalk === which) { stopTalkPlayback(); return; }
+		stopTalkPlayback(); stopAllAudio();
+		player = new Audio(url);
+		player.onended = () => (playingTalk = null);
+		playingTalk = which;
+		void player.play().catch(() => (playingTalk = null));
+	}
+	function stopTalkPlayback() { player?.pause(); player = null; playingTalk = null; }
+
+	const TALKS = [1, 2] as const;
+	const phraseUsed = $derived(!!(phrase && record.talk2 && phrase.found(normalise(record.talk2.text))));
+	const before = $derived(record.coverage2 ? coveredCount(record.coverage2.first) : 0);
+	const after = $derived(record.coverage2 ? coveredCount(record.coverage2.second) : 0);
+	const length = $derived(record.talk1 && record.talk2 ? lengthChange(record.talk1.seconds, record.talk2.seconds) : null);
+	const remaining = $derived(Math.max(0, TALK_MAX_SECONDS - elapsed));
+	const say1 = (text: string) => text.replace(/…$/, '');
+</script>
+
+{#snippet bottom(label: string, action: () => void, disabled = false)}
+	<div class="bar"><button class="primary" type="button" onclick={action} {disabled}>{label}</button></div>
+{/snippet}
+
+{#snippet theCard(marks: boolean)}
+	<div class="card">
+		<p class="title" lang="en" dir="ltr">{card.title.en}</p>
+		{#if isFa}<p class="title-fa">{card.title.fa}</p>{/if}
+		<p class="should" lang="en" dir="ltr">You should say:</p>
+		<ul class="points" lang="en" dir="ltr">
+			{#each card.points as point, i}
+				<li class:explain={i === 3} class:missed={marks && missed[i]}>
+					{point.en}
+					{#if showFa}<small lang="fa" dir="rtl">{point.fa}</small>{/if}
+					{#if marks && missed[i]}<span class="flag" dir={isFa ? 'rtl' : 'ltr'}>{T('Don’t forget this one', 'این یکی یادت نرود')}</span>{/if}
+				</li>
+			{/each}
+		</ul>
+		{#if isFa}<button class="link quiet" type="button" onclick={() => (showFa = !showFa)} aria-expanded={showFa}>{showFa ? 'پنهان کردن فارسی' : 'نمایش به فارسی'}</button>{/if}
+	</div>
+{/snippet}
+
+{#snippet notesBox()}
+	{#if showNotes || record.notes}
+		<label class="sr-only" for="sc-notes">{T('Your keywords', 'کلمه‌های کلیدی تو')}</label>
+		<input id="sc-notes" class="notes" maxlength="80" autocomplete="off" placeholder={T('Keywords, in English or Persian', 'کلمه‌های کلیدی، انگلیسی یا فارسی')}
+			value={record.notes} oninput={event => { record = { ...record, notes: (event.currentTarget as HTMLInputElement).value }; persist(); }} />
+	{:else}
+		<button class="link quiet" type="button" onclick={() => (showNotes = true)}>{T('Write a few keywords', 'چند کلمهٔ کلیدی بنویس')}</button>
+	{/if}
+{/snippet}
+
+<section class="sc">
+	<h2 class="sr-only" tabindex="-1" bind:this={heading}>{stage === 'talk' && paused ? T('Paused', 'مکث') : T('Speaking card', 'کارت صحبت')}</h2>
+	<p class="sr-only" role="status" aria-live="polite">{announce}</p>
+
+	{#if stage === 'card'}
+		{#if record.prepStartedAt === null}
+			<div class="brief"><span class="avatar" aria-hidden="true">M</span><p>{fullIntro ? (isFa ? INSTRUCTION.fa : INSTRUCTION.en) : (isFa ? NEXT_LINE.fa : NEXT_LINE.en)}</p></div>
+		{/if}
+		{#if reloadNote}<p class="note">{T('The recording stopped when the page reloaded.', 'وقتی صفحه دوباره باز شد، ضبط متوقف شد.')}</p>{/if}
+		{#if prepLeft !== null}
+			<div class="prep" role="timer" aria-label={prepLeft > 0 ? T(`${prepLeft} seconds to prepare`, `${prepLeft} ثانیه برای آماده شدن`) : T('Time’s up', 'وقت تمام شد')}>
+				<span class="ring" style:--p={`${((PREP_SECONDS - prepLeft) / PREP_SECONDS) * 360}deg`} aria-hidden="true"></span>
+				<span>{prepLeft > 0 ? T(`Prepare · ${clock(prepLeft)}`, `آماده شو · ${clock(prepLeft)}`) : T('Time’s up', 'وقت تمام شد')}</span>
+			</div>
+		{/if}
+		{@render theCard(false)}
+		{#if prepLeft !== null}{@render notesBox()}{/if}
+		<p class="hint">{T('You can talk for up to 2 minutes.', 'می‌توانی تا ۲ دقیقه صحبت کنی.')}</p>
+		{#if prepLeft === null}
+			<button class="link quiet" type="button" onclick={anotherCard}>{T('Another card', 'کارت دیگر')}</button>
+			{@render bottom(T('Start preparing', 'شروع آماده شدن'), startPreparing)}
+		{:else}
+			{@render bottom(T('Start talking', 'شروع صحبت'), startTalking)}
+		{/if}
+
+	{:else if stage === 'ready2'}
+		{#if reloadNote}<p class="note">{T('The recording stopped when the page reloaded.', 'وقتی صفحه دوباره باز شد، ضبط متوقف شد.')}</p>{/if}
+		{@render theCard(true)}
+		{#if phrase}<ul class="chips" lang="en" dir="ltr"><li>{phrase.text}</li></ul>{/if}
+		<p class="lead">{T('You already know this topic. Start when you’re ready.', 'این موضوع را دیگر می‌شناسی. هر وقت آماده بودی شروع کن.')}</p>
+		{#if record.prepStartedAt !== null && prepLeft !== null && prepLeft > 0}<p class="hint">{T(`Prepare · ${clock(prepLeft)}`, `آماده شو · ${clock(prepLeft)}`)}</p>
+		{:else}<button class="link quiet" type="button" onclick={startPreparing}>{T('Take a minute to prepare', 'یک دقیقه آماده شو')}</button>{/if}
+		{@render bottom(T('Start talking', 'شروع صحبت'), startTalking)}
+
+	{:else if stage === 'talk'}
+		{@render theCard(attempt === 2)}
+		{#if record.notes}<p class="mynotes"><span class="who">{T('Your keywords', 'کلمه‌های کلیدی تو')}</span> {record.notes}</p>{/if}
+		{#if attempt === 2 && phrase}<ul class="chips" lang="en" dir="ltr"><li>{phrase.text}</li></ul>{/if}
+		{#if paused}
+			<p class="lead">{T('You’ve still got time. Is there a point you haven’t talked about yet?', 'هنوز وقت داری. نکته‌ای هست که هنوز درباره‌اش حرف نزده باشی؟')}</p>
+			<button class="link quiet" type="button" onclick={done}>{T('I’m done', 'تمام شد')}</button>
+			{@render bottom(T('Keep going', 'ادامه بده'), keepGoing)}
+		{:else}
+			{#if stuck}<p class="hint">{T('Stuck? Try the next point.', 'گیر کردی؟ نکتهٔ بعدی را امتحان کن.')}</p>{/if}
+			{#if remaining <= 15}<p class="hint">{T('Finish your sentence…', 'جمله‌ات را تمام کن…')}</p>{/if}
+			<div class="bar"><div class="talkbar">
+				<span class="clock" aria-hidden="true"><span class="dot"></span>{clock(elapsed)}{#if elapsed >= TALK_TARGET_SECONDS}<small> · {T('1 minute ✓', '۱ دقیقه ✓')}</small>{/if}</span>
+				<button class="primary stop" type="button" bind:this={stopButton} onclick={stopTalking}>{T('Stop', 'پایان')}</button>
+			</div></div>
+		{/if}
+
+	{:else if stage === 'short'}
+		<p class="lead">{T('That was too short for me to give you feedback. Try again, and aim for about a minute.', 'برای بازخورد خیلی کوتاه بود. دوباره امتحان کن و سعی کن حدود یک دقیقه صحبت کنی.')}</p>
+		{@render bottom(T('Try again', 'دوباره امتحان کن'), backToReady)}
+
+	{:else if stage === 'quiet'}
+		<p class="lead">{T('I could hardly hear you talking. Check your microphone, then try again.', 'صدای صحبتت را به‌سختی شنیدم. میکروفونت را بررسی کن و دوباره امتحان کن.')}</p>
+		{@render bottom(T('Try again', 'دوباره امتحان کن'), backToReady)}
+
+	{:else if stage === 'interrupted'}
+		<p class="lead">{T('The recording stopped (you left the page, or the microphone went off).', 'ضبط متوقف شد (از صفحه بیرون رفتی یا میکروفون قطع شد).')}</p>
+		{#if elapsed >= TALK_MIN_SECONDS}<button class="link" type="button" onclick={() => send()}>{T('Send what you have', 'همین را بفرست')}</button>{/if}
+		{@render bottom(T('Record again', 'دوباره ضبط کن'), backToReady)}
+
+	{:else if stage === 'denied'}
+		<p class="lead">{T('Mira can’t hear you: the microphone is blocked. Allow it in your browser’s site settings, then try again.', 'میرا صدایت را نمی‌شنود: میکروفون بسته است. در تنظیمات سایتِ مرورگر اجازه‌اش را بده و دوباره امتحان کن.')}</p>
+		{@render bottom(T('Try again', 'دوباره امتحان کن'), backToReady)}
+
+	{:else if stage === 'offtopic' || stage === 'notenglish'}
+		<p class="lead">{stage === 'offtopic' ? T('That seemed to be about something else. Have another look at the card and try again.', 'به نظر درباره‌ی چیز دیگری بود. دوباره به کارت نگاه کن و امتحان کن.') : T('I couldn’t hear much English there. Try again in English. Persian names are fine.', 'انگلیسی زیادی نشنیدم. دوباره به انگلیسی امتحان کن. اسم‌های فارسی اشکالی ندارد.')}</p>
+		{@render bottom(T('Try again', 'دوباره امتحان کن'), backToReady)}
+
+	{:else if stage === 'processing'}
+		<div class="center"><div class="dots" aria-hidden="true"><span></span><span></span><span></span></div>
+			<p class="hint" role="status">{note === 'listening' ? T('Mira is listening…', 'میرا دارد گوش می‌دهد…') : T('Mira is looking at what you covered…', 'میرا دارد نگاه می‌کند چه چیزهایی را گفتی…')}</p></div>
+
+	{:else if stage === 'failed'}
+		<p class="lead">{failedAt === 'transcribe' ? T('I couldn’t hear that clearly. Check your connection and try again.', 'نتوانستم واضح بشنوم. اینترنت را بررسی کن و دوباره امتحان کن.') : T('I couldn’t check that one.', 'نتوانستم آن را بررسی کنم.')}</p>
+		<button class="link quiet" type="button" onclick={finish}>{T('Finish', 'تمام')}</button>
+		{@render bottom(T('Try again', 'دوباره امتحان کن'), retry)}
+
+	{:else if stage === 'covered' && record.coverage1 && record.talk1}
+		<p class="label">{T('What you covered', 'چه چیزهایی را گفتی')}</p>
+		<ul class="covered">
+			{#each card.points as point, i}
+				{@const p = record.coverage1.points[i]}
+				<li class:ok={p.covered}>
+					<span class="point" lang="en" dir="ltr">{#if p.covered}<span aria-hidden="true">✓ </span><span class="sr-only">{T('covered:', 'گفتی:')} </span>{/if}{point.en}</span>
+					{#if p.covered}<span class="quote">{T('You said:', 'گفتی:')} <bdi lang="en" dir="ltr">“{p.quote}”</bdi></span>
+					{:else}<span class="quote">{T('You didn’t talk about this.', 'درباره‌ی این حرف نزدی.')}</span>{/if}
+					{#if p.unclear}<span class="quote">{T('I wasn’t sure what you meant by', 'مطمئن نبودم منظورت از این چه بود:')} <bdi lang="en" dir="ltr">“{p.unclear}”</bdi></span>{/if}
+				</li>
+			{/each}
+		</ul>
+		<p class="count">{record.talk1.seconds >= TALK_TARGET_SECONDS ? T(`You spoke for ${clock(record.talk1.seconds)}.`, `${clock(record.talk1.seconds)} صحبت کردی.`) : T(`You spoke for ${clock(record.talk1.seconds)}. Next time, try to keep going past a minute.`, `${clock(record.talk1.seconds)} صحبت کردی. دفعهٔ بعد سعی کن بیشتر از یک دقیقه ادامه بدهی.`)}</p>
+		<p class="hint">{T('I checked what you talked about, not your grammar. For grammar, try “Say it again, better”.', 'بررسی کردم درباره‌ی چه حرف زدی، نه دستور زبانت را. برای دستور زبان «دوباره بگو، بهتر» را امتحان کن.')}</p>
+		{@render bottom(T('Next', 'بعدی'), () => go('follow'))}
+
+	{:else if stage === 'follow' && record.feedback}
+		<p class="label">{T('Making it easier to follow', 'راحت‌تر کردنِ دنبال کردن')}</p>
+		{#if record.feedback.organisation}<p class="org">{isFa ? record.feedback.organisation.fa : record.feedback.organisation.en}</p>{/if}
+		{#if phrase}
+			<p class="label">{T('Try this next time', 'دفعهٔ بعد این را امتحان کن')}</p>
+			<p class="now" lang="en" dir="ltr">{phrase.text}</p>
+			<button class="hear" type="button" onclick={() => hear(say1(phrase.text))} aria-label={T('Hear it', 'بشنو')}><span aria-hidden="true">{playing ? '■' : '▶'}</span></button>
+			<p class="why">{isFa ? record.feedback.why.fa : record.feedback.why.en}</p>
+		{/if}
+		{@render bottom(T('Talk again', 'دوباره صحبت کن'), () => { record = { ...record, prepStartedAt: null }; persist(); go('ready2'); })}
+
+	{:else if stage === 'result' && record.coverage2 && length}
+		<p class="label">{T('Before and after', 'قبل و بعد')}</p>
+		<ul class="changes">
+			<li><span>{T('Points', 'نکته‌ها')}</span> <bdi lang="en" dir="ltr">{before} of 4 → {after} of 4</bdi>{#if after === 4}<span aria-hidden="true"> ✓</span>{/if}</li>
+			<li><span>{T('Length', 'مدت')}</span> <bdi lang="en" dir="ltr">{length.text}</bdi>{#if length.ok}<small> ✓ {length.over ? T('over a minute', 'بیش از یک دقیقه') : T('longer', 'طولانی‌تر')}</small>{/if}</li>
+			{#if phrase}<li class:ok={phraseUsed}>{#if phraseUsed}<span aria-hidden="true">✓ </span><bdi lang="en" dir="ltr">{phrase.text}</bdi>{:else}{T('Next time try:', 'دفعهٔ بعد امتحان کن:')} <bdi lang="en" dir="ltr">{phrase.text}</bdi>{/if}</li>{/if}
+		</ul>
+		{#if after < before}<p class="note">{T('This one covered less. That happens: the card is still here if you want another go.', 'این بار نکته‌های کمتری گفتی. پیش می‌آید؛ کارت هنوز اینجاست اگر بخواهی دوباره امتحان کنی.')}</p>{/if}
+		{#if urls[1] && urls[2]}
+			<div class="tries">
+				{#each TALKS as which}
+					<button class="try" type="button" class:on={playingTalk === which} aria-pressed={playingTalk === which} onclick={() => playTalk(which)}>
+						<span aria-hidden="true">{playingTalk === which ? '■' : '▶'}</span>
+						{which === 1 ? T('First talk', 'صحبت اول') : T('Second talk', 'صحبت دوم')}
+						<span class="dur">{clock(which === 1 ? record.talk1!.seconds : record.talk2!.seconds)}</span>
+					</button>
+				{/each}
+			</div>
+		{:else}<p class="hint">{T('Recordings are kept only while this page is open.', 'صداها فقط تا وقتی این صفحه باز است نگه داشته می‌شوند.')}</p>{/if}
+		<p class="hint">{T('This time I only checked the points, the length and your phrase, not your grammar.', 'این بار فقط نکته‌ها، مدت و عبارتت را بررسی کردم، نه دستور زبانت را.')}</p>
+		<button class="link quiet" type="button" onclick={finish}>{T('Finish', 'تمام')}</button>
+		{@render bottom(T('Next card', 'کارت بعدی'), anotherCard)}
+	{/if}
+</section>
+
+<style>
+	.sc { display: grid; gap: 12px; padding-bottom: 104px; }
+	.brief { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start; padding: 14px; border-radius: 16px; background: var(--paper-raised); border: 1px solid var(--line); }
+	.brief p { margin: 0; line-height: 1.55; }
+	.avatar { display: grid; place-items: center; inline-size: 38px; block-size: 38px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-family: var(--font-display); font-weight: 700; }
+	.card { display: grid; gap: 6px; padding: 16px; border-radius: 16px; background: var(--paper-raised); border: 1.5px solid var(--accent); }
+	.title { margin: 0; font-family: var(--font-display); font-size: clamp(1.3rem, 5.6vw, 1.6rem); line-height: 1.3; text-align: left; }
+	.title-fa { margin: 0; color: var(--ink-soft); }
+	.should { margin: 4px 0 0; font-size: .85rem; color: var(--ink-soft); text-align: left; }
+	.points { margin: 0; padding-inline-start: 20px; display: grid; gap: 4px; line-height: 1.45; text-align: left; }
+	.points li.explain { font-weight: 600; }
+	.points li.missed { color: var(--accent-deep); }
+	.points small { display: block; color: var(--ink-soft); }
+	.flag { display: block; font-size: .8rem; font-weight: 700; color: var(--attention); }
+	.prep { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--accent-deep); font-variant-numeric: tabular-nums; }
+	.ring { --p: 0deg; inline-size: 26px; block-size: 26px; border-radius: 50%; background: conic-gradient(var(--accent) var(--p), var(--paper-sunken) 0); }
+	.notes { inline-size: 100%; min-height: 46px; padding: 10px 14px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--paper-raised); color: var(--ink); font: inherit; }
+	.mynotes { margin: 0; padding: 8px 12px; border-radius: 10px; background: var(--paper-sunken); line-height: 1.5; }
+	.who { display: block; font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--accent-deep); }
+	.lead { margin: 0; font-size: 1.08rem; line-height: 1.55; }
+	.label { margin: 0; font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-deep); }
+	:global([dir='rtl']) .label, :global([dir='rtl']) .who { letter-spacing: normal; }
+	.covered, .changes { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+	.covered li, .changes li { display: grid; gap: 4px; padding: 12px 14px; border-radius: 12px; background: var(--paper-raised); border: 1px solid var(--line); line-height: 1.45; }
+	.covered li.ok, .changes li.ok { border-color: var(--leaf); background: var(--leaf-wash); }
+	.changes li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 12px; }
+	.changes li > span:first-child { font-weight: 600; }
+	.point { font-weight: 600; text-align: left; }
+	.quote { color: var(--ink-soft); }
+	.count { margin: 0; font-weight: 600; }
+	.org { margin: 0; font-size: 1.05rem; line-height: 1.55; }
+	.now { margin: 0; font-family: var(--font-display); font-size: clamp(1.4rem, 6vw, 1.8rem); color: var(--accent-deep); text-align: left; }
+	.why { margin: 0; color: var(--ink-soft); line-height: 1.6; }
+	.chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+	.chips li { padding: 8px 14px; border-radius: 999px; background: var(--accent-wash); color: var(--accent-deep); font-weight: 600; }
+	.note { margin: 0; line-height: 1.5; }
+	.tries { display: grid; gap: 10px; }
+	.try { display: flex; align-items: center; gap: 12px; inline-size: 100%; min-height: 56px; padding: 10px 16px; border: 1.5px solid var(--accent); border-radius: 14px; background: var(--paper-raised); color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; }
+	.try.on { background: var(--accent-wash); }
+	.dur { margin-inline-start: auto; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+	.center { display: grid; justify-items: center; gap: 12px; margin-top: 18px; text-align: center; }
+	.hint { margin: 0; color: var(--ink-soft); line-height: 1.5; }
+	.hear { justify-self: start; display: grid; place-items: center; inline-size: 48px; block-size: 48px; border: 1.5px solid var(--accent); border-radius: 50%; background: var(--paper-raised); color: var(--accent-deep); cursor: pointer; }
+	.link { justify-self: start; min-height: 44px; padding: 8px 0; background: none; border: 0; color: var(--accent-deep); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+	.link.quiet { color: var(--ink-soft); }
+	.bar { position: fixed; inset-inline: 0; inset-block-end: 0; z-index: 20; padding: 12px 20px calc(14px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--paper) 35%); }
+	.talkbar { display: flex; align-items: center; gap: 14px; max-inline-size: 680px; margin-inline: auto; }
+	.clock { display: flex; align-items: center; gap: 8px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+	.clock small { font-weight: 600; color: var(--leaf); }
+	.dot { inline-size: 12px; block-size: 12px; border-radius: 50%; background: var(--attention); animation: pulse 1.2s infinite ease-in-out; }
+	@keyframes pulse { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+	.primary { display: flex; align-items: center; justify-content: center; gap: 10px; inline-size: 100%; max-inline-size: 680px; margin-inline: auto; min-height: 54px; border: 0; border-radius: 14px; background: var(--accent); color: var(--on-accent); font: inherit; font-size: 1.05rem; font-weight: 600; cursor: pointer; }
+	.primary.stop { flex: 1; background: var(--attention); }
+	.primary:disabled { opacity: .5; cursor: default; }
+	.dots { display: inline-flex; gap: 6px; }
+	.dots span { inline-size: 10px; block-size: 10px; border-radius: 50%; background: var(--ink-soft); animation: blink 1.2s infinite ease-in-out; }
+	.dots span:nth-child(2) { animation-delay: .2s; }
+	.dots span:nth-child(3) { animation-delay: .4s; }
+	@keyframes blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+	.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+	h2:focus { outline: none; }
+	button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+	@media (prefers-reduced-motion: reduce) { .dot, .dots span { animation: none; } }
+</style>
