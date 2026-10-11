@@ -167,3 +167,19 @@ The owner's design rule applies: one focused thing per screen, one primary butto
 - An honest line for a weaker second talk.
 - Reload rules.
 - Words per minute is not shown.
+
+## Owner change after building: one talk only
+
+There is no second talk, so nothing is recorded or judged twice. Screens 5 and 6 are replaced by:
+
+**5. Your talk, said better.**
+- Their own talk: the same ideas, in the card's order, easy to follow, in correct, natural English at B1.
+- For each point they missed, one short example sentence, highlighted ("what you could add").
+- ▶ Mira reads it.
+- Bottom: "Next card". Quiet: "Finish".
+
+How it's made and checked:
+- It comes from the same feedback call (no extra AI call).
+- The server checks it uses the learner's own ideas: outside the highlighted parts, at least 60% of its content words must come from the talk. It must also be English and not much longer than the talk.
+- If it fails twice, the screen is left out.
+- One run is now one transcription, one coverage call and one feedback call: about 1.5–2 cents.
