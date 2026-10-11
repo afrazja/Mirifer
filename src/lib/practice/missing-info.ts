@@ -13,6 +13,10 @@ export const QUESTION_MAX_SECONDS = 15, QUESTION_MIN_SECONDS = 1;
 
 export type GapId = 'train' | 'price' | 'back' | 'platform';
 export const GAP_IDS: GapId[] = ['train', 'price', 'back', 'platform'];
+/** The order the card shows them, one at a time (the twist comes last). */
+export const GAP_ORDER: GapId[] = ['train', 'platform', 'price', 'back'];
+/** The thing the learner is working on now: the first one neither found nor skipped. */
+export const currentGap = (found: Partial<Record<GapId, string>>, skipped: GapId[]) => GAP_ORDER.find(g => !found[g] && !skipped.includes(g)) ?? null;
 export const GAPS: Record<GapId, { short: DisplayText; full: DisplayText; answer: string }> = {
 	train: { short: { en: 'Train before 10 am', fa: 'قطار قبل از ۱۰ صبح' }, full: { en: 'A train that gets you to Kingsley before 10 am', fa: 'قطاری که قبل از ساعت ۱۰ صبح به کینگزلی برسد' }, answer: '8:40 → 9:55' },
 	price: { short: { en: 'Price for 3 of you', fa: 'قیمت برای سه نفرتان' }, full: { en: 'The total price for the three of you (a return each; your parents are over 60)', fa: 'قیمت کل برای شما سه نفر (برای هر نفر بلیت رفت‌وبرگشت؛ پدر و مادرت بالای ۶۰ سال‌اند)' }, answer: '£56' },
@@ -211,16 +215,18 @@ export interface MIRecord {
 	/** What they said when asking each fix again, and whether it used the fix. */
 	reasks: (string | null)[];
 	uses: FixUse[];
+	/** Things the learner chose to skip at the desk. */
+	skipped: GapId[];
 	done: boolean;
 }
-export const emptyMIRecord = (): MIRecord => ({ step: 'task', turns: [], feedback: null, fixIndex: 0, reasks: [], uses: [], done: false });
+export const emptyMIRecord = (): MIRecord => ({ step: 'task', turns: [], feedback: null, fixIndex: 0, reasks: [], uses: [], skipped: [], done: false });
 export function asMIRecord(value: unknown): MIRecord | null {
 	const r = value as MIRecord | null;
 	if (!r || typeof r !== 'object' || typeof r.done !== 'boolean' || !Array.isArray(r.turns) || !Array.isArray(r.uses) || !Array.isArray(r.reasks)) return null;
 	if (!['task', 'desk', 'end', 'fix', 'reask', 'result'].includes(r.step)) return null;
 	if (!r.turns.every(t => t && (t.who === 'you' || t.who === 'tom') && typeof t.text === 'string' && (t.who === 'you' || Array.isArray(t.found)))) return null;
 	if (r.feedback !== null && (typeof r.feedback !== 'object' || !Array.isArray(r.feedback.mistakes) || !Array.isArray(r.feedback.fixes))) return null;
-	return { ...r, fixIndex: Number.isInteger(r.fixIndex) ? r.fixIndex : 0 };
+	return { ...r, fixIndex: Number.isInteger(r.fixIndex) ? r.fixIndex : 0, skipped: Array.isArray(r.skipped) ? r.skipped.filter(g => GAP_IDS.includes(g)) : [] };
 }
 /** The learner's questions, numbered from 1, as the feedback sees them. */
 export const questionsOf = (turns: Turn[]) => turns.filter((t): t is Extract<Turn, { who: 'you' }> => t.who === 'you' && t.kind === 'question');

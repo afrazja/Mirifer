@@ -170,3 +170,13 @@ As in "Say it again, better": a repeated mistake ranks higher, the two fixes are
 - Persian-speaker examples are in the prompt.
 - A correct "more natural" example.
 - Count lines that match the number of fixes, and three versions of the twist line.
+
+## Owner change after testing: one thing at a time
+
+The four things are no longer shown together.
+- The first screen has Mira's instruction only: "…I'll give you four things to find out, one at a time."
+- At the desk, one thing shows at a time, with "1 of 4" above it. The order is: train, platform, price, then the way back (the twist comes last).
+- When it's found, the box turns green with the answer, and the bottom button is "Next: Platform". After Next, the previous exchange is cleared, so each thing starts on its own.
+- If Tom happens to give a later thing early, it counts, and that thing is skipped when its turn comes.
+- When the hint shows (two ask-backs in a row, or four questions with nothing new), a quiet "Skip this one" moves on. A skipped thing shows as "Not found", with its answer, at the end.
+- The end screen still shows all four.
