@@ -2,17 +2,16 @@
 	/**
 	 * "Speaking card" (docs/english-speaking-card-spec.md, owner-approved v2).
 	 * Card and preparing (one layout) → talk (up to 2:00) → what you covered → making it easier to
-	 * follow (one phrase) → talk again → before and after. Long-turn skills only, never grammar.
-	 * The run is kept in this browser; recordings only in memory, for playback, until the page closes.
+	 * follow (one phrase) → your talk, said better. One talk, so nothing is judged twice. Long-turn
+	 * skills only, never grammar. The run is kept in this browser; the recording is never stored.
 	 */
 	import { onDestroy, onMount } from 'svelte';
 	import { playAudioPromise, stopAllAudio, ttsIsPlaying } from '$services/tts';
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
-	import { normalise } from '$lib/practice/say-better';
 	import { SILENT_BELOW, measureLevel, type MicLevel } from '$utils/mic-level';
 	import {
 		CARDS, MIN_VOICED_SECONDS, PAUSE_FROM, PAUSE_UNTIL, PREP_SECONDS, STUCK_AFTER_SECONDS, TALK_MAX_SECONDS, TALK_MIN_SECONDS, TALK_TARGET_SECONDS,
-		cardById, clock, coveredCount, emptyCardRecord, lengthChange, phraseById,
+		cardById, clock, emptyCardRecord, phraseById,
 		type CardFeedback, type CardRecord, type CardStep, type Coverage, type Talk
 	} from '$lib/practice/speaking-card';
 
@@ -39,26 +38,20 @@
 	let now = $state(Date.now()), toneDone = $state(false);
 	let elapsed = $state(0), paused = $state(false), askedToContinue = $state(false), stuck = $state(false);
 	let announce = $state(''), note = $state<'listening' | 'thinking'>('listening'), failedAt = $state<'transcribe' | 'coverage' | 'feedback'>('transcribe');
-	let urls = $state<{ 1: string | null; 2: string | null }>({ 1: null, 2: null });
-	let playingTalk = $state<1 | 2 | null>(null);
 	let recorder: MediaRecorder | null = null, stream: MediaStream | null = null, chunks: Blob[] = [], blob: Blob | null = null;
-	let level: MicLevel | null = null, audio: AudioContext | null = null, player: HTMLAudioElement | null = null;
+	let level: MicLevel | null = null, audio: AudioContext | null = null;
 	let ranFor = 0, segmentStart = 0, timer: ReturnType<typeof setInterval> | undefined, clockTimer: ReturnType<typeof setInterval> | undefined;
 	let interrupted = false, cutOff = false, said1min = false, said15 = false;
 	let heading: HTMLElement | undefined = $state(), stopButton: HTMLButtonElement | undefined = $state();
 	const playing = $derived($ttsIsPlaying);
 	const T = (en: string, fa: string) => (isFa ? fa : en);
 	const card = $derived(cardById(record.card) ?? CARDS[0]);
-	const attempt = $derived<1 | 2>(record.feedback ? 2 : 1);
 	const prepLeft = $derived(record.prepStartedAt === null ? null : Math.max(0, PREP_SECONDS - Math.floor((now - record.prepStartedAt) / 1000)));
 	const phrase = $derived(record.feedback ? phraseById(record.feedback.phrase) : null);
-	const missed = $derived(record.coverage1?.points.map(p => !p.covered) ?? [false, false, false, false]);
 
 	onMount(() => {
 		// A reload returns to the step it left. A finished AI call is never repeated; an unfinished one runs again.
-		if (record.talk2 && record.coverage2) stage = 'result';
-		else if (record.talk2) void judgeSecond();
-		else if (record.feedback) stage = record.step === 'covered' || record.step === 'follow' ? record.step : 'ready2';
+		if (record.feedback) stage = record.step === 'card' ? 'better' : record.step;
 		else if (record.talk1 && record.coverage1) void getFeedback();
 		else if (record.talk1) void judgeFirst();
 		else if (first) say(INSTRUCTION.en);
@@ -74,23 +67,21 @@
 		clearInterval(timer); clearInterval(clockTimer); level?.stop();
 		if (recorder && recorder.state !== 'inactive') recorder.stop();
 		stream?.getTracks().forEach(t => t.stop());
-		player?.pause(); void audio?.close().catch(() => {});
-		for (const url of [urls[1], urls[2]]) if (url) URL.revokeObjectURL(url);
+		void audio?.close().catch(() => {});
 	});
 
 	function persist() { onSave?.($state.snapshot(record)); }
-	const STEPS: CardStep[] = ['card', 'covered', 'follow', 'ready2', 'result'];
+	const STEPS: CardStep[] = ['card', 'covered', 'follow', 'better'];
 	function go(next: Stage) {
 		stage = next;
 		if ((STEPS as string[]).includes(next) && record.step !== next) { record = { ...record, step: next as CardStep }; persist(); }
 		queueMicrotask(() => heading?.focus());
 	}
-	function say(line: string) { stopTalkPlayback(); stopAllAudio(); void playAudioPromise(line.replace(/[’…]/g, m => (m === '’' ? "'" : '')), COACH_RATE, 'en-US', undefined, COACH_VOICE); }
+	function say(line: string) { stopAllAudio(); void playAudioPromise(line.replace(/[’…]/g, m => (m === '’' ? "'" : '')), COACH_RATE, 'en-US', undefined, COACH_VOICE); }
 	function hear(line: string) { if (playing) stopAllAudio(); else say(line); }
 	function onHidden() {
 		if (!document.hidden) return;
 		if (recorder && recorder.state !== 'inactive') { interrupted = true; recorder.stop(); }
-		stopTalkPlayback();
 	}
 	/** A soft tone when the minute is up (audio was unlocked by the "Start preparing" tap; never while recording). */
 	function beep() {
@@ -114,8 +105,6 @@
 	}
 	function anotherCard() {
 		stopAllAudio();
-		for (const url of [urls[1], urls[2]]) if (url) URL.revokeObjectURL(url);
-		urls = { 1: null, 2: null };
 		const next = (record.card % CARDS.length) + 1;
 		record = emptyCardRecord(next); persist();
 		fullIntro = false; showNotes = false; reloadNote = false; toneDone = false;
@@ -125,7 +114,7 @@
 
 	// 2. Talk
 	async function startTalking() {
-		stopAllAudio(); stopTalkPlayback(); reloadNote = false;
+		stopAllAudio(); reloadNote = false;
 		if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') { go('denied'); return; }
 		try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch { go('denied'); return; }
 		const mimeType = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm', 'audio/ogg;codecs=opus'].find(type => MediaRecorder.isTypeSupported(type));
@@ -188,7 +177,7 @@
 		if (peak < SILENT_BELOW || voiced < MIN_VOICED_SECONDS) { go('quiet'); return; }
 		void send(seconds);
 	}
-	function backToReady() { blob = null; go(attempt === 1 ? 'card' : 'ready2'); }
+	function backToReady() { blob = null; go('card'); }
 
 	async function send(seconds = elapsed) {
 		if (!blob) return;
@@ -202,13 +191,10 @@
 			text = typeof data?.transcript === 'string' && data.transcript.trim() ? data.transcript.trim() : null;
 		} catch { text = null; }
 		if (text === null) { failedAt = 'transcribe'; go('failed'); return; }
-		const url = URL.createObjectURL(blob);
-		if (urls[attempt]) URL.revokeObjectURL(urls[attempt]!);
-		urls = { ...urls, [attempt]: url };
 		blob = null;
 		const talk: Talk = { text, seconds, cutOff };
-		if (attempt === 1) { record = { ...record, talk1: talk, coverage1: null, feedback: null }; persist(); await judgeFirst(); }
-		else { record = { ...record, talk2: talk, coverage2: null }; persist(); await judgeSecond(); }
+		record = { ...record, talk1: talk, coverage1: null, feedback: null }; persist();
+		await judgeFirst();
 	}
 
 	async function post<R>(body: object, wait = 30_000): Promise<R | null> {
@@ -243,60 +229,34 @@
 		record = { ...record, feedback: result }; persist();
 		go('covered');
 	}
-	async function judgeSecond() {
-		if (!record.talk1 || !record.talk2) return;
-		go('processing'); note = 'thinking';
-		// Both talks are judged again together, so before and after compare like with like.
-		const result = await post<{ talks: Coverage[] }>({ kind: 'coverage', card: record.card, talks: [talkInput(record.talk1), talkInput(record.talk2)] });
-		if (!result?.talks || result.talks.length !== 2) { failedAt = 'coverage'; go('failed'); return; }
-		record = { ...record, coverage2: { first: result.talks[0], second: result.talks[1] } }; persist();
-		go('result');
-	}
 	function retry() {
 		if (failedAt === 'transcribe') void send();
 		else if (failedAt === 'feedback') void getFeedback();
-		else if (record.talk2) void judgeSecond();
 		else void judgeFirst();
 	}
-	function finish() { stopAllAudio(); stopTalkPlayback(); record = { ...record, done: true }; persist(); onDone(); }
+	function finish() { stopAllAudio(); record = { ...record, done: true }; persist(); onDone(); }
 
-	// Before and after: one recording at a time, never over Mira.
-	function playTalk(which: 1 | 2) {
-		const url = urls[which];
-		if (!url) return;
-		if (playingTalk === which) { stopTalkPlayback(); return; }
-		stopTalkPlayback(); stopAllAudio();
-		player = new Audio(url);
-		player.onended = () => (playingTalk = null);
-		playingTalk = which;
-		void player.play().catch(() => (playingTalk = null));
-	}
-	function stopTalkPlayback() { player?.pause(); player = null; playingTalk = null; }
-
-	const TALKS = [1, 2] as const;
-	const phraseUsed = $derived(!!(phrase && record.talk2 && phrase.found(normalise(record.talk2.text))));
-	const before = $derived(record.coverage2 ? coveredCount(record.coverage2.first) : 0);
-	const after = $derived(record.coverage2 ? coveredCount(record.coverage2.second) : 0);
-	const length = $derived(record.talk1 && record.talk2 ? lengthChange(record.talk1.seconds, record.talk2.seconds) : null);
 	const remaining = $derived(Math.max(0, TALK_MAX_SECONDS - elapsed));
 	const say1 = (text: string) => text.replace(/…$/, '');
+	/** The better version split into their own words and the [suggested] parts for points they missed. */
+	const betterParts = $derived((record.feedback?.better ?? '').split(/(\[[^\]]*\])/).filter(Boolean).map(part => (part.startsWith('[') ? { text: part.slice(1, -1), added: true } : { text: part, added: false })));
+	const betterSpoken = $derived(betterParts.map(p => p.text).join(''));
 </script>
 
 {#snippet bottom(label: string, action: () => void, disabled = false)}
 	<div class="bar"><button class="primary" type="button" onclick={action} {disabled}>{label}</button></div>
 {/snippet}
 
-{#snippet theCard(marks: boolean)}
+{#snippet theCard()}
 	<div class="card">
 		<p class="title" lang="en" dir="ltr">{card.title.en}</p>
 		{#if isFa}<p class="title-fa">{card.title.fa}</p>{/if}
 		<p class="should" lang="en" dir="ltr">You should say:</p>
 		<ul class="points" lang="en" dir="ltr">
 			{#each card.points as point, i}
-				<li class:explain={i === 3} class:missed={marks && missed[i]}>
+				<li class:explain={i === 3}>
 					{point.en}
 					{#if showFa}<small lang="fa" dir="rtl">{point.fa}</small>{/if}
-					{#if marks && missed[i]}<span class="flag" dir={isFa ? 'rtl' : 'ltr'}>{T('Don’t forget this one', 'این یکی یادت نرود')}</span>{/if}
 				</li>
 			{/each}
 		</ul>
@@ -329,7 +289,7 @@
 				<span>{prepLeft > 0 ? T(`Prepare · ${clock(prepLeft)}`, `آماده شو · ${clock(prepLeft)}`) : T('Time’s up', 'وقت تمام شد')}</span>
 			</div>
 		{/if}
-		{@render theCard(false)}
+		{@render theCard()}
 		{#if prepLeft !== null}{@render notesBox()}{/if}
 		<p class="hint">{T('You can talk for up to 2 minutes.', 'می‌توانی تا ۲ دقیقه صحبت کنی.')}</p>
 		{#if prepLeft === null}
@@ -339,19 +299,9 @@
 			{@render bottom(T('Start talking', 'شروع صحبت'), startTalking)}
 		{/if}
 
-	{:else if stage === 'ready2'}
-		{#if reloadNote}<p class="note">{T('The recording stopped when the page reloaded.', 'وقتی صفحه دوباره باز شد، ضبط متوقف شد.')}</p>{/if}
-		{@render theCard(true)}
-		{#if phrase}<ul class="chips" lang="en" dir="ltr"><li>{phrase.text}</li></ul>{/if}
-		<p class="lead">{T('You already know this topic. Start when you’re ready.', 'این موضوع را دیگر می‌شناسی. هر وقت آماده بودی شروع کن.')}</p>
-		{#if record.prepStartedAt !== null && prepLeft !== null && prepLeft > 0}<p class="hint">{T(`Prepare · ${clock(prepLeft)}`, `آماده شو · ${clock(prepLeft)}`)}</p>
-		{:else}<button class="link quiet" type="button" onclick={startPreparing}>{T('Take a minute to prepare', 'یک دقیقه آماده شو')}</button>{/if}
-		{@render bottom(T('Start talking', 'شروع صحبت'), startTalking)}
-
 	{:else if stage === 'talk'}
-		{@render theCard(attempt === 2)}
+		{@render theCard()}
 		{#if record.notes}<p class="mynotes"><span class="who">{T('Your keywords', 'کلمه‌های کلیدی تو')}</span> {record.notes}</p>{/if}
-		{#if attempt === 2 && phrase}<ul class="chips" lang="en" dir="ltr"><li>{phrase.text}</li></ul>{/if}
 		{#if paused}
 			<p class="lead">{T('You’ve still got time. Is there a point you haven’t talked about yet?', 'هنوز وقت داری. نکته‌ای هست که هنوز درباره‌اش حرف نزده باشی؟')}</p>
 			<button class="link quiet" type="button" onclick={done}>{T('I’m done', 'تمام شد')}</button>
@@ -421,28 +371,17 @@
 			<button class="hear" type="button" onclick={() => hear(say1(phrase.text))} aria-label={T('Hear it', 'بشنو')}><span aria-hidden="true">{playing ? '■' : '▶'}</span></button>
 			<p class="why">{isFa ? record.feedback.why.fa : record.feedback.why.en}</p>
 		{/if}
-		{@render bottom(T('Talk again', 'دوباره صحبت کن'), () => { record = { ...record, prepStartedAt: null }; persist(); go('ready2'); })}
+		{#if record.feedback.better}{@render bottom(T('See your talk, said better', 'دیدن صحبتت، بهتر گفته‌شده'), () => go('better'))}
+		{:else}
+			<button class="link quiet" type="button" onclick={finish}>{T('Finish', 'تمام')}</button>
+			{@render bottom(T('Next card', 'کارت بعدی'), anotherCard)}
+		{/if}
 
-	{:else if stage === 'result' && record.coverage2 && length}
-		<p class="label">{T('Before and after', 'قبل و بعد')}</p>
-		<ul class="changes">
-			<li><span>{T('Points', 'نکته‌ها')}</span> <bdi lang="en" dir="ltr">{before} of 4 → {after} of 4</bdi>{#if after === 4}<span aria-hidden="true"> ✓</span>{/if}</li>
-			<li><span>{T('Length', 'مدت')}</span> <bdi lang="en" dir="ltr">{length.text}</bdi>{#if length.ok}<small> ✓ {length.over ? T('over a minute', 'بیش از یک دقیقه') : T('longer', 'طولانی‌تر')}</small>{/if}</li>
-			{#if phrase}<li class:ok={phraseUsed}>{#if phraseUsed}<span aria-hidden="true">✓ </span><bdi lang="en" dir="ltr">{phrase.text}</bdi>{:else}{T('Next time try:', 'دفعهٔ بعد امتحان کن:')} <bdi lang="en" dir="ltr">{phrase.text}</bdi>{/if}</li>{/if}
-		</ul>
-		{#if after < before}<p class="note">{T('This one covered less. That happens: the card is still here if you want another go.', 'این بار نکته‌های کمتری گفتی. پیش می‌آید؛ کارت هنوز اینجاست اگر بخواهی دوباره امتحان کنی.')}</p>{/if}
-		{#if urls[1] && urls[2]}
-			<div class="tries">
-				{#each TALKS as which}
-					<button class="try" type="button" class:on={playingTalk === which} aria-pressed={playingTalk === which} onclick={() => playTalk(which)}>
-						<span aria-hidden="true">{playingTalk === which ? '■' : '▶'}</span>
-						{which === 1 ? T('First talk', 'صحبت اول') : T('Second talk', 'صحبت دوم')}
-						<span class="dur">{clock(which === 1 ? record.talk1!.seconds : record.talk2!.seconds)}</span>
-					</button>
-				{/each}
-			</div>
-		{:else}<p class="hint">{T('Recordings are kept only while this page is open.', 'صداها فقط تا وقتی این صفحه باز است نگه داشته می‌شوند.')}</p>{/if}
-		<p class="hint">{T('This time I only checked the points, the length and your phrase, not your grammar.', 'این بار فقط نکته‌ها، مدت و عبارتت را بررسی کردم، نه دستور زبانت را.')}</p>
+	{:else if stage === 'better' && record.feedback?.better}
+		<p class="label">{T('Your talk, said better', 'صحبتت، بهتر گفته‌شده')}</p>
+		<p class="said" lang="en" dir="ltr">{#each betterParts as part}{#if part.added}<mark>{part.text}<span class="sr-only"> ({T('suggested', 'پیشنهادی')})</span></mark>{:else}{part.text}{/if}{/each}</p>
+		<button class="hear" type="button" onclick={() => hear(betterSpoken)} aria-label={T('Hear Mira read it', 'بشنو که میرا می‌خواندش')}><span aria-hidden="true">{playing ? '■' : '▶'}</span></button>
+		<p class="hint">{T('Your ideas, organised and in correct English.', 'ایده‌های خودت، مرتب و با انگلیسی درست.')}{#if betterParts.some(p => p.added)}{' '}{T('Highlighted: what you could add for the points you missed.', 'رنگی: چیزی که می‌توانستی برای نکته‌های جاافتاده بگویی.')}{/if}</p>
 		<button class="link quiet" type="button" onclick={finish}>{T('Finish', 'تمام')}</button>
 		{@render bottom(T('Next card', 'کارت بعدی'), anotherCard)}
 	{/if}
@@ -459,9 +398,7 @@
 	.should { margin: 4px 0 0; font-size: .85rem; color: var(--ink-soft); text-align: left; }
 	.points { margin: 0; padding-inline-start: 20px; display: grid; gap: 4px; line-height: 1.45; text-align: left; }
 	.points li.explain { font-weight: 600; }
-	.points li.missed { color: var(--accent-deep); }
 	.points small { display: block; color: var(--ink-soft); }
-	.flag { display: block; font-size: .8rem; font-weight: 700; color: var(--attention); }
 	.prep { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--accent-deep); font-variant-numeric: tabular-nums; }
 	.ring { --p: 0deg; inline-size: 26px; block-size: 26px; border-radius: 50%; background: conic-gradient(var(--accent) var(--p), var(--paper-sunken) 0); }
 	.notes { inline-size: 100%; min-height: 46px; padding: 10px 14px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--paper-raised); color: var(--ink); font: inherit; }
@@ -470,24 +407,18 @@
 	.lead { margin: 0; font-size: 1.08rem; line-height: 1.55; }
 	.label { margin: 0; font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-deep); }
 	:global([dir='rtl']) .label, :global([dir='rtl']) .who { letter-spacing: normal; }
-	.covered, .changes { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-	.covered li, .changes li { display: grid; gap: 4px; padding: 12px 14px; border-radius: 12px; background: var(--paper-raised); border: 1px solid var(--line); line-height: 1.45; }
-	.covered li.ok, .changes li.ok { border-color: var(--leaf); background: var(--leaf-wash); }
-	.changes li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 12px; }
-	.changes li > span:first-child { font-weight: 600; }
+	.covered { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+	.covered li { display: grid; gap: 4px; padding: 12px 14px; border-radius: 12px; background: var(--paper-raised); border: 1px solid var(--line); line-height: 1.45; }
+	.covered li.ok { border-color: var(--leaf); background: var(--leaf-wash); }
 	.point { font-weight: 600; text-align: left; }
 	.quote { color: var(--ink-soft); }
 	.count { margin: 0; font-weight: 600; }
 	.org { margin: 0; font-size: 1.05rem; line-height: 1.55; }
 	.now { margin: 0; font-family: var(--font-display); font-size: clamp(1.4rem, 6vw, 1.8rem); color: var(--accent-deep); text-align: left; }
 	.why { margin: 0; color: var(--ink-soft); line-height: 1.6; }
-	.chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
-	.chips li { padding: 8px 14px; border-radius: 999px; background: var(--accent-wash); color: var(--accent-deep); font-weight: 600; }
+	.said { margin: 0; padding: 14px 16px; border-radius: 14px; background: var(--paper-raised); border: 1px solid var(--accent); line-height: 1.75; text-align: left; }
+	mark { background: color-mix(in srgb, var(--attention) 20%, transparent); color: inherit; border-radius: 4px; padding: 0 2px; }
 	.note { margin: 0; line-height: 1.5; }
-	.tries { display: grid; gap: 10px; }
-	.try { display: flex; align-items: center; gap: 12px; inline-size: 100%; min-height: 56px; padding: 10px 16px; border: 1.5px solid var(--accent); border-radius: 14px; background: var(--paper-raised); color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; }
-	.try.on { background: var(--accent-wash); }
-	.dur { margin-inline-start: auto; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 	.center { display: grid; justify-items: center; gap: 12px; margin-top: 18px; text-align: center; }
 	.hint { margin: 0; color: var(--ink-soft); line-height: 1.5; }
 	.hear { justify-self: start; display: grid; place-items: center; inline-size: 48px; block-size: 48px; border: 1.5px solid var(--accent); border-radius: 50%; background: var(--paper-raised); color: var(--accent-deep); cursor: pointer; }

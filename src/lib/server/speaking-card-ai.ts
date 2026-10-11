@@ -1,6 +1,6 @@
 /**
- * "Speaking card": the coverage check (run the same way on both talks) and Mira's
- * feedback on how the first talk was organised (docs/english-speaking-card-spec.md).
+ * "Speaking card": the coverage check and Mira's feedback on how the talk was organised,
+ * with a better version of it (docs/english-speaking-card-spec.md). One talk, one of each call.
  * No grammar is judged. Every quote is checked against the talk, and a quote that
  * mostly repeats the card's own wording doesn't count.
  */
@@ -13,7 +13,7 @@ const clean = (text: string) => text.replace(/[<>]/g, ' ').replace(/\s+/g, ' ').
 const cardText = (card: Card) => `"${card.title.en}" You should say: ${card.points.slice(0, 3).map((p, i) => `(${i + 1}) ${p.en}`).join('; ')}; (4) ${card.points[3].en}.`;
 export const asTalks = (talks: { text: string }[]) => talks.map((t, i) => `<talk n="${i + 1}">${clean(t.text)}</talk>`).join('\n');
 
-// 1. Coverage (both talks, the same rules)
+// 1. Coverage
 
 export function coveragePrompt(card: Card, cutOff: boolean[]): string {
 	return `You check a speaking task for an adult Persian speaker learning English (B1). They had this topic card: ${cardText(card)}
@@ -82,15 +82,16 @@ Never judge grammar. Ignore fillers, false starts and repeats.
 "organisationEn": one or two sentences, at most 25 words, plain B1 English, describing the order they used and whether a listener could follow it. Example: "You went from how you learned it to why it matters. That's easy to follow." or "You started with why you like it, then said where it is. Next time, try following the card's order." Don't use the words coherence, cohesion, structure, discourse or linking words, and no generic praise ("Great job!"). If you quote them, quote their exact words in double quotes, never words with a mistake. If the topic is painful (illness, a death, an accident), keep it neutral and kind.
 "organisationFa": the same in natural, everyday Persian (using تو), English only inside quotes.
 "job": what would most help them organise it next time: "move" if they jumped between points without signposting, "reason" if they listed things without reasons or examples, "end" if the talk stopped abruptly, "start" if it began without saying what it was about, "explain" if point 4 was thin.
-"whyEn": one short reason for that job (at most 12 words). "whyFa": the same in Persian.`;
+"whyEn": one short reason for that job (at most 12 words). "whyFa": the same in Persian.
+"betterEn": their talk, said better: the same ideas, in the card's order, easy to follow, with a few organising phrases, in correct, natural spoken English at B1 (fix their grammar quietly). Use only facts and ideas they said; never invent details about their life. For each point they didn't cover, add one short, simple example sentence inside [square brackets], e.g. "[I use it every day for work.]", so they can see what they could add. At most about 1.5 times as long as their talk.`;
 }
-const fbKeys = ['organisationEn', 'organisationFa', 'job', 'whyEn', 'whyFa'];
-export const RawFeedbackSchema = z.object({ organisationEn: z.string().max(400), organisationFa: z.string().max(600), job: z.enum(JOBS as [Job, ...Job[]]), whyEn: z.string().max(200), whyFa: z.string().max(300) }).strip();
+const fbKeys = ['organisationEn', 'organisationFa', 'job', 'whyEn', 'whyFa', 'betterEn'];
+export const RawFeedbackSchema = z.object({ organisationEn: z.string().max(400), organisationFa: z.string().max(600), job: z.enum(JOBS as [Job, ...Job[]]), whyEn: z.string().max(200), whyFa: z.string().max(300), betterEn: z.string().max(4000) }).strip();
 export type RawCardFeedback = z.infer<typeof RawFeedbackSchema>;
 export const feedbackSchemas = {
-	openAiSchema: { type: 'object', additionalProperties: false, required: fbKeys, properties: { organisationEn: { type: 'string' }, organisationFa: { type: 'string' }, job: { type: 'string', enum: JOBS }, whyEn: { type: 'string' }, whyFa: { type: 'string' } } },
-	geminiSchema: { type: 'OBJECT', required: fbKeys, propertyOrdering: fbKeys, properties: { organisationEn: { type: 'STRING' }, organisationFa: { type: 'STRING' }, job: { type: 'STRING', enum: JOBS }, whyEn: { type: 'STRING' }, whyFa: { type: 'STRING' } } },
-	shape: '\nReturn only JSON: {"organisationEn": string, "organisationFa": string, "job": "start" or "move" or "reason" or "explain" or "end", "whyEn": string, "whyFa": string}. Never omit a key.'
+	openAiSchema: { type: 'object', additionalProperties: false, required: fbKeys, properties: { organisationEn: { type: 'string' }, organisationFa: { type: 'string' }, job: { type: 'string', enum: JOBS }, whyEn: { type: 'string' }, whyFa: { type: 'string' }, betterEn: { type: 'string' } } },
+	geminiSchema: { type: 'OBJECT', required: fbKeys, propertyOrdering: fbKeys, properties: { organisationEn: { type: 'STRING' }, organisationFa: { type: 'STRING' }, job: { type: 'STRING', enum: JOBS }, whyEn: { type: 'STRING' }, whyFa: { type: 'STRING' }, betterEn: { type: 'STRING' } } },
+	shape: '\nReturn only JSON: {"organisationEn": string, "organisationFa": string, "job": "start" or "move" or "reason" or "explain" or "end", "whyEn": string, "whyFa": string, "betterEn": string}. Never omit a key.'
 };
 const BANNED = /\b(coherence|cohesion|structure|discourse|linking words|great job|excellent|perfect|ielts|band|score)\b/i;
 /** The organisation line, or why it can't be used. */

@@ -3,6 +3,7 @@
  * A topic card with four points, a minute to prepare, then one to two minutes of talk.
  * It works on long-turn skills (covering the points, organising, keeping going), never
  * grammar. The organising phrases are a fixed list written by us; the AI only picks a job.
+ * There is one talk: the feedback ends with a better version of it, so nothing is judged twice.
  */
 import type { DisplayText } from './hotel';
 import { normalise, words } from './say-better';
@@ -101,34 +102,43 @@ export const inTalk = (talk: string, quote: string) => !!normalise(quote) && ` $
 
 export interface PointResult { covered: boolean; quote: string; unclear: string }
 export interface Coverage { points: PointResult[]; onTopic: boolean; mostlyEnglish: boolean }
-export interface CardFeedback { organisation: DisplayText | null; phrase: string; why: DisplayText }
+export interface CardFeedback {
+	organisation: DisplayText | null; phrase: string; why: DisplayText;
+	/** Their own talk, organised and covering all four points; a missed point is a short [suggested] sentence in brackets. */
+	better: string | null;
+}
 export interface Talk { text: string; seconds: number; cutOff: boolean }
 
-export type CardStep = 'card' | 'covered' | 'follow' | 'ready2' | 'result';
+export type CardStep = 'card' | 'covered' | 'follow' | 'better';
 export interface CardRecord {
 	card: number; step: CardStep;
 	prepStartedAt: number | null; notes: string;
 	talk1: Talk | null; coverage1: Coverage | null; feedback: CardFeedback | null;
-	talk2: Talk | null;
-	/** The second coverage call judges both talks again, so before and after compare like with like. */
-	coverage2: { first: Coverage; second: Coverage } | null;
 	/** Set while a talk is being recorded, so a reload can say the recording stopped. */
 	talking?: boolean;
 	done: boolean;
 }
-export const emptyCardRecord = (card = 1): CardRecord => ({ card, step: 'card', prepStartedAt: null, notes: '', talk1: null, coverage1: null, feedback: null, talk2: null, coverage2: null, done: false });
+export const emptyCardRecord = (card = 1): CardRecord => ({ card, step: 'card', prepStartedAt: null, notes: '', talk1: null, coverage1: null, feedback: null, done: false });
 export function asCardRecord(value: unknown): CardRecord | null {
 	const r = value as CardRecord | null;
-	if (!r || typeof r !== 'object' || typeof r.done !== 'boolean' || !cardById(r.card)) return null;
-	if (!['card', 'covered', 'follow', 'ready2', 'result'].includes(r.step) || typeof r.notes !== 'string') return null;
-	for (const t of [r.talk1, r.talk2]) if (t !== null && (typeof t !== 'object' || typeof t.text !== 'string' || typeof t.seconds !== 'number')) return null;
-	for (const c of [r.coverage1, r.coverage2?.first, r.coverage2?.second]) if (c && !Array.isArray(c.points)) return null;
-	return r;
+	if (!r || typeof r !== 'object' || typeof r.done !== 'boolean' || !cardById(r.card) || typeof r.notes !== 'string') return null;
+	if (r.talk1 !== null && (typeof r.talk1 !== 'object' || typeof r.talk1.text !== 'string' || typeof r.talk1.seconds !== 'number')) return null;
+	if (r.coverage1 && !Array.isArray(r.coverage1.points)) return null;
+	// Runs saved before the second talk was removed land on the better version.
+	const step: CardStep = (['card', 'covered', 'follow', 'better'] as string[]).includes(r.step) ? r.step : r.feedback ? 'better' : 'card';
+	return { ...r, step };
 }
-export const coveredCount = (c: Coverage | null | undefined) => c?.points.filter(p => p.covered).length ?? 0;
 export const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
-/** The length line for "before and after": a shorter second talk over a minute is never shown as a drop. */
-export function lengthChange(first: number, second: number): { text: string; ok: boolean; over: boolean } {
-	const over = second >= TALK_TARGET_SECONDS;
-	return { text: `${clock(first)} → ${clock(second)}`, ok: over || (first < TALK_TARGET_SECONDS && second > first), over };
+
+/**
+ * A better version may only use the learner's own ideas: outside the [suggested] parts, most of
+ * its content words must come from the talk.
+ */
+export function betterProblem(better: string, talk: string): string | null {
+	if (/[\u0600-\u06FF]/.test(better)) return 'the better version must be in English';
+	const outside = better.replace(/\[[^\]]*\]/g, ' ');
+	const own = new Set(contentWords(talk)), used = contentWords(outside);
+	if (words(better).length > Math.max(60, Math.ceil(words(talk).length * 1.5) + 40)) return 'the better version is much longer than the talk';
+	if (used.length && used.filter(w => own.has(w)).length / used.length < 0.6) return 'the better version adds ideas the learner never said (put anything new in [brackets])';
+	return null;
 }

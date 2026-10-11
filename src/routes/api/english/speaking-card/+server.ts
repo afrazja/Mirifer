@@ -3,11 +3,10 @@
  *
  * - multipart {audio, seconds, card}: transcribes one talk (OpenAI, split at pauses); the audio
  *   is not stored. Refused once the day's AI allowance is used up, but it doesn't spend it.
- * - JSON {kind: 'coverage', card, talks}: which points each talk covered, judged the same way
- *   for one talk or both (the second call judges both again).
- * - JSON {kind: 'feedback', card, talk, cutOff, covered}: how the first talk was organised,
- *   and the job for the phrase (the phrase itself comes from our fixed list). Spends one unit
- *   of allowance, only when it succeeds.
+ * - JSON {kind: 'coverage', card, talks: [talk]}: which points the talk covered.
+ * - JSON {kind: 'feedback', card, talk, covered}: how the talk was organised, the job for the
+ *   phrase (the phrase itself comes from our fixed list) and a better version of the talk.
+ *   Spends one unit of allowance, only when it succeeds.
  *
  * Nothing the learner said is stored on our server.
  */
@@ -17,7 +16,7 @@ import type { RequestHandler } from './$types';
 import { askChain, checkAllowance, englishLearner, recordAllowance } from '$lib/server/english-ai';
 import { transcribe, transcriptionConfigured } from '$lib/server/transcribe';
 import { createLimiter, tooMany } from '$lib/server/rate-limit';
-import { JOB_WHY, TALK_MAX_SECONDS, cardById, chooseJob, choosePhrase } from '$lib/practice/speaking-card';
+import { JOB_WHY, TALK_MAX_SECONDS, betterProblem, cardById, chooseJob, choosePhrase } from '$lib/practice/speaking-card';
 import {
 	RawCoverageSchema, RawFeedbackSchema, asTalks, checkCoverage, checkOrganisation, coveragePrompt, coverageSchemas, feedbackPrompt, feedbackSchemas,
 	type RawCardFeedback, type RawCoverage
@@ -29,7 +28,7 @@ const MAX_AUDIO_BYTES = 2_000_000;
 const perMinute = createLimiter(12, 60_000);
 const TalkInput = z.object({ text: z.string().trim().min(1).max(4_000), cutOff: z.boolean() }).strict();
 const Request = z.discriminatedUnion('kind', [
-	z.object({ kind: z.literal('coverage'), card: z.number().int(), talks: z.array(TalkInput).min(1).max(2) }).strict(),
+	z.object({ kind: z.literal('coverage'), card: z.number().int(), talks: z.array(TalkInput).length(1) }).strict(),
 	z.object({ kind: z.literal('feedback'), card: z.number().int(), talk: TalkInput, covered: z.array(z.boolean()).length(4) }).strict()
 ]);
 const PERSIAN = /[؀-ۿ]/;
@@ -81,11 +80,17 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const system = feedbackPrompt(card, covered, talk.cutOff);
 	const ask = (note = '') => askChain<RawCardFeedback>({ label: 'English speaking card feedback', system, user: asTalks([talk]) + note, schema: RawFeedbackSchema, ...feedbackSchemas, temperature: 0.3, maxTokens: 600 });
 	let raw = await ask();
-	let line = raw ? checkOrganisation(raw, talk.text) : { problem: 'no reply' };
-	if ('problem' in line) {
-		raw = await ask(`\n\n(Your last answer could not be used because ${line.problem}. Answer again, following every rule.)`) ?? raw;
-		line = raw ? checkOrganisation(raw, talk.text) : { problem: 'no reply' };
+	const problems = (r: RawCardFeedback | null) => {
+		if (!r) return { line: { problem: 'no reply' } as const, better: 'no reply' };
+		return { line: checkOrganisation(r, talk.text), better: betterProblem(r.betterEn.trim(), talk.text) };
+	};
+	let checked = problems(raw);
+	if ('problem' in checked.line || checked.better) {
+		const why = 'problem' in checked.line ? checked.line.problem : checked.better;
+		const again = await ask(`\n\n(Your last answer could not be used because ${why}. Answer again, following every rule.)`);
+		if (again) { raw = again; checked = problems(again); }
 	}
+	const line = checked.line;
 	if (!raw) return json({ error: 'Feedback unavailable' }, { status: 502 });
 	const job = chooseJob(covered, raw.job);
 	const phrase = choosePhrase(job, talk.text, card);
@@ -93,5 +98,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const why = job === raw.job && whyEn && words(whyEn).length <= 14 && !PERSIAN.test(whyEn) ? { en: whyEn, fa: PERSIAN.test(whyFa) ? whyFa : JOB_WHY[job].fa } : JOB_WHY[phrase.job];
 	await recordAllowance(locals, user, 0, 'speaking-card-v1');
 	// A failed organisation line is left out rather than shown unchecked.
-	return json({ organisation: 'problem' in line ? null : line, phrase: phrase.id, why });
+	// A part that still fails its check is left out rather than shown unchecked.
+	return json({ organisation: 'problem' in line ? null : line, phrase: phrase.id, why, better: checked.better ? null : raw.betterEn.replace(/\s+/g, ' ').trim() });
 };

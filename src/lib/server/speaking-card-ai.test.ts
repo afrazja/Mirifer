@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { RawCoverageSchema, asTalks, checkCoverage, checkOrganisation, coveragePrompt } from './speaking-card-ai';
-import { CARDS, ORG_PHRASES, cardShare, chooseJob, choosePhrase, lengthChange } from '$lib/practice/speaking-card';
+import { CARDS, ORG_PHRASES, betterProblem, cardShare, chooseJob, choosePhrase } from '$lib/practice/speaking-card';
 import { normalise } from '$lib/practice/say-better';
 
 const card = CARDS[1]; // a place in your city
@@ -52,15 +52,16 @@ describe('Speaking card: the phrase and the organisation line', () => {
 		for (const p of ORG_PHRASES) expect(p.found(normalise(`${p.text.replace('…', ' the lake')}`)), p.id).toBe(true);
 	});
 	it('the organisation line: real quotes only, no jargon, English', () => {
-		const line = (organisationEn: string) => checkOrganisation({ organisationEn, organisationFa: 'ترتیب خوبی داشت.', job: 'move', whyEn: '', whyFa: '' }, TALK);
+		const line = (organisationEn: string) => checkOrganisation({ organisationEn, organisationFa: 'ترتیب خوبی داشت.', job: 'move', whyEn: '', whyFa: '', betterEn: '' }, TALK);
 		expect(line('You went from where it is to why you like it. That’s easy to follow.')).toMatchObject({ en: expect.stringContaining('easy to follow') });
 		expect(line('You said "it has a big pool" first.')).toMatchObject({ problem: expect.any(String) });
 		expect(line('Your structure and coherence were good.')).toMatchObject({ problem: expect.any(String) });
 	});
-	it('a shorter second talk over a minute is never a drop', () => {
-		expect(lengthChange(48, 85)).toEqual({ text: '0:48 → 1:25', ok: true, over: true });
-		expect(lengthChange(110, 100)).toEqual({ text: '1:50 → 1:40', ok: true, over: true });
-		expect(lengthChange(25, 40)).toEqual({ text: '0:25 → 0:40', ok: true, over: false });
-		expect(lengthChange(70, 40).ok).toBe(false);
+	it('the better version keeps their ideas; anything new goes in [brackets]', () => {
+		const ok = 'I want to tell you about Laleh Park. It\'s in the north of Tehran, near my office. It has big trees and a small lake. On Fridays I go there and walk with my sister. I like it because it\'s quiet and green.';
+		expect(betterProblem(ok, TALK)).toBeNull();
+		expect(betterProblem(ok + ' [There is also a small café where I sometimes have tea.]', TALK)).toBeNull();
+		expect(betterProblem('Laleh Park has a famous museum, an old castle, expensive restaurants and beautiful fountains everywhere downtown.', TALK)).toContain('ideas');
+		expect(betterProblem('پارک لاله', TALK)).toContain('English');
 	});
 });
