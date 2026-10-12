@@ -41,7 +41,7 @@
 	let recorder: MediaRecorder | null = null, stream: MediaStream | null = null, chunks: Blob[] = [], blob: Blob | null = null;
 	let level: MicLevel | null = null, audio: AudioContext | null = null;
 	let ranFor = 0, segmentStart = 0, timer: ReturnType<typeof setInterval> | undefined, clockTimer: ReturnType<typeof setInterval> | undefined;
-	let interrupted = false, cutOff = false, said1min = false, said15 = false;
+	let interrupted = false, cutOff = false;
 	let heading: HTMLElement | undefined = $state(), stopButton: HTMLButtonElement | undefined = $state();
 	const playing = $derived($ttsIsPlaying);
 	const T = (en: string, fa: string) => (isFa ? fa : en);
@@ -119,7 +119,7 @@
 		try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch { go('denied'); return; }
 		const mimeType = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm', 'audio/ogg;codecs=opus'].find(type => MediaRecorder.isTypeSupported(type));
 		recorder = new MediaRecorder(stream, { ...(mimeType ? { mimeType } : {}), audioBitsPerSecond: 64_000 });
-		chunks = []; blob = null; interrupted = false; cutOff = false; said1min = false; said15 = false;
+		chunks = []; blob = null; interrupted = false; cutOff = false;
 		recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
 		recorder.onstop = finishTalk;
 		const track = stream.getAudioTracks()[0];
@@ -137,8 +137,7 @@
 		if (paused) return;
 		elapsed = Math.min(TALK_MAX_SECONDS, ranFor + (performance.now() - segmentStart) / 1000);
 		stuck = (level?.quietFor() ?? 0) >= STUCK_AFTER_SECONDS;
-		if (elapsed >= TALK_TARGET_SECONDS && !said1min) { said1min = true; announce = T('One minute', 'یک دقیقه'); }
-		if (elapsed >= TALK_MAX_SECONDS - 15 && !said15) { said15 = true; announce = T('15 seconds left', '۱۵ ثانیه مانده'); }
+		// Nothing is announced while recording: a screen reader's voice would be recorded and transcribed.
 		if (elapsed >= TALK_MAX_SECONDS && recorder?.state === 'recording') { cutOff = true; recorder.stop(); }
 	}
 	function stopTalking() {
