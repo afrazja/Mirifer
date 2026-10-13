@@ -208,6 +208,16 @@ function _browserTTS(text: string, lang: string, rate?: number): Promise<void> {
 	});
 }
 
+/**
+ * The neural-voice URL for a line (the same one the ordinary player uses), for callers that must
+ * know whether it really played (`playAudioUrl`), with no fallback to the browser's own voice.
+ */
+export function ttsUrl(text: string, lang: string, rate = 1, voice: TTSVoice = 'a'): { url: string; playback: number } {
+	const shortLang = lang.split('-')[0];
+	const { engine, playback } = engineRate(shortLang, isFinite(rate) && rate > 0 ? rate : 1);
+	return { url: `/proxy/tts?q=${encodeURIComponent(text)}&tl=${shortLang}&voice=${voice}&rate=${engine}`, playback };
+}
+
 /** Play via same-origin Vercel serverless TTS proxy.
  *  `onTime` (if given) is called with (currentTime, duration) on each animation
  *  frame during playback — used to drive karaoke-style word highlighting. */
@@ -331,7 +341,7 @@ function playWebAudio(
  * play, so the caller can fall back to the ordinary voice. The load timeout
  * is generous: the first play of a line may be generated on demand.
  */
-export function playAudioUrl(url: string, loadTimeoutMs = 12_000, playbackRate = 1): Promise<boolean> {
+export function playAudioUrl(url: string, loadTimeoutMs = 12_000, playbackRate = 1, onStart?: () => void): Promise<boolean> {
 	const myGen = ttsGeneration;
 	releasePlayer();
 	return new Promise((resolve) => {
@@ -341,6 +351,8 @@ export function playAudioUrl(url: string, loadTimeoutMs = 12_000, playbackRate =
 			if (done) return;
 			done = true;
 			clearTimeout(timeout);
+			// The player is shared: never let a later sound call this play's onStart.
+			audio.onplaying = null;
 			if (currentAudio === audio && settleCurrent === cancel) settleCurrent = null;
 			if (!ok && currentAudio === audio) {
 				audio.pause();
@@ -359,6 +371,8 @@ export function playAudioUrl(url: string, loadTimeoutMs = 12_000, playbackRate =
 		ttsIsPlaying.set(true);
 		const timeout = setTimeout(() => end(false), loadTimeoutMs);
 		audio.onplay = () => clearTimeout(timeout);
+		// "playing" (not "play") fires only once sound really starts: a blocked or failed load never calls onStart.
+		audio.onplaying = () => onStart?.();
 		audio.onended = () => {
 			ttsIsPlaying.set(false);
 			end(true);
