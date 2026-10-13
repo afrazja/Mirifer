@@ -34,6 +34,8 @@
 	let record = $state<ShadowRecord>(initial ?? emptyShadowRecord());
 	let stage = $state<'start' | 'sentence' | 'result'>('start');
 	let heard = $state<string | null>(null);
+	/** The learner's own recording, kept in memory only, so they can check it was recorded clearly. */
+	let myUrl = $state<string | null>(null), myPlayer: HTMLAudioElement | null = null;
 	let status = $state<Status>('idle'), typing = $state(false), typed = $state(''), announce = $state(''), elapsed = $state(0), replaying = $state(false);
 	let recorder: MediaRecorder | null = null, stream: MediaStream | null = null, chunks: Blob[] = [], level: MicLevel | null = null;
 	let startedAt = 0, timer: ReturnType<typeof setInterval> | undefined, interrupted = false, lastBlob: Blob | null = null, lastSeconds = 0;
@@ -55,7 +57,7 @@
 		document.addEventListener('visibilitychange', onHidden);
 		return () => document.removeEventListener('visibilitychange', onHidden);
 	});
-	onDestroy(() => { clearInterval(timer); level?.stop(); if (recorder && recorder.state !== 'inactive') recorder.stop(); stream?.getTracks().forEach(t => t.stop()); });
+	onDestroy(() => { myPlayer?.pause(); if (myUrl) URL.revokeObjectURL(myUrl); clearInterval(timer); level?.stop(); if (recorder && recorder.state !== 'inactive') recorder.stop(); stream?.getTracks().forEach(t => t.stop()); });
 
 	function persist() { onSave?.($state.snapshot(record)); }
 	function go(next: typeof stage) { stage = next; queueMicrotask(() => heading?.focus()); }
@@ -136,6 +138,8 @@
 			text = typeof data?.transcript === 'string' ? data.transcript.trim() : null;
 		} catch { text = null; }
 		if (text === null) { status = 'failed'; return; }
+		if (myUrl) URL.revokeObjectURL(myUrl);
+		myUrl = URL.createObjectURL(lastBlob);
 		lastBlob = null;
 		heard = text; status = 'idle';
 	}
@@ -154,6 +158,12 @@
 		// Fetch the next sentence's audio while the check is showing.
 		const next = SENTENCES[index + 1];
 		if (next) void fetch(audioOf(next.text).url).catch(() => {});
+	}
+	function hearMine() {
+		if (!myUrl) return;
+		stopAllAudio(); myPlayer?.pause();
+		myPlayer = new Audio(myUrl);
+		void myPlayer.play().catch(() => {});
 	}
 	/** Before anything is revealed: the learner confirms what speech-to-text heard, or types instead. */
 	function confirmHeard() { const text = heard; heard = null; if (text) save(text, false); }
@@ -206,6 +216,7 @@
 
 			{#if heard !== null}
 				<p class="mine">{T('I heard:', 'شنیدم:')} <bdi lang="en" dir="ltr">“{heard}”</bdi></p>
+				{#if myUrl}<button class="link" type="button" onclick={hearMine}>▶ {T('Hear my recording', 'صدای ضبط‌شده‌ام را بشنو')}</button>{/if}
 				<button class="link quiet" type="button" onclick={notWhatISaid}>{T('That’s not what I said: type it instead', 'این را نگفتم: به‌جایش تایپ کن')}</button>
 				{@render bottom(T('Check it', 'بررسی کن'), confirmHeard)}
 			{:else if plays > 0}
