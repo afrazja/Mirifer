@@ -35,7 +35,7 @@
 	let stage = $state<'start' | 'sentence' | 'result'>('start');
 	let heard = $state<string | null>(null);
 	/** The learner's own recording, kept in memory only, so they can check it was recorded clearly. */
-	let myUrl = $state<string | null>(null), myPlayer: HTMLAudioElement | null = null;
+	let myUrl = $state<string | null>(null), myUrlFor = $state(-1), myPlayer: HTMLAudioElement | null = null;
 	let status = $state<Status>('idle'), typing = $state(false), typed = $state(''), announce = $state(''), elapsed = $state(0), replaying = $state(false);
 	let recorder: MediaRecorder | null = null, stream: MediaStream | null = null, chunks: Blob[] = [], level: MicLevel | null = null;
 	let startedAt = 0, timer: ReturnType<typeof setInterval> | undefined, interrupted = false, lastBlob: Blob | null = null, lastSeconds = 0;
@@ -139,7 +139,7 @@
 		} catch { text = null; }
 		if (text === null) { status = 'failed'; return; }
 		if (myUrl) URL.revokeObjectURL(myUrl);
-		myUrl = URL.createObjectURL(lastBlob);
+		myUrl = URL.createObjectURL(lastBlob); myUrlFor = index;
 		lastBlob = null;
 		heard = text; status = 'idle';
 	}
@@ -246,7 +246,9 @@
 			<div class="pair">
 				<p class="boxlabel">{answer.typed ? T('You wrote', 'نوشتی') : T('You said', 'گفتی')}</p>
 				<p class="yours" lang="en" dir="ltr">{answer.text}</p>
-				{#if !answer.typed}<small class="hint">{T('Speech-to-text isn’t perfect.', 'تبدیل گفتار به متن کامل نیست.')}</small>{/if}
+				{#if !answer.typed}<small class="hint">{T('Speech-to-text isn’t perfect.', 'تبدیل گفتار به متن کامل نیست.')}</small>
+					<!-- Kept in memory only: after a reload the recording is gone. -->
+					{#if myUrl && myUrlFor === index}<button class="link" type="button" onclick={hearMine}>▶ {T('Hear my recording', 'صدای ضبط‌شده‌ام را بشنو')}</button>{/if}{/if}
 				<p class="boxlabel">{T('Correct', 'درست')}</p>
 				<p class="sentence" lang="en" dir="ltr">{#each words as word, i}{#if answer.matched[i]}{word}{:else}<mark>{word}<span class="sr-only"> (missed)</span></mark>{/if}{i < words.length - 1 ? ' ' : ''}{/each}</p>
 			</div>
