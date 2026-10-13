@@ -27,8 +27,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!Number.isFinite(seconds) || seconds < 0 || seconds > ANSWER_MAX_SECONDS + 5) return json({ error: 'Invalid recording' }, { status: 400 });
 	const refused = await checkAllowance(locals, user);
 	if (refused) return refused;
-	// No context at all: only the shared "write exactly what they say" instruction.
-	const transcript = await transcribe(audio, 'English shadowing lab', undefined, { splitAtPauses: true });
+	// A neutral hint that never contains the sentence or its words (it would write the sentence back);
+	// no splitting at pauses, which hurts a short clip.
+	const transcript = await transcribe(audio, 'English shadowing lab', 'They are repeating one everyday English sentence they just heard.');
 	if (transcript === null) return json({ error: 'Transcription unavailable' }, { status: 502 });
 	return json({ transcript });
 };

@@ -141,3 +141,12 @@ The owner's design rule applies: one focused thing per screen, one primary butto
 - A pattern line on the result screen.
 - "Finish later".
 - Screen-reader rules.
+
+## Owner test: a garbled transcript
+
+The owner said the sentence and got back "We will be office I English Arash is a funny". Two changes:
+- **Transcription:** a short answer is no longer split at pauses. It now gets a neutral hint ("They are repeating one everyday English sentence they just heard.") that still never contains the sentence or its words.
+- **"I heard: …" before anything is revealed.** After speaking, the learner first sees what speech-to-text heard:
+  - "Check it" scores it;
+  - "That's not what I said: type it instead" throws it away and opens typing. The sentence is still hidden, so typing stays fair, and plays are unchanged.
+- **Later:** Azure pronunciation assessment, which scores the audio against the sentence, would be far more reliable here. It needs AZURE_SPEECH_KEY and AZURE_SPEECH_REGION in Vercel, and is dormant until then.

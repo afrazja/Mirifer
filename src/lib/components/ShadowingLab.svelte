@@ -33,6 +33,7 @@
 	// svelte-ignore state_referenced_locally
 	let record = $state<ShadowRecord>(initial ?? emptyShadowRecord());
 	let stage = $state<'start' | 'sentence' | 'result'>('start');
+	let heard = $state<string | null>(null);
 	let status = $state<Status>('idle'), typing = $state(false), typed = $state(''), announce = $state(''), elapsed = $state(0), replaying = $state(false);
 	let recorder: MediaRecorder | null = null, stream: MediaStream | null = null, chunks: Blob[] = [], level: MicLevel | null = null;
 	let startedAt = 0, timer: ReturnType<typeof setInterval> | undefined, interrupted = false, lastBlob: Blob | null = null, lastSeconds = 0;
@@ -136,7 +137,7 @@
 		} catch { text = null; }
 		if (text === null) { status = 'failed'; return; }
 		lastBlob = null;
-		save(text, false);
+		heard = text; status = 'idle';
 	}
 
 	// Typing
@@ -154,6 +155,9 @@
 		const next = SENTENCES[index + 1];
 		if (next) void fetch(audioOf(next.text).url).catch(() => {});
 	}
+	/** Before anything is revealed: the learner confirms what speech-to-text heard, or types instead. */
+	function confirmHeard() { const text = heard; heard = null; if (text) save(text, false); }
+	function notWhatISaid() { heard = null; typing = true; status = 'idle'; }
 	function nextSentence() {
 		stopAllAudio();
 		const nextIndex = record.index + 1;
@@ -200,7 +204,11 @@
 			{#if status === 'denied'}<p class="note">{T('The microphone is blocked. Allow it in your browser’s site settings, or type your answer.', 'میکروفون بسته است. در تنظیمات سایت اجازه‌اش را بده، یا جوابت را تایپ کن.')}</p>{/if}
 			{#if status === 'listening'}<p class="hint" role="status">{T('Checking what you said…', 'دارم بررسی می‌کنم چه گفتی…')}</p>{/if}
 
-			{#if plays > 0}
+			{#if heard !== null}
+				<p class="mine">{T('I heard:', 'شنیدم:')} <bdi lang="en" dir="ltr">“{heard}”</bdi></p>
+				<button class="link quiet" type="button" onclick={notWhatISaid}>{T('That’s not what I said: type it instead', 'این را نگفتم: به‌جایش تایپ کن')}</button>
+				{@render bottom(T('Check it', 'بررسی کن'), confirmHeard)}
+			{:else if plays > 0}
 				{#if typing}
 					<form class="typed" onsubmit={event => { event.preventDefault(); checkTyped(); }}>
 						<label class="sr-only" for="sh-typed">{T('Type what you heard', 'آنچه شنیدی را تایپ کن')}</label>
