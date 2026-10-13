@@ -1,39 +1,43 @@
 <script lang="ts">
 	/**
-	 * "Listen and connect" (docs/english-listen-connect-spec.md, owner-approved v2).
-	 * Listen to one conversation (twice at most), then four questions about how its
-	 * facts connect, one screen each, then the conversation as text with the day's
-	 * link phrases. Text only. Kept in this browser for the day (reload, Back).
+	 * "Listen and connect" (docs/english-listen-connect-spec.md, owner-approved v2; split into parts at
+	 * the owner's request). The conversation is heard in three short parts, each at most twice, and
+	 * each part is followed by its own questions, one per screen; then the whole conversation as text
+	 * with the day's link phrases. Kept in this browser for the day (reload, Back).
 	 */
 	import { onMount } from 'svelte';
 	import { playAudioPromise, stopAllAudio } from '$services/tts';
 	import { ENGLISH_RATE } from '$lib/practice/english-voice';
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
 	import {
-		CHOICES, CONNECT, CONVERSATION, MAX_PLAYS, MIRA_LINE, MIRA_SPOKEN, SPEAKERS, TOTAL_POINTS, emptyConnectRecord, linkParts, scoreConnect, type ConnectRecord
+		CHOICES, CONNECT, CONVERSATION, MAX_PLAYS, MIRA_LINE, MIRA_SPOKEN, PARTS, QUESTIONS, SPEAKERS, STEPS, TOTAL_POINTS,
+		emptyConnectRecord, linkParts, partLines, scoreConnect, type ConnectRecord
 	} from '$lib/practice/listen-connect';
 
 	let { isFa = false, initial = null, onSave, onFocus, onDone }: {
 		isFa?: boolean;
 		initial?: ConnectRecord | null;
 		onSave?: (record: ConnectRecord) => void;
-		/** Mira's instruction (the listening goal) shows until the questions open. */
+		/** Mira's instruction (the listening goal) shows until the first part has been heard. */
 		onFocus?: (intro: 'full' | 'compact' | 'hidden') => void;
 		onDone: (score: { correct: number; total: number }, record: ConnectRecord) => void;
 	} = $props();
 
 	// svelte-ignore state_referenced_locally
 	let record = $state<ConnectRecord>(initial ?? emptyConnectRecord());
-	let playing = $state(false), attempts = $state(0);
-	/** Which cause of Connect is on screen. */
-	let causeIndex = $state(0);
+	let playing = $state(false);
+	/** Play attempts per part: "Read it instead" is offered only after trying to play that part. */
+	let attempts = $state(PARTS.map(() => 0));
 	/** A play cut short by a call or a hidden tab is given back; one the learner stops still counts. */
 	let interrupted = false, stoppedByLearner = false;
 	const T = (en: string, fa: string) => (isFa ? fa : en);
-	const playsLeft = $derived(MAX_PLAYS - record.plays);
-	const open = $derived(record.heard || record.readInstead);
+	const fa = (n: number) => n.toLocaleString('fa-IR');
+	const step = $derived(STEPS[record.step] ?? STEPS[STEPS.length - 1]);
+	/** The part being listened to or asked about. */
+	const part = $derived(step.kind === 'listen' ? step.part : step.kind === 'question' ? QUESTIONS[step.q].part : PARTS.length - 1);
+	const playsLeft = $derived(MAX_PLAYS - record.plays[part]);
 
-	$effect(() => { onFocus?.(open ? 'hidden' : 'full'); });
+	$effect(() => { onFocus?.(record.step === 0 && !record.heard[0] ? 'full' : 'hidden'); });
 	onMount(() => {
 		const onHidden = () => { if (document.hidden && playing) { interrupted = true; stopAllAudio(); } };
 		document.addEventListener('visibilitychange', onHidden);
@@ -41,21 +45,26 @@
 	});
 
 	function persist() { onSave?.($state.snapshot(record)); }
+	function goStep(next: number) { record = { ...record, step: Math.min(next, STEPS.length - 1) }; persist(); }
 
-	/** Plays the whole conversation, line by line in each speaker's voice. Counts only if it reaches the end. */
+	/** Plays one part, line by line in each speaker's voice. Counts only if it reaches the end. */
 	async function play() {
 		if (playing || playsLeft <= 0) return;
 		stopAllAudio(); // Mira may still be giving the listening goal
-		playing = true; interrupted = false; stoppedByLearner = false; attempts += 1;
-		for (const line of CONVERSATION) {
+		const p = part;
+		playing = true; interrupted = false; stoppedByLearner = false; attempts[p] += 1;
+		for (const line of partLines(p)) {
 			if (interrupted) break;
 			await playAudioPromise(line.text, ENGLISH_RATE, 'en-US', undefined, SPEAKERS[line.who].voice).catch(() => {});
 			if (!interrupted) await new Promise(resolve => setTimeout(resolve, 250));
 		}
 		playing = false;
 		if (interrupted && !stoppedByLearner) return; // cut short by a call or a hidden tab: given back
-		record = { ...record, plays: record.plays + 1, heard: true };
-		persist();
+		const plays = [...record.plays]; plays[p] += 1;
+		const heard = [...record.heard], first = !heard[p]; heard[p] = true;
+		record = { ...record, plays, heard }; persist();
+		// The first full play of a part goes straight to its questions.
+		if (first && step.kind === 'listen') goStep(record.step + 1);
 	}
 	function stop() { if (playing) stoppedByLearner = true; interrupted = true; stopAllAudio(); playing = false; }
 	function hearLine(index: number) {
@@ -65,34 +74,45 @@
 		void playAudioPromise(line.text, ENGLISH_RATE, 'en-US', undefined, SPEAKERS[line.who].voice).catch(() => {});
 	}
 	function readInstead() { if (playing) stop(); record = { ...record, readInstead: true }; persist(); }
+	function toQuestions() {
+		const heard = [...record.heard]; heard[part] = true;
+		record = { ...record, heard }; persist();
+		goStep(record.step + 1);
+	}
 
-	function pickResult(option: number) {
-		if (record.connectChecked) return;
-		const connect = [...record.connect]; connect[causeIndex] = option;
-		record = { ...record, connect }; persist();
-		if (causeIndex < CONNECT.causes.length - 1) causeIndex += 1;
+	function pick(option: number) {
+		if (step.kind !== 'question') return;
+		const q = QUESTIONS[step.q];
+		if (q.kind === 'connect') {
+			if (record.connectChecked[q.index]) return;
+			const connect = [...record.connect]; connect[q.index] = option;
+			record = { ...record, connect };
+		} else {
+			if (record.checked[q.index]) return;
+			const choices = [...record.choices]; choices[q.index] = option;
+			record = { ...record, choices };
+		}
+		persist();
 	}
-	function checkConnect() { record = { ...record, connectChecked: true }; persist(); }
-	function pickChoice(q: number, option: number) {
-		if (record.checked[q]) return;
-		const choices = [...record.choices]; choices[q] = option;
-		record = { ...record, choices }; persist();
+	function check() {
+		if (step.kind !== 'question') return;
+		const q = QUESTIONS[step.q];
+		if (q.kind === 'connect') { const c = [...record.connectChecked]; c[q.index] = true; record = { ...record, connectChecked: c }; }
+		else { const c = [...record.checked]; c[q.index] = true; record = { ...record, checked: c }; }
+		persist();
 	}
-	function checkChoice(q: number) { const checked = [...record.checked]; checked[q] = true; record = { ...record, checked }; persist(); }
 	function next() {
 		if (playing) stop();
-		const screen = record.screen + 1;
-		record = { ...record, screen }; persist();
+		const nextStep = record.step + 1;
+		goStep(nextStep);
 		// The last screen: Mira's line about the day's link phrases, from this tap.
-		if (screen === CHOICES.length + 1) void playAudioPromise(MIRA_SPOKEN, COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {});
+		if (STEPS[nextStep]?.kind === 'end') void playAudioPromise(MIRA_SPOKEN, COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {});
 	}
 	function finish() {
 		stopAllAudio();
 		record = { ...record, done: true }; persist();
 		onDone(scoreConnect(record), $state.snapshot(record));
 	}
-	const choiceQ = $derived(record.screen >= 1 && record.screen <= CHOICES.length ? record.screen - 1 : -1);
-	const allConnected = $derived(record.connect.every(v => v !== null));
 </script>
 
 {#snippet bottom(label: string, action: () => void, disabled = false)}
@@ -100,80 +120,61 @@
 {/snippet}
 
 {#snippet again()}
-	{#if !record.readInstead && playsLeft > 0 && record.screen <= CHOICES.length}
-		<button class="link" type="button" onclick={() => (playing ? stop() : play())}>{playing ? T('Stop', 'توقف') : T(`Listen again (${playsLeft} left)`, `دوباره گوش بده (${playsLeft.toLocaleString('fa-IR')} بار دیگر)`)}</button>
+	{#if !record.readInstead && playsLeft > 0}
+		<button class="link" type="button" onclick={() => (playing ? stop() : play())}>{playing ? T('Stop', 'توقف') : T(`Listen to part ${part + 1} again (${playsLeft} left)`, `دوباره گوش بده به بخش ${fa(part + 1)} (${fa(playsLeft)} بار دیگر)`)}</button>
 	{/if}
 {/snippet}
 
 <section class="connect" aria-live="polite">
-	{#if !open}
-		{#if playing}
+	{#if step.kind === 'listen'}
+		<p class="kind">{T(`Part ${part + 1} of ${PARTS.length}`, `بخش ${fa(part + 1)} از ${fa(PARTS.length)}`)} · {isFa ? PARTS[part].title.fa : PARTS[part].title.en}</p>
+		{#if record.readInstead}
+			<!-- No audio: this part as text, then its questions. -->
+			<ol class="script" lang="en" dir="ltr">{#each partLines(part) as line}<li><b>{SPEAKERS[line.who].name}:</b> {line.text}</li>{/each}</ol>
+			{@render bottom(T('To the questions', 'رفتن به سؤال‌ها'), toQuestions)}
+		{:else if playing}
 			<p class="status" role="status">{T('Listening…', 'در حال پخش…')}</p>
 			{@render bottom(T('Stop', 'توقف'), stop)}
+		{:else if record.heard[part]}
+			{@render again()}
+			{@render bottom(T('To the questions', 'رفتن به سؤال‌ها'), () => goStep(record.step + 1))}
 		{:else}
-			{#if attempts > 0}<button class="link" type="button" onclick={readInstead}>{T('Can’t hear it? Read it instead', 'صدا را نمی‌شنوی؟ متنش را بخوان')}</button>{/if}
-			{@render bottom(T('Play the conversation', 'پخش گفت‌وگو'), play)}
+			{#if attempts[part] > 0}<button class="link" type="button" onclick={readInstead}>{T('Can’t hear it? Read it instead', 'صدا را نمی‌شنوی؟ متنش را بخوان')}</button>{/if}
+			{@render bottom(T(`Play part ${part + 1}`, `پخش بخش ${fa(part + 1)}`), play)}
 		{/if}
 
-	{:else if record.readInstead && !record.heard}
-		<!-- No audio: the conversation as text first, then the questions. -->
-		<ol class="script" lang="en" dir="ltr">{#each CONVERSATION as line}<li><b>{SPEAKERS[line.who].name}:</b> {line.text}</li>{/each}</ol>
-		{@render bottom(T('To the questions', 'رفتن به سؤال‌ها'), () => { record = { ...record, heard: true }; persist(); })}
-
-	{:else if record.screen === 0}
-		<p class="kind">{T('What led to what? · 3 points', 'چه چیزی باعث چه شد؟ — ۳ امتیاز')}</p>
-		{#if !record.connectChecked}
-			<p class="count">{T(`${causeIndex + 1} of ${CONNECT.causes.length}`, `${(causeIndex + 1).toLocaleString('fa-IR')} از ${CONNECT.causes.length.toLocaleString('fa-IR')}`)}</p>
-			<p class="q" lang="en" dir="ltr">{CONNECT.causes[causeIndex]}</p>
-			<div class="options" role="radiogroup" aria-label={T('Its result', 'نتیجه‌اش')}>
-				{#each CONNECT.results as result, i}
-					<button class="option" type="button" role="radio" aria-checked={record.connect[causeIndex] === i} class:chosen={record.connect[causeIndex] === i} onclick={() => pickResult(i)} lang="en" dir="ltr">{result}</button>
-				{/each}
-			</div>
-			{#if causeIndex > 0}<button class="link" type="button" onclick={() => (causeIndex -= 1)}>{T('Previous', 'قبلی')}</button>{/if}
-			{@render again()}
-			{@render bottom(T('Check', 'بررسی'), checkConnect, !allConnected)}
-		{:else}
-			<ul class="results">
-				{#each CONNECT.causes as cause, i}
-					{@const right = record.connect[i] === CONNECT.answers[i]}
-					<li class:right>
-						<span lang="en" dir="ltr">{cause}</span>
-						<span class="mark">{right ? T('Right', 'درست') : T('Right answer:', 'جواب درست:')}</span>
-						<span lang="en" dir="ltr">{CONNECT.results[CONNECT.answers[i]]}</span>
-					</li>
-				{/each}
-			</ul>
-			{@render again()}
-			{@render bottom(T('Next', 'بعدی'), next)}
-		{/if}
-
-	{:else if choiceQ >= 0}
-		{@const q = CHOICES[choiceQ]}
-		{@const checked = record.checked[choiceQ]}
-		<p class="kind">{isFa ? q.kind.fa : q.kind.en}</p>
-		<p class="q" lang="en" dir="ltr">{q.question}</p>
-		<div class="options" role="radiogroup" aria-label={q.question}>
-			{#each q.options as option, i}
-				<button class="option" type="button" role="radio" aria-checked={record.choices[choiceQ] === i} disabled={checked}
-					class:chosen={record.choices[choiceQ] === i} class:right={checked && i === q.answer} class:wrong={checked && record.choices[choiceQ] === i && i !== q.answer}
-					onclick={() => pickChoice(choiceQ, i)} lang="en" dir="ltr">
+	{:else if step.kind === 'question'}
+		{@const q = QUESTIONS[step.q]}
+		{@const isConnect = q.kind === 'connect'}
+		{@const chosen = isConnect ? record.connect[q.index] : record.choices[q.index]}
+		{@const checked = isConnect ? record.connectChecked[q.index] : record.checked[q.index]}
+		{@const answer = isConnect ? CONNECT.answers[q.index] : CHOICES[q.index].answer}
+		{@const options = isConnect ? CONNECT.results : CHOICES[q.index].options}
+		{@const evidence = isConnect ? CONNECT.evidence[q.index] : CHOICES[q.index].evidence}
+		<p class="kind">{T(`Part ${part + 1}`, `بخش ${fa(part + 1)}`)} · {isConnect ? T('What led to what?', 'چه چیزی باعث چه شد؟') : isFa ? CHOICES[q.index].kind.fa : CHOICES[q.index].kind.en}</p>
+		<p class="q" lang="en" dir="ltr">{isConnect ? CONNECT.causes[q.index] : CHOICES[q.index].question}</p>
+		{#if isConnect}<p class="count">{T('What happened because of this?', 'به خاطر این چه شد؟')}</p>{/if}
+		<div class="options" role="radiogroup" aria-label={isConnect ? T('Its result', 'نتیجه‌اش') : CHOICES[q.index].question}>
+			{#each options as option, i}
+				<button class="option" type="button" role="radio" aria-checked={chosen === i} disabled={checked}
+					class:chosen={chosen === i} class:right={checked && i === answer} class:wrong={checked && chosen === i && i !== answer}
+					onclick={() => pick(i)} lang="en" dir="ltr">
 					{option}
-					{#if checked && i === q.answer}<small>{T('Right answer', 'جواب درست')}</small>{:else if checked && record.choices[choiceQ] === i}<small>{T('Your answer', 'جواب تو')}</small>{/if}
+					{#if checked && i === answer}<small>{T('Right answer', 'جواب درست')}</small>{:else if checked && chosen === i}<small>{T('Your answer', 'جواب تو')}</small>{/if}
 				</button>
 			{/each}
 		</div>
 		{#if checked}
-			<button class="evidence" type="button" onclick={() => hearLine(q.evidence)} lang="en" dir="ltr">“{CONVERSATION[q.evidence].text}”</button>
-			{@render bottom(choiceQ === CHOICES.length - 1 ? T('See how it connects', 'ببین چطور به هم ربط دارند') : T('Next', 'بعدی'), next)}
+			<button class="evidence" type="button" onclick={() => hearLine(evidence)} lang="en" dir="ltr">“{CONVERSATION[evidence].text}”</button>
+			{@render bottom(STEPS[record.step + 1]?.kind === 'end' ? T('See how it connects', 'ببین چطور به هم ربط دارند') : STEPS[record.step + 1]?.kind === 'listen' ? T('Next part', 'بخش بعدی') : T('Next', 'بعدی'), next)}
 		{:else}
 			{@render again()}
-			{@render bottom(T('Check', 'بررسی'), () => checkChoice(choiceQ), record.choices[choiceQ] === null)}
+			{@render bottom(T('Check', 'بررسی'), check, chosen === null)}
 		{/if}
 
 	{:else}
 		{@const score = scoreConnect(record)}
-		<p class="kind">{T(`${score.correct} of ${TOTAL_POINTS} correct today`, `امروز ${score.correct.toLocaleString('fa-IR')} از ${TOTAL_POINTS.toLocaleString('fa-IR')} را درست جواب دادی`)}</p>
+		<p class="kind">{T(`${score.correct} of ${TOTAL_POINTS} correct today`, `امروز ${fa(score.correct)} از ${fa(TOTAL_POINTS)} را درست جواب دادی`)}</p>
 		<ol class="script" lang="en" dir="ltr">
 			{#each CONVERSATION as line, i}
 				<li><button class="line" type="button" onclick={() => hearLine(i)}><b>{SPEAKERS[line.who].name}:</b> {#each linkParts(line.text) as part}{#if part.link}<mark>{part.text}</mark>{:else}{part.text}{/if}{/each}</button></li>
@@ -198,10 +199,6 @@
 	.option.wrong { border-color: var(--attention); background: var(--attention-wash); }
 	.option:disabled { cursor: default; color: var(--ink); }
 	.option small { font-size: .8rem; font-weight: 700; color: var(--ink-soft); }
-	.results { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-	.results li { display: grid; gap: 4px; padding: 12px 14px; border-radius: 12px; border: 1.5px solid var(--attention); background: var(--attention-wash); text-align: left; }
-	.results li.right { border-color: var(--leaf); background: var(--leaf-wash); }
-	.mark { font-size: .8rem; font-weight: 700; color: var(--ink-soft); }
 	.evidence { padding: 12px 14px; border: 0; border-inline-start: 3px solid var(--accent); border-radius: 0 10px 10px 0; background: var(--paper-raised); color: var(--ink-soft); font: inherit; font-style: italic; text-align: left; cursor: pointer; }
 	.script { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; text-align: left; }
 	.script li { line-height: 1.55; }

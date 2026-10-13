@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CHOICES, CONNECT, CONVERSATION, LINK_PHRASES, SPEAKERS, TOTAL_POINTS, emptyConnectRecord, linkParts, scoreConnect } from './listen-connect';
+import { CHOICES, CONNECT, CONVERSATION, LINK_PHRASES, PARTS, QUESTIONS, SPEAKERS, STEPS, TOTAL_POINTS, emptyConnectRecord, linkParts, partLines, scoreConnect } from './listen-connect';
 import { COACH_VOICE } from './coach';
 
 const words = (text: string) => text.split(/\s+/).filter(Boolean).length;
@@ -32,5 +32,18 @@ describe('Listen and connect: Day 1 content follows the rules', () => {
 	});
 	it('highlights the link phrases in a line', () => {
 		expect(linkParts('In that case, just buy it.').filter(p => p.link).map(p => p.text)).toEqual(['In that case']);
+	});
+	it('is heard in three parts that cover every line once, each followed by questions about that part only', () => {
+		expect(PARTS.flatMap((_, p) => partLines(p))).toEqual(CONVERSATION);
+		for (const q of QUESTIONS) {
+			const evidence = q.kind === 'connect' ? CONNECT.evidence[q.index] : CHOICES[q.index].evidence;
+			expect(evidence).toBeGreaterThanOrEqual(PARTS[q.part].from);
+			expect(evidence).toBeLessThanOrEqual(PARTS[q.part].to);
+		}
+		expect(QUESTIONS).toHaveLength(TOTAL_POINTS);
+		expect(STEPS.map(s => s.kind)).toEqual(['listen', 'question', 'question', 'listen', 'question', 'listen', 'question', 'question', 'question', 'end']);
+		expect(CONVERSATION[CONNECT.evidence[0]].text).toContain('wrong flight number');
+		expect(CONVERSATION[CONNECT.evidence[1]].text).toContain('hotel tomorrow');
+		expect(CONVERSATION[CONNECT.evidence[2]].text).toContain('pharmacy');
 	});
 });

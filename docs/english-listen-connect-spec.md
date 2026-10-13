@@ -150,3 +150,20 @@ Three TTS voices, generated once and cached. No AI and no speech-to-text, so not
 **Audio, reload and review:** fair play counting, a fallback when audio fails, reload saving, and a lighter review screen.
 
 **Rules:** new rules for future days, including the no-listening test, option length, rotating link types, and low-stakes topics.
+
+## Owner change: three short parts
+
+The conversation was played in one go (11 lines), with all the questions after it. It is now heard in three parts, each followed by its own questions, one per screen:
+
+| Part | Lines | Questions |
+|---|---|---|
+| 1. The problem | 1–5 | Why did it go to Frankfurt? (connect) · What was supposed to happen? |
+| 2. The plan | 6–7 | The evening flight → what happens? (connect) |
+| 3. The medicine and the charger | 8–11 | The medicine → what does she do? (connect) · What must she keep? · What about the charger? |
+
+- Each part plays at most twice. Its first full play goes straight to its questions.
+- "Read it instead" is offered per part, after trying to play it.
+- Each question is checked on its own screen, with the line that proves it.
+- The full conversation as text, with the link phrases highlighted, stays at the end.
+- The score is still out of 6.
+- A day record saved before this change is dropped (the module starts again).
