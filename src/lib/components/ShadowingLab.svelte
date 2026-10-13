@@ -232,10 +232,15 @@
 
 		{:else}
 			<p class="score" tabindex="-1" bind:this={scoreLine}>{T(`You got ${answer.got} of ${answer.total} words.`, `${fa(answer.got)} از ${fa(answer.total)} کلمه را گرفتی.`)}</p>
-			<p class="sentence" lang="en" dir="ltr">{#each words as word, i}{#if answer.matched[i]}{word}{:else}<mark>{word}<span class="sr-only"> (missed)</span></mark>{/if}{i < words.length - 1 ? ' ' : ''}{/each}</p>
+			<div class="pair">
+				<p class="boxlabel">{answer.typed ? T('You wrote', 'نوشتی') : T('You said', 'گفتی')}</p>
+				<p class="yours" lang="en" dir="ltr">{answer.text}</p>
+				{#if !answer.typed}<small class="hint">{T('Speech-to-text isn’t perfect.', 'تبدیل گفتار به متن کامل نیست.')}</small>{/if}
+				<p class="boxlabel">{T('Correct', 'درست')}</p>
+				<p class="sentence" lang="en" dir="ltr">{#each words as word, i}{#if answer.matched[i]}{word}{:else}<mark>{word}<span class="sr-only"> (missed)</span></mark>{/if}{i < words.length - 1 ? ' ' : ''}{/each}</p>
+			</div>
 			<button class="link" type="button" onclick={() => listenAgain(sentence.text)} disabled={replaying}>▶ {T('Listen again', 'دوباره گوش بده')}</button>
 			<p class="tip">{isFa ? sentence.tip.fa : sentence.tip.en}</p>
-			<p class="mine">{answer.typed ? T('You wrote:', 'نوشتی:') : T('You said:', 'گفتی:')} <bdi lang="en" dir="ltr">“{answer.text}”</bdi>{#if !answer.typed}<small> {T('Speech-to-text isn’t perfect.', 'تبدیل گفتار به متن کامل نیست.')}</small>{/if}</p>
 			{@render bottom(index + 1 < SENTENCES.length ? T('Next sentence', 'جملهٔ بعدی') : T('See your result', 'دیدن نتیجه'), nextSentence)}
 		{/if}
 
@@ -270,9 +275,12 @@
 	.score:focus { outline: none; }
 	.sentence { margin: 0; padding: 14px 16px; border-radius: 14px; background: var(--paper-raised); border: 1px solid var(--accent); line-height: 1.8; text-align: left; font-size: 1.05rem; }
 	mark { background: color-mix(in srgb, var(--attention) 20%, transparent); color: inherit; text-decoration: underline wavy var(--attention); text-underline-offset: 4px; border-radius: 3px; padding: 0 2px; }
+	.pair { display: grid; gap: 6px; }
+	.boxlabel { margin: 4px 0 0; font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); }
+	:global([dir='rtl']) .boxlabel { letter-spacing: normal; }
+	.yours { margin: 0; padding: 12px 16px; border-radius: 14px; background: var(--paper-sunken); line-height: 1.7; text-align: left; font-size: 1.05rem; }
 	.tip { margin: 0; line-height: 1.55; }
 	.mine { margin: 0; color: var(--ink-soft); line-height: 1.5; }
-	.mine small { display: block; }
 	.big { margin: 0; font-family: var(--font-display); font-size: clamp(1.5rem, 6.4vw, 1.9rem); color: var(--accent-deep); }
 	.note { margin: 0; line-height: 1.5; }
 	.hint { margin: 0; color: var(--ink-soft); line-height: 1.5; }
