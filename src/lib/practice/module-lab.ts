@@ -16,7 +16,7 @@ export const LAB_MODULES: LabModule[] = [
 	{ id: 'shadowing', name: { en: 'Shadowing', fa: 'تکرار همزمان' }, href: '/practice/english/lab/shadowing' },
 	{ id: 'quick-fire', name: { en: 'Quick-fire questions', fa: 'سؤال‌های سریع' } },
 	{ id: 'listen-retell', name: { en: 'Listen and retell', fa: 'گوش بده و بازگو کن' }, href: '/practice/english/retell' },
-	{ id: 'listen-connect', name: { en: 'Listen and connect', fa: 'گوش بده و وصل کن' } },
+	{ id: 'listen-connect', name: { en: 'Listen and connect', fa: 'گوش بده و وصل کن' }, href: '/practice/english/lab/listen-connect' },
 	{ id: 'dictation', name: { en: 'Dictation sprint', fa: 'دیکتهٔ سریع' } },
 	{ id: 'minimal-pairs', name: { en: 'Minimal pairs duel', fa: 'دوئل کلمه‌های هم‌آوا' } },
 	{ id: 'connected-speech', name: { en: 'Connected speech', fa: 'گفتار پیوسته' } },
