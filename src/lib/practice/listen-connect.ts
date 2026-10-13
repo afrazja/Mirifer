@@ -47,7 +47,9 @@ export const CONNECT = {
 	causes: ['The tag had the wrong flight number.', 'The backpack is on the evening flight.', 'Her medicine is in the backpack.'],
 	results: ['It reaches her hotel tomorrow morning.', 'Her gray suitcase stays with her.', 'The backpack went to Frankfurt.', 'She buys some at the pharmacy.'],
 	/** For each cause, the index of its result. */
-	answers: [2, 0, 3]
+	answers: [2, 0, 3],
+	/** For each cause, the conversation line that proves it. */
+	evidence: [4, 6, 8]
 };
 
 export interface ChoiceQuestion { kind: DisplayText; question: string; options: string[]; answer: number; evidence: number }
@@ -60,27 +62,53 @@ export const CHOICES: ChoiceQuestion[] = [
 
 export const TOTAL_POINTS = CONNECT.causes.length + CHOICES.length;
 
+/**
+ * The conversation is heard in three short parts (owner's change), each followed by its own
+ * questions, so the learner never has to hold the whole conversation in memory at once.
+ */
+export interface Part { from: number; to: number; title: DisplayText }
+export const PARTS: Part[] = [
+	{ from: 0, to: 4, title: { en: 'The problem', fa: 'مشکل' } },
+	{ from: 5, to: 6, title: { en: 'The plan', fa: 'برنامه' } },
+	{ from: 7, to: 10, title: { en: 'The medicine and the charger', fa: 'دارو و شارژر' } }
+];
+export const partLines = (part: number) => CONVERSATION.slice(PARTS[part].from, PARTS[part].to + 1);
+export type Question = { part: number; kind: 'connect' | 'choice'; index: number };
+/** The questions in order, each after the part it's about. */
+export const QUESTIONS: Question[] = [
+	{ part: 0, kind: 'connect', index: 0 }, { part: 0, kind: 'choice', index: 0 },
+	{ part: 1, kind: 'connect', index: 1 },
+	{ part: 2, kind: 'connect', index: 2 }, { part: 2, kind: 'choice', index: 1 }, { part: 2, kind: 'choice', index: 2 }
+];
+export type Step = { kind: 'listen'; part: number } | { kind: 'question'; q: number } | { kind: 'end' };
+/** Listen to part 1, its questions, listen to part 2, its questions, …, then how it all connects. */
+export const STEPS: Step[] = [
+	...PARTS.flatMap((_, part) => [{ kind: 'listen' as const, part }, ...QUESTIONS.map((q, i) => ({ q, i })).filter(x => x.q.part === part).map(x => ({ kind: 'question' as const, q: x.i }))]),
+	{ kind: 'end' }
+];
+
 /** What the module keeps in this browser for the day (reload, Back). */
 export interface ConnectRecord {
-	plays: number;
-	/** The first play reached its end: the questions are open. */
-	heard: boolean;
+	/** Plays used, per part. */
+	plays: number[];
+	/** Each part's first play reached its end. */
+	heard: boolean[];
 	/** Read the text instead of listening (audio didn't work). */
 	readInstead: boolean;
-	/** Chosen result per cause, and whether Connect was checked. */
+	/** Chosen result per cause, and whether each was checked. */
 	connect: (number | null)[];
-	connectChecked: boolean;
+	connectChecked: boolean[];
 	/** Chosen option per choice question, and whether each was checked. */
 	choices: (number | null)[];
 	checked: boolean[];
-	/** 0 = Connect, 1–3 = the choice questions, 4 = how it connects. */
-	screen: number;
+	/** Where the learner is, in STEPS. */
+	step: number;
 	done: boolean;
 }
 
 export const emptyConnectRecord = (): ConnectRecord => ({
-	plays: 0, heard: false, readInstead: false, connect: CONNECT.causes.map(() => null), connectChecked: false,
-	choices: CHOICES.map(() => null), checked: CHOICES.map(() => false), screen: 0, done: false
+	plays: PARTS.map(() => 0), heard: PARTS.map(() => false), readInstead: false, connect: CONNECT.causes.map(() => null), connectChecked: CONNECT.causes.map(() => false),
+	choices: CHOICES.map(() => null), checked: CHOICES.map(() => false), step: 0, done: false
 });
 
 export function scoreConnect(record: ConnectRecord): { correct: number; total: number } {
@@ -91,14 +119,16 @@ export function scoreConnect(record: ConnectRecord): { correct: number; total: n
 
 const isChoice = (value: unknown, count: number) => value === null || (Number.isInteger(value) && (value as number) >= 0 && (value as number) < count);
 
-/** Checks a saved record before using it (it comes back from browser storage). */
+/** Checks a saved record before using it (it comes back from browser storage). A record from before the parts is dropped. */
 export function asConnectRecord(value: unknown): ConnectRecord | null {
 	const r = value as ConnectRecord | null;
-	if (!r || typeof r !== 'object' || typeof r.done !== 'boolean' || typeof r.heard !== 'boolean' || typeof r.connectChecked !== 'boolean') return null;
-	if (!Number.isInteger(r.plays) || r.plays < 0 || r.plays > MAX_PLAYS || !Number.isInteger(r.screen) || r.screen < 0 || r.screen > CHOICES.length + 1) return null;
+	if (!r || typeof r !== 'object' || typeof r.done !== 'boolean') return null;
+	const flags = (v: unknown, n: number) => Array.isArray(v) && v.length === n && v.every(x => typeof x === 'boolean');
+	if (!Array.isArray(r.plays) || r.plays.length !== PARTS.length || !r.plays.every(n => Number.isInteger(n) && n >= 0 && n <= MAX_PLAYS)) return null;
+	if (!flags(r.heard, PARTS.length) || !flags(r.connectChecked, CONNECT.causes.length) || !flags(r.checked, CHOICES.length)) return null;
+	if (!Number.isInteger(r.step) || r.step < 0 || r.step >= STEPS.length) return null;
 	if (!Array.isArray(r.connect) || r.connect.length !== CONNECT.causes.length || !r.connect.every(v => isChoice(v, CONNECT.results.length))) return null;
 	if (!Array.isArray(r.choices) || r.choices.length !== CHOICES.length || !r.choices.every((v, i) => isChoice(v, CHOICES[i].options.length))) return null;
-	if (!Array.isArray(r.checked) || r.checked.length !== CHOICES.length || !r.checked.every(v => typeof v === 'boolean')) return null;
 	return { ...r, readInstead: r.readInstead === true };
 }
 

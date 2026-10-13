@@ -21,11 +21,12 @@ describe('saved module records', () => {
 		saveRecord('s1', 'big', 'x'.repeat(300_000)); expect(loadRecord('s1', 'big')).toBeNull();
 	});
 	it('checks a saved Listen and connect record before showing it', () => {
-		const ok = { ...emptyConnectRecord(), plays: 1, heard: true, connect: [2, 0, null] };
+		const ok = { ...emptyConnectRecord(), plays: [1, 0, 0], heard: [true, false, false], connect: [2, 0, null], step: 2 };
 		expect(asConnectRecord(ok)).toEqual(ok);
 		expect(asConnectRecord(null)).toBeNull();
 		expect(asConnectRecord({ rounds: [] })).toBeNull(); // the old module's record
-		expect(asConnectRecord({ ...ok, plays: 5 })).toBeNull();
+		expect(asConnectRecord({ ...ok, plays: 1, heard: true, screen: 0 })).toBeNull(); // from before the parts
+		expect(asConnectRecord({ ...ok, plays: [5, 0, 0] })).toBeNull();
 		expect(asConnectRecord({ ...ok, connect: [9, 0, 0] })).toBeNull();
 	});
 });
