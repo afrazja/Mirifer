@@ -58,7 +58,8 @@ export function measureLevel(stream: MediaStream): MicLevel {
 		voiced: () => (measured ? voiced : Infinity),
 		quietFor: () => quiet,
 		longPauses: () => pauses,
-		setPaused: value => { paused = value; },
+		// Quiet while paused isn't a pause in their speech.
+		setPaused: value => { paused = value; if (!value) quiet = 0; },
 		stop: () => { clearInterval(timer); void context.close().catch(() => {}); }
 	};
 }
