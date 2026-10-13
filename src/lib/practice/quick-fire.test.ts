@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { OPENERS, QUESTIONS_PER_ROUND, asQuickFire, emptyQuickFire, fallbackQuestion, gaveReason, questionOk, summarize, type Turn } from './quick-fire';
+import { OPENERS, QUESTIONS_PER_ROUND, asQuickFire, changedParts, emptyQuickFire, fallbackQuestion, gaveReason, newTurn, questionOk, sameAnswer, summarize, type Turn } from './quick-fire';
 
-const turn = (answer: string | null, startMs: number | null = 1000): Turn => ({ question: 'Q?', answer, better: null, startMs });
+const turn = (answer: string | null, startMs: number | null = 1000, offTopic = false): Turn => ({ ...newTurn('Q?'), answer, startMs, offTopic });
 
 describe('questionOk', () => {
 	it('accepts a short everyday question', () => {
@@ -50,6 +50,11 @@ describe('summarize', () => {
 		const a = 'I like it a lot because it is quiet and close to my work.';
 		expect(summarize(Array.from({ length: 4 }, () => turn(a, 5000))).tip).toBe('start');
 	});
+	it('tips answering the question first when one was off topic', () => {
+		const a = 'I like it a lot because it is quiet and close to my work.';
+		const s = summarize([turn(a, 500), turn('My cat is orange and very big and sleeps all day long.', 500, true)]);
+		expect(s).toMatchObject({ offTopic: 1, tip: 'topic' });
+	});
 	it('spots reasons in natural answers', () => {
 		expect(gaveReason("It's nice, so I go there a lot")).toBe(true);
 		expect(gaveReason('I go to the park')).toBe(false);
@@ -62,9 +67,26 @@ describe('records', () => {
 		expect(r.turns[0].question).toBe(OPENERS[1].question);
 		expect(asQuickFire(JSON.parse(JSON.stringify(r)))).toEqual(r);
 	});
+	it('upgrades a record saved before corrections existed', () => {
+		const old = { opener: 0, turns: [{ question: 'Q?', answer: 'Yes', better: null, startMs: 500 }], done: true };
+		expect(asQuickFire(old)?.turns[0]).toMatchObject({ answer: 'Yes', fixed: null, offTopic: false, retried: false });
+	});
 	it('rejects bad data', () => {
 		expect(asQuickFire(null)).toBeNull();
 		expect(asQuickFire({ opener: 9, turns: [{ question: 'Q?', answer: null }], done: false })).toBeNull();
 		expect(asQuickFire({ opener: 0, turns: [], done: false })).toBeNull();
+	});
+});
+
+describe('corrections', () => {
+	it('marks only the changed words', () => {
+		const parts = changedParts('I go gym after work yesterday', 'I went to the gym after work yesterday.');
+		expect(parts).toEqual([
+			{ text: 'I', changed: false }, { text: 'went to the', changed: true }, { text: 'gym after work yesterday.', changed: false }
+		]);
+	});
+	it('knows when nothing changed', () => {
+		expect(sameAnswer('I usually cook at home.', 'i usually cook at home')).toBe(true);
+		expect(sameAnswer('I usually cook at home.', 'I usually cooks at home')).toBe(false);
 	});
 });

@@ -2,8 +2,8 @@
  * "Quick-fire questions".
  *
  * - multipart {audio, seconds}: transcribes one short answer (OpenAI); the audio is not stored.
- * - JSON {kind: 'turn', turns, asked, last}: the next question, following on from the last answer, and
- *   the last answer said better. One small call, kept short for speed; a question that fails its
+ * - JSON {kind: 'turn', turns, asked, last}: whether the last answer fits its question, the next
+ *   question (following on from it), and the last answer corrected and said better. One small call, kept short for speed; a question that fails its
  *   checks comes back as null and the browser asks a ready-made follow-up instead. Spends one unit
  *   of allowance per round (on the last answer).
  *
@@ -58,9 +58,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const asked = parsed.data.asked?.length ? parsed.data.asked : turns.map(t => t.question);
 	const raw = await askChain<RawTurn>({
 		label: 'English quick-fire', system: quickFirePrompt(asked.length, last), user: asChat(turns),
-		schema: RawTurnSchema, ...turnSchemas, temperature: 0.6, maxTokens: 220
+		schema: RawTurnSchema, ...turnSchemas, temperature: 0.6, maxTokens: 400
 	});
-	if (!raw) return json({ next: null, better: null });
+	if (!raw) return json({ onTopic: true, next: null, fixed: null, better: null });
 	if (last) await recordAllowance(locals, user, 0, 'quick-fire-v1');
 	return json(checkTurn(raw, asked, turns[turns.length - 1].answer, last));
 };

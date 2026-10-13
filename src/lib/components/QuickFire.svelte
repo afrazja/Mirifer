@@ -2,8 +2,9 @@
 	/**
 	 * "Quick-fire questions": six short personal questions in a fast chat. Mira asks; recording starts
 	 * by itself when she finishes and ends by itself after a short silence; the next question follows
-	 * from the answer (AI), or is a ready-made follow-up if the AI is slow or unsure. Feedback (your
-	 * answers said better, quick starts, reasons) comes only at the end. Recordings are never stored.
+	 * from the answer (AI), or is a ready-made follow-up if the AI is slow or unsure. An answer that
+	 * doesn't fit the question is asked again once. Feedback (each answer corrected and said better,
+	 * quick starts, reasons) comes at the end. Recordings are never stored.
 	 */
 	import { onDestroy, onMount } from 'svelte';
 	import { playAudioPromise, stopAllAudio } from '$services/tts';
@@ -11,7 +12,7 @@
 	import { SILENT_BELOW, measureLevel, type MicLevel } from '$utils/mic-level';
 	import {
 		AI_WAIT_MS, ANSWER_MAX_SECONDS, END_AFTER_QUIET, NO_ANSWER_AFTER, OPENERS, QUESTIONS_PER_ROUND, QUICK_START_MS,
-		emptyQuickFire, fallbackQuestion, gaveReason, isExtended, summarize, type QuickFireRecord
+		changedParts, emptyQuickFire, fallbackQuestion, gaveReason, isExtended, newTurn, sameAnswer, summarize, type QuickFireRecord
 	} from '$lib/practice/quick-fire';
 
 	let { isFa = false, initial = null, first = false, onSave, onDone }: {
@@ -26,14 +27,15 @@
 		en: 'Let’s have a quick chat. I’ll ask you six short questions about you. Answer straight away, in two or three sentences: say your answer, then why. Recording starts by itself when I finish each question.',
 		fa: 'بیا یک گپ سریع بزنیم. شش سؤال کوتاه دربارهٔ خودت می‌پرسم. فوراً جواب بده، در دو سه جمله: جوابت را بگو و بعد بگو چرا. وقتی هر سؤال تمام شود، ضبط خودش شروع می‌شود.'
 	};
-	const BYE = 'That’s it. Nice chat!';
+	const BYE = 'That’s it. Nice chat! Now let’s look at your answers.';
+	const AGAIN = 'Hmm, that doesn’t really answer my question. Listen again.';
 
 	type Status = 'asking' | 'recording' | 'listening' | 'thinking' | 'missed' | 'failed' | 'denied';
 	// svelte-ignore state_referenced_locally
 	let record = $state<QuickFireRecord>(initial ?? emptyQuickFire(0));
 	// svelte-ignore state_referenced_locally
 	let stage = $state<'ready' | 'chat' | 'result'>(initial?.done ? 'result' : 'ready');
-	let status = $state<Status>('asking'), elapsed = $state(0), lastHeard = $state('');
+	let status = $state<Status>('asking'), elapsed = $state(0), lastHeard = $state(''), notice = $state('');
 	let stream: MediaStream | null = null, level: MicLevel | null = null, recorder: MediaRecorder | null = null, chunks: Blob[] = [];
 	let startedAt = 0, startMs: number | null = null, voicedAtStart = 0, timer: ReturnType<typeof setInterval> | undefined, interrupted = false, lastBlob: Blob | null = null;
 	let heading: HTMLElement | undefined = $state();
@@ -68,8 +70,9 @@
 	}
 
 	/** Mira asks; when she finishes, recording starts by itself. */
-	async function ask() {
+	async function ask(keepNotice = false) {
 		status = 'asking'; lastHeard = '';
+		if (!keepNotice) notice = '';
 		level?.setPaused(true); // her voice through the speaker is not the learner's
 		await say(current.question);
 		if (stage !== 'chat' || status !== 'asking') return;
@@ -124,42 +127,54 @@
 		if (text === null) { status = 'failed'; return; }
 		lastBlob = null; lastHeard = text;
 		const turns = [...record.turns];
-		turns[turns.length - 1] = { ...turns[turns.length - 1], answer: text, startMs };
+		turns[turns.length - 1] = { ...turns[turns.length - 1], answer: text, fixed: null, better: null, offTopic: false, startMs };
 		record = { ...record, turns }; persist();
 		await nextQuestion();
 	}
 
-	/** One small AI call: the next question (or a ready-made one if it's slow or unsure) and this answer said better. */
+	type Reply = { onTopic: boolean; next: string | null; fixed: string | null; better: string | null };
+	/** One small AI call: does the answer fit, the next question (or a ready-made one if it's slow or unsure), and this answer corrected and said better. */
 	async function nextQuestion() {
-		status = 'thinking';
+		status = 'thinking'; notice = '';
 		const index = record.turns.length - 1, last = record.turns.length >= QUESTIONS_PER_ROUND;
+		const answer = record.turns[index].answer;
 		const answered = record.turns.filter(t => t.answer).map(t => ({ question: t.question, answer: t.answer! }));
 		const call = answered.length
 			? fetch('/api/english/quick-fire', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind: 'turn', turns: answered, asked: record.turns.map(t => t.question), last }) })
-				.then(r => (r.ok ? r.json() : null)).catch(() => null) as Promise<{ next: string | null; better: string | null } | null>
+				.then(r => (r.ok ? r.json() : null)).catch(() => null) as Promise<Reply | null>
 			: Promise.resolve(null);
-		// Whenever it arrives, the better answer is kept for the end.
+		// Whenever it arrives, the feedback is kept for the end (unless they've answered this question again since).
 		void call.then(reply => {
-			if (!reply?.better || !record.turns[index]) return;
-			const turns = [...record.turns]; turns[index] = { ...turns[index], better: reply.better };
+			const turn = record.turns[index];
+			if (!reply || !turn || turn.answer !== answer) return;
+			const turns = [...record.turns];
+			turns[index] = { ...turn, fixed: reply.fixed ?? turn.fixed, better: reply.better ?? turn.better, offTopic: reply.onTopic === false };
 			record = { ...record, turns }; persist();
 		});
-		if (last) {
-			await Promise.race([call, new Promise(resolve => setTimeout(resolve, AI_WAIT_MS * 1.5))]);
-			finishChat(); return;
+		const reply = await Promise.race([call, new Promise<null>(resolve => setTimeout(() => resolve(null), last ? AI_WAIT_MS * 1.5 : AI_WAIT_MS))]);
+		if (stage !== 'chat') return;
+		// Off topic: ask the same question once more.
+		if (reply?.onTopic === false && !record.turns[index].retried) {
+			const turns = [...record.turns]; turns[index] = { ...turns[index], retried: true };
+			record = { ...record, turns }; persist();
+			notice = T('That doesn’t really answer the question. Listen again.', 'این جواب سؤال نبود. دوباره گوش بده.');
+			status = 'asking';
+			await say(AGAIN);
+			if (stage === 'chat') void ask(true);
+			return;
 		}
-		const reply = await Promise.race([call, new Promise<null>(resolve => setTimeout(() => resolve(null), AI_WAIT_MS))]);
+		if (last) { finishChat(); return; }
 		const asked = record.turns.map(t => t.question);
 		const question = reply?.next ?? fallbackQuestion(record.opener, asked);
-		record = { ...record, turns: [...record.turns, { question, answer: null, better: null, startMs: null }] }; persist();
+		record = { ...record, turns: [...record.turns, newTurn(question)] }; persist();
 		void ask();
 	}
 	/** No answer heard: try the same question again, or skip it (a ready-made follow-up comes next). */
-	function tryAgain() { void ask(); }
+	function tryAgain() { void ask(true); }
 	async function skip() {
 		if (record.turns.length >= QUESTIONS_PER_ROUND) { finishChat(); return; }
 		const question = fallbackQuestion(record.opener, record.turns.map(t => t.question));
-		record = { ...record, turns: [...record.turns, { question, answer: null, better: null, startMs: null }] }; persist();
+		record = { ...record, turns: [...record.turns, newTurn(question)] }; persist();
 		void ask();
 	}
 	function finishChat() {
@@ -178,12 +193,16 @@
 
 	const summary = $derived(summarize(record.turns));
 	const tipText = $derived({
+		topic: T('Listen to the question and answer it directly first. Then add more.', 'به سؤال گوش بده و اول مستقیم جوابش را بده. بعد بیشتر بگو.'),
 		reason: T('Next time, after your answer, add a reason: “…, because…”.', 'دفعهٔ بعد بعد از جوابت یک دلیل هم بگو: «…, because…».'),
 		longer: T('Try to say two or three sentences, not just one.', 'سعی کن دو سه جمله بگویی، نه فقط یکی.'),
 		start: T('Try to start straight away, even with “Well, …” while you think.', 'سعی کن فوراً شروع کنی، حتی با «Well, …» وقتی فکر می‌کنی.'),
 		great: T('Quick starts and full answers. That’s a natural chat.', 'شروع‌های سریع و جواب‌های کامل. این یعنی یک گپ طبیعی.')
 	}[summary.tip]);
 	const parts = (text: string) => text.split(/(\[[^\]]*\])/).filter(Boolean).map(p => (p.startsWith('[') ? { text: p.slice(1, -1), added: true } : { text: p, added: false }));
+	// A few seconds after the chat ends, a reply that hasn't come won't come.
+	let waiting = $state(true);
+	$effect(() => { if (stage === 'result') { const t = setTimeout(() => (waiting = false), 8000); return () => clearTimeout(t); } });
 	const remaining = $derived(Math.max(0, Math.ceil(ANSWER_MAX_SECONDS - elapsed)));
 </script>
 
@@ -202,6 +221,7 @@
 		<p class="label">{T(`Question ${number} of ${QUESTIONS_PER_ROUND}`, `سؤال ${fa(number)} از ${fa(QUESTIONS_PER_ROUND)}`)}</p>
 		<div class="dots" aria-hidden="true">{#each Array(QUESTIONS_PER_ROUND) as _, i}<span class:done={i < number - 1} class:now={i === number - 1}></span>{/each}</div>
 		<p class="question" lang="en" dir="ltr">{current.question}</p>
+		{#if notice && (status === 'asking' || status === 'recording')}<p class="note offtopic" role="status">{notice}</p>{/if}
 
 		{#if status === 'asking'}
 			<p class="hint">{T('Mira is asking…', 'میرا دارد می‌پرسد…')}</p>
@@ -237,13 +257,18 @@
 					<p class="q" lang="en" dir="ltr">{turn.question}</p>
 					{#if turn.answer}
 						<p class="you" lang="en" dir="ltr"><span class="who">{T('You said', 'گفتی')}</span>{turn.answer}
-							{#if gaveReason(turn.answer)}<small class="ok">✓ {T('reason', 'دلیل')}</small>{/if}{#if !isExtended(turn.answer)}<small>{T('short', 'کوتاه')}</small>{/if}</p>
-						{#if turn.better}<p class="better" lang="en" dir="ltr"><span class="who">{T('A fuller answer', 'یک جواب کامل‌تر')}</span>{#each parts(turn.better) as part}{#if part.added}<mark>{part.text}</mark>{:else}{part.text}{/if}{/each}</p>{/if}
+							{#if turn.offTopic}<small class="off">{T('didn’t answer the question', 'جواب سؤال نبود')}</small>{:else}{#if gaveReason(turn.answer)}<small class="ok">✓ {T('reason', 'دلیل')}</small>{/if}{#if !isExtended(turn.answer)}<small>{T('short', 'کوتاه')}</small>{/if}{/if}</p>
+						{#if turn.fixed}
+							{#if sameAnswer(turn.fixed, turn.answer)}<p class="nofix">✓ {T('No mistakes', 'بدون اشتباه')}</p>
+							{:else}<p class="fixed" lang="en" dir="ltr"><span class="who">{T('Corrected', 'درست‌شده')}</span>{#each changedParts(turn.answer, turn.fixed) as part, i}{i ? ' ' : ''}{#if part.changed}<strong>{part.text}</strong>{:else}{part.text}{/if}{/each}</p>{/if}
+						{/if}
+						{#if turn.better}<p class="better" lang="en" dir="ltr"><span class="who">{turn.offTopic ? T('An answer to this question', 'یک جواب برای این سؤال') : T('A fuller answer', 'یک جواب کامل‌تر')}</span>{#each parts(turn.better) as part}{#if part.added}<mark>{part.text}</mark>{:else}{part.text}{/if}{/each}</p>{/if}
+						{#if !turn.fixed && !turn.better}<p class="hint">{waiting ? T('Mira is still checking this answer…', 'میرا هنوز دارد این جواب را بررسی می‌کند…') : T('No feedback for this answer: Mira didn’t reply in time.', 'برای این جواب بازخوردی نیامد: میرا به‌موقع جواب نداد.')}</p>{/if}
 					{:else}<p class="you">{T('No answer', 'بدون جواب')}</p>{/if}
 				</li>
 			{/each}
 		</ol>
-		{#if record.turns.some(t => t.better && t.better.includes('['))}<p class="hint">{T('Highlighted: a reason you could add.', 'رنگی: دلیلی که می‌توانستی اضافه کنی.')}</p>{/if}
+		<p class="hint">{T('Bold: what was corrected. Highlighted: something you could add.', 'پررنگ: چیزی که درست شد. رنگی: چیزی که می‌توانستی اضافه کنی.')}</p>
 		<button class="link quiet" type="button" onclick={finish}>{T('Finish', 'تمام')}</button>
 		{@render bottom(T('Another round', 'یک دور دیگر'), anotherRound)}
 	{/if}
@@ -276,6 +301,11 @@
 	.you, .better { margin: 0; padding: 10px 14px; border-radius: 12px; line-height: 1.55; text-align: left; }
 	.you { background: var(--paper-sunken); }
 	.better { background: var(--paper-raised); border: 1px solid var(--accent); }
+	.fixed { margin: 0; padding: 10px 14px; border-radius: 12px; line-height: 1.55; text-align: left; background: var(--paper-raised); border: 1px solid var(--line); }
+	.fixed strong { color: var(--leaf); }
+	.nofix { margin: 0; font-size: .88rem; font-weight: 700; color: var(--leaf); }
+	.you small.off { color: var(--attention); }
+	.offtopic { color: var(--attention); font-weight: 600; }
 	.who { display: block; font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-soft); }
 	:global([dir='rtl']) .who { letter-spacing: normal; }
 	.you small { margin-inline-start: 8px; font-size: .75rem; font-weight: 700; color: var(--ink-soft); }
