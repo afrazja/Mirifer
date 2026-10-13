@@ -1,6 +1,6 @@
 # "Shadowing" (Module lab): spec v2
 
-Status: for owner approval. v1 was reviewed by the English-coach and learning-UX reviewers, and their points are applied (see the end).
+Status: **approved by the owner and built (Module lab).** v1 was reviewed by the English-coach and learning-UX reviewers, and their points are applied (see the end).
 
 Owner's fixed decisions:
 - audio only, never the text while listening;
