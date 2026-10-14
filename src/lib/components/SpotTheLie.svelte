@@ -23,7 +23,7 @@
 
 	const INTRO = {
 		en: `You’ll hear ${TALKS.length} people talk about their lives. After each one, I’ll say three sentences about it. Two are true, and one is a lie. Listen carefully and find the lie. Watch out: the lie often uses the same words as the talk.`,
-		fa: `صحبت ${TALKS.length.toLocaleString('fa-IR')} نفر را دربارهٔ زندگی‌شان می‌شنوی. بعد از هر کدام، سه جمله دربارهٔ آن می‌گویم. دو تا درست است و یکی دروغ. با دقت گوش بده و دروغ را پیدا کن. حواست باشد: دروغ اغلب همان کلمه‌های صحبت را به کار می‌برد.`
+		fa: `حرف‌های ${TALKS.length.toLocaleString('fa-IR')} نفر را دربارهٔ زندگی‌شان می‌شنوی. بعد از هر کدام، سه جمله دربارهٔ حرف‌هایش می‌گویم. دو تا درست است و یکی دروغ. با دقت گوش بده و دروغ را پیدا کن. حواست باشد: جملهٔ دروغ اغلب همان کلمه‌هایی را دارد که شنیدی.`
 	};
 
 	// svelte-ignore state_referenced_locally
@@ -95,7 +95,7 @@
 			if (started) markHeard(i); else { failed = true; break; }
 		}
 		playing = null;
-		announce = T('Which one is the lie?', 'کدام دروغ است؟');
+		announce = T('Which one is the lie?', 'کدام‌یکی دروغ است؟');
 	}
 	/** Tapping a statement plays it again and chooses it. */
 	async function tapStatement(i: 0 | 1 | 2) {
@@ -143,11 +143,11 @@
 		{@render bottom(T('Start', 'شروع'), start)}
 
 	{:else if stage === 'talk'}
-		<p class="label" aria-hidden="true">{T(`Talk ${index + 1} of ${TALKS.length}`, `صحبت ${fa(index + 1)} از ${fa(TALKS.length)}`)} · <bdi>{talk.speaker}</bdi></p>
+		<p class="label" aria-hidden="true">{T(`Talk ${index + 1} of ${TALKS.length}`, `صحبت ${fa(index + 1)} از ${fa(TALKS.length)}`)} · <bdi>{isFa ? talk.speakerFa : talk.speaker}</bdi></p>
 		<div class="dots" aria-hidden="true">{#each TALKS as _, i}<span class:done={i < index} class:now={i === index}></span>{/each}</div>
 
 		{#if record.step === 'listen'}
-			<p class="ask">{T(`Listen to ${talk.speaker}.`, `به ${talk.speaker} گوش بده.`)}</p>
+			<p class="ask">{T(`Listen to ${talk.speaker}.`, `به ${talk.speakerFa} گوش بده.`)}</p>
 			{#if plays === 0}
 				<button class="listen" type="button" onclick={listen} disabled={playing === 'talk'}>
 					<span class="icon" aria-hidden="true">{playing === 'talk' ? '♪' : '▶'}</span>
@@ -155,13 +155,13 @@
 				</button>
 			{:else}
 				{#if playing === 'talk'}<p class="hint">{T('Listen…', 'گوش بده…')}</p>
-				{:else if plays < MAX_TALK_PLAYS}<button class="link quiet" type="button" onclick={listen}>▶ {T('Hear it again (1 left)', 'دوباره بشنو (۱ بار مانده)')}</button>{/if}
+				{:else if plays < MAX_TALK_PLAYS}<button class="link quiet" type="button" onclick={listen}>▶ {T('Hear it again (1 left)', 'دوباره بشنو (یک بار دیگر)')}</button>{/if}
 				{@render bottom(T('Next: the three sentences', 'بعدی: سه جمله'), toStatements, playing === 'talk')}
 			{/if}
 			{#if failed}<p class="note">{T('Couldn’t play. Try again; this didn’t count.', 'پخش نشد. دوباره امتحان کن؛ این یکی حساب نشد.')}</p>{/if}
 
 		{:else if record.step === 'choose'}
-			<p class="ask">{T('Which one is the lie?', 'کدام دروغ است؟')}</p>
+			<p class="ask">{T('Which one is the lie?', 'کدام‌یکی دروغ است؟')}</p>
 			<div class="cards" dir="ltr">
 				{#each LETTERS as letter, i}
 					<button class="card" class:chosen={selected === i} class:now={playing === i} type="button" onclick={() => tapStatement(i as 0 | 1 | 2)} aria-pressed={selected === i}
@@ -171,13 +171,13 @@
 					</button>
 				{/each}
 			</div>
-			<p class="hint">{allHeard ? T('Tap a sentence to hear it again and choose it.', 'روی یک جمله بزن تا دوباره بشنوی و انتخابش کنی.') : T('Listen to all three.', 'هر سه را گوش بده.')}</p>
+			<p class="hint">{allHeard ? T('Tap a sentence to hear it again and choose it.', 'روی یک جمله بزن تا دوباره بشنوی و انتخابش کنی.') : T('Listen to all three.', 'به هر سه گوش بده.')}</p>
 			{#if failed}<p class="note">{T('Couldn’t play. Tap a sentence to try again.', 'پخش نشد. روی یک جمله بزن تا دوباره امتحان کنی.')}</p>{/if}
-			{#if plays < MAX_TALK_PLAYS && playing === null}<button class="link quiet" type="button" onclick={listen}>▶ {T(`Hear ${talk.speaker} again (1 left)`, `دوباره به ${talk.speaker} گوش بده (۱ بار مانده)`)}</button>{/if}
-			{@render bottom(selected === null ? T('Choose the lie', 'دروغ را انتخاب کن') : T(`${LETTERS[selected]} is the lie`, `${LETTERS[selected]} دروغ است`), check, selected === null || !allHeard)}
+			{#if plays < MAX_TALK_PLAYS && playing === null}<button class="link quiet" type="button" onclick={listen}>▶ {T(`Hear ${talk.speaker} again (1 left)`, `دوباره به ${talk.speakerFa} گوش بده (یک بار دیگر)`)}</button>{/if}
+			{@render bottom(selected === null ? T('Choose the lie', 'دروغ را انتخاب کن') : T(`${LETTERS[selected]} is the lie`, `جملهٔ ${LETTERS[selected]} دروغ است`), check, selected === null || !allHeard)}
 
 		{:else if pick !== null}
-			<p class="result" class:ok={pick === talk.lie} tabindex="-1" bind:this={resultLine}>{pick === talk.lie ? `✓ ${T('You found the lie!', 'دروغ را پیدا کردی!')}` : `✗ ${T(`The lie was ${LETTERS[talk.lie]}.`, `دروغ ${LETTERS[talk.lie]} بود.`)}`}</p>
+			<p class="result" class:ok={pick === talk.lie} tabindex="-1" bind:this={resultLine}>{pick === talk.lie ? `✓ ${T('You found the lie!', 'دروغ را پیدا کردی!')}` : `✗ ${T(`The lie was ${LETTERS[talk.lie]}.`, `جملهٔ ${LETTERS[talk.lie]} دروغ بود.`)}`}</p>
 			<ul class="statements" dir="ltr">
 				{#each talk.statements as statement, i}
 					<li class:lie={i === talk.lie}>
@@ -188,7 +188,7 @@
 				{/each}
 			</ul>
 			<div class="proof">
-				<p class="who">{T(`What ${talk.speaker} said`, `${talk.speaker} گفت`)}</p>
+				<p class="who">{T(`What ${talk.speaker} said`, `${talk.speakerFa} گفت:`)}</p>
 				<p class="said" lang="en" dir="ltr">“{talk.sentences[talk.proof]}”</p>
 				<button class="link" type="button" onclick={hearProof} disabled={playing === 'proof'}>▶ {T('Hear that part', 'همان قسمت را بشنو')}</button>
 			</div>
@@ -198,19 +198,19 @@
 
 	{:else}
 		<p class="label">{T('Your result', 'نتیجهٔ تو')}</p>
-		<p class="big">{T(`You found ${summary.right} of ${TALKS.length} lies`, `${fa(summary.right)} دروغ از ${fa(TALKS.length)} را پیدا کردی`)}</p>
+		<p class="big">{T(`You found ${summary.right} of ${TALKS.length} lies`, `${fa(summary.right)} از ${fa(TALKS.length)} دروغ را پیدا کردی`)}</p>
 		<ul class="rows">
 			{#each summary.traps as row}
 				<li class:miss={!row.caught}>
-					<span><bdi>{TALKS[row.talk].speaker}</bdi> · {#if isFa}<MixedText text={TRAP_LABEL[row.trap].fa} />{:else}{TRAP_LABEL[row.trap].en}{/if}</span>
+					<span><bdi>{isFa ? TALKS[row.talk].speakerFa : TALKS[row.talk].speaker}</bdi> · {#if isFa}<MixedText text={TRAP_LABEL[row.trap].fa} />{:else}{TRAP_LABEL[row.trap].en}{/if}</span>
 					<span>{row.caught ? '✓' : '✗'}</span>
 				</li>
 			{/each}
 		</ul>
 		{#each summary.traps.filter(t => !t.caught) as row}
-			<p class="tip"><strong><bdi>{TALKS[row.talk].speaker}</bdi>:</strong>{isFa ? '‏' : ''} {#if isFa}<MixedText text={TALKS[row.talk].why.fa} />{:else}{TALKS[row.talk].why.en}{/if}</p>
+			<p class="tip"><strong><bdi>{isFa ? TALKS[row.talk].speakerFa : TALKS[row.talk].speaker}</bdi>:</strong>{isFa ? '‏' : ''} {#if isFa}<MixedText text={TALKS[row.talk].why.fa} />{:else}{TALKS[row.talk].why.en}{/if}</p>
 		{:else}
-			<p class="tip">{T('You caught every trap. Sharp listening!', 'همهٔ تله‌ها را گرفتی. خیلی دقیق گوش دادی!')}</p>
+			<p class="tip">{T('You caught every trap. Sharp listening!', 'هیچ تله‌ای گولت نزد. خیلی دقیق گوش دادی!')}</p>
 		{/each}
 		<button class="link quiet" type="button" onclick={again}>{T('Try it again', 'دوباره امتحان کن')}</button>
 		{@render bottom(T('Done', 'تمام'), finish)}

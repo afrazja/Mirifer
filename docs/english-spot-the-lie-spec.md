@@ -1,6 +1,6 @@
 # "Spot the lie" (Module lab): spec v1
 
-Status: **approved by the owner in chat ("do your recommendation but statement only in audio") and built (Module lab).** Content reviewed by the English-coach reviewer (fixes applied) and the Persian-localization reviewer.
+Status: **approved by the owner in chat ("do your recommendation but statement only in audio") and built (Module lab).** Content reviewed by the English-coach and Persian-localization reviewers; their fixes are applied (speaker names are written in Persian letters in Persian text).
 
 Owner's decisions:
 - five talks;

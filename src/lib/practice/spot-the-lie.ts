@@ -17,12 +17,14 @@ export const TRAP_LABEL: Record<Trap, DisplayText> = {
 	'used-to': { en: 'then (“used to”) or now', fa: 'قبلاً («used to») یا الان' },
 	detail: { en: 'a changed detail', fa: 'جزئیات عوض‌شده' },
 	person: { en: 'the wrong person', fa: 'آدم اشتباه' },
-	negative: { en: 'a flipped “not”', fa: '«not» برعکس‌شده' },
-	maybe: { en: 'maybe or for sure', fa: 'شاید یا قطعی' }
+	negative: { en: 'a flipped “not”', fa: 'مثبت یا منفی («not»)' },
+	maybe: { en: 'maybe or for sure', fa: 'شاید یا حتماً' }
 };
 
 export interface Talk {
 	speaker: string;
+	/** The speaker's name in Persian letters, for Persian sentences. */
+	speakerFa: string;
 	/** The voice that reads the talk (never Mira's). */
 	voice: 'a' | 'c' | 'd';
 	sentences: string[];
@@ -37,7 +39,7 @@ export interface Talk {
 
 export const TALKS: Talk[] = [
 	{
-		speaker: 'Sara', voice: 'd', trap: 'used-to', lie: 1, proof: 0,
+		speaker: 'Sara', speakerFa: 'سارا', voice: 'd', trap: 'used-to', lie: 1, proof: 0,
 		sentences: [
 			'I used to work in a bank, but last year I started teaching English.',
 			'I teach in the mornings, and in the afternoons I’m studying for a master’s degree.',
@@ -48,7 +50,7 @@ export const TALKS: Talk[] = [
 		why: { en: '“used to” means it was true before, but not now. Sara doesn’t work in a bank anymore.', fa: '«used to» یعنی قبلاً این‌طور بود، ولی الان نیست. سارا دیگر در بانک کار نمی‌کند.' }
 	},
 	{
-		speaker: 'Tom', voice: 'a', trap: 'detail', lie: 2, proof: 0,
+		speaker: 'Tom', speakerFa: 'تام', voice: 'a', trap: 'detail', lie: 2, proof: 0,
 		sentences: [
 			'I usually get up at six thirty, because my train leaves at seven fifteen.',
 			'It takes me about forty minutes to get to work.',
@@ -56,10 +58,10 @@ export const TALKS: Talk[] = [
 			'I’d love to live closer to the office one day.'
 		],
 		statements: ['Tom doesn’t go to the office on Fridays.', 'His trip to work is about forty minutes.', 'His train leaves at six thirty.'],
-		why: { en: 'The lie used a real time from the talk, but for the wrong thing. Tom gets up at 6:30, and his train leaves at 7:15.', fa: 'دروغ از ساعتی که در صحبت بود استفاده کرد، ولی برای چیز دیگری: تام ساعت ۶:۳۰ بیدار می‌شود و قطارش ساعت ۷:۱۵ حرکت می‌کند.' }
+		why: { en: 'The lie used a real time from the talk, but for the wrong thing. Tom gets up at 6:30, and his train leaves at 7:15.', fa: 'جملهٔ دروغ یک ساعتِ واقعی از صحبت را آورد، ولی برای کار دیگری: تام ساعت ۶:۳۰ بیدار می‌شود و قطارش ساعت ۷:۱۵ حرکت می‌کند.' }
 	},
 	{
-		speaker: 'Mike', voice: 'c', trap: 'person', lie: 0, proof: 2,
+		speaker: 'Mike', speakerFa: 'مایک', voice: 'c', trap: 'person', lie: 0, proof: 2,
 		sentences: [
 			'My sister and I are very different.',
 			'She loves cooking, but I can’t even make an omelet.',
@@ -67,10 +69,10 @@ export const TALKS: Talk[] = [
 			'I prefer reading, especially on rainy weekends.'
 		],
 		statements: ['His sister goes running every morning.', 'His sister loves to cook.', 'When it rains on the weekend, he likes to read.'],
-		why: { en: 'The lie took a real detail but gave it to the wrong person: it’s Mike’s brother who goes running every morning, not his sister.', fa: 'دروغ یک جزئیات درست را به آدم اشتباه نسبت داد: برادر مایک هر روز صبح می‌دود، نه خواهرش.' }
+		why: { en: 'The lie took a real detail but gave it to the wrong person: it’s Mike’s brother who goes running every morning, not his sister.', fa: 'جملهٔ دروغ یک نکتهٔ درست را به آدمِ اشتباهی نسبت داد: برادرِ مایک است که هر روز صبح می‌دود، نه خواهرش.' }
 	},
 	{
-		speaker: 'Nina', voice: 'd', trap: 'negative', lie: 0, proof: 1,
+		speaker: 'Nina', speakerFa: 'نینا', voice: 'd', trap: 'negative', lie: 0, proof: 1,
 		sentences: [
 			'I moved to Toronto two years ago.',
 			'I love the city, but I don’t like the winters at all: they’re long and very cold.',
@@ -78,10 +80,10 @@ export const TALKS: Talk[] = [
 			'The snow is still hard for me.'
 		],
 		statements: ['Nina likes the winters in Toronto.', 'She has lived in Toronto for two years.', 'She often spends summer weekends at the lake.'],
-		why: { en: 'The lie dropped one small word. Nina said she doesn’t like the winters. Listen for “don’t” and “not”.', fa: 'دروغ یک کلمهٔ کوچک را حذف کرد. نینا گفت زمستان‌ها را دوست ندارد. به «don’t» و «not» دقت کن.' }
+		why: { en: 'The lie dropped one small word. Nina said she doesn’t like the winters. Listen for “don’t” and “not”.', fa: 'جملهٔ دروغ یک کلمهٔ کوچک را جا انداخت. نینا گفت زمستان‌ها را دوست ندارد. به «don’t» و «not» دقت کن.' }
 	},
 	{
-		speaker: 'David', voice: 'a', trap: 'maybe', lie: 1, proof: 0,
+		speaker: 'David', speakerFa: 'دیوید', voice: 'a', trap: 'maybe', lie: 1, proof: 0,
 		sentences: [
 			'My company might open an office in Dubai next year.',
 			'If it does, I’d like to work there for a year or two.',
@@ -89,7 +91,7 @@ export const TALKS: Talk[] = [
 			'We’ll decide when we know more.'
 		],
 		statements: ['David’s wife likes the idea.', 'His company will open an office in Dubai next year.', 'They’ll decide when they know more.'],
-		why: { en: '“might” means maybe, not for sure. The lie said the company will open an office, but David only said it might.', fa: '«might» یعنی شاید، نه قطعی. دروغ گفت شرکت دفتر باز می‌کند («will»)، ولی دیوید فقط گفت شاید («might»).' }
+		why: { en: '“might” means maybe, not for sure. The lie said the company will open an office, but David only said it might.', fa: '«might» یعنی شاید، نه حتماً. جملهٔ دروغ می‌گفت شرکت حتماً دفتر باز می‌کند («will»)، ولی دیوید فقط گفت شاید («might»).' }
 	}
 ];
 
