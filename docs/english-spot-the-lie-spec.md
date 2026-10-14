@@ -26,7 +26,7 @@ Mira's voice (Ava) only reads the statements, as "Statement A: …" so the lette
 ## The flow (one thing per screen)
 
 1. **Start.** Mira explains in one line. Bottom: "Start".
-2. **Listen.** "Talk 2 of 5 · Tom", a big ▶ Listen (a play counts when it starts; a failed play costs nothing). Then a quiet "▶ Hear it again (1 left)". Bottom: "Next: the three sentences".
+2. **Listen.** "Talk 2 of 5 · Tom", a big ▶ Listen. The talk plays one sentence after another (a whole talk in one request was too long for the voice service: the owner got "Couldn't play"). A play counts when the first sentence starts; a failed play costs nothing. Then a quiet "▶ Hear it again (1 left)". Bottom: "Next: the three sentences".
 3. **Choose.** Mira reads A, B and C one after another; three big cards (A, B, C). Tapping a card plays it again and chooses it. Quiet: "▶ Hear Sara again" if the replay is unused. Bottom: "B is the lie" (unlocks once all three were heard and one is chosen).
 4. **Reveal.** ✓/✗, the three statements as text marked true or lie (and "your choice"), "What Nina said" with the proof sentence and ▶ Hear that part, and the trap explained in English or Persian. Bottom: "Next talk".
 5. **Result.** "You found 4 of 5 lies", ✓/✗ per trap, and the explanation for each missed one. Bottom: "Done". Quiet: "Try it again".
