@@ -7,6 +7,7 @@
 	 * the first play.
 	 */
 	import { onMount } from 'svelte';
+	import MixedText from '$lib/components/MixedText.svelte';
 	import { playAudioPromise, playAudioUrl, stopAllAudio, ttsUrl } from '$services/tts';
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
 	import { ITEMS, MAX_PLAYS, VOICE, emptyDictation, isRight, summarize, type DictationRecord } from '$lib/practice/dictation';
@@ -165,7 +166,7 @@
 				<p class="line" lang="en" dir="ltr">{item.line}</p>
 			</div>
 			<button class="link" type="button" onclick={() => listenAgain(item.line)} disabled={replaying}>▶ {T('Listen again', 'دوباره گوش بده')}</button>
-			{#if !answer.correct || answer.plays > 1}<p class="tip">{isFa ? item.tip.fa : item.tip.en}</p>{/if}
+			{#if !answer.correct || answer.plays > 1}<p class="tip">{#if isFa}<MixedText text={item.tip.fa} />{:else}{item.tip.en}{/if}</p>{/if}
 			{@render bottom(index + 1 < ITEMS.length ? T('Next', 'بعدی') : T('See your result', 'دیدن نتیجه'), nextItem)}
 		{/if}
 
