@@ -21,8 +21,8 @@ export const LAB_MODULES: LabModule[] = [
 	{ id: 'minimal-pairs', name: { en: 'Minimal pairs duel', fa: 'دوئل کلمه‌های هم‌آوا' }, href: '/practice/english/lab/minimal-pairs' },
 	{ id: 'connected-speech', name: { en: 'Connected speech', fa: 'گفتار پیوسته' }, href: '/practice/english/lab/connected-speech' },
 	{ id: 'spot-the-lie', name: { en: 'Spot the lie', fa: 'دروغ را پیدا کن' }, href: '/practice/english/lab/spot-the-lie' },
-	{ id: 'read-rate-respond', name: { en: 'Read, rate, respond', fa: 'بخوان، امتیاز بده، پاسخ بده' }, href: '/practice/english/lab/read-rate' },
-	{ id: 'word-rescue', name: { en: 'Word rescue', fa: 'نجات کلمه‌ها' } }
+	{ id: 'read-rate-respond', name: { en: 'Read, rate, respond', fa: 'بخوان، امتیاز بده، پاسخ بده' }, href: '/practice/english/lab/read-rate' }
+	// "Word rescue" was dropped by the owner: it is a review feature across modules, not a practice module.
 ];
 
 /** A lab run, kept in this browser under its own key, apart from the daily lesson's records. */
