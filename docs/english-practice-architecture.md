@@ -41,6 +41,8 @@ A premium, personalised practice ground for English **listening and speaking** f
 | Listening games | normalise and match, minimal pairs, spot-the-lie, connected speech | deterministic, no LLM | client | M |
 | Reading | text, 1-tap rating, task | deterministic | client | S |
 | Word bank / rescue | flag words, spaced review on string ids | deterministic | client + table (reuse the maths, not `sr_cards`) | M |
+
+> Update (owner, Module lab): "Word rescue" is not a practice module and was dropped from the lab. A cross-module word bank with spaced review may come back later as a review feature of the daily lessons.
 | Levels + metrics | level per skill from the last N results; aggregates | deterministic | server, rebuildable | M |
 | Analytics | `en_*` events (contract is closed: extend `EVENT_NAMES`, allow-lists, tests) | deterministic | existing | S |
 | Quota governor | weighted unit ledger via atomic database function; auth on proxies | deterministic | Supabase + routes | M |

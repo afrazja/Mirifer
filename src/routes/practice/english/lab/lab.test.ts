@@ -10,9 +10,12 @@ const locals = (user: object | null, isAdmin = false) => ({
 const learner = { id: 'u1', email: 'a@b.c', user_metadata: { target_language: 'en' } };
 
 describe('Module lab', () => {
-	it('lists the 16 module types once each', () => {
-		expect(LAB_MODULES).toHaveLength(16);
-		expect(new Set(LAB_MODULES.map(m => m.id)).size).toBe(16);
+	it('lists the 15 module types once each', () => {
+		expect(LAB_MODULES).toHaveLength(15);
+		expect(new Set(LAB_MODULES.map(m => m.id)).size).toBe(15);
+	});
+	it('opens a built module from every card', () => {
+		expect(LAB_MODULES.filter(m => !m.href).map(m => m.id)).toEqual([]);
 	});
 	it('is open to admins only; learners go to the daily lesson', async () => {
 		expect(await layoutLoad({ locals: locals(learner, true) } as any)).toEqual({ labAccess: true });
