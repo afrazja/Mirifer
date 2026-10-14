@@ -10,7 +10,7 @@
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
 	import MixedText from '$lib/components/MixedText.svelte';
 	import {
-		LETTERS, MAX_TALK_PLAYS, STATEMENT_VOICE, TALKS, TRAP_LABEL, emptyLie, statementLine, summarize, talkText, type LieRecord
+		LETTERS, MAX_TALK_PLAYS, STATEMENT_VOICE, TALKS, TRAP_LABEL, emptyLie, statementLine, summarize, type LieRecord
 	} from '$lib/practice/spot-the-lie';
 
 	let { isFa = false, initial = null, first = false, onSave, onDone }: {
@@ -45,7 +45,7 @@
 	onMount(() => {
 		// A reload returns to the same talk and step; nothing plays by itself.
 		if (record.done || record.index >= TALKS.length) stage = 'result';
-		else if (record.index > 0 || record.step !== 'listen' || record.plays[0] > 0) stage = 'talk';
+		else if (record.index > 0 || record.step !== 'listen' || record.plays[0] > 0) { stage = 'talk'; prefetchTalk(record.index); }
 		else if (first) void playAudioPromise(INTRO.en.replace(/’/g, "'"), COACH_RATE, 'en-US', undefined, COACH_VOICE);
 		return () => stopAllAudio();
 	});
@@ -61,22 +61,35 @@
 	function stop() { sequence++; stopAllAudio(); playing = null; }
 	function setStep(step: LieRecord['step']) { record = { ...record, step }; persist(); queueMicrotask(() => heading?.focus()); }
 
-	/** The talk: a play counts the moment it starts; a failed play costs nothing. */
+	/**
+	 * The talk, one sentence after another (a whole talk in one request is too long for the voice
+	 * service). A play counts the moment the first sentence starts; a failed play costs nothing.
+	 */
 	async function listen() {
 		if (plays >= MAX_TALK_PLAYS || playing === 'talk') return;
 		stop(); failed = false; playing = 'talk'; announce = '';
-		const at = index;
-		const { url, playback } = ttsUrl(clean(talkText(talk)), 'en-US', 1, talk.voice);
+		const at = index, mine = sequence;
 		let started = false;
-		await playAudioUrl(url, 20_000, playback, () => {
-			if (started) return;
-			started = true;
-			const used = [...record.plays]; used[at] = Math.min(MAX_TALK_PLAYS, used[at] + 1);
-			record = { ...record, plays: used }; persist();
-		});
+		for (const sentence of talk.sentences) {
+			const { url, playback } = ttsUrl(clean(sentence), 'en-US', 1, talk.voice);
+			let thisStarted = false;
+			await playAudioUrl(url, 15_000, playback, () => {
+				thisStarted = true;
+				if (started) return;
+				started = true;
+				const used = [...record.plays]; used[at] = Math.min(MAX_TALK_PLAYS, used[at] + 1);
+				record = { ...record, plays: used }; persist();
+			});
+			if (mine !== sequence) return;
+			if (!thisStarted) { failed = true; break; }
+		}
 		if (playing === 'talk') playing = null;
-		if (!started) failed = true;
-		else if (record.step === 'listen') announce = T('When you’re ready, go to the statements.', 'هر وقت آماده بودی، برو سراغ جمله‌ها.');
+		if (started && !failed && record.step === 'listen') announce = T('When you’re ready, go to the statements.', 'هر وقت آماده بودی، برو سراغ جمله‌ها.');
+	}
+	/** The next sentences, fetched while the current one plays. */
+	function prefetchTalk(i: number) {
+		const next = TALKS[i];
+		if (next) for (const sentence of next.sentences) void fetch(ttsUrl(clean(sentence), 'en-US', 1, next.voice).url).catch(() => {});
 	}
 	function markHeard(i: number) {
 		if (record.heard[index][i]) return;
@@ -120,10 +133,10 @@
 		const nextIndex = record.index + 1;
 		record = { ...record, index: nextIndex, step: 'listen', done: nextIndex >= TALKS.length }; persist();
 		selected = null; failed = false; announce = '';
-		if (nextIndex >= TALKS.length) stage = 'result';
+		if (nextIndex >= TALKS.length) stage = 'result'; else prefetchTalk(nextIndex);
 		queueMicrotask(() => heading?.focus());
 	}
-	function start() { stopAllAudio(); stage = 'talk'; queueMicrotask(() => heading?.focus()); }
+	function start() { stopAllAudio(); stage = 'talk'; prefetchTalk(index); queueMicrotask(() => heading?.focus()); }
 	function again() { stop(); record = emptyLie(); persist(); selected = null; stage = 'talk'; queueMicrotask(() => heading?.focus()); }
 	function finish() { stop(); onDone(); }
 
