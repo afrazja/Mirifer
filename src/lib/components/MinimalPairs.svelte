@@ -6,6 +6,7 @@
 	 * (kept in memory only, not scored, never sent anywhere).
 	 */
 	import { onDestroy, onMount } from 'svelte';
+	import MixedText from '$lib/components/MixedText.svelte';
 	import { playAudioPromise, playAudioUrl, stopAllAudio, ttsUrl } from '$services/tts';
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
 	import {
@@ -166,7 +167,7 @@
 				{pick === duel.target ? `✓ ${T('Right!', 'درست!')}` : `✗ ${T(`It was “${wordOf(duel)}”.`, `«${wordOf(duel)}» بود.`)}`}
 			</p>
 			<button class="link" type="button" onclick={playBoth} disabled={status === 'playing'}>▶ {T('Hear both', 'هر دو را بشنو')}: <bdi lang="en" dir="ltr">{pair[0]} … {pair[1]}</bdi></button>
-			{#if pick !== duel.target}<p class="tip">{isFa ? CONTRASTS[duel.contrast].tip.fa : CONTRASTS[duel.contrast].tip.en}</p>{/if}
+			{#if pick !== duel.target}<p class="tip">{#if isFa}<MixedText text={CONTRASTS[duel.contrast].tip.fa} />{:else}{CONTRASTS[duel.contrast].tip.en}{/if}</p>{/if}
 			{@render bottom(index + 1 < record.duels.length ? T('Next', 'بعدی') : T('See your result', 'دیدن نتیجه'), next)}
 		{/if}
 
@@ -182,7 +183,7 @@
 		{#if summary.weakest !== null && weakPair}
 			<div class="weak">
 				<p class="boxlabel">{T('Your hardest sounds', 'سخت‌ترین صداها برای تو')}: <bdi lang="en" dir="ltr">{CONTRASTS[summary.weakest].label.en}</bdi></p>
-				<p class="tip">{isFa ? CONTRASTS[summary.weakest].tip.fa : CONTRASTS[summary.weakest].tip.en}</p>
+				<p class="tip">{#if isFa}<MixedText text={CONTRASTS[summary.weakest].tip.fa} />{:else}{CONTRASTS[summary.weakest].tip.en}{/if}</p>
 				<button class="link" type="button" onclick={() => play(both(weakPair))}>▶ {T('Mira', 'میرا')}: <bdi lang="en" dir="ltr">{weakPair[0]} … {weakPair[1]}</bdi></button>
 				<p class="hint">{T(`Now say both words: “${weakPair[0]}, ${weakPair[1]}”. Then compare.`, `حالا هر دو کلمه را بگو: «${weakPair[0]}, ${weakPair[1]}». بعد مقایسه کن.`)}</p>
 				<button class="say" class:rec={sayStatus === 'recording'} type="button" onclick={say}>

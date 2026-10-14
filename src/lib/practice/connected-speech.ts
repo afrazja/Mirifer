@@ -22,27 +22,27 @@ export interface Pattern { label: DisplayText; tip: DisplayText }
 export const PATTERNS: Pattern[] = [
 	{
 		label: { en: 'gonna · wanna · gotta', fa: 'gonna · wanna · gotta' },
-		tip: { en: 'In fast speech, “going to” becomes “gonna”, “want to” becomes “wanna” and “got to” becomes “gotta”. Use “gonna” only before a verb: “I’m gonna call”, never “I’m gonna the shop”.', fa: 'در گفتار سریع، «going to» می‌شود «gonna»، «want to» می‌شود «wanna» و «got to» می‌شود «gotta».' }
+		tip: { en: 'In fast speech, “going to” becomes “gonna”, “want to” becomes “wanna” and “got to” becomes “gotta”. Use “gonna” only before a verb: “I’m gonna call”, never “I’m gonna the shop”.', fa: 'در گفتار سریع، «going to» می‌شود «gonna»، «want to» می‌شود «wanna» و «got to» می‌شود «gotta». «gonna» را فقط قبل از فعل به کار ببر: «I’m gonna call»، نه «I’m gonna the shop».' },
 	},
 	{
 		label: { en: '“you” joining in', fa: 'چسبیدن «you»' },
-		tip: { en: '“you” gets short (“ya”) and joins the word before it: “did you” sounds like “didja”, “what do you” like “whaddaya”.', fa: '«you» به کلمهٔ قبلش می‌چسبد: «what do you» مثل «وادایا» و «did you» مثل «دیجا» شنیده می‌شود.' }
+		tip: { en: '“you” gets short (“ya”) and joins the word before it: “did you” sounds like “didja”, “what do you” like “whaddaya”.', fa: '«you» کوتاه می‌شود («ya») و به کلمهٔ قبلش می‌چسبد: «did you» مثل «دیجا» و «what do you» مثل «وادِیا» شنیده می‌شود.' },
 	},
 	{
-		label: { en: 'linking into a vowel', fa: 'وصل شدن به حرف صدادار' },
-		tip: { en: 'A word ending in a consonant joins the next word if that word starts with a vowel sound: “turn it off” sounds like “tur-ni-doff” (in American English, a t between vowels sounds like a quick d). “Hour” starts with a vowel sound: the h is silent.', fa: 'کلمه‌ای که با صامت تمام می‌شود به کلمهٔ بعدی که با صدادار شروع می‌شود وصل می‌شود: «turn it off» مثل «تِر-نی-تاف» شنیده می‌شود.' }
+		label: { en: 'linking into a vowel', fa: 'وصل شدن به مصوت' },
+		tip: { en: 'A word ending in a consonant joins the next word if that word starts with a vowel sound: “turn it off” sounds like “tur-ni-doff” (in American English, a t between vowels sounds like a quick d). “Hour” starts with a vowel sound: the h is silent.', fa: 'اگر کلمه‌ای با صامت تمام شود و کلمهٔ بعد با صدای مصوت شروع شود، این دو به هم وصل می‌شوند: «turn it off» مثل «تِرنیداف» شنیده می‌شود (در انگلیسی آمریکایی، t بین دو مصوت شبیه d کوتاه است). «hour» با صدای مصوت شروع می‌شود، چون h خوانده نمی‌شود.' },
 	},
 	{
 		label: { en: 'should’ve · could’ve', fa: 'should’ve · could’ve' },
-		tip: { en: '“have” after should, could or would shrinks to “’ve”, which sounds like “uv”: “should’ve” sounds like “should-uv”. It sounds like “should of”, but we write “should have” or “should’ve”.', fa: '«have» بعد از should، could یا would کوتاه می‌شود و مثل «اِو» شنیده می‌شود: «should’ve» مثل «شودِو».' }
+		tip: { en: '“have” after should, could or would shrinks to “’ve”, which sounds like “uv”: “should’ve” sounds like “should-uv”. It sounds like “should of”, but we write “should have” or “should’ve”.', fa: '«have» بعد از «should»، «could» یا «would» کوتاه می‌شود و مثل «اِو» شنیده می‌شود: «should’ve» مثل «شود-اِو». به گوش «should of» می‌آید، ولی می‌نویسیم «should have» یا «should’ve».' },
 	},
 	{
-		label: { en: 'dropped t and d', fa: 't و d حذف‌شده' },
+		label: { en: 'dropped t and d', fa: 'حذف t و d' },
 		tip: { en: 'A t or d between two consonants often disappears: “next week” sounds like “nex’ week”, and “don’t know” like “dunno”.', fa: 't یا d بین دو صامت اغلب شنیده نمی‌شود: «next week» مثل «نِکس ویک» و «don’t know» مثل «دانو».' }
 	},
 	{
-		label: { en: 'tiny “of” and “and”', fa: '«of» و «and» ریز' },
-		tip: { en: 'Small words get very short: “of” sounds like “uh” and “and” like “n”. “a cup of coffee” sounds like “a cuppa coffee”.', fa: 'کلمه‌های کوچک خیلی کوتاه می‌شوند: «of» مثل «اِ»، «and» مثل «ن» و «to» مثل «تِ». «a cup of coffee» مثل «اِ کاپِ کافی».' }
+		label: { en: 'tiny “of” and “and”', fa: 'کوتاه شدن «of» و «and»' },
+		tip: { en: 'Small words get very short: “of” sounds like “uh” and “and” like “n”. “a cup of coffee” sounds like “a cuppa coffee”.', fa: 'کلمه‌های کوچک خیلی کوتاه می‌شوند: «of» مثل «اِ» و «and» مثل «اِن» شنیده می‌شود. «a cup of coffee» مثل «اِ کاپِ کافی» شنیده می‌شود.' },
 	}
 ];
 

@@ -6,6 +6,7 @@
 	 * versions. Checked in code, no AI.
 	 */
 	import { onMount } from 'svelte';
+	import MixedText from '$lib/components/MixedText.svelte';
 	import { playAudioPromise, playAudioUrl, stopAllAudio, ttsUrl } from '$services/tts';
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
 	import {
@@ -22,7 +23,7 @@
 
 	const INTRO = {
 		en: `In everyday English, words join together and get shorter. You’ll hear ${ITEMS.length} short sentences at natural speed. After each one, tap the sentence you heard. Then you’ll see how it really sounds.`,
-		fa: 'در انگلیسی واقعی، کلمه‌ها به هم می‌چسبند و کوتاه‌تر می‌شوند. ده جملهٔ کوتاه با سرعت طبیعی می‌شنوی. همان را که شنیدی بزن. بعد می‌بینی واقعاً چطور شنیده می‌شود.'
+		fa: `در انگلیسی روزمره، کلمه‌ها به هم می‌چسبند و کوتاه‌تر می‌شوند. ${ITEMS.length.toLocaleString('fa-IR')} جملهٔ کوتاه با سرعت طبیعی می‌شنوی. روی جمله‌ای که شنیدی بزن. بعد می‌بینی واقعاً چطور شنیده می‌شود.`
 	};
 
 	// svelte-ignore state_referenced_locally
@@ -32,7 +33,6 @@
 	let heading: HTMLElement | undefined = $state(), resultLine: HTMLElement | undefined = $state();
 	const T = (en: string, fa: string) => (isFa ? fa : en);
 	const fa = (n: number) => n.toLocaleString('fa-IR');
-	const N = (n: number) => (isFa ? fa(n) : String(n));
 	const index = $derived(Math.min(record.index, ITEMS.length - 1));
 	const item = $derived(ITEMS[index]);
 	const pick = $derived(record.picks[index]);
@@ -125,20 +125,20 @@
 			{:else if status === 'playFailed' || !heardOnce}<button class="link" type="button" onclick={() => playSentence()}>▶ {T('Play the sentence', 'جمله را پخش کن')}</button>
 				{#if status === 'playFailed'}<p class="note">{T('Couldn’t play. Try again.', 'پخش نشد. دوباره امتحان کن.')}</p>{/if}
 			{:else if replaysLeft > 0}<button class="link quiet" type="button" onclick={() => playSentence(true)}>▶ {T('Hear it again', 'دوباره بشنو')}</button>
-			{:else}<p class="hint">{T('No more replays.', 'دیگر تکرار نمانده.')}</p>{/if}
+			{:else}<p class="hint">{T('No more replays.', 'دیگر نمی‌شود دوباره پخش کرد.')}</p>{/if}
 
 		{:else}
-			<p class="result" class:ok={pick === item.answer} tabindex="-1" bind:this={resultLine}>{pick === item.answer ? `✓ ${T('Right!', 'درست!')}` : `✗ ${T('Not quite.', 'نه کاملاً.')}`}</p>
-			{#if pick !== item.answer}<p class="picked" lang="en" dir="ltr"><span class="who">{T('You chose', 'انتخاب تو')}</span><s>{item.choices[pick]}</s></p>{/if}
+			<p class="result" class:ok={pick === item.answer} tabindex="-1" bind:this={resultLine}>{pick === item.answer ? `✓ ${T('Right!', 'درست!')}` : `✗ ${T('Not quite.', 'نه، این نبود.')}`}</p>
+			{#if pick !== item.answer}<p class="picked" lang="en" dir="ltr"><span class="who" lang={isFa ? 'fa' : 'en'} dir={isFa ? 'rtl' : 'ltr'}>{T('You chose', 'انتخاب تو')}</span><s>{item.choices[pick]}</s></p>{/if}
 			<div class="pair">
-				<p class="sounds" lang="en" dir="ltr"><span class="who">{T('It sounds like', 'این‌طور شنیده می‌شود')}</span>{item.soundsLike}</p>
-				<p class="written" lang="en" dir="ltr"><span class="who">{T('It’s written', 'این‌طور نوشته می‌شود')}</span>{fullOf(item)}</p>
+				<p class="sounds" lang="en" dir="ltr"><span class="who" lang={isFa ? 'fa' : 'en'} dir={isFa ? 'rtl' : 'ltr'}>{T('It sounds like', 'این‌طور شنیده می‌شود')}</span>{item.soundsLike}</p>
+				<p class="written" lang="en" dir="ltr"><span class="who" lang={isFa ? 'fa' : 'en'} dir={isFa ? 'rtl' : 'ltr'}>{T('It’s written', 'این‌طور نوشته می‌شود')}</span>{fullOf(item)}</p>
 			</div>
 			<div class="plays">
 				<button class="link" type="button" onclick={() => hear(false)} disabled={status === 'playing'}>▶ {T('Natural', 'طبیعی')}</button>
 				<button class="link" type="button" onclick={() => hear(true)} disabled={status === 'playing'}>▶ {T('Slow', 'آهسته')}</button>
 			</div>
-			<p class="tip"><strong>{isFa ? pattern.label.fa : pattern.label.en}:</strong> {isFa ? pattern.tip.fa : pattern.tip.en}</p>
+			<p class="tip"><strong><bdi>{isFa ? pattern.label.fa : pattern.label.en}</bdi>:</strong>{isFa ? '\u200f' : ''} {#if isFa}<MixedText text={pattern.tip.fa} />{:else}{pattern.tip.en}{/if}</p>
 			{@render bottom(index + 1 < ITEMS.length ? T('Next', 'بعدی') : T('See your result', 'دیدن نتیجه'), next)}
 		{/if}
 
@@ -147,19 +147,19 @@
 		<p class="big">{T(`${summary.right} of ${ITEMS.length} right`, `${fa(summary.right)} از ${fa(ITEMS.length)} درست`)}</p>
 		<ul class="rows">
 			{#each summary.byPattern as row}
-				<li class:miss={row.right < row.total}><span>{isFa ? PATTERNS[row.pattern].label.fa : PATTERNS[row.pattern].label.en}</span><span>{row.right === row.total ? '✓' : '✗'} {N(row.right)}/{N(row.total)}</span></li>
+				<li class:miss={row.right < row.total}><span>{#if isFa}<MixedText text={PATTERNS[row.pattern].label.fa} />{:else}{PATTERNS[row.pattern].label.en}{/if}</span><span>{row.right === row.total ? '✓' : '✗'} {isFa ? `${fa(row.right)} از ${fa(row.total)}` : `${row.right}/${row.total}`}</span></li>
 			{/each}
 		</ul>
 		{#if summary.weakest !== null}
 			<div class="weak">
-				<p class="boxlabel">{T('To work on', 'برای تمرین')}: {isFa ? PATTERNS[summary.weakest].label.fa : PATTERNS[summary.weakest].label.en}</p>
-				<p class="tip">{isFa ? PATTERNS[summary.weakest].tip.fa : PATTERNS[summary.weakest].tip.en}</p>
+				<p class="boxlabel">{T('To work on', 'برای تمرین بیشتر')}: <bdi>{#if isFa}<MixedText text={PATTERNS[summary.weakest].label.fa} />{:else}{PATTERNS[summary.weakest].label.en}{/if}</bdi></p>
+				<p class="tip">{#if isFa}<MixedText text={PATTERNS[summary.weakest].tip.fa} />{:else}{PATTERNS[summary.weakest].tip.en}{/if}</p>
 				{#each weakItems as { it, i }}
 					<button class="link" type="button" onclick={() => hearItem(i)}>▶ <bdi lang="en" dir="ltr">{it.soundsLike}</bdi></button>
 				{/each}
 			</div>
 		{:else}
-			<p class="tip">{T('You caught every one. Real conversations are messier, so keep listening for these patterns.', 'همه را گرفتی. گفت‌وگوهای واقعی شلوغ‌ترند، پس به گوش دادن برای این الگوها ادامه بده.')}</p>
+			<p class="tip">{T('You caught every one. Real conversations are messier, so keep listening for these patterns.', 'همه را درست تشخیص دادی. در گفت‌وگوی واقعی کار سخت‌تر است؛ پس همچنان حواست به این الگوها باشد.')}</p>
 		{/if}
 		<button class="link quiet" type="button" onclick={again}>{T('Try it again', 'دوباره امتحان کن')}</button>
 		{@render bottom(T('Done', 'تمام'), finish)}
@@ -185,7 +185,7 @@
 	.result.ok { color: var(--leaf); }
 	.result:focus { outline: none; }
 	.pair { display: grid; gap: 8px; }
-	.who { display: block; font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-soft); }
+	.who { display: block; text-align: start; font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-soft); }
 	:global([dir='rtl']) .who { letter-spacing: normal; }
 	.picked, .sounds, .written { margin: 0; padding: 12px 16px; border-radius: 14px; line-height: 1.55; text-align: left; }
 	.picked { background: var(--paper-sunken); }

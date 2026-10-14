@@ -1,6 +1,6 @@
 # "Connected speech" (Module lab): spec v1
 
-Status: **approved by the owner in chat ("ok build as your recommendation") and built (Module lab).** Content reviewed by the English-coach reviewer (fixes applied) and the Persian-localization reviewer.
+Status: **approved by the owner in chat ("ok build as your recommendation") and built (Module lab).** Content reviewed by the English-coach and Persian-localization reviewers; their fixes are applied (including isolating English runs inside Persian tips, now shared with Dictation sprint and Minimal pairs).
 
 Owner's decisions (as recommended): tap 1 of 3, no speaking, 10 items. The owner also asked whether this can scale to 30+ daily lessons: yes. The patterns are few (about 15–20 groups), but the sentences are unlimited. The plan is 10 items a day matched to the day's topic, with each pattern group coming back 2–3 times a month. The screens are built once; only the content changes. Lab set first, then days 1–10 after the owner checks the voice.
 
