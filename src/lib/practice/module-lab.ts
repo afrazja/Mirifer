@@ -18,7 +18,7 @@ export const LAB_MODULES: LabModule[] = [
 	{ id: 'listen-retell', name: { en: 'Listen and retell', fa: 'گوش بده و بازگو کن' }, href: '/practice/english/retell' },
 	{ id: 'listen-connect', name: { en: 'Listen and connect', fa: 'گوش بده و وصل کن' }, href: '/practice/english/lab/listen-connect' },
 	{ id: 'dictation', name: { en: 'Dictation sprint', fa: 'دیکتهٔ سریع' }, href: '/practice/english/lab/dictation' },
-	{ id: 'minimal-pairs', name: { en: 'Minimal pairs duel', fa: 'دوئل کلمه‌های هم‌آوا' } },
+	{ id: 'minimal-pairs', name: { en: 'Minimal pairs duel', fa: 'دوئل کلمه‌های هم‌آوا' }, href: '/practice/english/lab/minimal-pairs' },
 	{ id: 'connected-speech', name: { en: 'Connected speech', fa: 'گفتار پیوسته' } },
 	{ id: 'spot-the-lie', name: { en: 'Spot the lie', fa: 'دروغ را پیدا کن' } },
 	{ id: 'read-rate-respond', name: { en: 'Read, rate, respond', fa: 'بخوان، امتیاز بده، پاسخ بده' } },
