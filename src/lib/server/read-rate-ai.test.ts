@@ -36,6 +36,14 @@ describe('checkFeedback', () => {
 		expect(f.facts).toEqual([]);
 		expect(f.better).toBeNull();
 	});
+	it('drops a better reply whose bracketed addition is not in the text', () => {
+		const f = checkFeedback({ onTopic: true, reason: true, facts: [], better: 'You should book it because the beach is near. [There’s a big swimming pool and free parking.]' }, hotel, reply);
+		expect(f.better).toBeNull();
+	});
+	it('keeps a natural reply with contractions', () => {
+		const better = 'I think you should book it. It’s cheap, the beach is close, and breakfast is great. The room’s pretty small, but you won’t spend much time there. [The front desk staff were friendly too.]';
+		expect(checkFeedback({ onTopic: true, reason: true, facts: [], better }, hotel, reply).better).toBe(better);
+	});
 	it('gives nothing to praise when the reply is off topic', () => {
 		const f = checkFeedback({ onTopic: false, reason: true, facts: [{ said: 'the beach is near', correct: true, fix: '' }], better: '' }, hotel, 'my cat is orange');
 		expect(f).toEqual({ onTask: false, facts: [], reason: false, better: null });

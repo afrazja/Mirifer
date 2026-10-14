@@ -23,7 +23,7 @@
 
 	const INTRO = {
 		en: 'You’ll read three short texts: a review, a message and an ad. For each one, give your opinion with one tap, then say a short reply. Use details from the text, and give a reason.',
-		fa: 'سه متن کوتاه می‌خوانی: یک نظر دربارهٔ هتل، یک پیام و یک آگهی. برای هر کدام، با یک ضربه نظرت را بده، بعد یک جواب کوتاه بگو. از جزئیات خود متن استفاده کن و دلیل بیاور.'
+		fa: 'سه متن کوتاه می‌خوانی: نظر یک مسافر دربارهٔ یک هتل، یک پیام و یک آگهی. برای هر کدام اول با یک انتخاب ساده نظرت را مشخص کن، بعد یک جواب کوتاه بگو. از جزئیات خود متن استفاده کن و دلیل هم بیاور.'
 	};
 
 	type Status = 'idle' | 'recording' | 'listening' | 'checking' | 'silent' | 'short' | 'failed' | 'denied' | 'interrupted' | 'aiFailed';
@@ -35,6 +35,8 @@
 	let startedAt = 0, timer: ReturnType<typeof setInterval> | undefined, interrupted = false, lastBlob: Blob | null = null, lastSeconds = 0;
 	let heading: HTMLElement | undefined = $state();
 	const T = (en: string, fa: string) => (isFa ? fa : en);
+	// Isolates English inside a Persian sentence, so «… because …» keeps its order.
+	const LRI = String.fromCharCode(0x2066), PDI = String.fromCharCode(0x2069);
 	const fa = (n: number) => n.toLocaleString('fa-IR');
 	const index = $derived(Math.min(record.index, TEXTS.length - 1));
 	const text = $derived(TEXTS[index]);
@@ -94,7 +96,7 @@
 		if (!lastBlob) return;
 		status = 'listening';
 		const body = new FormData();
-		body.set('audio', lastBlob, 'speech'); body.set('seconds', String(lastSeconds));
+		body.set('audio', lastBlob, 'speech'); body.set('seconds', String(lastSeconds)); body.set('text', text.id);
 		let transcript: string | null = null;
 		try {
 			const response = await fetch('/api/english/read-rate', { method: 'POST', body });
@@ -155,7 +157,7 @@
 	</article>
 	{#if showGlosses}
 		{#if shownGloss !== null}<p class="glossline"><bdi lang="en" dir="ltr">{text.glosses[shownGloss].word}</bdi>: <span lang="fa" dir="rtl">{text.glosses[shownGloss].fa}</span></p>
-		{:else}<p class="hint">{T('Tap a dotted word to see it in Persian.', 'روی کلمه‌های نقطه‌چین بزن تا معنی فارسی‌اش را ببینی.')}</p>{/if}
+		{:else}<p class="hint">{T('Tap a dotted word to see it in Persian.', 'روی هر کلمه‌ای که زیرش نقطه‌چین است بزن تا معنی فارسی‌اش را ببینی.')}</p>{/if}
 	{/if}
 {/snippet}
 
@@ -194,17 +196,18 @@
 
 		{:else if mine.step === 'respond'}
 			<p class="task">{isFa ? text.task.fa : text.task.en}</p>
-			<p class="yourrating">{T('Your rating:', 'امتیاز تو:')} <bdi>{ratingLabel}</bdi></p>
+			<p class="yourrating">{T('Your rating:', 'نظر تو:')} <bdi dir={text.rate.kind === 'stars' ? 'ltr' : 'auto'} aria-label={text.rate.kind === 'stars' && mine.rating !== null ? T(`${mine.rating} of 5 stars`, `${fa(mine.rating)} از ۵ ستاره`) : undefined}>{ratingLabel}</bdi></p>
+			<p class="hint">{T('Aim for about 20–30 seconds.', 'حدود ۲۰ تا ۳۰ ثانیه صحبت کن.')}</p>
 			<details class="peek"><summary>{T('See the text', 'دیدن متن')}</summary>{@render reading(false)}</details>
 			{#if status === 'listening'}<p class="hint" role="status">{T('Mira is listening…', 'میرا دارد گوش می‌دهد…')}</p>{/if}
 			{#if status === 'silent'}<p class="note">{T('I couldn’t hear anything. Check your microphone, then try again.', 'چیزی نشنیدم. میکروفونت را بررسی کن و دوباره امتحان کن.')}</p>{/if}
 			{#if status === 'short'}<p class="note">{T('That was very short. Tap the mic, speak, then tap again to stop.', 'خیلی کوتاه بود. میکروفون را بزن، صحبت کن، بعد دوباره بزن تا تمام شود.')}</p>{/if}
 			{#if status === 'interrupted'}<p class="note">{T('The recording stopped. Try again when you’re ready.', 'ضبط متوقف شد. هر وقت آماده بودی دوباره امتحان کن.')}</p>{/if}
 			{#if status === 'denied'}<p class="note">{T('The microphone is blocked. Allow it in your browser’s site settings, then try again.', 'میکروفون بسته است. در تنظیمات سایت اجازه‌اش را بده و دوباره امتحان کن.')}</p>{/if}
-			{#if status === 'failed'}<p class="note">{T('I couldn’t hear that clearly. Check your connection.', 'نتوانستم واضح بشنوم. اینترنت را بررسی کن.')}</p>
+			{#if status === 'failed'}<p class="note">{T('Your reply didn’t send. Check your connection, then send it again.', 'جوابت فرستاده نشد. اینترنت را بررسی کن و دوباره بفرست.')}</p>
 				<button class="link quiet" type="button" onclick={send}>{T('Send it again', 'دوباره بفرست')}</button>{/if}
 			<div class="bar"><button class="primary" class:rec={status === 'recording'} type="button" onclick={speak} disabled={status === 'listening'}>
-				{#if status === 'recording'}<span class="dot" aria-hidden="true"></span>{T('Stop', 'پایان')}<span aria-hidden="true">&nbsp;{remaining}</span>
+				{#if status === 'recording'}<span class="dot" aria-hidden="true"></span>{T('Stop', 'پایان ضبط')}<span aria-hidden="true">&nbsp;{isFa ? fa(remaining) : remaining}</span>
 				{:else}<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0M12 17v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>{T('Say your reply', 'جوابت را بگو')}{/if}
 			</button></div>
 
@@ -213,7 +216,8 @@
 			<p class="you" lang="en" dir="ltr">{mine.transcript}</p>
 			<p class="hint">{T('If that’s not what you said, say it again.', 'اگر این چیزی نیست که گفتی، دوباره بگو.')}</p>
 			{#if status === 'checking'}<p class="hint" role="status">{T('Mira is checking your reply against the text…', 'میرا دارد جوابت را با متن مقایسه می‌کند…')}</p>{/if}
-			{#if status === 'aiFailed'}<p class="note">{T('Mira couldn’t check it just now. Try again in a moment.', 'میرا الان نتوانست بررسی کند. کمی بعد دوباره امتحان کن.')}</p>{/if}
+			{#if status === 'aiFailed'}<p class="note">{T('Mira couldn’t check it just now. Try again in a moment.', 'میرا الان نتوانست بررسی کند. کمی بعد دوباره امتحان کن.')}</p>
+				<button class="link quiet" type="button" onclick={next}>{T('Skip to the next text', 'برو سراغ متن بعدی')}</button>{/if}
 			{#if status !== 'checking'}<button class="link quiet" type="button" onclick={sayAgain}>{T('Say it again', 'دوباره بگو')}</button>{/if}
 			{@render bottom(T('Get feedback', 'بازخورد بگیر'), getFeedback, status === 'checking')}
 
@@ -222,19 +226,19 @@
 			<p class="boxlabel">{T('You said', 'گفتی')}</p>
 			<p class="you" lang="en" dir="ltr">{mine.transcript}</p>
 			{#if !f.onTask}
-				<p class="note warn">{T('That doesn’t really answer the task. Read it again and give your opinion of this text.', 'این جواب واقعاً به خواستهٔ سؤال نمی‌پردازد. دوباره بخوان و نظرت را دربارهٔ همین متن بگو.')}</p>
+				<p class="note warn">{T('I couldn’t find your opinion about this text. Look at the task again, then try once more.', 'نظرت را دربارهٔ این متن پیدا نکردم. یک بار دیگر خواستهٔ تمرین را بخوان و دوباره امتحان کن.')}</p>
 			{:else}
 				<ul class="checks">
-					<li class:ok={f.facts.some(x => x.correct)}>{f.facts.some(x => x.correct) ? '✓' : '✗'} {T('Used details from the text', 'از جزئیات متن استفاده کردی')}
+					<li class:ok={f.facts.some(x => x.correct)}>{f.facts.some(x => x.correct) ? `✓ ${T('Used details from the text', 'از جزئیات متن استفاده کردی')}` : T('Next time, add a detail from the text.', 'دفعهٔ بعد یک نکته از متن هم بیاور.')}
 						{#if f.facts.length}<ul>{#each f.facts as fact}<li lang="en" dir="ltr" class:wrong={!fact.correct}>{fact.correct ? '✓' : '✗'} {fact.said}{#if !fact.correct}<span class="fix">{fact.fix}</span>{/if}</li>{/each}</ul>{/if}
 					</li>
-					<li class:ok={f.reason}>{f.reason ? '✓' : '✗'} {T('Gave a reason', 'دلیل آوردی')}</li>
+					<li class:ok={f.reason}>{f.reason ? `✓ ${T('Gave a reason', 'دلیل آوردی')}` : T('Next time, add a reason: “… because …”.', `دفعهٔ بعد یک دلیل هم بیاور: «${LRI}… because …${PDI}».`)}</li>
 				</ul>
 			{/if}
 			{#if f.better}
 				<p class="boxlabel">{T('A better reply', 'یک جواب بهتر')}</p>
 				<p class="better" lang="en" dir="ltr">{#each parts(f.better) as part}{#if part.added}<mark>{part.text}</mark>{:else}{part.text}{/if}{/each}</p>
-				{#if f.better.includes('[')}<p class="hint">{T('Highlighted: something from the text you could add.', 'رنگی: چیزی از متن که می‌توانستی اضافه کنی.')}</p>{/if}
+				{#if f.better.includes('[')}<p class="hint">{T('Highlighted: ideas from the text you could add.', 'قسمت رنگی: نکته‌هایی از متن که می‌توانستی اضافه کنی.')}</p>{/if}
 			{/if}
 			<button class="link quiet" type="button" onclick={sayAgain}>{T('Try this one again', 'این یکی را دوباره امتحان کن')}</button>
 			{@render bottom(index + 1 < TEXTS.length ? T('Next text', 'متن بعدی') : T('See your result', 'دیدن نتیجه'), next)}
@@ -243,15 +247,15 @@
 	{:else}
 		<p class="label">{T('Your result', 'نتیجهٔ تو')}</p>
 		<ul class="stats">
-			<li><span class="big">{isFa ? `${fa(summary.usedText)} از ${fa(TEXTS.length)}` : `${summary.usedText}/${TEXTS.length}`}</span>{T('replies used details from the text', 'جواب با جزئیات متن')}</li>
-			<li><span class="big">{isFa ? `${fa(summary.reasons)} از ${fa(TEXTS.length)}` : `${summary.reasons}/${TEXTS.length}`}</span>{T('replies gave a reason', 'جواب با دلیل')}</li>
+			<li><span class="big">{isFa ? `${fa(summary.usedText)} از ${fa(TEXTS.length)}` : `${summary.usedText}/${TEXTS.length}`}</span>{T('replies used details from the text', 'جواب‌هایی که جزئیات متن داشت')}</li>
+			<li><span class="big">{isFa ? `${fa(summary.reasons)} از ${fa(TEXTS.length)}` : `${summary.reasons}/${TEXTS.length}`}</span>{T('replies gave a reason', 'جواب‌هایی که دلیل داشت')}</li>
 		</ul>
 		<p class="tip">{summary.wrongFacts
-			? T('Some details didn’t match the text. Before you reply, look back at the text for the exact detail.', 'بعضی جزئیات با متن نمی‌خواند. قبل از جواب دادن، جزئیات دقیق را دوباره در متن نگاه کن.')
+			? T('A detail or two didn’t match the text. Before you reply, take a quick look back at it.', 'یکی دو نکته با متن نمی‌خواند. قبل از جواب دادن، یک نگاه سریع به متن بینداز.')
 			: summary.usedText < TEXTS.length
-				? T('Next time, use one or two details from the text to support your opinion.', 'دفعهٔ بعد، برای نظرت یکی دو جزئیات از خود متن بیاور.')
+				? T('Next time, use one or two details from the text to support your opinion.', 'دفعهٔ بعد، برای نظرت یکی دو نکته از خود متن بیاور.')
 				: summary.reasons < TEXTS.length
-					? T('Next time, add a reason: “…, because…”.', 'دفعهٔ بعد یک دلیل هم بیاور: «…, because…».')
+					? T('Next time, add a reason: “… because …”.', `دفعهٔ بعد یک دلیل هم بیاور: «${LRI}… because …${PDI}».`)
 					: T('Clear opinions, backed by the text. Nicely done.', 'نظرهای روشن، با پشتوانهٔ متن. آفرین.')}</p>
 		<button class="link quiet" type="button" onclick={again}>{T('Try it again', 'دوباره امتحان کن')}</button>
 		{@render bottom(T('Done', 'تمام'), finish)}
@@ -293,7 +297,7 @@
 	.you { background: var(--paper-sunken); }
 	.better { background: var(--paper-raised); border: 1px solid var(--accent); }
 	mark { background: color-mix(in srgb, var(--attention) 20%, transparent); color: inherit; border-radius: 4px; padding: 0 2px; }
-	.checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-weight: 600; color: var(--attention); }
+	.checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-weight: 600; color: var(--accent-deep); }
 	.checks > li.ok { color: var(--leaf); }
 	.checks ul { list-style: none; margin: 6px 0 0; padding: 0 0 0 14px; display: grid; gap: 4px; font-weight: 400; color: var(--ink); text-align: left; }
 	.checks ul li.wrong { color: var(--attention); }

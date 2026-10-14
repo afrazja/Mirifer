@@ -1,6 +1,6 @@
 # "Read, rate, respond" (Module lab): spec v1
 
-Status: **approved by the owner in chat ("build as your recommendations") and built (Module lab).** Reviewed by the English-coach and Persian-localization reviewers.
+Status: **approved by the owner in chat ("build as your recommendations") and built (Module lab).** Reviewed by the English-coach and Persian-localization reviewers; their fixes are applied (see the end).
 
 Owner's decisions (as recommended): AI feedback that checks the reply against the text; respond by speaking only; three texts.
 
@@ -14,7 +14,7 @@ The module with reading, linking reading to speaking, like everyday life: read s
 |---|---|---|
 | A hotel review (good and bad points) | ★ 1–5: "How good is this hotel?" | A friend wants to book it: should they, and why? Use details from the review. |
 | A message from a friend, Leila (a job in Dubai: better pay and English, but far from family) | "Take the job" / "Stay" | A voice message with your advice and at least one reason from her message. |
-| A gym ad (cheap offer, but a 12-month contract, paid parking) | ★ 1–5: "Is it a good deal?" | Would you sign up? Say why, using two details from the ad. |
+| A gym ad ($25 a month for the first year instead of $40, but a 12-month contract, paid parking) | ★ 1–5: "How good is this offer?" | Would you join this gym? Tell a friend why or why not, using two details from the ad. |
 
 Each text has 2–3 harder words, dotted; tapping one shows it in Persian.
 
@@ -43,3 +43,12 @@ Each text has 2–3 harder words, dotted; tapping one shows it in Persian.
 
 - Speech-to-text per reply, plus one AI call per feedback: about 1–2 cents a round. One allowance unit per feedback.
 - Recordings are never stored. The replies and feedback stay only in this browser.
+
+## Review fixes
+
+- **Fair marking.** The AI prompt now says paraphrase counts ("near the beach" for "a five-minute walk"), a likely speech-to-text slip counts, and the learner's own opinions and experiences are never marked wrong. A fact is wrong only if it clearly goes against the text, or claims something the text doesn't say. The fix starts "The review says…", "Leila says…" or "The ad says…".
+- **Better reply.** It keeps the learner's opinion, replaces a wrong detail with the right one, makes at most two [additions] (a reason or a detail from the text), and never adds anything that isn't in the text or the reply. A bracketed addition that isn't from the text is rejected in code. Words are counted as written, so contractions no longer push a good reply over the limit.
+- **Off task** only when the reply is about something else, isn't English, makes no sense or just reads the text; "it depends" counts.
+- **Coaching, not grading.** A missing detail or reason shows a nudge ("Next time, add a detail from the text.") instead of a red ✗.
+- **Content.** American wording ("pretty small", "front desk"); a clear gym price; the gym rating and task now ask the same thing; "indoor cycling"; a gloss for "pretty small".
+- **Smaller.** "Aim for about 20–30 seconds"; the names in each text are passed to speech-to-text; "Skip to the next text" when the AI keeps failing; natural Persian throughout (no translated phrasing, and isolates around English inside Persian).

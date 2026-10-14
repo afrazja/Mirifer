@@ -36,18 +36,19 @@ export const TEXTS: ReadText[] = [
 		title: 'Hotel Bella Vista · “Nice, but not perfect”',
 		body: [
 			'We stayed at the Bella Vista for three nights in July. The location is great: the beach is a five-minute walk away, and there are lots of cafés nearby.',
-			'Our room was clean and quiet, but quite small, and the Wi-Fi only worked in the lobby. Breakfast was excellent, with fresh fruit and homemade bread.',
-			'The staff at reception were friendly, but check-in took almost an hour. For about $90 a night, it was good value, but I wouldn’t stay there on a work trip.'
+			'Our room was clean and quiet, but pretty small, and the Wi-Fi only worked in the lobby. Breakfast was excellent, with fresh fruit and homemade bread.',
+			'The people at the front desk were friendly, but check-in took almost an hour. For about $90 a night, it was good value, but I wouldn’t stay there on a work trip.'
 		],
 		glosses: [
+			{ word: 'pretty small', fa: 'نسبتاً کوچک (اینجا «pretty» یعنی «نسبتاً»، نه «زیبا»)' },
 			{ word: 'lobby', fa: 'لابی، سالن ورودی هتل' },
 			{ word: 'homemade', fa: 'خانگی' },
 			{ word: 'good value', fa: 'به‌صرفه، ارزش پولش را دارد' }
 		],
 		rate: { kind: 'stars', ask: { en: 'How good is this hotel?', fa: 'این هتل چقدر خوب است؟' } },
 		task: {
-			en: 'A friend wants to book this hotel. Tell them if they should, and why. Use details from the review.',
-			fa: 'یکی از دوستانت می‌خواهد این هتل را رزرو کند. به او بگو این کار را بکند یا نه، و چرا. از جزئیات همین نظر استفاده کن.'
+			en: 'A friend wants to book this hotel. Should they? Tell them what you think, and why. Use details from the review.',
+			fa: 'یکی از دوستانت می‌خواهد این هتل را رزرو کند. رزرو کند یا نه؟ نظرت را به او بگو و دلیلش را هم بگو. از جزئیات همین متن استفاده کن.'
 		}
 	},
 	{
@@ -55,22 +56,22 @@ export const TEXTS: ReadText[] = [
 		kind: { en: 'A message from a friend', fa: 'پیام یک دوست' },
 		title: 'Message from Leila',
 		body: [
-			'Hi! I need your advice. I’ve been offered a job in Dubai. The pay is much better than now, and they’ll pay for my apartment.',
+			'Hi! I need your advice. I’ve been offered a job in Dubai. The pay is much better than what I get now, and they’ll pay for my apartment.',
 			'But I’d have to move in two months, and I don’t know anyone there. My parents are getting older, and I’d only see them twice a year.',
 			'Also, my English would improve a lot, which I really want. I have to decide by Friday. What would you do?'
 		],
 		glosses: [
-			{ word: 'offered', fa: 'پیشنهاد داده‌اند' },
-			{ word: 'getting older', fa: 'سنشان بالا می‌رود' },
-			{ word: 'improve', fa: 'بهتر شدن' }
+			{ word: 'offered', fa: '(به من) پیشنهاد داده‌اند' },
+			{ word: 'getting older', fa: 'سنشان دارد بالا می‌رود' },
+			{ word: 'improve', fa: 'بهتر شدن، پیشرفت کردن' }
 		],
 		rate: {
 			kind: 'choice', ask: { en: 'What should Leila do?', fa: 'لیلا چه کار کند؟' },
-			options: [{ en: 'Take the job', fa: 'کار را قبول کند' }, { en: 'Stay', fa: 'بماند' }]
+			options: [{ en: 'Take the job', fa: 'کار را قبول کند' }, { en: 'Stay where she is', fa: 'همین‌جا بماند' }]
 		},
 		task: {
 			en: 'Leave Leila a voice message with your advice and at least one reason from her message.',
-			fa: 'برای لیلا یک پیام صوتی بگذار: نصیحتت را بگو و دست‌کم یک دلیل از خود پیامش بیاور.'
+			fa: 'برای لیلا یک پیام صوتی بفرست: بگو به نظرت چه کار کند و دست‌کم یک دلیل از خود پیامش بیاور.'
 		}
 	},
 	{
@@ -78,19 +79,19 @@ export const TEXTS: ReadText[] = [
 		kind: { en: 'An ad', fa: 'یک آگهی' },
 		title: 'FitZone Gym · New members’ offer!',
 		body: [
-			'Join this month for just $25 a month (normally $40). Open 6 a.m. to 11 p.m., seven days a week.',
-			'Free classes: yoga, spinning and boxing. One free session with a personal trainer.',
+			'Join this month and pay just $25 a month for your first year (normally $40). Open 6 a.m. to 11 p.m., seven days a week.',
+			'Free classes: yoga, indoor cycling and boxing. One free session with a personal trainer.',
 			'Minimum contract: 12 months. Parking costs $3 a day. Towels are not included.'
 		],
 		glosses: [
-			{ word: 'personal trainer', fa: 'مربی شخصی' },
+			{ word: 'personal trainer', fa: 'مربی شخصی (خصوصی)' },
 			{ word: 'Minimum contract', fa: 'حداقل مدت قرارداد' },
-			{ word: 'not included', fa: 'شامل نمی‌شود، جدا حساب می‌شود' }
+			{ word: 'not included', fa: 'جزو قیمت نیست' }
 		],
-		rate: { kind: 'stars', ask: { en: 'Is it a good deal?', fa: 'پیشنهاد خوبی است؟' } },
+		rate: { kind: 'stars', ask: { en: 'How good is this offer?', fa: 'این پیشنهاد چقدر خوب است؟' } },
 		task: {
-			en: 'Would you sign up? Say why, using two details from the ad.',
-			fa: 'ثبت‌نام می‌کنی؟ بگو چرا، و از دو جزئیات همین آگهی استفاده کن.'
+			en: 'Would you join this gym? Tell a friend why or why not. Use two details from the ad.',
+			fa: 'در این باشگاه ثبت‌نام می‌کنی یا نه؟ به یک دوست بگو چرا. از دو نکتهٔ همین آگهی استفاده کن.'
 		}
 	}
 ];

@@ -23,7 +23,7 @@ describe('ratings', () => {
 	});
 	it('puts the rating in words', () => {
 		expect(ratingText(TEXTS[0], 4)).toBe('4 of 5 stars');
-		expect(ratingText(TEXTS[1], 1)).toBe('Stay');
+		expect(ratingText(TEXTS[1], 1)).toBe('Stay where she is');
 	});
 });
 
@@ -31,8 +31,8 @@ describe('glossParts', () => {
 	it('splits a paragraph around glossed words, in order', () => {
 		const parts = glossParts('Breakfast was homemade, and the lobby was nice.', TEXTS[0].glosses);
 		expect(parts).toEqual([
-			{ text: 'Breakfast was ', gloss: null }, { text: 'homemade', gloss: 1 }, { text: ', and the ', gloss: null },
-			{ text: 'lobby', gloss: 0 }, { text: ' was nice.', gloss: null }
+			{ text: 'Breakfast was ', gloss: null }, { text: 'homemade', gloss: 2 }, { text: ', and the ', gloss: null },
+			{ text: 'lobby', gloss: 1 }, { text: ' was nice.', gloss: null }
 		]);
 	});
 	it('rebuilds every paragraph exactly', () => {

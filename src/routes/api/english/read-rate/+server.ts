@@ -19,6 +19,7 @@ import { RawFeedbackSchema, checkFeedback, feedbackSchemas, readRatePrompt, read
 export const config = { maxDuration: 30 };
 const MAX_AUDIO_BYTES = 900_000;
 const perMinute = createLimiter(20, 60_000);
+const NAMES: Record<string, string> = { 'hotel-review': 'Bella Vista, Wi-Fi.', 'friend-message': 'Leila, Dubai.', 'gym-ad': 'FitZone.' };
 const FeedbackRequest = z.object({
 	kind: z.literal('feedback'),
 	text: z.string().max(40),
@@ -41,7 +42,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		if (!Number.isFinite(seconds) || seconds < 0 || seconds > RESPOND_MAX_SECONDS + 5) return json({ error: 'Invalid recording' }, { status: 400 });
 		const refused = await checkAllowance(locals, user);
 		if (refused) return refused;
-		const transcript = await transcribe(audio, 'English read-rate', 'They are giving their opinion about a short text they just read: a review, a message or an ad.');
+		// Names from the text they read help the speech-to-text get them right.
+		const read = TEXTS.find(t => t.id === form.get('text'));
+		const names = read ? ` Names that may come up: ${NAMES[read.id] ?? ''}` : '';
+		const transcript = await transcribe(audio, 'English read-rate', `They are giving their opinion about a short text they just read: a review, a message or an ad.${names}`);
 		if (transcript === null) return json({ error: 'Transcription unavailable' }, { status: 502 });
 		return json({ transcript });
 	}

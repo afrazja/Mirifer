@@ -29,11 +29,12 @@ export const turnSchemas = {
 };
 
 const SMALL = new Set(['the', 'a', 'an', 'and', 'or', 'to', 'of', 'in', 'on', 'at', 'for', 'is', 'are', 'was', 'were', 'it', 'i', 'my', 'me', 'you', 'do', 'it\'s', 'so', 'but', 'because', 'with', 'very', 'really', 'that', 'this', 'have', 'has', 'like', 'usually']);
-const content = (text: string) => words(text).filter(w => w.length > 2 && !SMALL.has(w));
+export const content = (text: string) => words(text).filter(w => w.length > 2 && !SMALL.has(w));
 /** The better answer must keep their own facts: outside [brackets], a good share of its content words come from what they said. */
-export function betterOk(better: string, answer: string): boolean {
+export function betterOk(better: string, answer: string, maxWords = 50): boolean {
 	const b = better.trim();
-	if (!b || /[؀-ۿ]/.test(b) || words(b).length > 50) return false;
+	// Counted as written: "I'd" is one word here (words() would expand it to two).
+	if (!b || /[؀-ۿ]/.test(b) || b.split(/\s+/).length > maxWords) return false;
 	const used = content(b.replace(/\[[^\]]*\]/g, ' ')), own = new Set(content(answer));
 	return !used.length || used.filter(w => own.has(w)).length / used.length >= 0.35;
 }
