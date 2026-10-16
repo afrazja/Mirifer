@@ -145,7 +145,7 @@
 
 {#snippet bottom(label: string, action: () => void, disabled = false, secondary: { label: string; onclick: () => void } | null = null, icon: 'pause' | 'play' | null = null)}
 	<ActionBar {label} onclick={action} {disabled} {icon}
-		secondary={secondary ?? (onSkip && firstScreen && !playing ? { label: T('Skip this step', 'این مرحله را رد کن'), onclick: () => { stop(); onSkip?.(); } } : null)} />
+		secondary={secondary ?? (onSkip && !playing && action !== finish ? { label: T('Skip this step', 'این مرحله را رد کن'), onclick: () => { stop(); onSkip?.(); } } : null)} />
 {/snippet}
 
 {#snippet again()}

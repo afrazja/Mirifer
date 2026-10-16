@@ -145,7 +145,7 @@
 
 {#snippet bottom(label: string, action: () => void, mic = false)}
 	<ActionBar {label} onclick={action} icon={mic ? 'mic' : null} recording={stage === 'recording'}
-		secondary={onSkip && firstScreen ? { label: T('Skip this step', 'این مرحله را رد کن'), onclick: () => { stopAllAudio(); onSkip?.(); } } : null} />
+		secondary={onSkip && stage !== 'recording' && !(last && action === next) ? { label: T('Skip this step', 'این مرحله را رد کن'), onclick: () => { stopAllAudio(); onSkip?.(); } } : null} />
 {/snippet}
 
 <section class="phrases" aria-live="polite">
