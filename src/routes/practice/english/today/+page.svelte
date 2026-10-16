@@ -25,6 +25,7 @@
 	} from '$lib/practice/day';
 	import type { DisplayText } from '$lib/practice/hotel';
 	import type { DayModule } from '$lib/practice/day';
+	import ActionBar from '$lib/components/ActionBar.svelte';
 
 	let { data }: PageProps = $props();
 	let language = $state<'en' | 'fa'>('en');
@@ -105,6 +106,7 @@
 		} catch { saveFailed = true; }
 	}
 	const begin = () => { clearRecords(); spokenFor = null; const next = startSession(length); brief(currentModule(next)); return save(next); };
+	const skipStep = () => { stopAllAudio(); finish('skipped'); };
 	const finish = (outcome: 'done' | 'skipped', score?: { correct: number; total: number }, record?: unknown) => {
 		if (!session || !step) return;
 		phraseStep = null; intro = 'full';
@@ -146,13 +148,13 @@
 	</div>
 {/snippet}
 
-{#snippet moduleBody(mod: DayModule, onDone: (score?: { correct: number; total: number }, record?: unknown) => void)}
+{#snippet moduleBody(mod: DayModule, onDone: (score?: { correct: number; total: number }, record?: unknown) => void, onSkip?: () => void)}
 	{#if mod.id === 'listen-act' && mod.built && session}
-		{#key mod.id}<ListenConnect {isFa} initial={asConnectRecord(loadRecord(session.startedAt, mod.id))} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} {onDone} />{/key}
+		{#key mod.id}<ListenConnect {isFa} {onSkip} initial={asConnectRecord(loadRecord(session.startedAt, mod.id))} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} {onDone} />{/key}
 	{:else if mod.id === 'phrases' && mod.built && session}
-		{#key mod.id}<PhrasePractice {isFa} initial={asPhraseRecord(loadRecord(session.startedAt, mod.id))} afterIntro={introPlay} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} onStep={index => (phraseStep = index)} {onDone} />{/key}
+		{#key mod.id}<PhrasePractice {isFa} {onSkip} initial={asPhraseRecord(loadRecord(session.startedAt, mod.id))} afterIntro={introPlay} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} onStep={index => (phraseStep = index)} {onDone} />{/key}
 	{:else if mod.id === 'say-it-better' && mod.built && session}
-		{#key mod.id}<SayItBetter {isFa} initial={asSayRecord(loadRecord(session.startedAt, mod.id))} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} {onDone} />{/key}
+		{#key mod.id}<SayItBetter {isFa} {onSkip} initial={asSayRecord(loadRecord(session.startedAt, mod.id))} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} {onDone} />{/key}
 	{:else}
 		<div class="card stand-in" role="note">
 			<strong>{isFa ? 'این بخش هنوز ساخته نشده.' : 'This step is not built yet.'}</strong>
@@ -256,8 +258,9 @@
 			<p class="eyebrow">{isFa ? `مرحلهٔ ${stepNumber.toLocaleString('fa-IR')} از ${stepCount.toLocaleString('fa-IR')}` : `STEP ${stepNumber} OF ${stepCount}`}{#if step.id === 'phrases' && phraseStep !== null}{isFa ? ' — ' : ' · '}{isFa ? `${(phraseStep + 1).toLocaleString('fa-IR')} از ${PHRASES.length.toLocaleString('fa-IR')}` : `${phraseStep + 1}/${PHRASES.length}`}{/if}{isFa ? ' — ' : ' · '}{step.skill === 'listening' ? (isFa ? 'شنیدن' : 'LISTENING') : (isFa ? 'صحبت کردن' : 'SPEAKING')}</p>
 			<h1 id="step-title">{text(step.title)}</h1>
 			{#if intro === 'full'}{@render instruction(step)}{/if}
-			{@render moduleBody(step, (score, record) => finish('done', score, record))}
-			{#if intro === 'full'}<button class="text-button" type="button" onclick={() => { stopAllAudio(); finish('skipped'); }}>{isFa ? 'این مرحله را رد کن' : 'Skip this step'}</button>{/if}
+			{@render moduleBody(step, (score, record) => finish('done', score, record), skipStep)}
+			<!-- Built modules show "Skip this step" under their own main button; a stand-in shows it here. -->
+			{#if intro === 'full' && !step.built}<button class="text-button" type="button" onclick={skipStep}>{isFa ? 'این مرحله را رد کن' : 'Skip this step'}</button>{/if}
 		</section>
 
 	{:else if session.stage === 'recap'}
@@ -289,8 +292,8 @@
 				<strong>{text(next.title)}</strong>
 				<p>{text(next.why)}</p>
 			</div>
-			<p class="small">{isFa ? 'نوار پیشرفت شنیدن و صحبت کردن با اولین ماژول‌های ساخته‌شده پر می‌شود.' : 'The Listening and Speaking progress bars fill in once the first modules are built.'}</p>
-			<button class="primary" type="button" onclick={finishRecap}>{isFa ? 'پایان جلسه' : 'Finish session'}</button>
+			<div class="bar-space" aria-hidden="true"></div>
+			<ActionBar label={isFa ? 'پایان جلسه' : 'Finish session'} onclick={finishRecap} />
 		</section>
 
 	{:else}
@@ -306,6 +309,8 @@
 </main>
 
 <style>
+	/* Room under the last card for the fixed bottom bar. */
+	.bar-space { block-size: 110px; }
 	.today { max-width: 720px; margin: 0 auto; padding: 24px 20px 64px; color: var(--ink); }
 	.eyebrow { font-size: .76rem; letter-spacing: .12em; font-weight: 600; color: var(--accent-deep); margin: 18px 0 10px; }
 	h1 { font-family: var(--font-display); font-weight: 500; font-size: clamp(1.8rem, 5vw, 2.6rem); line-height: 1.15; margin: 0 0 14px; }
