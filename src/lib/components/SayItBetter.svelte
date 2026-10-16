@@ -169,7 +169,8 @@
 </script>
 
 {#snippet bottom(label: string, action: () => void, disabled = false, secondary: { label: string; onclick: () => void } | null = null, icon: 'mic' | null = null)}
-	<ActionBar {label} onclick={action} {disabled} {icon} {secondary} recording={stage === 'recording'} />
+	<ActionBar {label} onclick={action} {disabled} {icon} recording={stage === 'recording'}
+		secondary={secondary ?? (onSkip && stage !== 'recording' && stage !== 'processing' && action !== finish ? { label: T('Skip this step', 'این مرحله را رد کن'), onclick: () => { stopAllAudio(); onSkip?.(); } } : null)} />
 {/snippet}
 
 <section class="say" aria-live="polite">
@@ -183,8 +184,7 @@
 			<button class="link" type="button" onclick={() => (showIdeas = !showIdeas)} aria-expanded={showIdeas}>{T('Need ideas?', 'ایده می‌خواهی؟')}</button>
 			{#if showIdeas}<ul class="ideas" lang="en" dir="ltr"><li>Where were you?</li><li>What went wrong?</li><li>What did you do?</li></ul>{/if}
 		{/if}
-		{@render bottom(T('Start talking · 1 minute', 'شروع صحبت · ۱ دقیقه'), startRecording, false,
-			onSkip && stage === 'task' ? { label: T('Skip this step', 'این مرحله را رد کن'), onclick: () => { stopAllAudio(); onSkip?.(); } } : null, 'mic')}
+		{@render bottom(T('Start talking · 1 minute', 'شروع صحبت · ۱ دقیقه'), startRecording, false, null, 'mic')}
 
 	{:else if stage === 'recording'}
 		<div class="center">
