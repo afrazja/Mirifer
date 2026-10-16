@@ -17,6 +17,7 @@ import { transcribe, transcriptionConfigured } from '$lib/server/transcribe';
 import { createLimiter, tooMany } from '$lib/server/rate-limit';
 import { ANSWER_MAX_SECONDS, QUESTIONS_PER_ROUND } from '$lib/practice/quick-fire';
 import { RawTurnSchema, asChat, checkTurn, quickFirePrompt, turnSchemas, type RawTurn } from '$lib/server/quick-fire-ai';
+import { canUseLab } from '$lib/server/lab-access';
 
 export const config = { maxDuration: 30 };
 const MAX_AUDIO_BYTES = 500_000;
@@ -31,6 +32,8 @@ const TurnRequest = z.object({
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const user = await englishLearner(request, locals);
 	if (user instanceof Response) return user;
+	// A Module lab route: the owner only.
+	if (!canUseLab(user)) return json({ error: 'Not found' }, { status: 404 });
 	if (!perMinute(user.id)) return tooMany();
 
 	if ((request.headers.get('content-type') ?? '').startsWith('multipart/form-data')) {
