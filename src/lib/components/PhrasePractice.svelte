@@ -10,7 +10,7 @@
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
 	import { MAX_CLIP_SECONDS, MAX_TRIES, PHRASES, caught, emptyPhraseRecord, shownParts, tipParts, type PhraseRecord } from '$lib/practice/phrases';
 
-	let { isFa = false, initial = null, afterIntro = null, onSave, onFocus, onStep, onDone }: {
+	let { isFa = false, initial = null, afterIntro = null, onSave, onFocus, onStep, onSkip, onDone }: {
 		isFa?: boolean;
 		/** What was saved earlier today (reload). */
 		initial?: PhraseRecord | null;
@@ -22,6 +22,8 @@
 		/** Which sentence is on screen (0-based), or null on the start screen. */
 		onStep?: (index: number | null) => void;
 		onDone: (score: undefined, record: PhraseRecord) => void;
+		/** "Skip this step", shown under the main button on the start screen (the daily lesson). */
+		onSkip?: () => void;
 	} = $props();
 
 	type Stage = 'listen' | 'recording' | 'result';
@@ -40,7 +42,8 @@
 	const T = (en: string, fa: string) => (isFa ? fa : en);
 
 	/** Mira's instruction stays above the first sentence until the learner starts. */
-	$effect(() => { onFocus?.(record.index === 0 && record.items[0].tries === 0 && stage === 'listen' ? 'full' : 'hidden'); });
+	const firstScreen = $derived(record.index === 0 && record.items[0].tries === 0 && stage === 'listen');
+	$effect(() => { onFocus?.(firstScreen ? 'full' : 'hidden'); });
 	let acted = false;
 	$effect(() => { onStep?.(record.index); });
 	onMount(() => {
@@ -145,6 +148,7 @@
 			{#if mic}<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0M12 17v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>{/if}
 			{label}
 		</button>
+		{#if onSkip && firstScreen}<button class="skip" type="button" onclick={() => { stopAllAudio(); onSkip?.(); }}>{T('Skip this step', 'این مرحله را رد کن')}</button>{/if}
 	</div>
 {/snippet}
 
@@ -204,6 +208,7 @@
 	.check { margin: 0; line-height: 1.6; }
 	.ok { color: var(--leaf); font-weight: 700; }
 	.bar { position: fixed; inset-inline: 0; inset-block-end: 0; z-index: 20; padding: 12px 20px calc(14px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--paper) 35%); }
+	.skip { display: block; margin: 4px auto 0; min-height: 44px; padding: 8px 12px; border: 0; background: none; color: var(--ink-soft); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 	.primary { display: flex; align-items: center; justify-content: center; gap: 8px; inline-size: 100%; max-inline-size: 680px; margin-inline: auto; min-height: 54px; border: 0; border-radius: 14px; background: var(--accent); color: var(--on-accent); font: inherit; font-size: 1.05rem; font-weight: 600; cursor: pointer; }
 	button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 	@media (prefers-reduced-motion: reduce) { .dot { animation: none; } }

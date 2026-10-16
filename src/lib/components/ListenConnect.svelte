@@ -6,7 +6,7 @@
 	 * with the day's link phrases. Kept in this browser for the day (reload, Back).
 	 */
 	import { onMount } from 'svelte';
-	import { audioPausedBySystem, playAudioPromise, stopAllAudio } from '$services/tts';
+	import { audioPausedBySystem, pauseAudio, playAudioPromise, resumeAudio, stopAllAudio } from '$services/tts';
 	import { ENGLISH_RATE } from '$lib/practice/english-voice';
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
 	import {
@@ -14,13 +14,15 @@
 		emptyConnectRecord, linkParts, partLines, scoreConnect, type ConnectRecord
 	} from '$lib/practice/listen-connect';
 
-	let { isFa = false, initial = null, onSave, onFocus, onDone }: {
+	let { isFa = false, initial = null, onSave, onFocus, onSkip, onDone }: {
 		isFa?: boolean;
 		initial?: ConnectRecord | null;
 		onSave?: (record: ConnectRecord) => void;
 		/** Mira's instruction (the listening goal) shows until the first part has been heard. */
 		onFocus?: (intro: 'full' | 'compact' | 'hidden') => void;
 		onDone: (score: { correct: number; total: number }, record: ConnectRecord) => void;
+		/** "Skip this step", shown under the main button on the first screen (the daily lesson). */
+		onSkip?: () => void;
 	} = $props();
 
 	// svelte-ignore state_referenced_locally
@@ -35,6 +37,8 @@
 	 */
 	let interrupted = false, stoppedByLearner = false, lineAt = 0;
 	let resumeFrom = $state<{ part: number; line: number } | null>(null);
+	/** The learner's Pause: the line stops where it is; the next line waits too. */
+	let paused = $state(false);
 	const T = (en: string, fa: string) => (isFa ? fa : en);
 	const fa = (n: number) => n.toLocaleString('fa-IR');
 	const step = $derived(STEPS[record.step] ?? STEPS[STEPS.length - 1]);
@@ -42,7 +46,8 @@
 	const part = $derived(step.kind === 'listen' ? step.part : step.kind === 'question' ? QUESTIONS[step.q].part : PARTS.length - 1);
 	const playsLeft = $derived(MAX_PLAYS - record.plays[part]);
 
-	$effect(() => { onFocus?.(record.step === 0 && !record.heard[0] ? 'full' : 'hidden'); });
+	const firstScreen = $derived(record.step === 0 && !record.heard[0]);
+	$effect(() => { onFocus?.(firstScreen ? 'full' : 'hidden'); });
 	onMount(() => {
 		// Back on the page: if the phone or browser paused the line, it would never end.
 		const onBack = () => { if (!document.hidden && playing && audioPausedBySystem()) { interrupted = true; stopAllAudio(); } };
@@ -63,21 +68,26 @@
 		playing = true; interrupted = false; stoppedByLearner = false; resumeFrom = null;
 		if (from === 0) attempts[p] += 1;
 		for (let i = from; i < lines.length; i++) {
+			while (paused && !interrupted) await new Promise(resolve => setTimeout(resolve, 150));
 			if (interrupted) break;
 			lineAt = i;
 			await playAudioPromise(lines[i].text, ENGLISH_RATE, 'en-US', undefined, SPEAKERS[lines[i].who].voice).catch(() => {});
 			if (!interrupted) await new Promise(resolve => setTimeout(resolve, 250));
 		}
-		playing = false;
+		playing = false; paused = false;
 		// Cut short by the phone or browser: given back, and it can continue from that line.
 		if (interrupted && !stoppedByLearner) { resumeFrom = { part: p, line: lineAt }; return; }
 		const plays = [...record.plays]; plays[p] += 1;
 		const heard = [...record.heard], first = !heard[p]; heard[p] = true;
 		record = { ...record, plays, heard }; persist();
-		// The first full play of a part goes straight to its questions.
-		if (first && step.kind === 'listen') goStep(record.step + 1);
+		// The first full play of a part goes straight to its questions (not a play the learner stopped).
+		if (first && step.kind === 'listen' && !stoppedByLearner) goStep(record.step + 1);
 	}
-	function stop() { if (playing) stoppedByLearner = true; interrupted = true; resumeFrom = null; stopAllAudio(); playing = false; }
+	function stop() { if (playing) stoppedByLearner = true; interrupted = true; resumeFrom = null; paused = false; stopAllAudio(); playing = false; }
+	function pause() { if (!playing || paused) return; paused = true; pauseAudio(); }
+	function unpause() { if (!paused) return; paused = false; resumeAudio(); }
+	/** While paused: start the part again. It's a new play; the stopped one isn't counted or moved on from. */
+	function restart() { interrupted = true; stoppedByLearner = false; paused = false; stopAllAudio(); playing = false; queueMicrotask(() => void play()); }
 	const resumable = $derived(resumeFrom !== null && resumeFrom.part === part);
 	function resume() { if (resumeFrom) void play(resumeFrom.line); }
 	function hearLine(index: number) {
@@ -129,13 +139,16 @@
 </script>
 
 {#snippet bottom(label: string, action: () => void, disabled = false)}
-	<div class="bar"><button class="primary" type="button" onclick={action} {disabled}>{label}</button></div>
+	<div class="bar">
+		<button class="primary" type="button" onclick={action} {disabled}>{label}</button>
+		{#if onSkip && firstScreen && !playing}<button class="skip" type="button" onclick={() => { stop(); onSkip?.(); }}>{T('Skip this step', 'این مرحله را رد کن')}</button>{/if}
+	</div>
 {/snippet}
 
 {#snippet again()}
 	{#if !record.readInstead && playsLeft > 0}
 		{#if resumable && !playing}<button class="link" type="button" onclick={resume}>▶ {T('Continue where it stopped', 'از همان جا ادامه بده')}</button>{/if}
-		<button class="link" type="button" onclick={() => (playing ? stop() : play())}>{playing ? T('Stop', 'توقف') : T(`Listen to part ${part + 1} again (${playsLeft} left)`, `دوباره گوش بده به بخش ${fa(part + 1)} (${fa(playsLeft)} بار دیگر)`)}</button>
+		<button class="link" type="button" onclick={() => (playing ? (paused ? unpause() : pause()) : play())}>{playing ? (paused ? `▶ ${T('Resume', 'ادامه')}` : `❚❚ ${T('Pause', 'مکث')}`) : T(`Listen to part ${part + 1} again (${playsLeft} left)`, `دوباره گوش بده به بخش ${fa(part + 1)} (${fa(playsLeft)} بار دیگر)`)}</button>
 	{/if}
 {/snippet}
 
@@ -146,9 +159,13 @@
 			<!-- No audio: this part as text, then its questions. -->
 			<ol class="script" lang="en" dir="ltr">{#each partLines(part) as line}<li><b>{SPEAKERS[line.who].name}:</b> {line.text}</li>{/each}</ol>
 			{@render bottom(T('To the questions', 'رفتن به سؤال‌ها'), toQuestions)}
+		{:else if playing && paused}
+			<p class="status" role="status">{T('Paused.', 'متوقف شد.')}</p>
+			<button class="link quiet" type="button" onclick={restart}>{T('Start the part again', 'بخش را از اول پخش کن')}</button>
+			{@render bottom(`▶ ${T('Resume', 'ادامه')}`, unpause)}
 		{:else if playing}
 			<p class="status" role="status">{T('Listening…', 'در حال پخش…')}</p>
-			{@render bottom(T('Stop', 'توقف'), stop)}
+			{@render bottom(`❚❚ ${T('Pause', 'مکث')}`, pause)}
 		{:else if resumable}
 			<p class="status" role="status">{T('The audio was paused. This didn’t use a play.', 'صدا متوقف شد. این یکی حساب نشد.')}</p>
 			<button class="link quiet" type="button" onclick={() => play()}>{T('Start the part again', 'بخش را از اول پخش کن')}</button>
@@ -227,6 +244,7 @@
 	.avatar { display: grid; place-items: center; inline-size: 38px; block-size: 38px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-family: var(--font-display); font-weight: 700; }
 	.link { justify-self: start; min-height: 44px; padding: 8px 0; background: none; border: 0; color: var(--accent-deep); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 	.link.quiet { color: var(--ink-soft); }
+	.skip { display: block; margin: 4px auto 0; min-height: 44px; padding: 8px 12px; border: 0; background: none; color: var(--ink-soft); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 	.bar { position: fixed; inset-inline: 0; inset-block-end: 0; z-index: 20; padding: 12px 20px calc(14px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--paper) 35%); }
 	.primary { display: flex; align-items: center; justify-content: center; inline-size: 100%; max-inline-size: 680px; margin-inline: auto; min-height: 54px; border: 0; border-radius: 14px; background: var(--accent); color: var(--on-accent); font: inherit; font-size: 1.05rem; font-weight: 600; cursor: pointer; }
 	.primary:disabled { opacity: .5; cursor: default; }

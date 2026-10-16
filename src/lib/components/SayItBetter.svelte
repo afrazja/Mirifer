@@ -12,7 +12,7 @@
 	import { MAX_SECONDS, MIN_SECONDS, clampSeconds, fixUse, scoreFor, type Feedback, type SayRecord } from '$lib/practice/say-better';
 	import type { DisplayText } from '$lib/practice/hotel';
 
-	let { isFa = false, initial = null, onSave, onFocus, onDone }: {
+	let { isFa = false, initial = null, onSave, onFocus, onSkip, onDone }: {
 		isFa?: boolean;
 		/** What was saved earlier today (reload). */
 		initial?: SayRecord | null;
@@ -21,6 +21,8 @@
 		/** How much of Mira's introduction the page shows: all of it on the task, one line while recording, none once the answer is in. */
 		onFocus?: (intro: 'full' | 'compact' | 'hidden') => void;
 		onDone: (score: { correct: number; total: number } | undefined, record: SayRecord) => void;
+		/** "Skip this step", shown under the main button on the task screen (the daily lesson). */
+		onSkip?: () => void;
 	} = $props();
 
 	type Stage = 'task' | 'recording' | 'interrupted' | 'short' | 'denied' | 'processing' | 'failed' | 'heard' | 'fix' | 'better' | 'retry' | 'result';
@@ -185,6 +187,8 @@
 				<svg viewBox="0 0 24 24" width="36" height="36" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0M12 17v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
 			</button>
 			<p class="hint">{T('Tap to start · 1 minute', 'بزن تا شروع شود · ۱ دقیقه')}</p>
+			<!-- Under the mic, the screen's main action (this screen has no bottom bar). -->
+			{#if onSkip && stage === 'task'}<button class="skip" type="button" onclick={() => { stopAllAudio(); onSkip?.(); }}>{T('Skip this step', 'این مرحله را رد کن')}</button>{/if}
 		</div>
 
 	{:else if stage === 'recording'}
@@ -296,6 +300,7 @@
 	.hear { justify-self: start; display: grid; place-items: center; inline-size: 48px; block-size: 48px; border: 1.5px solid var(--accent); border-radius: 50%; background: var(--paper-raised); color: var(--accent-deep); cursor: pointer; }
 	.link { justify-self: start; min-height: 44px; padding: 8px 0; background: none; border: 0; color: var(--accent-deep); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 	.bar { position: fixed; inset-inline: 0; inset-block-end: 0; z-index: 20; padding: 12px 20px calc(14px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--paper) 35%); }
+	.skip { display: block; margin: 4px auto 0; min-height: 44px; padding: 8px 12px; border: 0; background: none; color: var(--ink-soft); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 	.primary { display: flex; align-items: center; justify-content: center; inline-size: 100%; max-inline-size: 680px; margin-inline: auto; min-height: 54px; border: 0; border-radius: 14px; background: var(--accent); color: var(--on-accent); font: inherit; font-size: 1.05rem; font-weight: 600; cursor: pointer; }
 	.dots { display: inline-flex; gap: 6px; }
 	.dots span { inline-size: 10px; block-size: 10px; border-radius: 50%; background: var(--ink-soft); animation: blink 1.2s infinite ease-in-out; }

@@ -30,6 +30,8 @@ export const ENGLISH_VOICES: { id: TTSVoice; name: string; gender: 'male' | 'fem
 ];
 
 let currentAudio: HTMLAudioElement | null = null;
+/** The learner paused (pauseAudio): a line that starts loading meanwhile waits too. */
+let heldByLearner = false;
 
 /**
  * One audio element for every line, unlocked by the learner's first tap.
@@ -107,14 +109,26 @@ export const ttsIsPlaying = writable(false);
  * so a module playing several lines must notice and offer to continue.
  */
 export function audioPausedBySystem(): boolean {
-	return !!currentAudio && currentAudio.paused && !currentAudio.ended;
+	return !heldByLearner && !!currentAudio && currentAudio.paused && !currentAudio.ended;
 }
+/** The learner's Pause: the current line stops where it is (a line still loading waits too). */
+export function pauseAudio(): void {
+	heldByLearner = true;
+	currentAudio?.pause();
+}
+/** The learner's Resume: the line carries on from where it was paused. */
+export function resumeAudio(): void {
+	heldByLearner = false;
+	if (currentAudio && currentAudio.paused && !currentAudio.ended) void currentAudio.play().catch(() => {});
+}
+export const audioHeld = () => heldByLearner;
 
 export function stopAllAudio(): void {
 	if (typeof window === 'undefined') return;
 	ttsIsPlaying.set(false);
 
 	ttsGeneration++; // invalidate any in-flight playback
+	heldByLearner = false;
 	window.speechSynthesis?.cancel();
 	// Pausing is enough: removing the src would also re-lock the player on
 	// some phones. The next line replaces the src anyway.
@@ -324,6 +338,7 @@ function playWebAudio(
 		audio.onplay = () => {
 			if (done) return;
 			clearTimeout(timeout);
+			if (heldByLearner) { audio.pause(); return; }
 			if (onTime) {
 				stopTick();
 				rafId = requestAnimationFrame(tick);
@@ -379,7 +394,7 @@ export function playAudioUrl(url: string, loadTimeoutMs = 12_000, playbackRate =
 		settleCurrent = cancel;
 		ttsIsPlaying.set(true);
 		const timeout = setTimeout(() => end(false), loadTimeoutMs);
-		audio.onplay = () => clearTimeout(timeout);
+		audio.onplay = () => { clearTimeout(timeout); if (heldByLearner) audio.pause(); };
 		// "playing" (not "play") fires only once sound really starts: a blocked or failed load never calls onStart.
 		audio.onplaying = () => onStart?.();
 		audio.onended = () => {

@@ -105,6 +105,7 @@
 		} catch { saveFailed = true; }
 	}
 	const begin = () => { clearRecords(); spokenFor = null; const next = startSession(length); brief(currentModule(next)); return save(next); };
+	const skipStep = () => { stopAllAudio(); finish('skipped'); };
 	const finish = (outcome: 'done' | 'skipped', score?: { correct: number; total: number }, record?: unknown) => {
 		if (!session || !step) return;
 		phraseStep = null; intro = 'full';
@@ -146,13 +147,13 @@
 	</div>
 {/snippet}
 
-{#snippet moduleBody(mod: DayModule, onDone: (score?: { correct: number; total: number }, record?: unknown) => void)}
+{#snippet moduleBody(mod: DayModule, onDone: (score?: { correct: number; total: number }, record?: unknown) => void, onSkip?: () => void)}
 	{#if mod.id === 'listen-act' && mod.built && session}
-		{#key mod.id}<ListenConnect {isFa} initial={asConnectRecord(loadRecord(session.startedAt, mod.id))} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} {onDone} />{/key}
+		{#key mod.id}<ListenConnect {isFa} {onSkip} initial={asConnectRecord(loadRecord(session.startedAt, mod.id))} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} {onDone} />{/key}
 	{:else if mod.id === 'phrases' && mod.built && session}
-		{#key mod.id}<PhrasePractice {isFa} initial={asPhraseRecord(loadRecord(session.startedAt, mod.id))} afterIntro={introPlay} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} onStep={index => (phraseStep = index)} {onDone} />{/key}
+		{#key mod.id}<PhrasePractice {isFa} {onSkip} initial={asPhraseRecord(loadRecord(session.startedAt, mod.id))} afterIntro={introPlay} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} onStep={index => (phraseStep = index)} {onDone} />{/key}
 	{:else if mod.id === 'say-it-better' && mod.built && session}
-		{#key mod.id}<SayItBetter {isFa} initial={asSayRecord(loadRecord(session.startedAt, mod.id))} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} {onDone} />{/key}
+		{#key mod.id}<SayItBetter {isFa} {onSkip} initial={asSayRecord(loadRecord(session.startedAt, mod.id))} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} {onDone} />{/key}
 	{:else}
 		<div class="card stand-in" role="note">
 			<strong>{isFa ? 'این بخش هنوز ساخته نشده.' : 'This step is not built yet.'}</strong>
@@ -256,8 +257,9 @@
 			<p class="eyebrow">{isFa ? `مرحلهٔ ${stepNumber.toLocaleString('fa-IR')} از ${stepCount.toLocaleString('fa-IR')}` : `STEP ${stepNumber} OF ${stepCount}`}{#if step.id === 'phrases' && phraseStep !== null}{isFa ? ' — ' : ' · '}{isFa ? `${(phraseStep + 1).toLocaleString('fa-IR')} از ${PHRASES.length.toLocaleString('fa-IR')}` : `${phraseStep + 1}/${PHRASES.length}`}{/if}{isFa ? ' — ' : ' · '}{step.skill === 'listening' ? (isFa ? 'شنیدن' : 'LISTENING') : (isFa ? 'صحبت کردن' : 'SPEAKING')}</p>
 			<h1 id="step-title">{text(step.title)}</h1>
 			{#if intro === 'full'}{@render instruction(step)}{/if}
-			{@render moduleBody(step, (score, record) => finish('done', score, record))}
-			{#if intro === 'full'}<button class="text-button" type="button" onclick={() => { stopAllAudio(); finish('skipped'); }}>{isFa ? 'این مرحله را رد کن' : 'Skip this step'}</button>{/if}
+			{@render moduleBody(step, (score, record) => finish('done', score, record), skipStep)}
+			<!-- Built modules show "Skip this step" under their own main button; a stand-in shows it here. -->
+			{#if intro === 'full' && !step.built}<button class="text-button" type="button" onclick={skipStep}>{isFa ? 'این مرحله را رد کن' : 'Skip this step'}</button>{/if}
 		</section>
 
 	{:else if session.stage === 'recap'}
