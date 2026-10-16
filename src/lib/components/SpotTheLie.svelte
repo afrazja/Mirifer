@@ -6,7 +6,7 @@
 	 * that proves it. Checked in code, no AI.
 	 */
 	import { onMount } from 'svelte';
-	import { playAudioPromise, playAudioUrl, stopAllAudio, ttsUrl, type TTSVoice } from '$services/tts';
+	import { audioPausedBySystem, playAudioPromise, playAudioUrl, stopAllAudio, ttsUrl, type TTSVoice } from '$services/tts';
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
 	import MixedText from '$lib/components/MixedText.svelte';
 	import {
@@ -47,7 +47,18 @@
 		if (record.done || record.index >= TALKS.length) stage = 'result';
 		else if (record.index > 0 || record.step !== 'listen' || record.plays[0] > 0) { stage = 'talk'; prefetchTalk(record.index); }
 		else if (first) void playAudioPromise(INTRO.en.replace(/’/g, "'"), COACH_RATE, 'en-US', undefined, COACH_VOICE);
-		return () => stopAllAudio();
+		// Switching tabs doesn't stop the audio. But if the phone or browser paused it (a call, a
+		// locked screen), it would never end: stop it, and give a cut-short talk play back.
+		const onBack = () => {
+			if (document.hidden || playing === null || !audioPausedBySystem()) return;
+			const wasTalk = playing === 'talk';
+			stop();
+			if (wasTalk && record.plays[index] > 0) { const used = [...record.plays]; used[index] -= 1; record = { ...record, plays: used }; persist(); }
+			failed = true;
+		};
+		document.addEventListener('visibilitychange', onBack);
+		window.addEventListener('focus', onBack);
+		return () => { document.removeEventListener('visibilitychange', onBack); window.removeEventListener('focus', onBack); stopAllAudio(); };
 	});
 
 	function persist() { onSave?.($state.snapshot(record)); }

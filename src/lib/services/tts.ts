@@ -101,6 +101,15 @@ let ttsGeneration = 0; // incremented on stop — lets in-flight calls know they
 export const ttsIsPlaying = writable(false);
 
 /** Stop ALL audio sources (browser TTS + proxy Audio element) */
+/**
+ * True when the line that should be playing was paused by the browser or the phone itself
+ * (a call, a locked screen, the app sent to the background), not by us: it then never ends,
+ * so a module playing several lines must notice and offer to continue.
+ */
+export function audioPausedBySystem(): boolean {
+	return !!currentAudio && currentAudio.paused && !currentAudio.ended;
+}
+
 export function stopAllAudio(): void {
 	if (typeof window === 'undefined') return;
 	ttsIsPlaying.set(false);

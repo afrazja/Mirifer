@@ -6,7 +6,7 @@
 	 * with the day's link phrases. Kept in this browser for the day (reload, Back).
 	 */
 	import { onMount } from 'svelte';
-	import { playAudioPromise, stopAllAudio } from '$services/tts';
+	import { audioPausedBySystem, playAudioPromise, stopAllAudio } from '$services/tts';
 	import { ENGLISH_RATE } from '$lib/practice/english-voice';
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
 	import {
@@ -28,8 +28,13 @@
 	let playing = $state(false);
 	/** Play attempts per part: "Read it instead" is offered only after trying to play that part. */
 	let attempts = $state(PARTS.map(() => 0));
-	/** A play cut short by a call or a hidden tab is given back; one the learner stops still counts. */
-	let interrupted = false, stoppedByLearner = false;
+	/**
+	 * A play cut short by the phone or browser (a call, a locked screen) is given back, and can
+	 * continue from the line where it stopped; one the learner stops still counts. Switching to
+	 * another tab doesn't stop it: the part keeps playing.
+	 */
+	let interrupted = false, stoppedByLearner = false, lineAt = 0;
+	let resumeFrom = $state<{ part: number; line: number } | null>(null);
 	const T = (en: string, fa: string) => (isFa ? fa : en);
 	const fa = (n: number) => n.toLocaleString('fa-IR');
 	const step = $derived(STEPS[record.step] ?? STEPS[STEPS.length - 1]);
@@ -39,34 +44,42 @@
 
 	$effect(() => { onFocus?.(record.step === 0 && !record.heard[0] ? 'full' : 'hidden'); });
 	onMount(() => {
-		const onHidden = () => { if (document.hidden && playing) { interrupted = true; stopAllAudio(); } };
-		document.addEventListener('visibilitychange', onHidden);
-		return () => document.removeEventListener('visibilitychange', onHidden);
+		// Back on the page: if the phone or browser paused the line, it would never end.
+		const onBack = () => { if (!document.hidden && playing && audioPausedBySystem()) { interrupted = true; stopAllAudio(); } };
+		document.addEventListener('visibilitychange', onBack);
+		window.addEventListener('focus', onBack);
+		return () => { document.removeEventListener('visibilitychange', onBack); window.removeEventListener('focus', onBack); };
 	});
 
 	function persist() { onSave?.($state.snapshot(record)); }
-	function goStep(next: number) { record = { ...record, step: Math.min(next, STEPS.length - 1) }; persist(); }
+	function goStep(next: number) { resumeFrom = null; record = { ...record, step: Math.min(next, STEPS.length - 1) }; persist(); }
 
-	/** Plays one part, line by line in each speaker's voice. Counts only if it reaches the end. */
-	async function play() {
+	/** Plays one part, line by line in each speaker's voice, from a given line. Counts only if it reaches the end. */
+	async function play(from = 0) {
 		if (playing || playsLeft <= 0) return;
+		if (!Number.isInteger(from) || from < 0) from = 0;
 		stopAllAudio(); // Mira may still be giving the listening goal
-		const p = part;
-		playing = true; interrupted = false; stoppedByLearner = false; attempts[p] += 1;
-		for (const line of partLines(p)) {
+		const p = part, lines = partLines(p);
+		playing = true; interrupted = false; stoppedByLearner = false; resumeFrom = null;
+		if (from === 0) attempts[p] += 1;
+		for (let i = from; i < lines.length; i++) {
 			if (interrupted) break;
-			await playAudioPromise(line.text, ENGLISH_RATE, 'en-US', undefined, SPEAKERS[line.who].voice).catch(() => {});
+			lineAt = i;
+			await playAudioPromise(lines[i].text, ENGLISH_RATE, 'en-US', undefined, SPEAKERS[lines[i].who].voice).catch(() => {});
 			if (!interrupted) await new Promise(resolve => setTimeout(resolve, 250));
 		}
 		playing = false;
-		if (interrupted && !stoppedByLearner) return; // cut short by a call or a hidden tab: given back
+		// Cut short by the phone or browser: given back, and it can continue from that line.
+		if (interrupted && !stoppedByLearner) { resumeFrom = { part: p, line: lineAt }; return; }
 		const plays = [...record.plays]; plays[p] += 1;
 		const heard = [...record.heard], first = !heard[p]; heard[p] = true;
 		record = { ...record, plays, heard }; persist();
 		// The first full play of a part goes straight to its questions.
 		if (first && step.kind === 'listen') goStep(record.step + 1);
 	}
-	function stop() { if (playing) stoppedByLearner = true; interrupted = true; stopAllAudio(); playing = false; }
+	function stop() { if (playing) stoppedByLearner = true; interrupted = true; resumeFrom = null; stopAllAudio(); playing = false; }
+	const resumable = $derived(resumeFrom !== null && resumeFrom.part === part);
+	function resume() { if (resumeFrom) void play(resumeFrom.line); }
 	function hearLine(index: number) {
 		if (playing) return;
 		stopAllAudio();
@@ -121,6 +134,7 @@
 
 {#snippet again()}
 	{#if !record.readInstead && playsLeft > 0}
+		{#if resumable && !playing}<button class="link" type="button" onclick={resume}>▶ {T('Continue where it stopped', 'از همان جا ادامه بده')}</button>{/if}
 		<button class="link" type="button" onclick={() => (playing ? stop() : play())}>{playing ? T('Stop', 'توقف') : T(`Listen to part ${part + 1} again (${playsLeft} left)`, `دوباره گوش بده به بخش ${fa(part + 1)} (${fa(playsLeft)} بار دیگر)`)}</button>
 	{/if}
 {/snippet}
@@ -135,12 +149,16 @@
 		{:else if playing}
 			<p class="status" role="status">{T('Listening…', 'در حال پخش…')}</p>
 			{@render bottom(T('Stop', 'توقف'), stop)}
+		{:else if resumable}
+			<p class="status" role="status">{T('The audio was paused. This didn’t use a play.', 'صدا متوقف شد. این یکی حساب نشد.')}</p>
+			<button class="link quiet" type="button" onclick={() => play()}>{T('Start the part again', 'بخش را از اول پخش کن')}</button>
+			{@render bottom(`▶ ${T('Continue', 'ادامه')}`, resume)}
 		{:else if record.heard[part]}
 			{@render again()}
 			{@render bottom(T('To the questions', 'رفتن به سؤال‌ها'), () => goStep(record.step + 1))}
 		{:else}
 			{#if attempts[part] > 0}<button class="link" type="button" onclick={readInstead}>{T('Can’t hear it? Read it instead', 'صدا را نمی‌شنوی؟ متنش را بخوان')}</button>{/if}
-			{@render bottom(T(`Play part ${part + 1}`, `پخش بخش ${fa(part + 1)}`), play)}
+			{@render bottom(T(`Play part ${part + 1}`, `پخش بخش ${fa(part + 1)}`), () => play())}
 		{/if}
 
 	{:else if step.kind === 'question'}
@@ -208,6 +226,7 @@
 	.mira p { margin: 0; line-height: 1.55; }
 	.avatar { display: grid; place-items: center; inline-size: 38px; block-size: 38px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-family: var(--font-display); font-weight: 700; }
 	.link { justify-self: start; min-height: 44px; padding: 8px 0; background: none; border: 0; color: var(--accent-deep); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+	.link.quiet { color: var(--ink-soft); }
 	.bar { position: fixed; inset-inline: 0; inset-block-end: 0; z-index: 20; padding: 12px 20px calc(14px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--paper) 35%); }
 	.primary { display: flex; align-items: center; justify-content: center; inline-size: 100%; max-inline-size: 680px; margin-inline: auto; min-height: 54px; border: 0; border-radius: 14px; background: var(--accent); color: var(--on-accent); font: inherit; font-size: 1.05rem; font-weight: 600; cursor: pointer; }
 	.primary:disabled { opacity: .5; cursor: default; }
