@@ -7,6 +7,7 @@
 	 */
 	import { onDestroy, onMount } from 'svelte';
 	import { playAudioPromise, stopAllAudio, ttsIsPlaying } from '$services/tts';
+	import ActionBar from '$lib/components/ActionBar.svelte';
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
 	import { MAX_CLIP_SECONDS, MAX_TRIES, PHRASES, caught, emptyPhraseRecord, shownParts, tipParts, type PhraseRecord } from '$lib/practice/phrases';
 
@@ -143,13 +144,8 @@
 </script>
 
 {#snippet bottom(label: string, action: () => void, mic = false)}
-	<div class="bar">
-		<button class="primary" type="button" onclick={action}>
-			{#if mic}<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0M12 17v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>{/if}
-			{label}
-		</button>
-		{#if onSkip && firstScreen}<button class="skip" type="button" onclick={() => { stopAllAudio(); onSkip?.(); }}>{T('Skip this step', 'این مرحله را رد کن')}</button>{/if}
-	</div>
+	<ActionBar {label} onclick={action} icon={mic ? 'mic' : null} recording={stage === 'recording'}
+		secondary={onSkip && firstScreen ? { label: T('Skip this step', 'این مرحله را رد کن'), onclick: () => { stopAllAudio(); onSkip?.(); } } : null} />
 {/snippet}
 
 <section class="phrases" aria-live="polite">
@@ -158,7 +154,7 @@
 		<p class="tip">{#each tipParts(isFa ? phrase.tip.fa : phrase.tip.en) as part}{#if part.english}<bdi class="en" lang="en" dir="ltr">{part.text}</bdi>{:else}{part.text}{/if}{/each}</p>
 		{#if stage !== 'recording'}
 			<p class="row">
-				<button class="link" type="button" onclick={() => (playing ? stopAllAudio() : say())}><span aria-hidden="true">{playing ? '■' : '▶'}</span> {T('Again', 'دوباره')}</button>
+				<button class="link" type="button" onclick={() => (playing ? stopAllAudio() : say())}><span aria-hidden="true">{playing ? '■' : '▶'}</span> {playing ? T('Stop', 'توقف') : T('Again', 'دوباره')}</button>
 				<span aria-hidden="true">·</span>
 				<button class="link" type="button" onclick={() => say(COACH_RATE * 0.85)}>{T('Slower', 'آهسته‌تر')}</button>
 			</p>
@@ -192,7 +188,7 @@
 </section>
 
 <style>
-	.phrases { display: grid; gap: 12px; padding-bottom: 96px; }
+	.phrases { display: grid; gap: 12px; padding-bottom: 150px; }
 	.situation { margin: 0; color: var(--ink-soft); font-size: .95rem; }
 	.sentence { margin: 4px 0 0; font-family: var(--font-display); font-size: clamp(1.45rem, 6.4vw, 1.9rem); line-height: 1.35; text-align: left; }
 	.sentence strong { color: var(--accent-deep); }
@@ -207,9 +203,6 @@
 	.result { display: grid; justify-items: start; gap: 4px; margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--line); }
 	.check { margin: 0; line-height: 1.6; }
 	.ok { color: var(--leaf); font-weight: 700; }
-	.bar { position: fixed; inset-inline: 0; inset-block-end: 0; z-index: 20; padding: 12px 20px calc(14px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--paper) 35%); }
-	.skip { display: block; margin: 4px auto 0; min-height: 44px; padding: 8px 12px; border: 0; background: none; color: var(--ink-soft); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
-	.primary { display: flex; align-items: center; justify-content: center; gap: 8px; inline-size: 100%; max-inline-size: 680px; margin-inline: auto; min-height: 54px; border: 0; border-radius: 14px; background: var(--accent); color: var(--on-accent); font: inherit; font-size: 1.05rem; font-weight: 600; cursor: pointer; }
 	button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 	@media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
 	.tie { display: inline-block; inline-size: .42em; block-size: .32em; margin-inline: .04em; border-block-end: 2px solid var(--accent); border-radius: 0 0 50% 50% / 0 0 100% 100%; vertical-align: -.08em; }

@@ -5,6 +5,7 @@
 	 * each part is followed by its own questions, one per screen; then the whole conversation as text
 	 * with the day's link phrases. Kept in this browser for the day (reload, Back).
 	 */
+	import ActionBar from '$lib/components/ActionBar.svelte';
 	import { onMount } from 'svelte';
 	import { audioPausedBySystem, pauseAudio, playAudioPromise, resumeAudio, stopAllAudio } from '$services/tts';
 	import { ENGLISH_RATE } from '$lib/practice/english-voice';
@@ -35,7 +36,7 @@
 	 * continue from the line where it stopped; one the learner stops still counts. Switching to
 	 * another tab doesn't stop it: the part keeps playing.
 	 */
-	let interrupted = false, stoppedByLearner = false, lineAt = 0;
+	let interrupted = false, stoppedByLearner = false, lineAt = 0, playRun = 0;
 	let resumeFrom = $state<{ part: number; line: number } | null>(null);
 	/** The learner's Pause: the line stops where it is; the next line waits too. */
 	let paused = $state(false);
@@ -64,16 +65,18 @@
 		if (playing || playsLeft <= 0) return;
 		if (!Number.isInteger(from) || from < 0) from = 0;
 		stopAllAudio(); // Mira may still be giving the listening goal
-		const p = part, lines = partLines(p);
+		const p = part, lines = partLines(p), run = ++playRun;
 		playing = true; interrupted = false; stoppedByLearner = false; resumeFrom = null;
 		if (from === 0) attempts[p] += 1;
 		for (let i = from; i < lines.length; i++) {
-			while (paused && !interrupted) await new Promise(resolve => setTimeout(resolve, 150));
-			if (interrupted) break;
+			while (paused && !interrupted && run === playRun) await new Promise(resolve => setTimeout(resolve, 150));
+			if (interrupted || run !== playRun) break;
 			lineAt = i;
 			await playAudioPromise(lines[i].text, ENGLISH_RATE, 'en-US', undefined, SPEAKERS[lines[i].who].voice).catch(() => {});
-			if (!interrupted) await new Promise(resolve => setTimeout(resolve, 250));
+			if (!interrupted && run === playRun) await new Promise(resolve => setTimeout(resolve, 250));
 		}
+		// Replaced by a newer play (Start the part again): that one owns the state now.
+		if (run !== playRun) return;
 		playing = false; paused = false;
 		// Cut short by the phone or browser: given back, and it can continue from that line.
 		if (interrupted && !stoppedByLearner) { resumeFrom = { part: p, line: lineAt }; return; }
@@ -87,7 +90,7 @@
 	function pause() { if (!playing || paused) return; paused = true; pauseAudio(); }
 	function unpause() { if (!paused) return; paused = false; resumeAudio(); }
 	/** While paused: start the part again. It's a new play; the stopped one isn't counted or moved on from. */
-	function restart() { interrupted = true; stoppedByLearner = false; paused = false; stopAllAudio(); playing = false; queueMicrotask(() => void play()); }
+	function restart() { playRun++; paused = false; playing = false; stopAllAudio(); void play(); }
 	const resumable = $derived(resumeFrom !== null && resumeFrom.part === part);
 	function resume() { if (resumeFrom) void play(resumeFrom.line); }
 	function hearLine(index: number) {
@@ -96,7 +99,9 @@
 		const line = CONVERSATION[index];
 		void playAudioPromise(line.text, ENGLISH_RATE, 'en-US', undefined, SPEAKERS[line.who].voice).catch(() => {});
 	}
-	function readInstead() { if (playing) stop(); record = { ...record, readInstead: true }; persist(); }
+	function readInstead() { if (playing) { playRun++; stopAllAudio(); playing = false; paused = false; } record = { ...record, readInstead: true }; persist(); }
+	/** "Can't hear it?": while the first play of a part runs, or after one that didn't finish. */
+	const readInsteadSlot = $derived({ label: T('Can’t hear it? Read it instead', 'صدا را نمی‌شنوی؟ متنش را بخوان'), onclick: readInstead });
 	function toQuestions() {
 		const heard = [...record.heard]; heard[part] = true;
 		record = { ...record, heard }; persist();
@@ -138,17 +143,15 @@
 	}
 </script>
 
-{#snippet bottom(label: string, action: () => void, disabled = false)}
-	<div class="bar">
-		<button class="primary" type="button" onclick={action} {disabled}>{label}</button>
-		{#if onSkip && firstScreen && !playing}<button class="skip" type="button" onclick={() => { stop(); onSkip?.(); }}>{T('Skip this step', 'این مرحله را رد کن')}</button>{/if}
-	</div>
+{#snippet bottom(label: string, action: () => void, disabled = false, secondary: { label: string; onclick: () => void } | null = null, icon: 'pause' | 'play' | null = null)}
+	<ActionBar {label} onclick={action} {disabled} {icon}
+		secondary={secondary ?? (onSkip && firstScreen && !playing ? { label: T('Skip this step', 'این مرحله را رد کن'), onclick: () => { stop(); onSkip?.(); } } : null)} />
 {/snippet}
 
 {#snippet again()}
 	{#if !record.readInstead && playsLeft > 0}
-		{#if resumable && !playing}<button class="link" type="button" onclick={resume}>▶ {T('Continue where it stopped', 'از همان جا ادامه بده')}</button>{/if}
-		<button class="link" type="button" onclick={() => (playing ? (paused ? unpause() : pause()) : play())}>{playing ? (paused ? `▶ ${T('Resume', 'ادامه')}` : `❚❚ ${T('Pause', 'مکث')}`) : T(`Listen to part ${part + 1} again (${playsLeft} left)`, `دوباره گوش بده به بخش ${fa(part + 1)} (${fa(playsLeft)} بار دیگر)`)}</button>
+		{#if resumable && !playing}<button class="link" type="button" onclick={resume}>{T('Continue where it stopped', 'از همان جا ادامه بده')}</button>{/if}
+		<button class="link" type="button" onclick={() => (playing ? (paused ? unpause() : pause()) : play())}>{playing ? (paused ? T('Continue listening', 'ادامهٔ پخش') : T('Pause listening', 'مکث پخش')) : T(`Listen to part ${part + 1} again (${playsLeft} left)`, `دوباره گوش بده به بخش ${fa(part + 1)} (${fa(playsLeft)} بار دیگر)`)}</button>
 	{/if}
 {/snippet}
 
@@ -160,22 +163,19 @@
 			<ol class="script" lang="en" dir="ltr">{#each partLines(part) as line}<li><b>{SPEAKERS[line.who].name}:</b> {line.text}</li>{/each}</ol>
 			{@render bottom(T('To the questions', 'رفتن به سؤال‌ها'), toQuestions)}
 		{:else if playing && paused}
-			<p class="status" role="status">{T('Paused.', 'متوقف شد.')}</p>
-			<button class="link quiet" type="button" onclick={restart}>{T('Start the part again', 'بخش را از اول پخش کن')}</button>
-			{@render bottom(`▶ ${T('Resume', 'ادامه')}`, unpause)}
+			<p class="status" role="status">{T('Paused.', 'مکث شد.')}</p>
+			{@render bottom(T('Continue', 'ادامه'), unpause, false, { label: T('Start the part again', 'بخش را از اول پخش کن'), onclick: restart }, 'play')}
 		{:else if playing}
 			<p class="status" role="status">{T('Listening…', 'در حال پخش…')}</p>
-			{@render bottom(`❚❚ ${T('Pause', 'مکث')}`, pause)}
+			{@render bottom(T('Pause', 'مکث'), pause, false, record.heard[part] ? null : readInsteadSlot, 'pause')}
 		{:else if resumable}
 			<p class="status" role="status">{T('The audio was paused. This didn’t use a play.', 'صدا متوقف شد. این یکی حساب نشد.')}</p>
-			<button class="link quiet" type="button" onclick={() => play()}>{T('Start the part again', 'بخش را از اول پخش کن')}</button>
-			{@render bottom(`▶ ${T('Continue', 'ادامه')}`, resume)}
+			{@render bottom(T('Continue', 'ادامه'), resume, false, { label: T('Start the part again', 'بخش را از اول پخش کن'), onclick: () => play() }, 'play')}
 		{:else if record.heard[part]}
 			{@render again()}
 			{@render bottom(T('To the questions', 'رفتن به سؤال‌ها'), () => goStep(record.step + 1))}
 		{:else}
-			{#if attempts[part] > 0}<button class="link" type="button" onclick={readInstead}>{T('Can’t hear it? Read it instead', 'صدا را نمی‌شنوی؟ متنش را بخوان')}</button>{/if}
-			{@render bottom(T(`Play part ${part + 1}`, `پخش بخش ${fa(part + 1)}`), () => play())}
+			{@render bottom(T(`Play part ${part + 1}`, `پخش بخش ${fa(part + 1)}`), () => play(), false, attempts[part] > 0 ? readInsteadSlot : null, 'play')}
 		{/if}
 
 	{:else if step.kind === 'question'}
@@ -221,7 +221,7 @@
 </section>
 
 <style>
-	.connect { display: grid; gap: 12px; padding-bottom: 96px; }
+	.connect { display: grid; gap: 12px; padding-bottom: 150px; }
 	.status { margin: 12px 0 0; font-weight: 600; }
 	.kind:lang(fa), :global([dir='rtl']) .kind { letter-spacing: normal; }
 	.kind { margin: 0; font-size: .8rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent-deep); }
@@ -243,10 +243,5 @@
 	.mira p { margin: 0; line-height: 1.55; }
 	.avatar { display: grid; place-items: center; inline-size: 38px; block-size: 38px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-family: var(--font-display); font-weight: 700; }
 	.link { justify-self: start; min-height: 44px; padding: 8px 0; background: none; border: 0; color: var(--accent-deep); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
-	.link.quiet { color: var(--ink-soft); }
-	.skip { display: block; margin: 4px auto 0; min-height: 44px; padding: 8px 12px; border: 0; background: none; color: var(--ink-soft); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
-	.bar { position: fixed; inset-inline: 0; inset-block-end: 0; z-index: 20; padding: 12px 20px calc(14px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--paper) 35%); }
-	.primary { display: flex; align-items: center; justify-content: center; inline-size: 100%; max-inline-size: 680px; margin-inline: auto; min-height: 54px; border: 0; border-radius: 14px; background: var(--accent); color: var(--on-accent); font: inherit; font-size: 1.05rem; font-weight: 600; cursor: pointer; }
-	.primary:disabled { opacity: .5; cursor: default; }
 	button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 </style>

@@ -25,6 +25,7 @@
 	} from '$lib/practice/day';
 	import type { DisplayText } from '$lib/practice/hotel';
 	import type { DayModule } from '$lib/practice/day';
+	import ActionBar from '$lib/components/ActionBar.svelte';
 
 	let { data }: PageProps = $props();
 	let language = $state<'en' | 'fa'>('en');
@@ -291,8 +292,8 @@
 				<strong>{text(next.title)}</strong>
 				<p>{text(next.why)}</p>
 			</div>
-			<p class="small">{isFa ? 'نوار پیشرفت شنیدن و صحبت کردن با اولین ماژول‌های ساخته‌شده پر می‌شود.' : 'The Listening and Speaking progress bars fill in once the first modules are built.'}</p>
-			<button class="primary" type="button" onclick={finishRecap}>{isFa ? 'پایان جلسه' : 'Finish session'}</button>
+			<div class="bar-space" aria-hidden="true"></div>
+			<ActionBar label={isFa ? 'پایان جلسه' : 'Finish session'} onclick={finishRecap} />
 		</section>
 
 	{:else}
@@ -308,6 +309,8 @@
 </main>
 
 <style>
+	/* Room under the last card for the fixed bottom bar. */
+	.bar-space { block-size: 110px; }
 	.today { max-width: 720px; margin: 0 auto; padding: 24px 20px 64px; color: var(--ink); }
 	.eyebrow { font-size: .76rem; letter-spacing: .12em; font-weight: 600; color: var(--accent-deep); margin: 18px 0 10px; }
 	h1 { font-family: var(--font-display); font-weight: 500; font-size: clamp(1.8rem, 5vw, 2.6rem); line-height: 1.15; margin: 0 0 14px; }
