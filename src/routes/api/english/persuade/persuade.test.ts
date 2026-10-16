@@ -8,7 +8,7 @@ import { POST } from './+server';
 const REASONS = 'I would take the studio because it is only five minutes from my work and it is cheaper.';
 const ANSWER = 'Yes, it is noisy, but I can sleep with earplugs.';
 function fixture(body: FormData | object, count = 0) {
-	const user = { id: 'u1', email: 'a@b.c', user_metadata: { target_language: 'en' } };
+	const user = { id: 'u1', email: 'owner@m.test', email_confirmed_at: '2026-01-01T00:00:00Z', user_metadata: { target_language: 'en' } };
 	const inserted: unknown[] = [];
 	const from = vi.fn().mockImplementation(() => ({
 		select: () => ({ eq: () => ({ eq: () => ({ gte: () => Promise.resolve({ count, error: null }) }), maybeSingle: () => Promise.resolve({ data: null }) }) }),
@@ -22,9 +22,15 @@ function fixture(body: FormData | object, count = 0) {
 const audio = (seconds = 30) => { const f = new FormData(); f.set('audio', new File([new Uint8Array(2000)], 'a.webm', { type: 'audio/webm' })); f.set('seconds', String(seconds)); return f; };
 const good = { reasons: [{ quote: 'only five minutes from my work', text: 'It is close to work.', fact: 'walk' }], verdict: 'answered', evidence: 'I can sleep with earplugs', switched: false, objectionEn: 'Good.', objectionFa: 'خوب.', phrases: [], praiseEn: null, praiseFa: null };
 
-beforeEach(() => { for (const k of Object.keys(env)) delete env[k]; env.OPENAI_API_KEY = 'k'; askChain.mockReset(); transcribeMock.mockReset(); });
+beforeEach(() => { for (const k of Object.keys(env)) delete env[k]; env.OPENAI_API_KEY = 'k'; env.ADMIN_EMAIL = 'owner@m.test'; askChain.mockReset(); transcribeMock.mockReset(); });
 
 describe('/api/english/persuade', () => {
+	it('is a Module lab route: anyone but the owner gets 404', async () => {
+		env.ADMIN_EMAIL = 'someone-else@m.test';
+		const f = fixture(audio());
+		expect((await POST(f.event)).status).toBe(404);
+		expect(transcribeMock).not.toHaveBeenCalled();
+	});
 	it('transcribes a recording without spending allowance', async () => {
 		transcribeMock.mockResolvedValue(REASONS);
 		const f = fixture(audio());

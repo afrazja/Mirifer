@@ -1,13 +1,9 @@
 /**
- * The English Module lab (every module type, one card each) is for the owner and
- * admins only, while the types are being built and judged. Learners never see it.
+ * The English Module lab (every module type, one card each) is for the owner only: the account
+ * whose confirmed email is ADMIN_EMAIL. Other admins (user_profiles.is_admin) don't see it either.
+ * Learners never see it, and the lab's own AI routes refuse them.
  */
 import type { User } from '@supabase/supabase-js';
 import { isAdminEmail } from '$lib/server/admin-auth';
 
-export async function canUseLab(locals: App.Locals, user: User | null): Promise<boolean> {
-	if (!user) return false;
-	if (user.email_confirmed_at && isAdminEmail(user.email)) return true;
-	const { data } = await locals.supabase.from('user_profiles').select('is_admin').eq('id', user.id).maybeSingle();
-	return data?.is_admin === true;
-}
+export const canUseLab = (user: User | null | undefined): boolean => !!user?.email_confirmed_at && isAdminEmail(user.email);

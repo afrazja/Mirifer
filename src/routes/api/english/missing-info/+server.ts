@@ -19,6 +19,7 @@ import { createLimiter, tooMany } from '$lib/server/rate-limit';
 import { readEnglishProfile } from '$lib/practice/english-profile';
 import { levelFor } from '$lib/server/coach-ai';
 import { GAP_IDS, MAX_QUESTIONS, QUESTION_MAX_SECONDS, SAFE_LINE, deskState, type Turn } from '$lib/practice/missing-info';
+import { canUseLab } from '$lib/server/lab-access';
 import {
 	RawQuestionsSchema, RawTomSchema, asConversation, asNumberedConversation, checkQuestions, checkTom, questionsPrompt, questionsSchemas, tomPrompt, tomSchemas,
 	type RawQuestions, type RawTom
@@ -36,6 +37,8 @@ const Request = z.object({ kind: z.enum(['turn', 'feedback']), turns: z.array(Tu
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const user = await englishLearner(request, locals);
 	if (user instanceof Response) return user;
+	// A Module lab route: the owner only.
+	if (!canUseLab(user)) return json({ error: 'Not found' }, { status: 404 });
 	if (!perMinute(user.id)) return tooMany();
 
 	if ((request.headers.get('content-type') ?? '').startsWith('multipart/form-data')) {

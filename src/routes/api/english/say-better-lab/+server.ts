@@ -20,6 +20,7 @@ import { readEnglishProfile } from '$lib/practice/english-profile';
 import { levelFor } from '$lib/server/coach-ai';
 import { LAB_MAX_SECONDS, labQuestion } from '$lib/practice/say-better-lab';
 import { RawLabSchema, asAnswer, checkLabFeedback, labPrompt, labSchemas, type RawLab } from '$lib/server/say-better-lab-ai';
+import { canUseLab } from '$lib/server/lab-access';
 
 export const config = { maxDuration: 60 };
 const MAX_AUDIO_BYTES = 1_200_000;
@@ -32,6 +33,8 @@ const FeedbackRequest = z.object({
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const user = await englishLearner(request, locals);
 	if (user instanceof Response) return user;
+	// A Module lab route: the owner only.
+	if (!canUseLab(user)) return json({ error: 'Not found' }, { status: 404 });
 	if (!perMinute(user.id)) return tooMany();
 
 	if ((request.headers.get('content-type') ?? '').startsWith('multipart/form-data')) {

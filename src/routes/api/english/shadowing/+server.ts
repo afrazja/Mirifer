@@ -10,6 +10,7 @@ import { checkAllowance, englishLearner } from '$lib/server/english-ai';
 import { transcribe, transcriptionConfigured } from '$lib/server/transcribe';
 import { createLimiter, tooMany } from '$lib/server/rate-limit';
 import { ANSWER_MAX_SECONDS } from '$lib/practice/shadowing-lab';
+import { canUseLab } from '$lib/server/lab-access';
 
 const MAX_AUDIO_BYTES = 400_000;
 const perMinute = createLimiter(20, 60_000);
@@ -17,6 +18,8 @@ const perMinute = createLimiter(20, 60_000);
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const user = await englishLearner(request, locals);
 	if (user instanceof Response) return user;
+	// A Module lab route: the owner only.
+	if (!canUseLab(user)) return json({ error: 'Not found' }, { status: 404 });
 	if (!perMinute(user.id)) return tooMany();
 	if (!transcriptionConfigured()) return json({ error: 'Transcription unavailable' }, { status: 503 });
 	if (Number(request.headers.get('content-length') ?? 0) > MAX_AUDIO_BYTES + 10_000) return json({ error: 'Recording too large' }, { status: 413 });

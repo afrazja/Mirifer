@@ -15,6 +15,7 @@ import { transcribe, transcriptionConfigured } from '$lib/server/transcribe';
 import { createLimiter, tooMany } from '$lib/server/rate-limit';
 import { RESPOND_MAX_SECONDS, TEXTS, validRating } from '$lib/practice/read-rate';
 import { RawFeedbackSchema, checkFeedback, feedbackSchemas, readRatePrompt, readRateUser, type RawFeedback } from '$lib/server/read-rate-ai';
+import { canUseLab } from '$lib/server/lab-access';
 
 export const config = { maxDuration: 30 };
 const MAX_AUDIO_BYTES = 900_000;
@@ -30,6 +31,8 @@ const FeedbackRequest = z.object({
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const user = await englishLearner(request, locals);
 	if (user instanceof Response) return user;
+	// A Module lab route: the owner only.
+	if (!canUseLab(user)) return json({ error: 'Not found' }, { status: 404 });
 	if (!perMinute(user.id)) return tooMany();
 
 	if ((request.headers.get('content-type') ?? '').startsWith('multipart/form-data')) {
