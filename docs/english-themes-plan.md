@@ -1,11 +1,11 @@
-# English daily lessons: themes and sub-themes (v3.1, for the owner's choice)
+# English daily lessons: themes, sub-themes and modules (v3.2)
 
-Status: **v3.1, for the owner.** The owner's direction: a theme like "Travel" is too broad, so it is split into **sub-themes**, each one a concrete situation. **One sub-theme = one daily lesson.** The English-coach reviewer checked v3, and its points are merged (see the end).
+Status: **v3.2.** The owner decided the six modules (below). The theme order still awaits the owner's choice. The owner's direction: a theme like "Travel" is too broad, so it is split into **sub-themes**, each one a concrete situation. **One sub-theme = one daily lesson.** The English-coach reviewer checked v3, and its points are merged (see the end).
 
 ## Two levels
 
 - **Theme:** a family of situations, such as Travel or Health. A week of lessons stays in one theme and tells a small story ("your first trip").
-- **Sub-theme:** one situation with one goal = one daily lesson. All of the day's modules are written for it: the listening conversation, the 5 phrases, your turn, and the scene with a twist in the 20-minute lesson.
+- **Sub-theme:** one situation with one goal = one daily lesson. All of the day's theme modules are written for it: Listening, Phrases, Your talk, and a Conversation in the 20-minute lesson.
 
 **Levels:** A2 (easier), A2+, B1 (harder). ★ marks a good harder day (day 6 of a week).
 
@@ -135,14 +135,33 @@ That's 42 days. The remaining 30 sub-themes make weeks 7–11.
 - **(b)** A mixed week 1 loses the story.
 - **(c)** Later, once day-7 data shows which onboarding reason drops off, week 2 can follow the learner's reason.
 
+## The six modules (owner's decision)
+
+The 15 lab modules are merged into **six**, to make planning and the app simpler. A lab module is merged when it first goes into a daily lesson; the lab isn't rebuilt now.
+
+| Module | Made from | Follows the theme? | What changes per lesson |
+|---|---|---|---|
+| **Listening** | Listen and connect + Spot the lie (as a "which one is false?" question type) | yes | a new conversation or talk, and its questions (written + audio) |
+| **Phrases** | Natural phrases + Shadowing (an optional faster round) | yes | 5 sentences that tell a short story |
+| **Your talk** | Tell your story / Say it again, better + Speaking card + 60-second free talk + Listen and retell | yes | one prompt, sometimes a card with 2–3 points, or "tell me what you heard" |
+| **Conversation** | Scene with a twist + Find the missing information + Quick-fire + Choose and persuade | yes | a short sheet: who you talk to, your task (solve a problem, find out facts, answer quick questions, or choose and persuade), and the twist |
+| **Sharp ears** | Minimal pairs + Connected speech + Dictation | no: one game per week | built once, reused |
+| **Read and respond** | Read, rate, respond | when the theme has a good text | a short text (a review, a notice, an ad) |
+
+**Your talk, in one flow:** a prompt (sometimes a card), talk for up to a minute, feedback (what you covered, 1–2 fixes, a better version, how fluent you were), then a second try to compare.
+
+**The daily lesson:**
+- **15 minutes:** Listening → Phrases → Your talk;
+- **20 minutes:** the same, plus a Conversation;
+- **once or twice a week:** a short Sharp ears game;
+- **now and then:** Read and respond.
+
+So each new lesson needs 3–4 new pieces of content: one listening, 5 phrases, a prompt and, for 20 minutes, a conversation sheet. Sharp ears is built once.
+
 ## Rules for every lesson
 
-- **One goal, two actions,** and it must work in the 15-minute lesson (listening, phrases, your turn). The scene with a twist is 20-minute only.
-- **Module slots per day:**
-  - Listening (Listen and connect, Spot the lie or Dictation);
-  - Phrases (5 sentences that tell a short story);
-  - Your turn (Tell your story, Quick-fire, Speaking card or Choose and persuade, whichever fits);
-  - 20 minutes: the scene with a twist.
+- **One goal, two actions,** and it must work in the 15-minute lesson (Listening, Phrases, Your talk). A Conversation is 20-minute only.
+- **Module slots per day:** see "The six modules" below.
 - **Personal prompts don't assume a life:**
   - "your job, a job you'd like, or a family member's job";
   - "a time you moved, or your home now";
