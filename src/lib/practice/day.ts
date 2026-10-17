@@ -223,7 +223,12 @@ export function recommend(session: DaySession, upcoming?: DayPack | null): Recom
 	const weak = modules.find(module => { const score = session.scores?.[module.id]; return score && score.correct / score.total < 0.6; });
 	if (weak && !session.skipped.includes(weak.id)) return { title: { en: `Next time: ${weak.title.en} again`, fa: `دفعهٔ بعد: دوباره ${weak.title.fa}` }, why: { en: 'It was the hardest part today, so you get another go with new details.', fa: 'امروز سخت‌ترین بخش بود، پس با جزئیات تازه دوباره امتحانش می‌کنی.' } };
 	if (skipped) return { title: { en: `Next time: ${skipped.title.en}`, fa: `دفعهٔ بعد: ${skipped.title.fa}` }, why: { en: 'You skipped it today, so it comes back first.', fa: 'امروز ردش کردی، پس اول از همه برمی‌گردد.' } };
-	const title = upcoming && upcoming.id !== session.day
+	if (upcoming && upcoming.id === session.day) {
+		// No new day is open yet: say so, never promise a new theme.
+		const day = dayOf(session);
+		return { title: { en: `Next time: Day ${day.number} again`, fa: `دفعهٔ بعد: دوباره روز ${day.number.toLocaleString('fa-IR')}` }, why: { en: 'New days are on the way. Until then, practising this one again helps it stick.', fa: 'روزهای تازه در راه است. تا آن موقع، تمرین دوبارهٔ همین روز کمک می‌کند بهتر یادت بماند.' } };
+	}
+	const title = upcoming
 		? { en: `Next time: Day ${upcoming.number}, ${upcoming.theme.en}`, fa: `دفعهٔ بعد: روز ${upcoming.number.toLocaleString('fa-IR')}، ${upcoming.theme.fa}` }
 		: { en: 'Next time: a new theme', fa: 'دفعهٔ بعد: یک موضوع تازه' };
 	return { title, why: { en: 'You finished every step today, so you move on.', fa: 'امروز همهٔ مرحله‌ها را تمام کردی، پس جلو می‌روی.' } };

@@ -41,7 +41,7 @@ export function resultBand(correct: number, total: number): EnglishProgress['las
 export interface FinishedModule { skill: ModuleSkill; correct: number; total: number }
 
 /** Adds one finished session. */
-export function recordSession(progress: EnglishProgress, themeId: string, modules: FinishedModule[], now = new Date()): EnglishProgress {
+export function recordSession(progress: EnglishProgress, themeId: string | null, modules: FinishedModule[], now = new Date()): EnglishProgress {
 	const tally: SessionTally = { listening: { correct: 0, total: 0 }, speaking: { correct: 0, total: 0 } };
 	for (const module of modules) {
 		tally[module.skill].correct += module.correct;

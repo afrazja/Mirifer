@@ -85,6 +85,6 @@ describe('more than one day', () => {
 	});
 	it('names the next day in the recap suggestion', () => {
 		expect(recommend(startSession(15), DAY_TWO).title.en).toBe('Next time: Day 2, Taking a taxi');
-		expect(recommend(startSession(15), DAY_ONE).title.en).toContain('new theme');
+		expect(recommend(startSession(15), DAY_ONE).title.en).toBe('Next time: Day 1 again');
 	});
 });

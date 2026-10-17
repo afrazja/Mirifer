@@ -65,5 +65,7 @@ function progressAfter(meta: Record<string, unknown> | undefined, next: DaySessi
 		const score = next.scores?.[module.id];
 		return score && next.done.includes(module.id) ? [{ skill: module.skill, ...score }] : [];
 	});
-	return recordSession(readEnglishProgress(meta), next.day, modules);
+	// A day with skipped steps comes back next time (the recap promises it), so it doesn't count as passed.
+	const progress = readEnglishProgress(meta);
+	return recordSession(progress, next.skipped.length ? progress.lastThemeId : next.day, modules);
 }

@@ -24,7 +24,7 @@
 		completeLater, finishModule, moduleBefore, modulesFor, recommend, startSession, type DaySession, type Length, type ModuleId
 	} from '$lib/practice/day';
 	import type { DisplayText } from '$lib/practice/hotel';
-	import type { DayModule } from '$lib/practice/day';
+	import type { DayId, DayModule } from '$lib/practice/day';
 	import ActionBar from '$lib/components/ActionBar.svelte';
 
 	let { data }: PageProps = $props();
@@ -32,21 +32,31 @@
 	const isFa = $derived(language === 'fa');
 	const text = (value: DisplayText) => value[language];
 
+	// svelte-ignore state_referenced_locally
+	let session = $state<DaySession | null>(data.session);
 	/**
-	 * A session finished on an earlier day is over: the learner starts the next day.
-	 * (One finished today stays on its "done" screen.)
+	 * A finished session is "today's" or an earlier day's only in the learner's own time zone, so the
+	 * page waits for the browser before showing anything for it (see onMount).
 	 */
 	// svelte-ignore state_referenced_locally
-	const finishedEarlier = data.session?.stage === 'done' && !!data.session.completedAt && localDate(new Date(data.session.completedAt)) !== localDate(new Date());
-	// svelte-ignore state_referenced_locally
-	let session = $state<DaySession | null>(finishedEarlier ? null : data.session);
+	let settled = $state(data.session?.stage !== 'done');
 	/** The day a new session starts on (from the server: the one after the last finished day). */
 	// svelte-ignore state_referenced_locally
 	let upcomingId = $state(data.nextDayId);
 	/** Today's day: the session's own, or the one a new session starts on. */
 	const day = $derived(dayById(session?.day ?? upcomingId) ?? DAY_ONE);
-	/** The day after today's (for the recap and the done screen). */
-	const following = $derived(nextDay(day.id, data.labAccess));
+	/** The day after today's (for the recap and the done screen); a day with skipped steps comes back. */
+	const following = $derived(session?.skipped.length ? day : nextDay(day.id, data.labAccess));
+	/** "Start Day N again" or "Try Day N now" is kept for the rest of the day on this device, so a reload keeps it. */
+	const PIN_KEY = 'mirifer_en_day_pin';
+	function pinDay(id: string) { try { localStorage.setItem(PIN_KEY, JSON.stringify({ day: id, date: localDate(new Date()) })); } catch { /* private mode */ } }
+	function pinnedDay(): DayId | null {
+		try {
+			const pin = JSON.parse(localStorage.getItem(PIN_KEY) ?? 'null') as { day?: string; date?: string } | null;
+			const pinned = pin?.date === localDate(new Date()) ? dayById(pin.day) : null;
+			return pinned && (pinned.ready || data.labAccess) ? pinned.id : null;
+		} catch { return null; }
+	}
 	// svelte-ignore state_referenced_locally
 	/** Every session has the default length (owner's decision); an existing session keeps its own. */
 	let length = $state<Length>(data.session?.length ?? DEFAULT_LENGTH);
@@ -105,6 +115,12 @@
 
 	onMount(() => {
 		void getLanguage().then(value => { if (value === 'fa' || value === 'en') language = value; });
+		// A session finished on an earlier day is over: today starts the next day, at the learner's usual length.
+		if (session?.stage === 'done' && session.completedAt && localDate(new Date(session.completedAt)) !== localDate(new Date())) {
+			session = null; length = DEFAULT_LENGTH;
+		}
+		if (!session) { const pinned = pinnedDay(); if (pinned) upcomingId = pinned; }
+		settled = true;
 		if (loadGreeting(localDate(new Date()))?.done) startStep = 'plan';
 	});
 
@@ -136,9 +152,9 @@
 		doingNow = false; reviewing = null;
 		void save(completeLater(session, id as ModuleId, score));
 	}
-	function again() { clearRecords(); void save(null); }
+	function again() { const id = day.id; clearRecords(); upcomingId = id; pinDay(id); void save(null); }
 	/** The owner tries the next day now, without waiting for tomorrow. */
-	function startFollowing() { const id = following.id; clearRecords(); upcomingId = id; startStep = 'greeting'; void save(null); }
+	function startFollowing() { const id = following.id; clearRecords(); upcomingId = id; pinDay(id); startStep = 'greeting'; void save(null); }
 </script>
 
 {#snippet strip()}
@@ -164,11 +180,11 @@
 {/snippet}
 
 {#snippet moduleBody(mod: DayModule, onDone: (score?: { correct: number; total: number }, record?: unknown) => void, onSkip?: () => void)}
-	{#if mod.id === 'listen-act' && mod.built && session}
+	{#if mod.id === 'listen-act' && mod.built && day.id === 'day-1' && session}
 		{#key mod.id}<ListenConnect {isFa} {onSkip} initial={asConnectRecord(loadRecord(session.startedAt, mod.id))} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} {onDone} />{/key}
-	{:else if mod.id === 'phrases' && mod.built && session}
+	{:else if mod.id === 'phrases' && mod.built && day.id === 'day-1' && session}
 		{#key mod.id}<PhrasePractice {isFa} {onSkip} initial={asPhraseRecord(loadRecord(session.startedAt, mod.id))} afterIntro={introPlay} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} onStep={index => (phraseStep = index)} {onDone} />{/key}
-	{:else if mod.id === 'say-it-better' && mod.built && session}
+	{:else if mod.id === 'say-it-better' && mod.built && day.id === 'day-1' && session}
 		{#key mod.id}<SayItBetter {isFa} {onSkip} initial={asSayRecord(loadRecord(session.startedAt, mod.id))} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} {onDone} />{/key}
 	{:else}
 		<div class="card stand-in" role="note">
@@ -214,7 +230,10 @@
 	<!-- The section switch, off the focused flow: only before a session starts and once it's done. -->
 	{#if !session || session.stage === 'done'}<EnglishModuleTabs current="today" {isFa} />{/if}
 
-	{#if !session && startStep === 'greeting'}
+	<!-- A finished session waits for the device's own date before showing the done screen or a new start. -->
+	{#if !settled}
+		<h1 class="sr-only">{isFa ? 'امروز' : 'Today'}</h1>
+	{:else if !session && startStep === 'greeting'}
 		<h1 class="sr-only">{isFa ? 'امروز' : 'Today'}</h1>
 		<CoachGreeting {isFa} name={data.name} profile={data.profile} progress={data.progress} question={day.question} onDone={toPlan} />
 

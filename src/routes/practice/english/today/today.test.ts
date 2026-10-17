@@ -61,4 +61,13 @@ describe('English today page', () => {
 		expect(await actions.save(fixture('en', {}, dayTwo).event())).toMatchObject({ status: 400 });
 		expect(await actions.save(fixture('en', {}, dayTwo, true).event())).toEqual({ saved: true });
 	});
+	it('a day with skipped steps does not count as passed, so it comes back', async () => {
+		const base = { ...startSession(15), stage: 'done', completedAt: new Date().toISOString() };
+		const full = fixture('en', {}, { ...base, done: ['listen-act', 'phrases'] });
+		await actions.save(full.event());
+		expect(full.supabase.auth.updateUser).toHaveBeenCalledWith({ data: expect.objectContaining({ english_progress_v1: expect.objectContaining({ lastThemeId: 'day-1' }) }) });
+		const skipped = fixture('en', {}, { ...base, done: ['listen-act'], skipped: ['phrases'] });
+		await actions.save(skipped.event());
+		expect(skipped.supabase.auth.updateUser).toHaveBeenCalledWith({ data: expect.objectContaining({ english_progress_v1: expect.objectContaining({ sessionsCompleted: 1, lastThemeId: null }) }) });
+	});
 });
