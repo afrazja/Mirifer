@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { TRAPS, asTrapsRecord, checkSaid, emptyTrapsRecord, normalise, saidRight, summarize } from './traps';
+import { TRAPS, asTrapsRecord, checkSaid, emptyTrapsRecord, missedOf, normalise, saidRight, summarize } from './traps';
 
 describe('Persian-speaker traps content', () => {
 	it('has 8 traps; each wrong word is in the sentence, and the right sentence passes its own check', () => {
@@ -12,6 +12,7 @@ describe('Persian-speaker traps content', () => {
 			expect(saidRight(t, t.words.join(' ')), t.id).toBe(false);
 			expect(/[؀-ۿ]/.test(t.why.fa)).toBe(true);
 			expect(t.why.fa).not.toContain('`');
+			for (const a of t.alsoOk ?? []) { expect(a.index).not.toBe(t.wrong); expect(a.index).toBeLessThan(t.words.length); }
 		}
 		expect(new Set(TRAPS.map(t => t.id)).size).toBe(TRAPS.length);
 	});
@@ -53,6 +54,9 @@ describe('records', () => {
 		r.traps[0] = { ...r.traps[0], found: true, saidRight: true, said: true, transcript: 'x' };
 		r.traps[1] = { ...r.traps[1], found: false };
 		expect(summarize(r)).toEqual({ found: 1, said: 1, total: 8 });
+		expect(missedOf(r)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+		expect(asTrapsRecord({ ...r, retry: [1, 3] })?.retry).toEqual([1, 3]);
+		expect(asTrapsRecord({ ...r, retry: [99] })?.retry).toBeNull();
 		expect(asTrapsRecord(JSON.parse(JSON.stringify(r)))).toEqual(r);
 		expect(asTrapsRecord({ ...r, step: 'other' })).toBeNull();
 		expect(asTrapsRecord({ ...r, traps: [] })).toBeNull();

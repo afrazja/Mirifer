@@ -10,20 +10,24 @@ These are the mistakes that come from Persian itself: «او» for both he and s
 
 1. **Intro** (Mira, text). Bottom: Start.
 2. **Spot:** "Tap the wrong word." The sentence is shown as word buttons.
-   - Bottom: "Hear it" (the wrong sentence, in a non-Mira voice); quiet "Show me the mistake".
+   - No bottom button while looking: tapping a word is the action. A quiet "Show me the mistake" link sits under the words. The wrong sentence is never read aloud, because that would model the mistake.
    - **A wrong tap:** "Not that one. Try again." After 2 wrong taps, the mistake is shown.
-   - **Some other sensible taps are credited** (tapping "sister" in "My sister… He works"): "That works too. But the usual mistake is this one:".
-   - **Then a "why" box** (focused) explains it through Persian. Bottom: "Now say it correctly".
+   - **Some other sensible taps are credited** with the sentence they make (tapping "sister": "That works too: 'My brother is a doctor. He works at night.' But the usual mistake is 'He'").
+   - **Then a "why" box** (focused) names the word and explains it through Persian. Bottom: "Now say it correctly".
 3. **Say:** the sentence with the wrong word struck through.
    - Bottom: mic "Say it correctly"; quiet "Show the correct sentence".
-   - Recording stops 2.5 s after speech ends (12 s cap).
+   - Recording stops 3 s after speech ends (12 s cap). "Skip this sentence" is always available, for anyone who can't speak.
    - **Results:**
      - ✓ Right!
      - Not yet + "You said …"
      - "You fixed it yourself. Nice. Now say it once, straight through."
      - "That's good English too. Now try it with 'told'."
-   - Then "Say it like this" + the right sentence + ▶ Hear it (Mira). Next becomes the main button after a right answer or a third try.
-4. **End:** "You said k of 8 right" and a list (right sentence, its trap type, ✓ or "Practise again").
+   - **After a first miss:** the "why" line again, as a hint. The correct sentence ("Say it like this" + ▶ Hear it, read by Mira) appears only after a second miss, on a right answer (no label), or on request.
+   - Self-fixed and alternative-English messages are in a neutral colour (not red).
+   - Next becomes the main button after a right answer or a third try.
+4. **End:** "You said k of 8 right", then only the sentences not yet said right.
+   - Bottom: "Practise the n you missed" (only those, say step only); quiet "Done".
+   - If all were right: "Every sentence, said right." Bottom: Done; quiet "Start again".
 
 ## The 8 traps
 
@@ -68,7 +72,19 @@ The recording goes through our server to OpenAI speech-to-text and is discarded.
   - the name «اشتباه‌های آشنا»;
   - shorter intro;
   - an English ?/! now stays with its words in mixed text (shared fix in `bidi.ts`).
-- **Learning UX and accessibility:** reviewed screenshots of every screen (English and Persian).
+- **Learning UX and accessibility:** reviewed screenshots of every screen (English and Persian). Their must-fixes are in:
+  - no "Hear it" as the main action and no audio of the wrong sentence;
+  - the answer held back until a second miss;
+  - no correction label on a right answer;
+  - non-red praise;
+  - practise only the missed sentences;
+  - the also-OK sentence shown;
+  - the second "Not that one" announced;
+  - Persian labels read in Persian;
+  - Skip always available;
+  - a labelled word group;
+  - 44 px word buttons;
+  - a 3 s auto-stop.
 
 ## Future bank
 
