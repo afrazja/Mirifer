@@ -24,14 +24,14 @@
 </script>
 
 <svelte:head>
-	<title>{isFa ? 'اشتباه‌های رایج فارسی‌زبان‌ها' : 'Persian-speaker traps'} — Mirifer</title>
+	<title>{isFa ? 'اشتباه‌های آشنا' : 'Persian-speaker traps'} — Mirifer</title>
 	<meta name="robots" content="noindex" />
 </svelte:head>
 
 <main id="main-content" class="module" dir={isFa ? 'rtl' : 'ltr'}>
 	<AppHeader backHref="/practice/english/lab" backLabel={isFa ? 'آزمایشگاه بخش‌ها' : 'Module lab'} direction={isFa ? 'rtl' : 'ltr'} />
 	<p class="eyebrow">{isFa ? 'آزمایشگاه — صحبت' : 'MODULE LAB · SPEAKING'}</p>
-	<h1>{isFa ? 'اشتباه‌های رایج فارسی‌زبان‌ها' : 'Persian-speaker traps'}</h1>
+	<h1>{isFa ? 'اشتباه‌های آشنا' : 'Persian-speaker traps'}</h1>
 	{#if finished}
 		<p>{isFa ? 'تمام شد.' : 'All done.'}</p>
 		<button class="primary" type="button" onclick={again}>{isFa ? 'دوباره امتحان کن' : 'Try it again'}</button>

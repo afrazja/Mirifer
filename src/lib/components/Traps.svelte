@@ -9,7 +9,7 @@
 	import MixedText from '$lib/components/MixedText.svelte';
 	import { playAudioUrl, stopAllAudio, ttsUrl } from '$services/tts';
 	import { SILENT_BELOW, measureLevel, type MicLevel } from '$utils/mic-level';
-	import { MAX_WRONG_TAPS, SAY_MAX_SECONDS, SAY_MIN_SECONDS, TRAPS, emptyTrapsRecord, saidRight, summarize, type TrapsRecord } from '$lib/practice/traps';
+	import { MAX_WRONG_TAPS, SAY_MAX_SECONDS, SAY_MIN_SECONDS, TRAPS, checkSaid, emptyTrapsRecord, summarize, type SaidCheck, type TrapsRecord } from '$lib/practice/traps';
 
 	let { isFa = false, initial = null, onSave, onDone }: {
 		isFa?: boolean;
@@ -19,8 +19,8 @@
 	} = $props();
 
 	const INTRO = {
-		en: 'Here are 8 sentences. Each one has a mistake that Persian speakers often make. First tap the wrong word and see why. Then say the sentence correctly.',
-		fa: '۸ جمله می‌بینی. در هر کدام یک اشتباه هست که فارسی‌زبان‌ها زیاد می‌کنند. اول روی کلمهٔ اشتباه بزن و ببین چرا اشتباه است. بعد جمله را درست بگو.'
+		en: `Here are ${TRAPS.length} sentences. Each one has a mistake that Persian speakers often make. First tap the wrong word and see why. Then say the sentence correctly.`,
+		fa: `${TRAPS.length.toLocaleString('fa-IR')} جمله می‌بینی که هر کدام یک اشتباه رایج دارد. اول روی کلمهٔ غلط بزن و ببین چرا. بعد جمله را درست بگو.`
 	};
 	/** The sentence with the mistake is read by another voice, never by Mira. */
 	const TRAP_VOICE = 'c', RIGHT_VOICE = 'b';
@@ -31,6 +31,7 @@
 	let record = $state<TrapsRecord>(initial ?? emptyTrapsRecord());
 	let stage = $state<'start' | 'item' | 'end'>('start');
 	let status = $state<Status>('idle'), elapsed = $state(0), playing = $state(false), showAnswer = $state(false), tries = $state(0), announce = $state('');
+	let check = $state<SaidCheck | null>(null), alsoTapped = $state(false);
 	let heading: HTMLElement | undefined = $state(), whyBox: HTMLElement | undefined = $state(), resultLine: HTMLElement | undefined = $state();
 	let recorder: MediaRecorder | null = null, stream: MediaStream | null = null, chunks: Blob[] = [], level: MicLevel | null = null;
 	let startedAt = 0, timer: ReturnType<typeof setInterval> | undefined, interrupted = false, alive = true;
@@ -76,7 +77,7 @@
 	/** A tap on a word: the mistake, or not (after MAX_WRONG_TAPS wrong taps, the mistake is shown). */
 	function tap(i: number) {
 		if (revealed || mine.wrongTaps.includes(i)) return;
-		if (i === trap.wrong) { update({ found: true }); announce = ''; focus(() => whyBox); return; }
+		if (i === trap.wrong || trap.alsoOk?.includes(i)) { alsoTapped = i !== trap.wrong; update({ found: true }); announce = ''; focus(() => whyBox); return; }
 		const wrongTaps = [...mine.wrongTaps, i];
 		if (wrongTaps.length >= MAX_WRONG_TAPS) { update({ wrongTaps, found: false }); focus(() => whyBox); }
 		else { update({ wrongTaps }); announce = T('Not that one. Try again.', 'این نه. دوباره امتحان کن.'); }
@@ -130,7 +131,8 @@
 		announce = '';
 		if (transcript === null) { status = 'failed'; return; }
 		if (!transcript) { status = 'silent'; return; }
-		const ok = saidRight(trap, transcript);
+		check = checkSaid(trap, transcript);
+		const ok = check === 'right';
 		tries += 1;
 		update({ said: ok, saidRight: mine.saidRight || ok, transcript });
 		status = 'result';
@@ -141,7 +143,7 @@
 		stopAllAudio();
 		const nextIndex = record.index + 1;
 		record = { ...record, index: nextIndex, step: 'spot', done: nextIndex >= TRAPS.length }; persist();
-		status = 'idle'; tries = 0; showAnswer = false;
+		status = 'idle'; tries = 0; showAnswer = false; check = null; alsoTapped = false;
 		if (nextIndex >= TRAPS.length) stage = 'end';
 		focus(() => heading);
 	}
@@ -161,7 +163,7 @@
 {#snippet q(text: string)}{isFa ? '«' : '“'}<bdi lang="en" dir="ltr">{text}</bdi>{isFa ? '»' : '”'}{/snippet}
 {#snippet why()}
 	<div class="why" tabindex="-1" bind:this={whyBox}>
-		<p class="whyhead">{mine.found ? T('✓ You found it.', '✓ پیدایش کردی.') : T('Here’s the mistake.', 'اشتباه این‌جاست.')}</p>
+		<p class="whyhead">{alsoTapped ? T('That works too. But the usual mistake is this one:', 'این هم درست است. ولی اشتباه رایج این یکی است:') : mine.found ? T('✓ You found it.', '✓ درست پیدا کردی.') : T('Here’s the mistake.', 'اشتباه این‌جاست.')}</p>
 		<p>{#if isFa}<MixedText text={trap.why.fa} />{:else}{trap.why.en}{/if}</p>
 	</div>
 {/snippet}
@@ -170,7 +172,7 @@
 	<p class="sr-only" role="status" aria-live="polite">{announce}</p>
 
 	{#if stage === 'start'}
-		<h2 class="sr-only" tabindex="-1" bind:this={heading}>{T('Persian-speaker traps', 'اشتباه‌های رایج فارسی‌زبان‌ها')}</h2>
+		<h2 class="sr-only" tabindex="-1" bind:this={heading}>{T('Persian-speaker traps', 'اشتباه‌های آشنا')}</h2>
 		<div class="brief"><span class="avatar" aria-hidden="true">M</span><p>{isFa ? INTRO.fa : INTRO.en}</p></div>
 		<ActionBar label={T('Start', 'شروع')} onclick={start} />
 
@@ -189,7 +191,7 @@
 			</div>
 			{#if revealed}{@render why()}
 			{:else if mine.wrongTaps.length}<p class="note" aria-hidden="true">{T('Not that one. Try again.', 'این نه. دوباره امتحان کن.')}</p>
-			{:else}<p class="hint">{T('A Persian speaker said this. One word is wrong.', 'یک فارسی‌زبان این را گفته. یک کلمه‌اش اشتباه است.')}</p>{/if}
+			{:else}<p class="hint">{T('One word is wrong. Which one?', 'یک کلمه غلط است. کدام؟')}</p>{/if}
 			{#if revealed}
 				<ActionBar label={T('Now say it correctly', 'حالا درستش را بگو')} onclick={toSay} />
 			{:else}
@@ -202,9 +204,12 @@
 
 			{#if status === 'result'}
 				<p class="result" class:ok={mine.said} tabindex="-1" bind:this={resultLine}>
-					{#if mine.said}<span aria-hidden="true">✓</span> {T('Right!', 'درست است!')}{:else}{T('Not yet.', 'هنوز نه.')} <span class="said">{T('You said', 'گفتی:')} {@render q(mine.transcript ?? '')}</span>{/if}
+					{#if mine.said}<span aria-hidden="true">✓</span> {T('Right!', 'درست است!')}
+					{:else if check === 'selfFixed'}{T('You fixed it yourself. Nice. Now say it once, straight through.', 'خودت درستش کردی. آفرین. حالا یک بار، یک‌سره بگو.')}
+					{:else if check === 'alsoGood'}{T(`That’s good English too. Now try it with “${trap.alsoGood?.word}”.`, `این هم انگلیسی درستی است. حالا با «${trap.alsoGood?.word}» امتحان کن.`)}
+					{:else}{T('Not yet.', 'هنوز نه.')} <span class="said">{T('You said', 'گفتی:')} {@render q(mine.transcript ?? '')}</span>{/if}
 				</p>
-				<div class="answer"><p class="small">{T('Correct', 'درستش')}</p><p class="right" lang="en" dir="ltr">{trap.right}</p></div>
+				<div class="answer"><p class="small">{T('Say it like this', 'این‌طوری بگو')}</p><p class="right" lang="en" dir="ltr">{trap.right}</p></div>
 				<button class="link" type="button" onclick={() => hear(trap.right, RIGHT_VOICE)}><span aria-hidden="true">▶</span> {T('Hear it', 'بشنو')}</button>
 				{#if moveOn}
 					<ActionBar label={last ? T('See how you did', 'دیدن نتیجه') : T('Next sentence', 'جملهٔ بعدی')} onclick={next} secondary={{ label: mine.said ? T('Say it again', 'دوباره بگو') : T('Try again', 'دوباره امتحان کن'), onclick: again }} />
@@ -212,7 +217,7 @@
 					<ActionBar label={T('Try again', 'دوباره امتحان کن')} onclick={again} secondary={{ label: last ? T('See how you did', 'دیدن نتیجه') : T('Next sentence', 'جملهٔ بعدی'), onclick: next }} />
 				{/if}
 			{:else}
-				{#if showAnswer}<div class="answer"><p class="small">{T('Correct', 'درستش')}</p><p class="right" lang="en" dir="ltr">{trap.right}</p></div>{/if}
+				{#if showAnswer}<div class="answer"><p class="small">{T('Say it like this', 'این‌طوری بگو')}</p><p class="right" lang="en" dir="ltr">{trap.right}</p></div>{/if}
 				{#if status === 'recording'}<p class="listening"><span class="dot" aria-hidden="true"></span>{T('Listening…', 'گوش می‌دهم…')}</p>{/if}
 				{#if ERRORS[status]}<p class="note" role="alert">{T(ERRORS[status]!.en, ERRORS[status]!.fa)}</p>{/if}
 				<ActionBar
@@ -225,13 +230,13 @@
 		{/if}
 
 	{:else}
-		<h2 class="big" tabindex="-1" bind:this={heading}>{T(`${summary.said} of ${summary.total} said right`, `${N(summary.said)} از ${N(summary.total)} را درست گفتی`)}</h2>
+		<h2 class="big" tabindex="-1" bind:this={heading}>{T(`You said ${summary.said} of ${summary.total} right`, `از ${N(summary.total)} جمله، ${N(summary.said)} تا را درست گفتی`)}</h2>
 		<ul class="list">
 			{#each TRAPS as t, i}
 				{@const s = record.traps[i]}
 				<li class:ok={s.saidRight}>
 					<span class="row"><span lang="en" dir="ltr">{t.right}</span><span class="mark">{s.saidRight ? T('✓ Said right', '✓ درست گفتی') : T('Practise again', 'دوباره تمرین کن')}</span></span>
-					<span class="kind" lang="en" dir="ltr">{t.kind.en}</span>
+					<span class="kind"><MixedText text={isFa ? t.kind.fa : t.kind.en} /></span>
 				</li>
 			{/each}
 		</ul>

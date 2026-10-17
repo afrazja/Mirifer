@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { TRAPS, asTrapsRecord, emptyTrapsRecord, normalise, saidRight, summarize } from './traps';
+import { TRAPS, asTrapsRecord, checkSaid, emptyTrapsRecord, normalise, saidRight, summarize } from './traps';
 
 describe('Persian-speaker traps content', () => {
 	it('has 8 traps; each wrong word is in the sentence, and the right sentence passes its own check', () => {
@@ -21,18 +21,26 @@ describe('saidRight', () => {
 	const by = (id: string) => TRAPS.find(t => t.id === id)!;
 	it('accepts the fix in other natural words, and numbers as digits', () => {
 		expect(saidRight(by('since-for'), "I've lived here for 2 years.")).toBe(true);
-		expect(saidRight(by('turn-off'), 'Could you switch the light off please')).toBe(true);
-		expect(saidRight(by('what-call'), 'How do you say this in English?')).toBe(true);
-		expect(saidRight(by('agree'), 'I totally agree with you')).toBe(true);
+		expect(saidRight(by('since-for'), "I've been living here for two years")).toBe(true);
+		expect(saidRight(by('age'), 'I am 30 years old')).toBe(true);
+		expect(saidRight(by('afraid-of'), 'My son is scared of dogs')).toBe(true);
+		expect(saidRight(by('agree'), 'I really agree with you')).toBe(true);
+		expect(saidRight(by('he-she'), 'She is working at night')).toBe(true);
 		expect(saidRight(by('bored'), "I am really bored today, let's go out")).toBe(true);
 		expect(saidRight(by('he-she'), 'She works at night.')).toBe(true);
 	});
 	it('rejects the mistake, even when the fix is also said', () => {
 		expect(saidRight(by('agree'), "I'm agree with you")).toBe(false);
-		expect(saidRight(by('go-home'), "I'm going to home now")).toBe(false);
+		expect(saidRight(by('than'), 'My brother is taller from me')).toBe(false);
+		expect(saidRight(by('age'), 'I have thirty years old')).toBe(false);
 		expect(saidRight(by('said-told'), 'He said me, sorry, he told me the answer')).toBe(false);
 		expect(saidRight(by('he-she'), 'My sister is a nurse he works at night')).toBe(false);
 		expect(saidRight(by('bored'), "I'm so boring today")).toBe(false);
+	});
+	it('tells a self-fix and good alternative English apart from a mistake', () => {
+		expect(checkSaid(by('said-told'), 'He said me, sorry, he told me the answer')).toBe('selfFixed');
+		expect(checkSaid(by('said-told'), 'He gave me the answer')).toBe('alsoGood');
+		expect(checkSaid(by('said-told'), 'He said me the answer')).toBe('wrong');
 	});
 	it('normalises quotes, case and punctuation', () => {
 		expect(normalise('I’M  Going HOME, now!')).toBe("i'm going home now");

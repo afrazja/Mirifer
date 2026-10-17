@@ -33,7 +33,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const refused = await checkAllowance(locals, user);
 	if (refused) return refused;
 	// A neutral hint without the sentence's words; asks to keep mistakes (the check needs them).
-	const transcript = await transcribe(audio, 'English traps lab', 'A learner of English is saying one short everyday sentence. Write exactly what they say, word for word, keeping any grammar mistakes; do not correct anything.');
+	const transcript = await transcribe(audio, 'English traps lab', 'A learner of English is saying one short everyday sentence. Write exactly what they say, word for word, keeping any grammar mistakes; do not correct anything. Example of the style: "Yesterday I go to the market and buy apple."');
 	if (transcript === null) return json({ error: 'Transcription unavailable' }, { status: 502 });
 	return json({ transcript });
 };
