@@ -10,16 +10,19 @@ People now use English mostly in short voice messages (WhatsApp, Telegram), not 
 
 1. **Intro** (Mira, text): four voice messages from a friend, a colleague, your landlord and a clinic. Listen, reply with a voice message, answer their questions. Bottom: Start.
 2. **A message** (chat view): the sender (name and who they are), and their voice bubble with a ▶ button and a waveform that fills as it plays.
-   - **First:** "Play the message". The message plays sentence by sentence (one audio request per sentence); it can be replayed any time from the bubble.
-   - **After one full listen:** "Record your reply" (mic); quiet "Show the words" / "Hide the words".
-   - **Recording:** a "Recording… I'll stop when you finish." bubble. It stops 4 s after they stop speaking (45 s cap), or on "Send".
+   - **First:** "Play the message" (■ Stop while it plays); quiet "Can't listen now? Read it" (for deaf learners or a noisy place: it shows the words and unlocks the reply). The message plays sentence by sentence (one audio request per sentence); it can be replayed any time from the bubble.
+   - **After one full listen:** the hint "Reply with a voice message, up to 45 seconds. I'll stop when you finish." Bottom: "Record your reply" (mic); quiet "Show the words" / "Hide the words".
+   - **Recording:** a "Recording… I'll stop when you finish." bubble. Bottom: "Send" (send icon); quiet "Cancel" (nothing is sent). It stops by itself after at least 1.5 s of speech and then 4 s of quiet (or 8 s of quiet after a short start), with a 45 s cap.
+   - **If the mic fails or nothing was heard:** quiet "Skip this message".
+   - One bottom bar whose labels change, so keyboard focus is never lost.
 3. **Checking…** The server transcribes the reply (OpenAI) and makes one AI call.
 4. **Feedback** under the chat: their reply as a green voice bubble (▶) with "You said …", then:
-   - the verdict: ✓ "Good reply. You answered everything." / "Almost." + our own "You didn't say …" lines / ✗ "Not yet. Listen again, then answer their questions." / "Reply in English this time.";
+   - the verdict: ✓ "Good reply. You answered everything." / "Almost." + our own "You didn't say …" lines / ✗ "Not yet. Listen again, then answer their questions." / "Reply in English this time." After Not yet, "Sara asked:" lists the questions in the UI language;
    - a natural reply: their reply with the fewest changes, with a missing answer highlighted on Almost;
    - one tip, and ▶ Hear it.
    - If the AI's version can't be used, the model reply is shown as "Another way to reply", never as their own reply fixed (it may not match their choices).
-   - **Bottom:** as in "Say it in English". The best try is kept.
+   - The words hide again when the feedback appears.
+   - **Bottom:** as in "Say it in English", and "Next message" becomes the main button after a third try. The best try is kept.
 5. **End:** "k answered · m almost" and a list with the natural replies. Bottom: Done; quiet "Start again".
 
 ## The 4 messages
@@ -71,4 +74,15 @@ Replies go through our server to OpenAI speech-to-text and are discarded. The te
   - «گوش بده» throughout;
   - the bubble tails mirrored correctly in RTL;
   - English names in <bdi>.
-- **Learning UX and accessibility** reviewed screenshots of every screen (English and Persian).
+- **Learning UX and accessibility** reviewed screenshots of every screen (English and Persian). Their must-fixes are in:
+  - "Read it" before listening (the two reviewers disagreed; this keeps listening first and lets deaf learners in);
+  - the questions shown after Not yet;
+  - Cancel and a send icon while recording;
+  - auto-stop waits for a real reply;
+  - a stop icon;
+  - skip on mic errors;
+  - one bar (focus kept);
+  - readable recording text in dark mode;
+  - the time limit said before recording;
+  - Next after a third try.
+- **Later:** a "Slower" replay.

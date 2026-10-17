@@ -42,7 +42,7 @@
 	let latest = $state<ReplyTry | null>(null), attempts = $state<number[]>(MESSAGES.map(() => 0));
 	let heading: HTMLElement | undefined = $state(), resultLine: HTMLElement | undefined = $state();
 	let recorder: MediaRecorder | null = null, stream: MediaStream | null = null, chunks: Blob[] = [], level: MicLevel | null = null;
-	let startedAt = 0, timer: ReturnType<typeof setInterval> | undefined, interrupted = false, run = 0, alive = true;
+	let startedAt = 0, timer: ReturnType<typeof setInterval> | undefined, interrupted = false, cancelled = false, run = 0, alive = true;
 	let myUrl = $state<string | null>(null), myPlayer: HTMLAudioElement | null = null, minePlaying = $state(false);
 
 	const T = (en: string, fa: string) => (isFa ? fa : en);
@@ -58,7 +58,10 @@
 	const playing = $derived(playingAt >= 0);
 	const progress = $derived(playing ? (playingAt + 1) / message.sentences.length : listened ? 1 : 0);
 	const missed = $derived(mine ? message.asks.filter((_, i) => !mine.feedback.answered[i]) : []);
-	const moveOn = $derived(verdict === 'answered' || (verdict === 'almost' && attempts[index] >= 2));
+	// Moving on becomes the main action after a good reply, a second Almost, or a third try.
+	const moveOn = $derived(verdict === 'answered' || (verdict === 'almost' && attempts[index] >= 2) || attempts[index] >= 3);
+	/** They can reply once they've heard it all, read it, or it couldn't play. */
+	const canReply = $derived(listened || words || playFailed);
 	const remaining = $derived(Math.max(0, Math.ceil(REPLY_MAX_SECONDS - elapsed)));
 	const clean = (text: string) => text.replace(/[’‘]/g, "'");
 
@@ -110,7 +113,7 @@
 		try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch { status = 'denied'; return; }
 		const mimeType = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm', 'audio/ogg;codecs=opus'].find(type => MediaRecorder.isTypeSupported(type));
 		recorder = new MediaRecorder(stream, { ...(mimeType ? { mimeType } : {}), audioBitsPerSecond: 64_000 });
-		chunks = []; interrupted = false;
+		chunks = []; interrupted = false; cancelled = false;
 		recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
 		recorder.onstop = finishRecording;
 		level = measureLevel(stream);
@@ -119,7 +122,9 @@
 		timer = setInterval(() => {
 			elapsed = Math.min(REPLY_MAX_SECONDS, (performance.now() - startedAt) / 1000);
 			// Stops by itself a few seconds after they finish speaking, or at the time limit.
-			const finished = level && level.voiced() > 0.25 && level.voiced() !== Infinity && level.quietFor() >= QUIET_AFTER;
+			// Waits for a real reply first (a pause after "Hi Sara…" to think doesn't send it).
+			const voiced = level?.voiced() ?? 0;
+			const finished = voiced !== Infinity && ((voiced >= 1.5 && level!.quietFor() >= QUIET_AFTER) || (voiced > 0.25 && level!.quietFor() >= QUIET_AFTER * 2));
 			if ((elapsed >= REPLY_MAX_SECONDS || finished) && recorder?.state === 'recording') recorder.stop();
 		}, 100);
 	}
@@ -129,6 +134,7 @@
 		closeMic();
 		if (!alive) return;
 		const seconds = (performance.now() - startedAt) / 1000;
+		if (cancelled) { status = 'say'; return; }
 		if (interrupted) { status = 'interrupted'; return; }
 		if (seconds < REPLY_MIN_SECONDS) { status = 'short'; return; }
 		if (peak < SILENT_BELOW) { status = 'silent'; return; }
@@ -151,13 +157,14 @@
 		const transcript = typeof data?.transcript === 'string' ? data.transcript.trim() : '';
 		if (!ok || !data?.feedback || !Array.isArray(data.feedback.answered)) { status = transcript ? 'aiFailed' : 'failed'; return; }
 		const now: ReplyTry = { transcript, feedback: data.feedback }, before = record.tries[index];
-		latest = now; attempts[index] += 1;
+		latest = now; attempts[index] += 1; words = false;
 		const tries = [...record.tries]; tries[index] = before && RANK[verdictOf(before.feedback)] > RANK[verdictOf(now.feedback)] ? before : now;
 		record = { ...record, tries }; persist();
 		status = 'feedback';
 		queueMicrotask(() => resultLine?.focus());
 	}
 	function again() { stopPlaying(); latest = null; status = 'say'; focusHeading(); }
+	function cancelRecording() { cancelled = true; if (recorder?.state === 'recording') recorder.stop(); }
 	function next() {
 		stopPlaying(); clearMine(); latest = null;
 		const nextIndex = record.index + 1;
@@ -251,6 +258,12 @@
 					{:else if verdict === 'notEnglish'}{T('Reply in English this time.', 'این بار به انگلیسی جواب بده.')}
 					{:else}<span aria-hidden="true">✗</span> {T('Not yet. Listen again, then answer their questions.', 'هنوز نه. دوباره گوش بده، بعد به سؤال‌هایشان جواب بده.')}{/if}
 				</p>
+				{#if verdict === 'notYet' || verdict === 'notEnglish'}
+					<div class="asked">
+						<p class="small"><bdi lang="en" dir="ltr">{message.from.name}</bdi> {T('asked:', 'پرسید:')}</p>
+						<ul>{#each message.asks as a}<li>{isFa ? a.ask.fa : a.ask.en}</li>{/each}</ul>
+					</div>
+				{/if}
 				<div class="natural">
 					<p class="small">{verdict === 'notYet' || verdict === 'notEnglish' ? T('You could reply like this', 'می‌توانی این‌طوری جواب بدهی') : mine.feedback.fromModel ? T('Another way to reply', 'یک جور دیگر هم می‌شود جواب داد') : T('A natural reply', 'یک جواب طبیعی')}</p>
 					<p class="better" lang="en" dir="ltr">{#if verdict === 'almost' && !mine.feedback.fromModel}{#each betterParts(mine.feedback.better) as part}{#if part.added}<span class="sr-only">{T('(the missing answer:) ', '(جواب جاافتاده:) ')}</span><mark>{part.text}</mark>{:else}{part.text}{/if}{/each}{:else}{plain(mine.feedback.better)}{/if}</p>
@@ -265,18 +278,20 @@
 			{/if}
 		{:else}
 			{#if playFailed}<p class="note" role="alert">{T('Couldn’t play the message. Try again, or show the words.', 'پیام پخش نشد. دوباره امتحان کن، یا متنش را ببین.')}</p>
-			{:else if !listened && !playing}<p class="hint"><bdi lang="en" dir="ltr">{message.from.name}</bdi> {T('sent you a voice message. Listen to it first.', 'برایت پیام صوتی فرستاده. اول گوش بده.')}</p>
-			{:else if listened && status === 'say'}<p class="hint">{T('Reply with a voice message. You can listen again first.', 'با پیام صوتی جواب بده. اگر خواستی، اول دوباره گوش بده.')}</p>{/if}
+			{:else if !canReply && !playing}<p class="hint"><bdi lang="en" dir="ltr">{message.from.name}</bdi> {T('sent you a voice message. Listen to it first.', 'برایت پیام صوتی فرستاده. اول گوش بده.')}</p>
+			{:else if canReply && status === 'say'}<p class="hint">{T('Reply with a voice message, up to 45 seconds. I’ll stop when you finish. You can listen again first.', 'با پیام صوتی جواب بده، تا ۴۵ ثانیه. وقتی تمام کردی، خودم قطع می‌کنم. اگر خواستی، اول دوباره گوش بده.')}</p>{/if}
 			{#if ERRORS[status]}<p class="note" role="alert">{T(ERRORS[status]!.en, ERRORS[status]!.fa)}</p>{/if}
-			{#if !listened && !playFailed}
-				<ActionBar label={playing ? T('Stop', 'توقف') : T('Play the message', 'پخش پیام')} icon={playing ? 'pause' : 'play'} onclick={playMessage} />
-			{:else}
-				<ActionBar
-					label={status === 'recording' ? T('Send', 'ارسال') : status === 'checking' ? T('Checking…', 'در حال بررسی…') : T('Record your reply', 'جوابت را ضبط کن')}
-					suffix={status === 'recording' && remaining <= COUNTDOWN_FROM ? ` · ${N(remaining)}` : ''}
-					icon={status === 'checking' ? null : 'mic'} recording={status === 'recording'} onclick={reply}
-					secondary={status === 'recording' || status === 'checking' ? null : { label: words ? T('Hide the words', 'پنهان کردن متن') : T('Show the words', 'نمایش متن'), onclick: () => (words = !words) }} />
-			{/if}
+			<!-- One bar whose props change, so keyboard focus stays on its button. -->
+			<ActionBar
+				label={!canReply ? (playing ? T('Stop', 'توقف') : T('Play the message', 'پخش پیام')) : status === 'recording' ? T('Send', 'ارسال') : status === 'checking' ? T('Checking…', 'در حال بررسی…') : T('Record your reply', 'جوابت را ضبط کن')}
+				suffix={status === 'recording' && remaining <= COUNTDOWN_FROM ? ` · ${N(remaining)}` : ''}
+				icon={!canReply ? (playing ? 'stop' : 'play') : status === 'recording' ? 'send' : status === 'checking' ? null : 'mic'}
+				recording={status === 'recording'} onclick={canReply ? reply : playMessage}
+				secondary={!canReply ? (playing ? null : { label: T('Can’t listen now? Read it', 'نمی‌توانی گوش بدهی؟ متنش را بخوان'), onclick: () => (words = true) })
+					: status === 'recording' ? { label: T('Cancel', 'لغو'), onclick: cancelRecording }
+					: status === 'checking' ? null
+					: ERRORS[status] ? { label: last ? T('Skip to the end', 'رفتن به پایان') : T('Skip this message', 'از این پیام بگذر'), onclick: next }
+					: { label: words ? T('Hide the words', 'پنهان کردن متن') : T('Show the words', 'نمایش متن'), onclick: () => (words = !words) }} />
 		{/if}
 
 	{:else}
@@ -316,7 +331,8 @@
 	.bubble { display: flex; align-items: center; gap: 10px; max-inline-size: 86%; padding: 8px 14px 8px 8px; border-radius: 18px; }
 	.theirs { justify-self: start; background: var(--paper-raised); border-end-start-radius: 6px; }
 	.yours { justify-self: end; background: color-mix(in srgb, var(--leaf) 22%, var(--paper-raised)); border-end-end-radius: 6px; }
-	.yours.recording { padding: 12px 16px; color: var(--attention); font-weight: 600; }
+	.yours.recording { padding: 12px 16px; color: var(--ink); font-weight: 600; }
+	.yours.recording .dot { color: var(--attention); }
 	.play { display: grid; place-items: center; flex: none; inline-size: 44px; block-size: 44px; border: 0; border-radius: 50%; background: var(--accent); color: var(--on-accent); cursor: pointer; }
 	.play:disabled { opacity: .5; cursor: default; }
 	.wave { display: flex; align-items: center; gap: 3px; block-size: 28px; }
@@ -328,6 +344,8 @@
 	.said { justify-self: end; text-align: end; font-size: .9rem; }
 	.small { font-size: .85rem; font-weight: 600; }
 	.feedback { display: grid; gap: 10px; }
+	.asked { display: grid; gap: 4px; }
+	.asked ul { margin: 0; padding-inline-start: 20px; display: grid; gap: 2px; font-weight: 600; }
 	.result { font-size: 1.1rem; font-weight: 700; color: var(--attention); }
 	.result.ok { color: var(--leaf-deep); }
 	.result.almost { color: var(--accent-deep); }
