@@ -22,7 +22,8 @@ export const LAB_MODULES: LabModule[] = [
 	{ id: 'connected-speech', name: { en: 'Connected speech', fa: 'گفتار پیوسته' }, href: '/practice/english/lab/connected-speech' },
 	{ id: 'spot-the-lie', name: { en: 'Spot the lie', fa: 'دروغ را پیدا کن' }, href: '/practice/english/lab/spot-the-lie' },
 	{ id: 'read-rate-respond', name: { en: 'Read, rate, respond', fa: 'بخوان، امتیاز بده، پاسخ بده' }, href: '/practice/english/lab/read-rate' },
-	{ id: 'say-in-english', name: { en: 'Say it in English', fa: 'به انگلیسی بگو' }, href: '/practice/english/lab/say-in-english' }
+	{ id: 'say-in-english', name: { en: 'Say it in English', fa: 'به انگلیسی بگو' }, href: '/practice/english/lab/say-in-english' },
+	{ id: 'voice-messages', name: { en: 'Voice messages', fa: 'پیام صوتی' }, href: '/practice/english/lab/voice-messages' }
 	// "Word rescue" was dropped by the owner: it is a review feature across modules, not a practice module.
 ];
 
