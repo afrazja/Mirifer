@@ -15,3 +15,13 @@ describe('latinRuns', () => {
 		expect(latinRuns('همه را گرفتی.')).toEqual([{ text: 'همه را گرفتی.', latin: false }]);
 	});
 });
+
+describe('latinRuns: an English question inside Persian', () => {
+	it('keeps the English ? with its words, but not a full stop', () => {
+		expect(latinRuns('بگو «What do you call this?» یا «How do you say this?»')).toEqual([
+			{ text: 'بگو «', latin: false }, { text: 'What do you call this?', latin: true }, { text: '» یا «', latin: false },
+			{ text: 'How do you say this?', latin: true }, { text: '»', latin: false }
+		]);
+		expect(latinRuns('بگو today.')).toEqual([{ text: 'بگو ', latin: false }, { text: 'today', latin: true }, { text: '.', latin: false }]);
+	});
+});
