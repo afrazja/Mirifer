@@ -68,7 +68,9 @@ export const MIRA_LINES = {
 	ask: { en: 'Before we start, let’s check your microphone. Tap the mic and say:', fa: 'قبل از شروع، میکروفونت را امتحان کنیم. دکمهٔ میکروفون را بزن و بگو:' } satisfies DisplayText,
 	heard: { en: 'Great, your mic works. Here’s today’s plan.', fa: 'عالی، میکروفونت کار می‌کند. این برنامهٔ امروز است.' } satisfies DisplayText,
 	typed: { en: 'Okay. In the speaking steps you can type too.', fa: 'باشه. در مرحله‌های صحبت هم می‌توانی بنویسی.' } satisfies DisplayText,
-	short: { en: 'I only caught a few words. Try once more?', fa: 'فقط چند کلمه شنیدم. یک بار دیگر امتحان می‌کنی؟' } satisfies DisplayText
+	short: { en: 'I only caught a few words. Try once more?', fa: 'فقط چند کلمه شنیدم. یک بار دیگر امتحان می‌کنی؟' } satisfies DisplayText,
+	/** A day's check-in: the mic check with one of today's sentences. */
+	warmUp: { en: 'Let’s warm up and check your mic. Tap the mic and say:', fa: 'اول کمی گرم کنیم و میکروفونت را امتحان کنیم. دکمهٔ میکروفون را بزن و بگو:' } satisfies DisplayText
 };
 
 /** Mira's hello: one line, with the name said once. */
@@ -79,9 +81,22 @@ export function opening(mode: GreetingMode, name: string, days: number | null): 
 	return hello(name, 'Welcome back, {name}. Good to see you again.', 'خوش برگشتی {name}. خوشحالم دوباره می‌بینمت.');
 }
 
+/**
+ * Mira's hello on a day with a check-in: short, the name once, then the story so far.
+ * The first session ever has its own welcome, so here "first" reads as coming back.
+ */
+export function checkInHello(mode: GreetingMode, name: string, days: number | null, story: DisplayText): DisplayText {
+	const line = mode === 'again-today' || (days !== null && days >= 7)
+		? hello(name, 'Good to see you again, {name}.', 'خوشحالم دوباره می‌بینمت {name}.')
+		: hello(name, 'Welcome back, {name}.', 'خوش برگشتی {name}.');
+	return { en: `${line.en} ${story.en}`, fa: `${line.fa} ${story.fa}` };
+}
+
 /** Today's greeting as it happened, kept in this browser for the day only. */
 export interface GreetingRecord {
 	date: string;
+	/** The day it greeted for (records from before days existed are Day 1's). */
+	day?: string;
 	mode: GreetingMode;
 	opening: DisplayText;
 	/** Day 1: the sentence they said or typed. Later days: their answer. */
@@ -98,11 +113,13 @@ export interface GreetingRecord {
 
 const KEY = 'mirifer_en_greeting_v1';
 
-export function loadGreeting(today: string): GreetingRecord | null {
+/** Today's greeting, if it was for this day (any day when `dayId` is left out). */
+export function loadGreeting(today: string, dayId?: string): GreetingRecord | null {
 	try {
 		const raw = localStorage.getItem(KEY);
 		if (!raw) return null;
 		const value = JSON.parse(raw) as GreetingRecord;
+		if (dayId && (value?.day ?? 'day-1') !== dayId) return null;
 		return value && value.date === today && typeof value.opening?.en === 'string' ? { ...value, done: value.done === true } : null;
 	} catch { return null; }
 }

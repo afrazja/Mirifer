@@ -40,6 +40,21 @@ export interface DayModule {
 	intro: DisplayText;
 }
 
+/**
+ * Mira's check-in on a day after the first: her hello with a link back to the story so far,
+ * then what today is about, then a mic check with one of today's sentences.
+ */
+export interface DayCheckIn {
+	/** After her hello: where the story is now (true to the last day's content). */
+	story: DisplayText;
+	/** What today is about, and what the learner can do by the end. */
+	today: DisplayText;
+	/** The sentence the learner says to check the mic: one they'll use today. */
+	say: string;
+	/** Mira's line once she has heard it. */
+	heard: DisplayText;
+}
+
 export interface DayPack {
 	id: DayId;
 	/** Its number in the course (shown as "Day 2"). */
@@ -50,6 +65,8 @@ export interface DayPack {
 	/** The coach's theme-linked warm-up question for this day (Day 2+ greeting). */
 	question: string;
 	goal: DisplayText;
+	/** Mira's check-in for this day; Day 1 has its own first-session welcome instead. */
+	checkIn?: DayCheckIn;
 	/** False until every module is built and checked: learners never get it; the owner can try it. */
 	ready: boolean;
 	checkInMinutes: number;
@@ -99,6 +116,22 @@ export const DAY_TWO: DayPack = {
 	goal: {
 		en: 'By the end, you can say where you’re going and ask how long it takes.',
 		fa: 'در پایان می‌توانی بگویی کجا می‌روی و بپرسی چقدر طول می‌کشد.'
+	},
+	checkIn: {
+		// Day 1: Sara's backpack went to Frankfurt; the airline brings it to her hotel tomorrow morning.
+		story: {
+			en: 'Remember Sara? Her backpack is coming to her hotel tomorrow. Now she needs a taxi to get there.',
+			fa: 'سارا یادت هست؟ کوله‌پشتی‌اش فردا به هتل می‌رسد. حالا خودش باید با تاکسی به هتل برود.'
+		},
+		today: {
+			en: 'Today is about taking a taxi. By the end, you can tell the driver where you’re going and ask how long it takes.',
+			fa: 'موضوع امروز گرفتن تاکسی است. در پایان می‌توانی به راننده بگویی کجا می‌روی و بپرسی چقدر طول می‌کشد.'
+		},
+		say: 'Could you take me to the Park Hotel, please?',
+		heard: {
+			en: 'Great, your mic works, and that’s your first taxi sentence. Here’s today’s plan.',
+			fa: 'عالی، میکروفونت کار می‌کند و این اولین جمله‌ات برای تاکسی بود. این برنامهٔ امروز است.'
+		}
 	},
 	checkInMinutes: 2,
 	recapMinutes: 2,

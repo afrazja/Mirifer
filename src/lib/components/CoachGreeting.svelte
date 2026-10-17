@@ -6,21 +6,30 @@
 	 *   hello (her line, once, with the name) -> mic check (say one sentence, or
 	 *   skip) -> "your mic works" -> today's plan.
 	 *
+	 * A day with a check-in (Day 2 on): her hello links back to the story so far,
+	 * then one screen says what today is about, and the mic check uses one of
+	 * today's sentences.
+	 *
 	 * The day's greeting is kept in this browser, so a reload doesn't run it
 	 * twice. `readOnly` shows what happened, for looking back from a module.
 	 */
 	import { onDestroy, onMount } from 'svelte';
 	import { playAudioPromise, stopAllAudio } from '$services/tts';
 	import {
-		COACH_RATE, COACH_VOICE, MIRA_LINES, daysSince, greetingMode, isMicAttempt, loadGreeting, localDate, micSentence, opening as helloLine,
+		COACH_RATE, COACH_VOICE, MIRA_LINES, checkInHello, daysSince, greetingMode, isMicAttempt, loadGreeting, localDate, micSentence, opening as helloLine,
 		saveGreeting, type GreetingMode, type GreetingRecord
 	} from '$lib/practice/coach';
 	import type { EnglishProfile } from '$lib/practice/english-profile';
 	import type { EnglishProgress } from '$lib/practice/english-progress';
 	import type { DisplayText } from '$lib/practice/hotel';
+	import type { DayCheckIn } from '$lib/practice/day';
 
-	let { isFa = false, name, profile, progress, readOnly = false, onDone }: {
+	let { isFa = false, name, profile, progress, dayId = 'day-1', checkIn, readOnly = false, onDone }: {
 		isFa?: boolean; name: string; profile: EnglishProfile; progress: EnglishProgress;
+		/** Today's day, so a greeting kept from another day isn't shown again. */
+		dayId?: string;
+		/** The day's check-in (Day 2 on); without it, the first-session welcome or a plain hello. */
+		checkIn?: DayCheckIn;
 		/** Unused since the greeting no longer asks a question; kept so callers stay simple. */
 		question?: string;
 		readOnly?: boolean;
@@ -34,8 +43,8 @@
 		onerror: ((event: { error: string }) => void) | null; onend: (() => void) | null;
 		start(): void; stop(): void; abort(): void;
 	};
-	/** hello: Mira's line. mic: say the sentence (or skip). result: the mic works. */
-	type Step = 'hello' | 'mic' | 'result';
+	/** hello: Mira's line. today: what today is about (check-in days). mic: say the sentence (or skip). result: the mic works. */
+	type Step = 'hello' | 'today' | 'mic' | 'result';
 
 	let ready = $state(false);
 	let mode = $state<GreetingMode>('first');
@@ -52,18 +61,20 @@
 	const text = (value: DisplayText) => (persian(value) ? value.fa : value.en);
 	const langOf = (value: DisplayText) => (persian(value) ? 'fa' : 'en');
 	const dirOf = (value: DisplayText) => (persian(value) ? 'rtl' : 'ltr');
-	const target = $derived(micSentence(mode === 'first', profile.reason));
-	const done = $derived(typed ? MIRA_LINES.typed : MIRA_LINES.heard);
+	const target = $derived(checkIn ? checkIn.say : micSentence(mode === 'first', profile.reason));
+	const ask = $derived(checkIn ? MIRA_LINES.warmUp : MIRA_LINES.ask);
+	const done = $derived(typed ? MIRA_LINES.typed : (checkIn?.heard ?? MIRA_LINES.heard));
 
 	onMount(() => {
 		const now = new Date();
 		mode = greetingMode(progress, now);
-		const saved = loadGreeting(localDate(now));
+		const saved = loadGreeting(localDate(now), dayId);
 		if (saved && saved.mode === mode) {
 			opening = saved.opening; answer = saved.answer ?? ''; typed = saved.typed;
 			step = saved.done ? 'result' : 'hello';
 		} else {
-			opening = helloLine(mode, name, daysSince(progress.lastCompletedAt, now));
+			const days = daysSince(progress.lastCompletedAt, now);
+			opening = checkIn ? checkInHello(mode, name, days, checkIn.story) : helloLine(mode, name, days);
 		}
 		ready = true;
 		// Mira speaks on her own. Phones may block sound that no tap started; her words are on screen anyway.
@@ -73,12 +84,15 @@
 
 	function say(line: string) { stopAllAudio(); void playAudioPromise(line, COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {}); }
 	function save(finished: boolean) {
-		const record: GreetingRecord = { date: localDate(new Date()), mode, opening, answer: answer || null, typed, reply: answer ? done : null, done: finished, improved: null, noteEn: null, noteFa: null };
+		const record: GreetingRecord = { date: localDate(new Date()), day: dayId, mode, opening, answer: answer || null, typed, reply: answer ? done : null, done: finished, improved: null, noteEn: null, noteFa: null };
 		saveGreeting(record);
 	}
 	function go(next: Step) { stopAllAudio(); step = next; queueMicrotask(() => heading?.focus()); }
-	/** Next on Mira's hello: the tap lets her speak the mic check. */
-	function toMic() { go('mic'); say(`${MIRA_LINES.ask.en} ${target}`); }
+	/** Next on Mira's hello: what today is about (check-in days), or the mic check. Each tap lets her speak the next line. */
+	function next() {
+		if (checkIn) { go('today'); say(checkIn.today.en); } else toMic();
+	}
+	function toMic() { go('mic'); say(`${ask.en} ${target}`); }
 	function finish() { stopAllAudio(); save(true); onDone?.(); }
 	function skip() { answer = ''; finish(); }
 
@@ -149,6 +163,7 @@
 		{#if ready}
 			<p class="who"><span class="avatar small" aria-hidden="true">M</span> Mira</p>
 			<p class="line small-line" lang={langOf(opening)} dir={dirOf(opening)}>{text(opening)}</p>
+			{#if checkIn}<p class="line small-line" lang={langOf(checkIn.today)} dir={dirOf(checkIn.today)}>{text(checkIn.today)}</p>{/if}
 			{#if answer}<p class="you" lang="en" dir="ltr">“{answer}”</p>{/if}
 		{/if}
 	</section>
@@ -165,8 +180,10 @@
 				<div class="dots" role="status" aria-label={isFa ? 'یک لحظه' : 'One moment'}><span></span><span></span><span></span></div>
 			{:else if step === 'hello'}
 				{@render mira(opening)}
+			{:else if step === 'today' && checkIn}
+				{@render mira(checkIn.today)}
 			{:else if step === 'mic'}
-				<p class="ask">{text(MIRA_LINES.ask)}</p>
+				<p class="ask">{text(ask)}</p>
 				<p class="target" lang="en" dir="ltr">“{target}”</p>
 				<div class="speak">{@render speakArea()}</div>
 			{:else}
@@ -177,6 +194,8 @@
 
 		<div class="bottom">
 			{#if ready && step === 'hello'}
+				<button class="primary" type="button" onclick={next}>{isFa ? 'بعدی' : 'Next'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
+			{:else if ready && step === 'today'}
 				<button class="primary" type="button" onclick={toMic}>{isFa ? 'بعدی' : 'Next'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
 			{:else if ready && step === 'mic'}
 				{#if !typing && (micProblem === null || micProblem === 'none')}<button class="text" type="button" onclick={() => (typing = true)}>{isFa ? 'به‌جایش بنویس' : 'Type instead'}</button>{/if}

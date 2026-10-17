@@ -97,7 +97,7 @@
 	function toPlan() { startStep = 'plan'; speakPlan(); }
 	/** Today's chat with Mira, for the recap's one correction (kept in this browser). */
 	let chat = $state<GreetingRecord | null>(null);
-	$effect(() => { if (session?.stage === 'recap') chat = loadGreeting(localDate(new Date())); });
+	$effect(() => { if (session?.stage === 'recap') chat = loadGreeting(localDate(new Date()), session.day); });
 	/** Doing a skipped module now, from the look-back view. */
 	let doingNow = $state(false);
 	const reviewed = $derived(reviewing && session ? modulesFor(session.length, day).find(m => m.id === reviewing) ?? null : null);
@@ -121,7 +121,7 @@
 		}
 		if (!session) { const pinned = pinnedDay(); if (pinned) upcomingId = pinned; }
 		settled = true;
-		if (loadGreeting(localDate(new Date()))?.done) startStep = 'plan';
+		if (loadGreeting(localDate(new Date()), day.id)?.done) startStep = 'plan';
 	});
 
 	/** Saves the checkpoint. A failed save never blocks the learner; they get a quiet note. */
@@ -235,12 +235,12 @@
 		<h1 class="sr-only">{isFa ? 'امروز' : 'Today'}</h1>
 	{:else if !session && startStep === 'greeting'}
 		<h1 class="sr-only">{isFa ? 'امروز' : 'Today'}</h1>
-		<CoachGreeting {isFa} name={data.name} profile={data.profile} progress={data.progress} question={day.question} onDone={toPlan} />
+		<CoachGreeting {isFa} name={data.name} profile={data.profile} progress={data.progress} question={day.question} dayId={day.id} checkIn={day.checkIn} onDone={toPlan} />
 
 	{:else if !session || showCheckIn}
 		<section aria-labelledby="start-title" class="start">
 			{#if session}
-				<CoachGreeting {isFa} name={data.name} profile={data.profile} progress={data.progress} question={day.question} readOnly />
+				<CoachGreeting {isFa} name={data.name} profile={data.profile} progress={data.progress} question={day.question} dayId={day.id} checkIn={day.checkIn} readOnly />
 			{/if}
 			<p class="eyebrow day-label">{isFa ? `روز ${day.number.toLocaleString('fa-IR')} · ${day.theme.fa}` : `DAY ${day.number} · ${day.theme.en.toUpperCase()}`}</p>
 			<div class="plan-head">
