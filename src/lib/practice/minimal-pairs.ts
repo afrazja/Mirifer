@@ -113,3 +113,13 @@ export function summarize(record: PairsRecord): PairsSummary {
 	const right = byContrast.reduce((sum, r) => sum + r.right, 0);
 	return { right, total: record.duels.length, byContrast, weakest, missed: missed.map(r => r.contrast) };
 }
+
+/** A word to say in the on-device pronunciation check (Module lab experiment). */
+export interface CheckWord { contrast: number; pair: [string, string]; target: Side }
+/** With a perfect ear: one word per sound pair, the side Persian speakers usually find harder. */
+const PERFECT_EAR: [number, number, Side][] = [[0, 0, 0], [1, 0, 0], [2, 0, 1], [3, 1, 1], [4, 0, 0], [5, 0, 0]];
+/** The words to say: every word of their hardest sound pair, or one from each pair. */
+export function checkList(weakest: number | null): CheckWord[] {
+	if (weakest !== null && CONTRASTS[weakest]) return CONTRASTS[weakest].pairs.flatMap(pair => ([0, 1] as Side[]).map(target => ({ contrast: weakest, pair, target })));
+	return PERFECT_EAR.map(([contrast, pair, target]) => ({ contrast, pair: CONTRASTS[contrast].pairs[pair], target }));
+}

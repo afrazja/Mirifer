@@ -37,7 +37,7 @@
 		<button class="primary" type="button" onclick={again}>{isFa ? 'دوباره امتحان کن' : 'Try it again'}</button>
 	{:else}
 		{#key run}
-			<MinimalPairs {isFa} initial={run === 0 ? initial : null} first={run === 0 && !initial} onSave={record => saveLab(ID, record)} onDone={() => (finished = true)} />
+			<MinimalPairs {isFa} pronounceCheck initial={run === 0 ? initial : null} first={run === 0 && !initial} onSave={record => saveLab(ID, record)} onDone={() => (finished = true)} />
 		{/key}
 	{/if}
 </main>
