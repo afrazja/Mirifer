@@ -16,7 +16,7 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { playAudioPromise, stopAllAudio } from '$services/tts';
 	import {
-		COACH_RATE, COACH_VOICE, MIRA_LINES, checkInHello, daysSince, greetingMode, isMicAttempt, loadGreeting, localDate, micSentence, opening as helloLine,
+		COACH_RATE, COACH_VOICE, MIRA_LINES, checkInHello, daysSince, greetingMode, isMicAttempt, saidSentence, loadGreeting, localDate, micSentence, opening as helloLine,
 		saveGreeting, type GreetingMode, type GreetingRecord
 	} from '$lib/practice/coach';
 	import type { EnglishProfile } from '$lib/practice/english-profile';
@@ -63,7 +63,13 @@
 	const dirOf = (value: DisplayText) => (persian(value) ? 'rtl' : 'ltr');
 	const target = $derived(checkIn ? checkIn.say : micSentence(mode === 'first', profile.reason));
 	const ask = $derived(checkIn ? MIRA_LINES.warmUp : MIRA_LINES.ask);
-	const done = $derived(typed ? MIRA_LINES.typed : (checkIn?.heard ?? MIRA_LINES.heard));
+	/** Praise for today's sentence only if they said it; any other words still pass the mic check. */
+	const done = $derived(typed ? MIRA_LINES.typed : checkIn && saidSentence(answer, checkIn.say) ? checkIn.heard : MIRA_LINES.heard);
+	/** The focused heading names the step, so a screen reader hears where it is. */
+	const STEP_NAMES: Record<Step, DisplayText> = {
+		hello: { en: 'Mira: hello', fa: 'میرا: سلام' }, today: { en: 'Mira: today’s lesson', fa: 'میرا: درس امروز' },
+		mic: { en: 'Mira: mic check', fa: 'میرا: امتحان میکروفون' }, result: { en: 'Mira: your mic', fa: 'میرا: نتیجه' }
+	};
 
 	onMount(() => {
 		const now = new Date();
@@ -174,8 +180,8 @@
 			<p class="name">{isFa ? 'میرا' : 'Mira'} <small>{isFa ? 'مربی انگلیسی تو' : 'your English coach'}</small></p>
 		</div>
 
-		<div class="middle" aria-live="polite">
-			<h2 id="coach-step" class="sr-only" tabindex="-1" bind:this={heading}>{isFa ? 'میرا' : 'Mira'}</h2>
+		<div class="middle">
+			<h2 id="coach-step" class="sr-only" tabindex="-1" bind:this={heading}>{isFa ? STEP_NAMES[step].fa : STEP_NAMES[step].en}</h2>
 			{#if !ready}
 				<div class="dots" role="status" aria-label={isFa ? 'یک لحظه' : 'One moment'}><span></span><span></span><span></span></div>
 			{:else if step === 'hello'}
@@ -198,8 +204,8 @@
 			{:else if ready && step === 'today'}
 				<button class="primary" type="button" onclick={toMic}>{isFa ? 'بعدی' : 'Next'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
 			{:else if ready && step === 'mic'}
-				{#if !typing && (micProblem === null || micProblem === 'none')}<button class="text" type="button" onclick={() => (typing = true)}>{isFa ? 'به‌جایش بنویس' : 'Type instead'}</button>{/if}
-				<button class="text" type="button" onclick={skip}>{isFa ? 'رد شو' : 'Skip'}</button>
+				{#if !typing && (micProblem === null || micProblem === 'none')}<button class="text" type="button" onclick={() => { stopAllAudio(); typing = true; }}>{isFa ? 'به‌جای گفتن، بنویس' : 'Type instead'}</button>{/if}
+				<button class="text" type="button" onclick={skip}>{isFa ? 'فعلاً نه' : 'Skip'}</button>
 			{:else if ready && step === 'result'}
 				<button class="primary" type="button" onclick={finish}>{isFa ? 'بعدی' : 'Next'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
 			{/if}

@@ -51,7 +51,7 @@ export interface DayCheckIn {
 	today: DisplayText;
 	/** The sentence the learner says to check the mic: one they'll use today. */
 	say: string;
-	/** Mira's line once she has heard it. */
+	/** Mira's line once she has heard it (only when they said that sentence; any other words get the plain "your mic works"). */
 	heard: DisplayText;
 }
 
@@ -118,19 +118,19 @@ export const DAY_TWO: DayPack = {
 		fa: 'در پایان می‌توانی بگویی کجا می‌روی و بپرسی چقدر طول می‌کشد.'
 	},
 	checkIn: {
-		// Day 1: Sara's backpack went to Frankfurt; the airline brings it to her hotel tomorrow morning.
+		// Day 1: Sara's backpack went to Frankfurt; the airline will bring it to her hotel.
 		story: {
-			en: 'Remember Sara? Her backpack is coming to her hotel tomorrow. Now she needs a taxi to get there.',
-			fa: 'سارا یادت هست؟ کوله‌پشتی‌اش فردا به هتل می‌رسد. حالا خودش باید با تاکسی به هتل برود.'
+			en: 'Remember Sara? Her backpack went to Frankfurt, but the airline will bring it to her hotel. Now she needs a taxi to the hotel.',
+			fa: 'سارا یادت هست؟ کوله‌پشتی‌اش به فرانکفورت رفت، ولی شرکت هواپیمایی آن را به هتلش می‌آورد. حالا خود سارا باید با تاکسی به هتل برود.'
 		},
 		today: {
-			en: 'Today is about taking a taxi. By the end, you can tell the driver where you’re going and ask how long it takes.',
-			fa: 'موضوع امروز گرفتن تاکسی است. در پایان می‌توانی به راننده بگویی کجا می‌روی و بپرسی چقدر طول می‌کشد.'
+			en: 'Today’s about taking a taxi. You’ll practise telling the driver where you’re going, and asking how long it takes.',
+			fa: 'موضوع امروز تاکسی گرفتن است. تمرین می‌کنی که به راننده بگویی کجا می‌خواهی بروی و بپرسی تا آن‌جا چقدر طول می‌کشد.'
 		},
 		say: 'Could you take me to the Park Hotel, please?',
 		heard: {
-			en: 'Great, your mic works, and that’s your first taxi sentence. Here’s today’s plan.',
-			fa: 'عالی، میکروفونت کار می‌کند و این اولین جمله‌ات برای تاکسی بود. این برنامهٔ امروز است.'
+			en: 'Good, I can hear you. You’ll use that sentence again today. Here’s the plan.',
+			fa: 'خوب است، صدایت را می‌شنوم. امروز باز هم از این جمله استفاده می‌کنی. برویم سراغ برنامهٔ امروز.'
 		}
 	},
 	checkInMinutes: 2,

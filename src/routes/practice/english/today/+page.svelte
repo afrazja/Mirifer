@@ -242,7 +242,7 @@
 			{#if session}
 				<CoachGreeting {isFa} name={data.name} profile={data.profile} progress={data.progress} question={day.question} dayId={day.id} checkIn={day.checkIn} readOnly />
 			{/if}
-			<p class="eyebrow day-label">{isFa ? `روز ${day.number.toLocaleString('fa-IR')} · ${day.theme.fa}` : `DAY ${day.number} · ${day.theme.en.toUpperCase()}`}</p>
+			<p class="eyebrow day-label">{isFa ? `روز ${day.number.toLocaleString('fa-IR')}: ${day.theme.fa}` : `DAY ${day.number} · ${day.theme.en.toUpperCase()}`}</p>
 			<div class="plan-head">
 				<span class="avatar" aria-hidden="true">M</span>
 				<p class="mira-name">{isFa ? 'میرا' : 'Mira'}</p>
@@ -261,7 +261,7 @@
 				{#if session}
 					<button class="primary wide" type="button" onclick={() => (showCheckIn = false)}>{isFa ? 'ادامه' : 'Continue'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
 				{:else}
-					<button class="primary wide" type="button" onclick={begin}>{isFa ? `شروع · ${agendaMinutes(length, day).toLocaleString('fa-IR')} دقیقه` : `Start · ${agendaMinutes(length, day)} min`} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
+					<button class="primary wide" type="button" onclick={begin}>{isFa ? `شروع (${agendaMinutes(length, day).toLocaleString('fa-IR')} دقیقه)` : `Start · ${agendaMinutes(length, day)} min`} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
 				{/if}
 			</div>
 		</section>
