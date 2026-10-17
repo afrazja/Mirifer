@@ -111,7 +111,7 @@ Status: **v3.1, for the owner.** The owner's direction: a theme like "Travel" is
 | 8.7 | ★ A big question: technology | Part 3-style discussion | give your view and look at the other side | B1 |
 | 8.8 | Talking to a university office | Asking about a course | ask about the course and what you need to apply | B1 |
 
-**65 sub-themes in all.** That's about nine weeks of daily lessons. Later ideas: more Part 3 topics (cities, the environment, one per day), renting a car, a wedding, and a visa interview (deferred, handled with care).
+**66 sub-themes in all.** That's about nine to ten weeks of daily lessons. Later ideas: more Part 3 topics (cities, the environment, one per day), renting a car, a wedding, and a visa interview (deferred, handled with care).
 
 ## Putting them in order (suggested)
 
@@ -126,7 +126,7 @@ A week stays in one theme and tells a small story. Days 1–5 are easier, day 6 
 | 5 | **Social life** | 6.1 Meeting someone new → 6.2 Small talk → 6.3 Family → 6.5 Making plans → 6.6 Changing plans → ★ 6.8 A misunderstanding | A weekend with friends |
 | 6 | **Exam-style speaking** | 8.1 → 8.2 → 8.3 → 8.4 → 8.5 → ★ 8.7 | An IELTS-style practice interview (no score) |
 
-That's 42 days. The remaining 29 sub-themes make weeks 7–11.
+That's 42 days. The remaining 30 sub-themes make weeks 7–11.
 
 **Note:** Day 1 (lost luggage, A2+) is a little harder than days 2–5 (A2). It stays as built, but expect lower completion on day 1.
 
