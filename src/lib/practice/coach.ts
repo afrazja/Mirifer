@@ -58,17 +58,31 @@ export function wordCount(text: string): number {
 /** Any attempt of three or more words counts: the mic check is not a test. */
 export const isMicAttempt = (heard: string) => wordCount(heard) >= 3;
 
+const SMALL_WORDS = new Set(['the', 'you', 'and', 'can', 'could', 'would', 'please', 'for', 'are']);
+const keyWords = (text: string) => text.toLowerCase().replace(/[^a-z' ]+/g, ' ').split(/\s+/).filter(word => word.length >= 3 && !SMALL_WORDS.has(word));
+/**
+ * Did they say (roughly) the sentence they were given? Most of its key words are there.
+ * Only for Mira's praise: any attempt still passes the mic check.
+ */
+export function saidSentence(heard: string, sentence: string): boolean {
+	const said = new Set(keyWords(heard)), wanted = keyWords(sentence);
+	return wanted.length > 0 && wanted.filter(word => said.has(word)).length / wanted.length >= 0.6;
+}
+
 /** Puts the name in, or drops it cleanly ("Welcome back, Sam." / "Welcome back."). */
 const fill = (line: string, name: string) => (name ? line.replaceAll('{name}', name) : line.replace(/[,،]? ?\{name\}/g, ''));
-const hello = (name: string, en: string, fa: string): DisplayText => ({ en: fill(en, name), fa: fill(fa, name) });
+/** In a Persian line the (usually Latin) name is isolated, so its direction can't pull the words around it. */
+const hello = (name: string, en: string, fa: string): DisplayText => ({ en: fill(en, name), fa: fill(fa, name ? `\u2068${name}\u2069` : '') });
 
 /** Mira's lines around the greeting: her hello, then a mic check, then on to the plan. */
 export const MIRA_LINES = {
 	welcome: (name: string) => hello(name, 'Hi {name}, I’m Mira, your English coach. Welcome to your first session.', 'سلام {name}، من میرا هستم، مربی انگلیسی تو. به اولین جلسه‌ات خوش آمدی.'),
 	ask: { en: 'Before we start, let’s check your microphone. Tap the mic and say:', fa: 'قبل از شروع، میکروفونت را امتحان کنیم. دکمهٔ میکروفون را بزن و بگو:' } satisfies DisplayText,
 	heard: { en: 'Great, your mic works. Here’s today’s plan.', fa: 'عالی، میکروفونت کار می‌کند. این برنامهٔ امروز است.' } satisfies DisplayText,
-	typed: { en: 'Okay. In the speaking steps you can type too.', fa: 'باشه. در مرحله‌های صحبت هم می‌توانی بنویسی.' } satisfies DisplayText,
-	short: { en: 'I only caught a few words. Try once more?', fa: 'فقط چند کلمه شنیدم. یک بار دیگر امتحان می‌کنی؟' } satisfies DisplayText
+	typed: { en: 'No problem. You can type in the speaking parts too. Here’s the plan.', fa: 'اشکالی ندارد. در بخش‌های صحبت هم می‌توانی بنویسی. برویم سراغ برنامهٔ امروز.' } satisfies DisplayText,
+	short: { en: 'I only caught a few words. Try once more?', fa: 'فقط چند کلمه شنیدم. یک بار دیگر امتحان می‌کنی؟' } satisfies DisplayText,
+	/** A day's check-in: the mic check with one of today's sentences. */
+	warmUp: { en: 'Let’s warm up and check your mic. Tap the mic and say:', fa: 'اول کمی گرم شویم و میکروفونت را امتحان کنیم. دکمهٔ میکروفون را بزن و بگو:' } satisfies DisplayText
 };
 
 /** Mira's hello: one line, with the name said once. */
@@ -79,9 +93,22 @@ export function opening(mode: GreetingMode, name: string, days: number | null): 
 	return hello(name, 'Welcome back, {name}. Good to see you again.', 'خوش برگشتی {name}. خوشحالم دوباره می‌بینمت.');
 }
 
+/**
+ * Mira's hello on a day with a check-in: short, the name once, then the story so far.
+ * The first session ever has its own welcome, so here "first" reads as coming back.
+ */
+export function checkInHello(mode: GreetingMode, name: string, days: number | null, story: DisplayText): DisplayText {
+	const line = mode === 'again-today' ? hello(name, 'Hi again, {name}.', 'سلام دوباره، {name}.')
+		: days !== null && days >= 7 ? hello(name, 'Good to see you again, {name}.', 'خوشحالم که دوباره می‌بینمت، {name}.')
+		: hello(name, 'Welcome back, {name}.', 'خوش برگشتی، {name}.');
+	return { en: `${line.en} ${story.en}`, fa: `${line.fa} ${story.fa}` };
+}
+
 /** Today's greeting as it happened, kept in this browser for the day only. */
 export interface GreetingRecord {
 	date: string;
+	/** The day it greeted for (records from before days existed are Day 1's). */
+	day?: string;
 	mode: GreetingMode;
 	opening: DisplayText;
 	/** Day 1: the sentence they said or typed. Later days: their answer. */
@@ -98,11 +125,13 @@ export interface GreetingRecord {
 
 const KEY = 'mirifer_en_greeting_v1';
 
-export function loadGreeting(today: string): GreetingRecord | null {
+/** Today's greeting, if it was for this day (any day when `dayId` is left out). */
+export function loadGreeting(today: string, dayId?: string): GreetingRecord | null {
 	try {
 		const raw = localStorage.getItem(KEY);
 		if (!raw) return null;
 		const value = JSON.parse(raw) as GreetingRecord;
+		if (dayId && (value?.day ?? 'day-1') !== dayId) return null;
 		return value && value.date === today && typeof value.opening?.en === 'string' ? { ...value, done: value.done === true } : null;
 	} catch { return null; }
 }

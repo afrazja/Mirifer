@@ -40,6 +40,21 @@ export interface DayModule {
 	intro: DisplayText;
 }
 
+/**
+ * Mira's check-in on a day after the first: her hello with a link back to the story so far,
+ * then what today is about, then a mic check with one of today's sentences.
+ */
+export interface DayCheckIn {
+	/** After her hello: where the story is now (true to the last day's content). */
+	story: DisplayText;
+	/** What today is about, and what the learner can do by the end. */
+	today: DisplayText;
+	/** The sentence the learner says to check the mic: one they'll use today. */
+	say: string;
+	/** Mira's line once she has heard it (only when they said that sentence; any other words get the plain "your mic works"). */
+	heard: DisplayText;
+}
+
 export interface DayPack {
 	id: DayId;
 	/** Its number in the course (shown as "Day 2"). */
@@ -50,6 +65,8 @@ export interface DayPack {
 	/** The coach's theme-linked warm-up question for this day (Day 2+ greeting). */
 	question: string;
 	goal: DisplayText;
+	/** Mira's check-in for this day; Day 1 has its own first-session welcome instead. */
+	checkIn?: DayCheckIn;
 	/** False until every module is built and checked: learners never get it; the owner can try it. */
 	ready: boolean;
 	checkInMinutes: number;
@@ -99,6 +116,22 @@ export const DAY_TWO: DayPack = {
 	goal: {
 		en: 'By the end, you can say where you’re going and ask how long it takes.',
 		fa: 'در پایان می‌توانی بگویی کجا می‌روی و بپرسی چقدر طول می‌کشد.'
+	},
+	checkIn: {
+		// Day 1: Sara's backpack went to Frankfurt; the airline will bring it to her hotel.
+		story: {
+			en: 'Remember Sara? Her backpack went to Frankfurt, but the airline will bring it to her hotel. Now she needs a taxi to the hotel.',
+			fa: 'سارا یادت هست؟ کوله‌پشتی‌اش به فرانکفورت رفت، ولی شرکت هواپیمایی آن را به هتلش می‌آورد. حالا خود سارا باید با تاکسی به هتل برود.'
+		},
+		today: {
+			en: 'Today’s about taking a taxi. You’ll practise telling the driver where you’re going, and asking how long it takes.',
+			fa: 'موضوع امروز تاکسی گرفتن است. تمرین می‌کنی که به راننده بگویی کجا می‌خواهی بروی و بپرسی تا آن‌جا چقدر طول می‌کشد.'
+		},
+		say: 'Could you take me to the Park Hotel, please?',
+		heard: {
+			en: 'Good, I can hear you. You’ll use that sentence again today. Here’s the plan.',
+			fa: 'خوب است، صدایت را می‌شنوم. امروز باز هم از این جمله استفاده می‌کنی. برویم سراغ برنامهٔ امروز.'
+		}
 	},
 	checkInMinutes: 2,
 	recapMinutes: 2,

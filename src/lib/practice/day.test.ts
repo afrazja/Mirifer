@@ -83,6 +83,14 @@ describe('more than one day', () => {
 		expect(dayById('day-2')).toBe(DAY_TWO);
 		expect(dayById('nope')).toBeNull();
 	});
+	it('gives every day after the first a check-in that links back and warms up', () => {
+		for (const day of DAYS.slice(1)) {
+			expect(day.checkIn, day.id).toBeDefined();
+			expect(day.checkIn!.say.split(' ').length).toBeGreaterThanOrEqual(3);
+			for (const line of [day.checkIn!.story, day.checkIn!.today, day.checkIn!.heard]) expect(line.fa).toMatch(/[\u0600-\u06FF]/);
+		}
+		expect(DAY_ONE.checkIn).toBeUndefined();
+	});
 	it('names the next day in the recap suggestion', () => {
 		expect(recommend(startSession(15), DAY_TWO).title.en).toBe('Next time: Day 2, Taking a taxi');
 		expect(recommend(startSession(15), DAY_ONE).title.en).toBe('Next time: Day 1 again');
