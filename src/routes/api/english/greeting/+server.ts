@@ -13,7 +13,8 @@ import type { RequestHandler } from './$types';
 import { askChain, englishLearner, spendAllowance } from '$lib/server/english-ai';
 import { readEnglishProfile } from '$lib/practice/english-profile';
 import { readEnglishProgress } from '$lib/practice/english-progress';
-import { DAY_ONE } from '$lib/practice/day';
+import { nextDay } from '$lib/practice/day';
+import { canUseLab } from '$lib/server/lab-access';
 import {
 	OpeningSchema, ReplySchema, coachFacts, daysSinceIn, levelFor, localParts, openingProblem, openingPrompt, openingUser,
 	partOfDay, replyProblem, replyPrompt, replyUser, usableFeedback, usablePersian, type Opening, type Reply
@@ -53,6 +54,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	// Day 1 and a second session the same day are scripted.
 	if (progress.sessionsCompleted === 0 || days === 0) return json({ error: 'Scripted greeting' }, { status: 409 });
 	const level = levelFor(profile);
+	// Today's day: the one after the last finished day (the owner may be trying a day that isn't ready).
+	const day = nextDay(progress.lastThemeId, canUseLab(user));
 
 	const refused = await spendAllowance(locals, user, parsed.data.kind === 'open' ? 1 : 2);
 	if (refused) return refused;
@@ -60,7 +63,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (parsed.data.kind === 'open') {
 		const facts = coachFacts(typeof meta.display_name === 'string' ? meta.display_name : '', profile, progress, days);
 		const system = openingPrompt(level);
-		const ask = (note = '') => askChain<Opening>({ label: 'English greeting open', system, user: openingUser(facts, DAY_ONE.question, partOfDay(localParts(now, parsed.data.timeZone).hour)) + note, schema: OpeningSchema, ...openSchemas, temperature: 0.7, maxTokens: 300 });
+		const ask = (note = '') => askChain<Opening>({ label: 'English greeting open', system, user: openingUser(facts, day.question, partOfDay(localParts(now, parsed.data.timeZone).hour)) + note, schema: OpeningSchema, ...openSchemas, temperature: 0.7, maxTokens: 300 });
 		let result = await ask();
 		let problem = result ? openingProblem(result.line) : 'no reply';
 		if (problem) { result = await ask(`\n\n(Your last line could not be used because ${problem}. Write it again, following every rule.)`); problem = result ? openingProblem(result.line) : 'no reply'; }
@@ -70,7 +73,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 	const { opening, answer } = parsed.data;
 	const system = replyPrompt(level);
-	const ask = (note = '') => askChain<Reply>({ label: 'English greeting reply', system, user: replyUser(opening, DAY_ONE.themePhrase, answer) + note, schema: ReplySchema, ...replySchemas, temperature: 0.5, maxTokens: 400 });
+	const ask = (note = '') => askChain<Reply>({ label: 'English greeting reply', system, user: replyUser(opening, day.themePhrase, answer) + note, schema: ReplySchema, ...replySchemas, temperature: 0.5, maxTokens: 400 });
 	let result = await ask();
 	let problem = result ? replyProblem(result.line) : 'no reply';
 	if (problem) { result = await ask(`\n\n(Your last reply could not be used because ${problem}. Write it again, following every rule.)`); problem = result ? replyProblem(result.line) : 'no reply'; }

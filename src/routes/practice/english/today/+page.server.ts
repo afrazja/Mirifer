@@ -1,19 +1,28 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { DAY_ONE, DaySessionSchema, type DaySession } from '$lib/practice/day';
+import { DaySessionSchema, dayById, dayOf, nextDay, type DaySession } from '$lib/practice/day';
 import { readEnglishProgress, recordSession, type EnglishProgress } from '$lib/practice/english-progress';
 import { readEnglishProfile } from '$lib/practice/english-profile';
+import { canUseLab } from '$lib/server/lab-access';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, url, parent }) => {
 	const { data: { user }, error } = await locals.supabase.auth.getUser();
 	if (error || !user) redirect(303, '/login');
 	if (user.user_metadata?.target_language !== 'en') redirect(303, '/languages');
 	// First visit: the three onboarding questions come before the first session.
 	const profile = readEnglishProfile(user.user_metadata);
 	if (!profile) redirect(303, '/practice/english/start');
-	const session = DaySessionSchema.safeParse(user.user_metadata?.english_day_v1);
+	const saved = DaySessionSchema.safeParse(user.user_metadata?.english_day_v1);
 	const name = typeof user.user_metadata?.display_name === 'string' ? user.user_metadata.display_name.slice(0, 40) : '';
-	return { name, profile, progress: readEnglishProgress(user.user_metadata), session: session.success ? session.data : null };
+	const progress = readEnglishProgress(user.user_metadata);
+	// The owner can open any day with ?day=day-2, to try a day that isn't ready for learners yet.
+	const { labAccess } = await parent();
+	const requested = labAccess ? dayById(url.searchParams.get('day')) : null;
+	let session = saved.success ? saved.data : null;
+	if (requested && session && session.day !== requested.id) session = null;
+	// The day a new session starts on: the one after the last finished day.
+	const upcoming = requested ?? nextDay(progress.lastThemeId, labAccess);
+	return { name, profile, progress, session, nextDayId: upcoming.id };
 };
 
 export const actions: Actions = {
@@ -29,6 +38,8 @@ export const actions: Actions = {
 			try { value = JSON.parse(raw); } catch { return fail(400, { error: 'invalid' }); }
 			const parsed = DaySessionSchema.safeParse(value);
 			if (!parsed.success) return fail(400, { error: 'invalid' });
+			// A day that isn't ready yet is only for the owner to try.
+			if (!dayOf(parsed.data).ready && !canUseLab(user)) return fail(400, { error: 'invalid' });
 			value = parsed.data;
 		}
 		const data: Record<string, unknown> = { english_day_v1: value };
@@ -50,7 +61,7 @@ function progressAfter(meta: Record<string, unknown> | undefined, next: DaySessi
 	if (next?.stage !== 'done') return null;
 	const stored = DaySessionSchema.safeParse(meta?.english_day_v1);
 	if (stored.success && stored.data.stage === 'done' && stored.data.startedAt === next.startedAt) return null;
-	const modules = DAY_ONE.modules.flatMap(module => {
+	const modules = dayOf(next).modules.flatMap(module => {
 		const score = next.scores?.[module.id];
 		return score && next.done.includes(module.id) ? [{ skill: module.skill, ...score }] : [];
 	});

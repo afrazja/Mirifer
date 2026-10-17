@@ -20,7 +20,7 @@
 	import { playAudioPromise, stopAllAudio } from '$services/tts';
 	import { getLanguage } from '$services/data-layer';
 	import {
-		DAY_ONE, RECAP_INTRO, RECAP_SHORT, DEFAULT_LENGTH, agendaFor, agendaMinutes, completeSession, currentModule,
+		DAY_ONE, RECAP_INTRO, RECAP_SHORT, DEFAULT_LENGTH, agendaFor, agendaMinutes, completeSession, currentModule, dayById, nextDay,
 		completeLater, finishModule, moduleBefore, modulesFor, recommend, startSession, type DaySession, type Length, type ModuleId
 	} from '$lib/practice/day';
 	import type { DisplayText } from '$lib/practice/hotel';
@@ -32,8 +32,21 @@
 	const isFa = $derived(language === 'fa');
 	const text = (value: DisplayText) => value[language];
 
+	/**
+	 * A session finished on an earlier day is over: the learner starts the next day.
+	 * (One finished today stays on its "done" screen.)
+	 */
 	// svelte-ignore state_referenced_locally
-	let session = $state<DaySession | null>(data.session);
+	const finishedEarlier = data.session?.stage === 'done' && !!data.session.completedAt && localDate(new Date(data.session.completedAt)) !== localDate(new Date());
+	// svelte-ignore state_referenced_locally
+	let session = $state<DaySession | null>(finishedEarlier ? null : data.session);
+	/** The day a new session starts on (from the server: the one after the last finished day). */
+	// svelte-ignore state_referenced_locally
+	let upcomingId = $state(data.nextDayId);
+	/** Today's day: the session's own, or the one a new session starts on. */
+	const day = $derived(dayById(session?.day ?? upcomingId) ?? DAY_ONE);
+	/** The day after today's (for the recap and the done screen). */
+	const following = $derived(nextDay(day.id, data.labAccess));
 	// svelte-ignore state_referenced_locally
 	/** Every session has the default length (owner's decision); an existing session keeps its own. */
 	let length = $state<Length>(data.session?.length ?? DEFAULT_LENGTH);
@@ -65,9 +78,9 @@
 	/** Natural phrases: the sentence on screen (0-based), shown in the eyebrow instead of a second counter. */
 	let phraseStep = $state<number | null>(null);
 	/** Today's parts after the greeting, in order, and Mira's line that reads them. */
-	const parts = $derived([...modulesFor(length).map(module => module.title), { en: 'A short recap', fa: 'یک مرور کوتاه' }]);
+	const parts = $derived([...modulesFor(length, day).map(module => module.title), { en: 'A short recap', fa: 'یک مرور کوتاه' }]);
 	/** The same parts with their estimated minutes, for the plan screen. */
-	const partMinutes = $derived([...modulesFor(length).map(module => module.minutes[length] as number), DAY_ONE.recapMinutes]);
+	const partMinutes = $derived([...modulesFor(length, day).map(module => module.minutes[length] as number), day.recapMinutes]);
 	const plan = $derived(planLine(parts));
 	function speakPlan() { stopAllAudio(); void playAudioPromise(plan.en, COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {}); }
 	/** From Mira's greeting to the plan: the tap on Next lets her read it aloud. */
@@ -77,14 +90,14 @@
 	$effect(() => { if (session?.stage === 'recap') chat = loadGreeting(localDate(new Date())); });
 	/** Doing a skipped module now, from the look-back view. */
 	let doingNow = $state(false);
-	const reviewed = $derived(reviewing && session ? modulesFor(session.length).find(m => m.id === reviewing) ?? null : null);
+	const reviewed = $derived(reviewing && session ? modulesFor(session.length, day).find(m => m.id === reviewing) ?? null : null);
 
-	const agenda = $derived(agendaFor(length));
+	const agenda = $derived(agendaFor(length, day));
 	const step = $derived(session?.stage === 'modules' ? currentModule(session) : null);
 	/** The module before the one on screen: before the current step, before the recap, or before the one being reviewed. */
 	/** What the learner did in the module being looked back at (this browser only). */
 	const reviewedRecord = $derived(reviewed && session ? loadRecord(session.startedAt, reviewed.id) : null);
-	const previous = $derived(session && session.stage !== 'done' ? moduleBefore(session.length, reviewed ? reviewed.id : step ? step.id : null) : null);
+	const previous = $derived(session && session.stage !== 'done' ? moduleBefore(session.length, reviewed ? reviewed.id : step ? step.id : null, day) : null);
 	const stepNumber = $derived(session && step ? (session.done.length + session.skipped.length + 1) : 0);
 	const stepCount = $derived(agenda.length - 2);
 
@@ -105,7 +118,7 @@
 			if (!response.ok) saveFailed = true;
 		} catch { saveFailed = true; }
 	}
-	const begin = () => { clearRecords(); spokenFor = null; const next = startSession(length); brief(currentModule(next)); return save(next); };
+	const begin = () => { clearRecords(); spokenFor = null; const next = startSession(length, new Date(), day); brief(currentModule(next)); return save(next); };
 	const skipStep = () => { stopAllAudio(); finish('skipped'); };
 	const finish = (outcome: 'done' | 'skipped', score?: { correct: number; total: number }, record?: unknown) => {
 		if (!session || !step) return;
@@ -124,12 +137,14 @@
 		void save(completeLater(session, id as ModuleId, score));
 	}
 	function again() { clearRecords(); void save(null); }
+	/** The owner tries the next day now, without waiting for tomorrow. */
+	function startFollowing() { const id = following.id; clearRecords(); upcomingId = id; startStep = 'greeting'; void save(null); }
 </script>
 
 {#snippet strip()}
 	{#if session}
 		<ol class="strip" aria-label={isFa ? 'پیشرفت جلسه' : 'Session progress'}>
-			{#each modulesFor(session.length) as mod}
+			{#each modulesFor(session.length, day) as mod}
 				{@const state = session.done.includes(mod.id as ModuleId) ? 'done' : session.skipped.includes(mod.id as ModuleId) ? 'skipped' : session.stage === 'modules' && step?.id === mod.id ? 'now' : 'later'}
 				<li class={state} aria-current={state === 'now' ? 'step' : undefined}>
 					<span class="seg" aria-hidden="true"></span>
@@ -201,13 +216,14 @@
 
 	{#if !session && startStep === 'greeting'}
 		<h1 class="sr-only">{isFa ? 'امروز' : 'Today'}</h1>
-		<CoachGreeting {isFa} name={data.name} profile={data.profile} progress={data.progress} question={DAY_ONE.question} onDone={toPlan} />
+		<CoachGreeting {isFa} name={data.name} profile={data.profile} progress={data.progress} question={day.question} onDone={toPlan} />
 
 	{:else if !session || showCheckIn}
 		<section aria-labelledby="start-title" class="start">
 			{#if session}
-				<CoachGreeting {isFa} name={data.name} profile={data.profile} progress={data.progress} question={DAY_ONE.question} readOnly />
+				<CoachGreeting {isFa} name={data.name} profile={data.profile} progress={data.progress} question={day.question} readOnly />
 			{/if}
+			<p class="eyebrow day-label">{isFa ? `روز ${day.number.toLocaleString('fa-IR')} · ${day.theme.fa}` : `DAY ${day.number} · ${day.theme.en.toUpperCase()}`}</p>
 			<div class="plan-head">
 				<span class="avatar" aria-hidden="true">M</span>
 				<p class="mira-name">{isFa ? 'میرا' : 'Mira'}</p>
@@ -226,7 +242,7 @@
 				{#if session}
 					<button class="primary wide" type="button" onclick={() => (showCheckIn = false)}>{isFa ? 'ادامه' : 'Continue'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
 				{:else}
-					<button class="primary wide" type="button" onclick={begin}>{isFa ? `شروع · ${agendaMinutes(length).toLocaleString('fa-IR')} دقیقه` : `Start · ${agendaMinutes(length)} min`} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
+					<button class="primary wide" type="button" onclick={begin}>{isFa ? `شروع · ${agendaMinutes(length, day).toLocaleString('fa-IR')} دقیقه` : `Start · ${agendaMinutes(length, day)} min`} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
 				{/if}
 			</div>
 		</section>
@@ -264,7 +280,7 @@
 		</section>
 
 	{:else if session.stage === 'recap'}
-		{@const next = recommend(session)}
+		{@const next = recommend(session, following)}
 		<section aria-labelledby="recap-title">
 			{@render backButton()}
 			{@render strip()}
@@ -272,7 +288,7 @@
 			<h1 id="recap-title">{isFa ? 'کار امروز' : 'What you did today'}</h1>
 			<MiraSays line={RECAP_INTRO} {isFa} />
 			<ul class="done-list">
-				{#each DAY_ONE.modules.filter(m => m.minutes[session!.length] !== undefined) as item}
+				{#each modulesFor(session.length, day) as item}
 					<li>{text(item.title)}
 						{#if session.done.includes(item.id)}<span class="min">{session.scores?.[item.id] ? `${session.scores[item.id]?.correct}/${session.scores[item.id]?.total}` : (isFa ? 'انجام شد' : 'done')}</span>
 						{:else}<button class="text-button inline" type="button" onclick={() => { doingNow = true; reviewing = item.id; }}>{isFa ? 'رد شد · همین حالا انجامش بده' : 'Skipped · do it now'}</button>{/if}</li>
@@ -298,10 +314,18 @@
 
 	{:else}
 		<section aria-labelledby="done-title">
-			<p class="eyebrow">{isFa ? 'روز ۱' : 'DAY 1'}</p>
+			<p class="eyebrow">{isFa ? `روز ${day.number.toLocaleString('fa-IR')}` : `DAY ${day.number}`}</p>
 			<h1 id="done-title">{isFa ? 'جلسهٔ امروز تمام شد.' : 'Today’s session is done.'}</h1>
-			<p>{isFa ? 'فردا برگرد؛ پیشنهاد بعدی آماده است.' : 'Come back tomorrow; your next suggestion is ready.'}</p>
-			<button class="secondary" type="button" onclick={again}>{isFa ? 'دوباره از اول' : 'Start Day 1 again'}</button>
+			{#if following.id !== day.id}
+				<p>{isFa ? `فردا برگرد برای روز ${following.number.toLocaleString('fa-IR')}: ${following.theme.fa}.` : `Come back tomorrow for Day ${following.number}: ${following.theme.en}.`}</p>
+			{:else}
+				<p>{isFa ? 'فردا برگرد؛ پیشنهاد بعدی آماده است.' : 'Come back tomorrow; your next suggestion is ready.'}</p>
+			{/if}
+			<button class="secondary" type="button" onclick={again}>{isFa ? `روز ${day.number.toLocaleString('fa-IR')} را دوباره شروع کن` : `Start Day ${day.number} again`}</button>
+			{#if data.labAccess && following.id !== day.id}
+				<!-- Owner only: try the next day now (it may not be ready for learners yet). -->
+				<button class="text-button" type="button" onclick={startFollowing}>{isFa ? `روز ${following.number.toLocaleString('fa-IR')} را همین حالا امتحان کن (فقط مدیر)` : `Try Day ${following.number} now (owner only)`}</button>
+			{/if}
 		</section>
 	{/if}
 
