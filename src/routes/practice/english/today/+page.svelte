@@ -24,7 +24,8 @@
 		completeLater, finishModule, moduleBefore, modulesFor, recommend, startSession, type DaySession, type Length, type ModuleId
 	} from '$lib/practice/day';
 	import type { DisplayText } from '$lib/practice/hotel';
-	import type { DayId, DayModule } from '$lib/practice/day';
+	import { DAYS } from '$lib/practice/day';
+	import type { DayId, DayModule, DayPack } from '$lib/practice/day';
 	import ActionBar from '$lib/components/ActionBar.svelte';
 
 	let { data }: PageProps = $props();
@@ -47,6 +48,8 @@
 	const day = $derived(dayById(session?.day ?? upcomingId) ?? DAY_ONE);
 	/** The day after today's (for the recap and the done screen); a day with skipped steps comes back. */
 	const following = $derived(session?.skipped.length ? day : nextDay(day.id, data.labAccess));
+	/** The owner can always try the day after this one (ready or not, skipped steps or not). */
+	const ownerNext = $derived(data.labAccess ? DAYS[DAYS.findIndex(item => item.id === day.id) + 1] ?? null : null);
 	/** "Start Day N again" or "Try Day N now" is kept for the rest of the day on this device, so a reload keeps it. */
 	const PIN_KEY = 'mirifer_en_day_pin';
 	function pinDay(id: string) { try { localStorage.setItem(PIN_KEY, JSON.stringify({ day: id, date: localDate(new Date()) })); } catch { /* private mode */ } }
@@ -153,9 +156,14 @@
 		void save(completeLater(session, id as ModuleId, score));
 	}
 	function again() { const id = day.id; clearRecords(); upcomingId = id; pinDay(id); void save(null); }
-	/** The owner tries the next day now, without waiting for tomorrow. */
-	function startFollowing() { const id = following.id; clearRecords(); upcomingId = id; pinDay(id); startStep = 'greeting'; void save(null); }
+	/** The owner tries another day now, without waiting for tomorrow. */
+	function tryDay(id: DayId) { showCheckIn = false; clearRecords(); upcomingId = id; pinDay(id); startStep = 'greeting'; void save(null); }
 </script>
+
+{#snippet tryNext(next: DayPack)}
+	<!-- Owner only: try the next day now (it may not be ready for learners yet). -->
+	<button class="text-button" type="button" onclick={() => tryDay(next.id)}>{isFa ? `روز ${next.number.toLocaleString('fa-IR')} را همین حالا امتحان کن (فقط مدیر)` : `Try Day ${next.number} now (owner only)`}</button>
+{/snippet}
 
 {#snippet strip()}
 	{#if session}
@@ -255,6 +263,7 @@
 				<button class="text-button" type="button" onclick={() => { showCheckIn = false; again(); }}>{isFa ? 'شروع دوباره' : 'Start again'}</button>
 			{:else}
 				<button class="text-button" type="button" onclick={() => (startStep = 'greeting')}><span aria-hidden="true">{isFa ? '→' : '←'}</span> {isFa ? 'میرا' : 'Mira'}</button>
+				{#if ownerNext}{@render tryNext(ownerNext)}{/if}
 			{/if}
 
 			<div class="start-bar">
@@ -341,10 +350,7 @@
 				<p>{isFa ? 'فردا برگرد؛ پیشنهاد بعدی آماده است.' : 'Come back tomorrow; your next suggestion is ready.'}</p>
 			{/if}
 			<button class="secondary" type="button" onclick={again}>{isFa ? `روز ${day.number.toLocaleString('fa-IR')} را دوباره شروع کن` : `Start Day ${day.number} again`}</button>
-			{#if data.labAccess && following.id !== day.id}
-				<!-- Owner only: try the next day now (it may not be ready for learners yet). -->
-				<button class="text-button" type="button" onclick={startFollowing}>{isFa ? `روز ${following.number.toLocaleString('fa-IR')} را همین حالا امتحان کن (فقط مدیر)` : `Try Day ${following.number} now (owner only)`}</button>
-			{/if}
+			{#if ownerNext}{@render tryNext(ownerNext)}{/if}
 		</section>
 	{/if}
 
