@@ -8,16 +8,20 @@ Every other module starts from English. This one starts from what the learner wa
 
 ## The flow (one thing per screen)
 
-1. **Intro** (Mira): "I'll show you a short message in Persian and who it's for. Say it in English, the way you'd really say it to them…". Bottom: Start.
-2. **A message** (4 in a round): who it's for, then the Persian message in a box.
-   - Bottom: mic "Say it in English"; quiet "Show a hint" (key English words with Persian), which then becomes "Skip this one".
-   - Recording stops by itself 2.5 s after they stop speaking (20 s cap), or on Stop.
+1. **Intro** (Mira): "I'll show you a short message in Persian and who it's for. Say it in English, the way you'd really say it to them…". A quiet "▶ Hear Mira say it" link (English only; no autoplay). Bottom: Start.
+2. **A message** (4 in a round): who it's for, then the Persian message in a soft speech bubble (not a box that looks tappable).
+   - Bottom: mic "Say it in English"; quiet "Show a hint". The hint is a plain list of key English words with Persian, and focus moves to it. After the hint, the quiet link becomes "Skip this one".
+   - **Recording:** "Listening… I'll stop when you finish." It stops by itself 4 s after they stop speaking (20 s cap), or on Stop. The countdown shows only in the last 5 seconds and is hidden from screen readers.
 3. **Checking…** The server transcribes the recording (OpenAI) and makes one AI call.
 4. **Verdict:**
-   - ✓ Clear / ≈ Almost ("They wouldn't know that …", built from our own meaning points) / ✗ Not yet / "Say it in English this time" (they spoke Persian);
-   - then "You said …", a natural way to say it (missing points highlighted), ▶ Hear it / ▶ My voice, and one tip (in Persian in the Persian UI).
-   - Bottom: after ✓, "Next" (quiet "Say it again"); otherwise "Try again" (quiet "Next").
-5. **End:** "k of 4 clear" and a list of each Persian message with the English version and its mark. Bottom: Done; quiet "Start again".
+   - ✓ Clear / Almost ("They wouldn't know that …", built from our own meaning points) / ✗ Not yet / "Say it in English this time" (they spoke Persian, shown in a neutral colour). Focus moves to the verdict.
+   - Then "You said …", the natural version and the tip:
+     - the natural version's missing part is highlighted, with an underline and a hidden "missing part" label, only on Almost;
+     - ▶ Hear it, and ▶ My voice (except after Persian);
+     - one tip (in Persian in the Persian UI).
+   - Bottom: after ✓, or after a second "Almost" on the same message, "Next" (quiet "Try again" / "Say it again"); otherwise "Try again" (quiet "Next").
+   - **The best try is kept:** a worse retry never replaces a Clear.
+5. **End:** "k clear · m almost", and a list of each Persian message with the English version and a word (Clear / Almost / Not yet / Not tried). Bottom: Done; quiet "Start again".
 
 ## The 4 messages (a short trip)
 
@@ -60,7 +64,17 @@ Recordings go through our server to OpenAI speech-to-text and are discarded. The
   - «واضح»;
   - more natural lines;
   - tips in «تو» with «» quotes.
-- **Learning UX and accessibility** reviewed screenshots of every screen (English and Persian).
+- **Learning UX and accessibility** reviewed screenshots of every screen (English and Persian). Their must-fixes are in:
+  - the highlight only on Almost, with a non-colour cue;
+  - no repeated "missing" note;
+  - a calm message bubble and plain hints;
+  - no autoplaying intro;
+  - the best try kept;
+  - Next after two Almosts;
+  - a 4 s auto-stop with a visible "Listening…";
+  - focus on the hint and the verdict;
+  - verdict symbols hidden from screen readers;
+  - words instead of symbols on the end list.
 
 ## Next
 
