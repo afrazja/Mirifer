@@ -1,13 +1,14 @@
 import { describe, it, expect, vi } from 'vitest';
+vi.mock('$env/dynamic/private', () => ({ env: { ADMIN_EMAIL: 'owner@m.test' } }));
 import { load, actions } from './+page.server';
-import { startSession } from '$lib/practice/day';
+import { DAY_TWO, startSession } from '$lib/practice/day';
 
-function fixture(target = 'en', meta: Record<string, unknown> = {}, session?: unknown) {
+function fixture(target = 'en', meta: Record<string, unknown> = {}, session?: unknown, owner = false, query = '') {
 	const profile = { reason: 'travel', comfort: 'simple', minutes: 20, skipped: false, completedAt: '2026-10-01T10:00:00.000Z' };
-	const user = { id: 'u1', user_metadata: { target_language: target, display_name: 'Sam', english_profile_v1: profile, ...meta } };
+	const user = { id: 'u1', ...(owner ? { email: 'owner@m.test', email_confirmed_at: '2026-01-01T00:00:00Z' } : {}), user_metadata: { target_language: target, display_name: 'Sam', english_profile_v1: profile, ...meta } };
 	const supabase = { auth: { getUser: vi.fn().mockResolvedValue({ data: { user }, error: null }), updateUser: vi.fn().mockResolvedValue({ error: null }) } };
 	const body = new FormData(); if (session !== undefined) body.set('session', typeof session === 'string' ? session : JSON.stringify(session));
-	return { supabase, event: () => ({ locals: { supabase }, request: new Request('https://mirifer.test/practice/english/today?/save', { method: 'POST', body }) }) as any };
+	return { supabase, event: () => ({ locals: { supabase }, url: new URL(`https://mirifer.test/practice/english/today${query}`), parent: async () => ({ labAccess: owner }), request: new Request('https://mirifer.test/practice/english/today?/save', { method: 'POST', body }) }) as any };
 }
 
 describe('English today page', () => {
@@ -46,5 +47,27 @@ describe('English today page', () => {
 		await actions.save(midway.event());
 		expect(midway.supabase.auth.updateUser).toHaveBeenCalledWith({ data: { english_day_v1: expect.anything() } });
 	});
+	it('picks the day: the one after the last finished; Day 2 only for the owner until it is ready', async () => {
+		const progress = { sessionsCompleted: 1, lastCompletedAt: '2026-10-01T10:00:00.000Z', lastThemeId: 'day-1', lastResult: 'ok', recent: [] };
+		expect(await load(fixture('en').event())).toMatchObject({ nextDayId: 'day-1' });
+		expect(await load(fixture('en', { english_progress_v1: progress }).event())).toMatchObject({ nextDayId: 'day-1' });
+		expect(await load(fixture('en', { english_progress_v1: progress }, undefined, true).event())).toMatchObject({ nextDayId: 'day-2' });
+		// ?day= works for the owner only, and sets aside a session on another day.
+		expect(await load(fixture('en', { english_day_v1: startSession(15) }, undefined, true, '?day=day-2').event())).toMatchObject({ nextDayId: 'day-2', session: null });
+		expect(await load(fixture('en', {}, undefined, false, '?day=day-2').event())).toMatchObject({ nextDayId: 'day-1' });
+	});
+	it('saves a session on a day that is not ready only for the owner', async () => {
+		const dayTwo = startSession(15, new Date(), DAY_TWO);
+		expect(await actions.save(fixture('en', {}, dayTwo).event())).toMatchObject({ status: 400 });
+		expect(await actions.save(fixture('en', {}, dayTwo, true).event())).toEqual({ saved: true });
+	});
+	it('a day with skipped steps does not count as passed, so it comes back', async () => {
+		const base = { ...startSession(15), stage: 'done', completedAt: new Date().toISOString() };
+		const full = fixture('en', {}, { ...base, done: ['listen-act', 'phrases'] });
+		await actions.save(full.event());
+		expect(full.supabase.auth.updateUser).toHaveBeenCalledWith({ data: expect.objectContaining({ english_progress_v1: expect.objectContaining({ lastThemeId: 'day-1' }) }) });
+		const skipped = fixture('en', {}, { ...base, done: ['listen-act'], skipped: ['phrases'] });
+		await actions.save(skipped.event());
+		expect(skipped.supabase.auth.updateUser).toHaveBeenCalledWith({ data: expect.objectContaining({ english_progress_v1: expect.objectContaining({ sessionsCompleted: 1, lastThemeId: null }) }) });
+	});
 });
-
