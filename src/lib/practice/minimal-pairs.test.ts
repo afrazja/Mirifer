@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CONTRASTS, asPairsRecord, newRound, practiceRound, summarize, wordOf, type PairsRecord } from './minimal-pairs';
+import { CONTRASTS, asPairsRecord, checkList, newRound, practiceRound, summarize, wordOf, type PairsRecord } from './minimal-pairs';
 
 // A fixed "random" so rounds are repeatable in tests.
 const seeded = (seed = 1) => () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
@@ -50,5 +50,19 @@ describe('records', () => {
 		expect(asPairsRecord(null)).toBeNull();
 		expect(asPairsRecord({ ...r, duels: [{ contrast: 9, pair: 0, target: 0 }] })).toBeNull();
 		expect(asPairsRecord({ ...r, picks: [2] })).toBeNull();
+	});
+});
+
+describe('checkList (on-device pronunciation check)', () => {
+	it('gives every word of the weakest sound pair', () => {
+		const list = checkList(5);
+		expect(list.map(w => w.pair[w.target])).toEqual(['three', 'tree', 'thin', 'tin']);
+		expect(list.every(w => w.contrast === 5)).toBe(true);
+	});
+	it('gives one word per sound pair after a perfect round', () => {
+		const list = checkList(null);
+		expect(list).toHaveLength(CONTRASTS.length);
+		expect(new Set(list.map(w => w.contrast)).size).toBe(CONTRASTS.length);
+		for (const w of list) expect(CONTRASTS[w.contrast].pairs).toContainEqual(w.pair);
 	});
 });

@@ -7,16 +7,19 @@
 	 */
 	import { onDestroy, onMount } from 'svelte';
 	import MixedText from '$lib/components/MixedText.svelte';
+	import PronounceCheck from '$lib/components/PronounceCheck.svelte';
 	import { playAudioPromise, playAudioUrl, stopAllAudio, ttsUrl } from '$services/tts';
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
 	import {
-		CONTRASTS, MAX_REPLAYS, SAY_MAX_SECONDS, VOICE, newRound, pairOf, practiceRound, summarize, wordOf, type PairsRecord, type Side
+		CONTRASTS, MAX_REPLAYS, checkList, SAY_MAX_SECONDS, VOICE, newRound, pairOf, practiceRound, summarize, wordOf, type PairsRecord, type Side
 	} from '$lib/practice/minimal-pairs';
 
-	let { isFa = false, initial = null, first = false, onSave, onDone }: {
+	let { isFa = false, initial = null, first = false, pronounceCheck = false, onSave, onDone }: {
 		isFa?: boolean;
 		initial?: PairsRecord | null;
 		first?: boolean;
+		/** The on-device pronunciation check (Module lab experiment). */
+		pronounceCheck?: boolean;
 		onSave?: (record: PairsRecord) => void;
 		onDone: () => void;
 	} = $props();
@@ -28,7 +31,7 @@
 
 	// svelte-ignore state_referenced_locally
 	let record = $state<PairsRecord>(initial ?? newRound());
-	let stage = $state<'start' | 'duel' | 'result'>('start');
+	let stage = $state<'start' | 'duel' | 'result' | 'check'>('start');
 	let status = $state<'idle' | 'playing' | 'playFailed'>('idle'), heardOnce = $state(false), announce = $state('');
 	let heading: HTMLElement | undefined = $state(), resultLine: HTMLElement | undefined = $state();
 	// Speaking: record-and-compare, in memory only.
@@ -123,6 +126,8 @@
 	function again() { stopAllAudio(); record = newRound(); persist(); resetSay(); stage = 'duel'; enter(); }
 	function resetSay() { myPlayer?.pause(); if (myUrl) URL.revokeObjectURL(myUrl); myUrl = null; sayStatus = 'idle'; }
 	function finish() { stopAllAudio(); onDone(); }
+	function openCheck() { stopAllAudio(); resetSay(); stage = 'check'; }
+	function closeCheck() { stage = 'result'; queueMicrotask(() => heading?.focus()); }
 
 	const summary = $derived(summarize(record));
 	// The word pair they missed in their hardest sounds, to say and compare.
@@ -171,6 +176,9 @@
 			{@render bottom(index + 1 < record.duels.length ? T('Next', 'بعدی') : T('See your result', 'دیدن نتیجه'), next)}
 		{/if}
 
+	{:else if stage === 'check'}
+		<PronounceCheck {isFa} words={checkList(summary.weakest)} onBack={closeCheck} />
+
 	{:else}
 		<p class="label">{record.practice ? T('Practice result', 'نتیجهٔ تمرین') : T('Your result', 'نتیجهٔ تو')}</p>
 		<p class="big">{T(`${summary.right} of ${summary.total} right`, `${fa(summary.right)} از ${fa(summary.total)} درست`)}</p>
@@ -198,6 +206,7 @@
 		{:else}
 			<p class="tip">{T('A perfect ear: you heard every difference.', 'گوش بی‌نقص: همهٔ تفاوت‌ها را شنیدی.')}</p>
 		{/if}
+		{#if pronounceCheck}<button class="link" type="button" onclick={openCheck}>{T('Check my pronunciation (experiment)', 'تلفظم را بررسی کن (آزمایشی)')}</button>{/if}
 		<button class="link quiet" type="button" onclick={again}>{T('Try a new round', 'یک دور تازه')}</button>
 		{@render bottom(T('Done', 'تمام'), finish)}
 	{/if}

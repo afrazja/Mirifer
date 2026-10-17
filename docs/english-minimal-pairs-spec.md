@@ -7,6 +7,8 @@ Owner's decisions (all as recommended):
 - 12 duels a round;
 - one replay per duel.
 
+Update: an experimental on-device pronunciation check is reached from the result screen; see `english-pronounce-check-spec.md`.
+
 ## Purpose
 
 Training the ear on English sound pairs Persian speakers mix up. If you can't hear a difference, you can't say it. Short, with a clear end and a clear score.

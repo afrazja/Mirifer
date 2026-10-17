@@ -3,6 +3,11 @@ import { defineConfig } from 'vite';
 import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 
 export default defineConfig({
+	resolve: {
+		// The on-device pronunciation check (Module lab) needs only the plain WebAssembly engine
+		// (11 MB), not the WebGPU one (22 MB): keeps the one-time download under 100 MB.
+		alias: [{ find: /^onnxruntime-web$/, replacement: 'onnxruntime-web/wasm' }]
+	},
 	plugins: [
 		sveltekit(),
 		SvelteKitPWA({
@@ -10,9 +15,14 @@ export default defineConfig({
 			mode: 'production',
 			strategies: 'generateSW',
 			registerType: 'autoUpdate',
-			manifest: false, // We already have a static manifest at static/site.webmanifest
+			manifest: false,
+			// Skipping a big lazy chunk (below) is intended: warn, don't fail the build.
+			showMaximumFileSizeToCacheInBytesWarning: true, // We already have a static manifest at static/site.webmanifest
 			workbox: {
-				globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,json,mp3}']
+				globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,json,mp3}'],
+				// Nothing above 400 KB is precached for every learner. Today that leaves out only the
+				// on-device pronunciation engine (Module lab, ~540 KB), which loads when it's used.
+				maximumFileSizeToCacheInBytes: 400 * 1024
 			}
 		})
 	]
