@@ -6,7 +6,7 @@
  */
 import type { DisplayText } from './hotel';
 
-/** The voice that reads the natural version: the same US voice as Shadowing and Minimal pairs. */
+/** The voice that reads the natural version: the same US voice as Minimal pairs. */
 export const VOICE = 'c';
 export const SAY_MAX_SECONDS = 20;
 export const SAY_MIN_SECONDS = 1;

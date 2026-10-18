@@ -13,7 +13,7 @@ Status: **v2, for the owner's approval.** v1 was reviewed by the product-growth 
 - the server writes `english_ai_requested`, but it's the **daily-allowance counter**, not a cost log:
   - greeting, retell and review are recorded under the hotel scenario;
   - Quick-fire records once per round;
-  - speech-to-text, spoken replies (`/voice`), free talk, shadowing and phrases record nothing;
+  - speech-to-text, spoken replies (`/voice`), free talk and phrases record nothing;
   - the provider (Gemini, DeepSeek or OpenAI) isn't recorded.
 
 **Problems in today's German numbers, caused by English:**

@@ -5,7 +5,7 @@
  */
 import type { DisplayText } from './hotel';
 
-/** The voice: one natural US voice (Brian), as in Shadowing. */
+/** The voice: one natural US voice (Brian). */
 export const VOICE = 'c';
 export const MAX_PLAYS = 2;
 
