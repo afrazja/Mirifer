@@ -41,18 +41,16 @@ export interface DayModule {
 }
 
 /**
- * Mira's check-in on a day after the first: her hello with a link back to the story so far,
- * then what today is about, then a mic check with one of today's sentences.
+ * Mira's check-in on a day after the first: her hello with a link back to the story so far, then
+ * one casual question the learner answers freely (it is also the mic check), then her reply.
  */
 export interface DayCheckIn {
 	/** After her hello: where the story is now (true to the last day's content). */
 	story: DisplayText;
-	/** What today is about, and what the learner can do by the end. */
-	today: DisplayText;
-	/** The sentence the learner says to check the mic: one they'll use today. */
-	say: string;
-	/** Mira's line once she has heard it (only when they said that sentence; any other words get the plain "your mic works"). */
-	heard: DisplayText;
+	/** Her casual, personal question, linked to today's theme. Its English is the day's `question`. */
+	question: DisplayText;
+	/** Her reply when the AI can't answer in time. */
+	reply: DisplayText;
 }
 
 export interface DayPack {
@@ -112,7 +110,7 @@ export const DAY_TWO: DayPack = {
 	ready: false,
 	theme: { en: 'Taking a taxi', fa: 'گرفتن تاکسی' },
 	themePhrase: 'taking a taxi',
-	question: 'How do you usually get from the airport to your hotel?',
+	question: 'And you? When you travel, how do you usually get from the airport to your hotel?',
 	goal: {
 		en: 'By the end, you can say where you’re going and ask how long it takes.',
 		fa: 'در پایان می‌توانی بگویی کجا می‌روی و بپرسی چقدر طول می‌کشد.'
@@ -123,14 +121,13 @@ export const DAY_TWO: DayPack = {
 			en: 'Remember Sara? Her backpack went to Frankfurt, but the airline will bring it to her hotel. Now she needs a taxi to the hotel.',
 			fa: 'سارا یادت هست؟ کوله‌پشتی‌اش به فرانکفورت رفت، ولی شرکت هواپیمایی آن را به هتلش می‌آورد. حالا خود سارا باید با تاکسی به هتل برود.'
 		},
-		today: {
-			en: 'Today’s about taking a taxi. You’ll practise telling the driver where you’re going, and asking how long it takes.',
-			fa: 'موضوع امروز تاکسی گرفتن است. تمرین می‌کنی که به راننده بگویی کجا می‌خواهی بروی و بپرسی تا آن‌جا چقدر طول می‌کشد.'
+		question: {
+			en: 'And you? When you travel, how do you usually get from the airport to your hotel?',
+			fa: 'و تو؟ وقتی سفر می‌کنی، معمولاً چطور از فرودگاه به هتل می‌روی؟'
 		},
-		say: 'Could you take me to the Park Hotel, please?',
-		heard: {
-			en: 'Good, I can hear you. You’ll use that sentence again today. Here’s the plan.',
-			fa: 'خوب است، صدایت را می‌شنوم. امروز باز هم از این جمله استفاده می‌کنی. برویم سراغ برنامهٔ امروز.'
+		reply: {
+			en: 'Thanks for telling me. Today you’ll practise taking a taxi, step by step.',
+			fa: 'ممنون که گفتی. امروز قدم‌به‌قدم گرفتن تاکسی را تمرین می‌کنی.'
 		}
 	},
 	checkInMinutes: 2,

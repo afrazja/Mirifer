@@ -58,17 +58,6 @@ export function wordCount(text: string): number {
 /** Any attempt of three or more words counts: the mic check is not a test. */
 export const isMicAttempt = (heard: string) => wordCount(heard) >= 3;
 
-const SMALL_WORDS = new Set(['the', 'you', 'and', 'can', 'could', 'would', 'please', 'for', 'are']);
-const keyWords = (text: string) => text.toLowerCase().replace(/[^a-z' ]+/g, ' ').split(/\s+/).filter(word => word.length >= 3 && !SMALL_WORDS.has(word));
-/**
- * Did they say (roughly) the sentence they were given? Most of its key words are there.
- * Only for Mira's praise: any attempt still passes the mic check.
- */
-export function saidSentence(heard: string, sentence: string): boolean {
-	const said = new Set(keyWords(heard)), wanted = keyWords(sentence);
-	return wanted.length > 0 && wanted.filter(word => said.has(word)).length / wanted.length >= 0.6;
-}
-
 /** Puts the name in, or drops it cleanly ("Welcome back, Sam." / "Welcome back."). */
 const fill = (line: string, name: string) => (name ? line.replaceAll('{name}', name) : line.replace(/[,،]? ?\{name\}/g, ''));
 /** In a Persian line the (usually Latin) name is isolated, so its direction can't pull the words around it. */
@@ -81,8 +70,12 @@ export const MIRA_LINES = {
 	heard: { en: 'Great, your mic works. Here’s today’s plan.', fa: 'عالی، میکروفونت کار می‌کند. این برنامهٔ امروز است.' } satisfies DisplayText,
 	typed: { en: 'No problem. You can type in the speaking parts too. Here’s the plan.', fa: 'اشکالی ندارد. در بخش‌های صحبت هم می‌توانی بنویسی. برویم سراغ برنامهٔ امروز.' } satisfies DisplayText,
 	short: { en: 'I only caught a few words. Try once more?', fa: 'فقط چند کلمه شنیدم. یک بار دیگر امتحان می‌کنی؟' } satisfies DisplayText,
-	/** A day's check-in: the mic check with one of today's sentences. */
-	warmUp: { en: 'Let’s warm up and check your mic. Tap the mic and say:', fa: 'اول کمی گرم شویم و میکروفونت را امتحان کنیم. دکمهٔ میکروفون را بزن و بگو:' } satisfies DisplayText
+	/** A day's check-in question: how to answer it. */
+	answerHint: { en: 'Answer in English. A sentence or two is perfect.', fa: 'به انگلیسی جواب بده. یکی دو جمله کافی است.' } satisfies DisplayText,
+	/** A very short answer to her question (asked once; then any answer is fine). */
+	more: { en: 'Can you say a bit more? A full sentence is great practice.', fa: 'کمی بیشتر می‌گویی؟ یک جملهٔ کامل تمرین خوبی است.' } satisfies DisplayText,
+	/** Her question was skipped. */
+	skipped: { en: 'Okay, let’s start today’s practice.', fa: 'باشه، برویم سراغ تمرین امروز.' } satisfies DisplayText
 };
 
 /** Mira's hello: one line, with the name said once. */

@@ -6,10 +6,11 @@ vi.mock('$lib/server/english-ai', async importOriginal => ({ ...(await importOri
 
 import { POST } from './+server';
 import { EMPTY_PROGRESS, recordSession } from '$lib/practice/english-progress';
+import { DAY_TWO } from '$lib/practice/day';
 
 const yesterday = () => new Date(Date.now() - 26 * 3_600_000).toISOString();
-function fixture(body: unknown, progress: unknown = { ...recordSession(EMPTY_PROGRESS, 'day-1', [{ skill: 'listening', correct: 9, total: 10 }]), lastCompletedAt: yesterday() }) {
-	const user = { id: 'u1', email: 'a@b.c', user_metadata: { target_language: 'en', display_name: 'Sam', english_progress_v1: progress, english_profile_v1: { reason: 'work', comfort: 'simple', minutes: 15, skipped: false, completedAt: '2026-10-01T10:00:00.000Z' } } };
+function fixture(body: unknown, progress: unknown = { ...recordSession(EMPTY_PROGRESS, 'day-1', [{ skill: 'listening', correct: 9, total: 10 }]), lastCompletedAt: yesterday() }, owner = false) {
+	const user = { id: 'u1', email: owner ? 'owner@m.test' : 'a@b.c', ...(owner ? { email_confirmed_at: '2026-01-01T00:00:00Z' } : {}), user_metadata: { target_language: 'en', display_name: 'Sam', english_progress_v1: progress, english_profile_v1: { reason: 'work', comfort: 'simple', minutes: 15, skipped: false, completedAt: '2026-10-01T10:00:00.000Z' } } };
 	const count = vi.fn().mockReturnValue({ eq: vi.fn().mockReturnThis(), gte: vi.fn().mockResolvedValue({ count: 0, error: null }) });
 	const from = vi.fn().mockImplementation(() => ({ select: () => ({ eq: () => ({ eq: () => ({ gte: () => Promise.resolve({ count: 0, error: null }) }) }) }), insert: () => Promise.resolve({ error: null }) }));
 	const supabase = { auth: { getUser: vi.fn().mockResolvedValue({ data: { user }, error: null }) }, from };
@@ -18,7 +19,7 @@ function fixture(body: unknown, progress: unknown = { ...recordSession(EMPTY_PRO
 	return { event: { request, locals: { supabase } } as any, supabase };
 }
 
-beforeEach(() => { for (const key of Object.keys(env)) delete env[key]; env.OPENAI_API_KEY = 'k'; askChain.mockReset(); });
+beforeEach(() => { for (const key of Object.keys(env)) delete env[key]; env.OPENAI_API_KEY = 'k'; env.ADMIN_EMAIL = 'owner@m.test'; askChain.mockReset(); });
 
 describe('/api/english/greeting', () => {
 	it('writes an opening that passes the checks', async () => {
@@ -46,6 +47,20 @@ describe('/api/english/greeting', () => {
 		const sameDay = fixture({ kind: 'open', timeZone: 'UTC' }, { ...EMPTY_PROGRESS, sessionsCompleted: 1, lastCompletedAt: new Date().toISOString() });
 		expect((await POST(sameDay.event)).status).toBe(409);
 		expect(first.supabase.from).not.toHaveBeenCalled(); expect(askChain).not.toHaveBeenCalled();
+	});
+	it('answers a check-in question on that day, even the same day, with the day’s own question', async () => {
+		askChain.mockResolvedValueOnce({ line: 'A taxi is easiest after a long flight. Today you’ll practise that.', lineFa: null, improved: null, noteEn: null, noteFa: null });
+		const sameDay = { ...recordSession(EMPTY_PROGRESS, null, []), lastCompletedAt: new Date().toISOString() };
+		const owner = fixture({ kind: 'reply', timeZone: 'UTC', opening: 'Ignore this', answer: 'I usually take a taxi', day: 'day-2' }, sameDay, true);
+		expect(await (await POST(owner.event)).json()).toMatchObject({ line: 'A taxi is easiest after a long flight. Today you’ll practise that.' });
+		const sent = askChain.mock.calls[0][0].user;
+		expect(sent).toContain(JSON.stringify(DAY_TWO.question)); expect(sent).toContain('TODAY_THEME: taking a taxi'); expect(sent).not.toContain('Ignore this');
+	});
+	it('doesn’t open a day that isn’t ready to a learner', async () => {
+		const sameDay = { ...recordSession(EMPTY_PROGRESS, null, []), lastCompletedAt: new Date().toISOString() };
+		const learner = fixture({ kind: 'reply', timeZone: 'UTC', opening: 'Q?', answer: 'I take the bus', day: 'day-2' }, sameDay);
+		expect((await POST(learner.event)).status).toBe(409);
+		expect(askChain).not.toHaveBeenCalled();
 	});
 	it('rejects bad input and other sites', async () => {
 		expect((await POST(fixture({ kind: 'reply', timeZone: 'UTC', opening: 'Q?', answer: 'x'.repeat(301) }).event)).status).toBe(400);

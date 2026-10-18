@@ -1,8 +1,9 @@
 /**
  * Mira's AI greeting for returning learners (Day 2+): `open` writes today's
- * opening line with one question, `reply` answers the learner once. At most
- * two calls a day; each counts against the daily AI allowance. Day 1 and the
- * same-day second session are scripted in the browser and never call this.
+ * opening line with one question (not used by the browser now), `reply`
+ * answers the learner once: on a day with a check-in, their answer to the
+ * day's casual question. Each counts against the daily AI allowance. Day 1 is
+ * scripted in the browser and never calls this.
  *
  * Nothing the learner says is stored here. On any failure the browser uses
  * its scripted line, so this route can answer 4xx/5xx freely.
@@ -13,7 +14,7 @@ import type { RequestHandler } from './$types';
 import { askChain, englishLearner, spendAllowance } from '$lib/server/english-ai';
 import { readEnglishProfile } from '$lib/practice/english-profile';
 import { readEnglishProgress } from '$lib/practice/english-progress';
-import { nextDay } from '$lib/practice/day';
+import { DAY_IDS, dayById, nextDay } from '$lib/practice/day';
 import { canUseLab } from '$lib/server/lab-access';
 import {
 	OpeningSchema, ReplySchema, coachFacts, daysSinceIn, levelFor, localParts, openingProblem, openingPrompt, openingUser,
@@ -22,7 +23,7 @@ import {
 
 const RequestSchema = z.discriminatedUnion('kind', [
 	z.object({ kind: z.literal('open'), timeZone: z.string().max(64) }).strict(),
-	z.object({ kind: z.literal('reply'), timeZone: z.string().max(64), opening: z.string().trim().min(1).max(300), answer: z.string().trim().max(300) }).strict()
+	z.object({ kind: z.literal('reply'), timeZone: z.string().max(64), opening: z.string().trim().min(1).max(300), answer: z.string().trim().max(300), day: z.enum(DAY_IDS).optional() }).strict()
 ]);
 
 const openSchemas = {
@@ -51,11 +52,15 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const progress = readEnglishProgress(meta), profile = readEnglishProfile(meta);
 	const now = new Date();
 	const days = daysSinceIn(progress.lastCompletedAt, now, parsed.data.timeZone);
-	// Day 1 and a second session the same day are scripted.
-	if (progress.sessionsCompleted === 0 || days === 0) return json({ error: 'Scripted greeting' }, { status: 409 });
+	// Today's day: the one the browser is on if the learner may open it (the owner may try any day),
+	// else the one after the last finished day.
+	const owner = canUseLab(user);
+	const requested = parsed.data.kind === 'reply' ? dayById(parsed.data.day) : null;
+	const day = requested && (requested.ready || owner) ? requested : nextDay(progress.lastThemeId, owner);
+	// A day's check-in question always gets Mira's reply. Otherwise Day 1 and a second session the same day are scripted.
+	const checkInReply = parsed.data.kind === 'reply' && !!day.checkIn;
+	if (!checkInReply && (progress.sessionsCompleted === 0 || days === 0)) return json({ error: 'Scripted greeting' }, { status: 409 });
 	const level = levelFor(profile);
-	// Today's day: the one after the last finished day (the owner may be trying a day that isn't ready).
-	const day = nextDay(progress.lastThemeId, canUseLab(user));
 
 	const refused = await spendAllowance(locals, user, parsed.data.kind === 'open' ? 1 : 2);
 	if (refused) return refused;
@@ -71,7 +76,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return json({ line: result.line.trim(), lineFa: usablePersian(result.lineFa) });
 	}
 
-	const { opening, answer } = parsed.data;
+	const { answer } = parsed.data;
+	// On a check-in day the question is the day's own, not the browser's copy.
+	const opening = day.checkIn ? day.question : parsed.data.opening;
 	const system = replyPrompt(level);
 	const ask = (note = '') => askChain<Reply>({ label: 'English greeting reply', system, user: replyUser(opening, day.themePhrase, answer) + note, schema: ReplySchema, ...replySchemas, temperature: 0.5, maxTokens: 400 });
 	let result = await ask();

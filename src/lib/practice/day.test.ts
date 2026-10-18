@@ -86,8 +86,10 @@ describe('more than one day', () => {
 	it('gives every day after the first a check-in that links back and warms up', () => {
 		for (const day of DAYS.slice(1)) {
 			expect(day.checkIn, day.id).toBeDefined();
-			expect(day.checkIn!.say.split(' ').length).toBeGreaterThanOrEqual(3);
-			for (const line of [day.checkIn!.story, day.checkIn!.today, day.checkIn!.heard]) expect(line.fa).toMatch(/[\u0600-\u06FF]/);
+			// Her question on screen is the one the AI is told she asked.
+			expect(day.checkIn!.question.en).toBe(day.question);
+			expect(day.question.match(/\?/g)?.length).toBe(2);
+			for (const line of [day.checkIn!.story, day.checkIn!.question, day.checkIn!.reply]) expect(line.fa).toMatch(/[\u0600-\u06FF]/);
 		}
 		expect(DAY_ONE.checkIn).toBeUndefined();
 	});
