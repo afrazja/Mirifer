@@ -22,7 +22,7 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 	if (requested && session && session.day !== requested.id) session = null;
 	// The day a new session starts on: the one after the last finished day.
 	const upcoming = requested ?? nextDay(progress.lastThemeId, labAccess);
-	return { name, profile, progress, session, nextDayId: upcoming.id };
+	return { name, profile, progress, session, nextDayId: upcoming.id, requestedDay: requested?.id ?? null };
 };
 
 export const actions: Actions = {

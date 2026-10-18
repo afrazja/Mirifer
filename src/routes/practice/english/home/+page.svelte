@@ -7,7 +7,7 @@
 	const isFa = $derived(language === 'fa');
 	onMount(() => { void getLanguage().then(value => { if (value === 'fa' || value === 'en') language = value; }); });
 	const parts = [
-		{ href: '/practice/english/today', en: 'Daily lesson', fa: 'درس روزانه' },
+		{ href: '/practice/english/days', en: 'Daily lessons', fa: 'درس‌های روزانه' },
 		{ href: '/practice/english/lab', en: 'Module lab', fa: 'آزمایشگاه بخش‌ها' }
 	];
 </script>

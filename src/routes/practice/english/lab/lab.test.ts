@@ -3,6 +3,7 @@ vi.mock('$env/dynamic/private', () => ({ env: { ADMIN_EMAIL: 'owner@m.test' } })
 import { load } from './+page.server';
 import { load as layoutLoad } from '../+layout.server';
 import { LAB_MODULES } from '$lib/practice/module-lab';
+import { DAY_TWO, startSession } from '$lib/practice/day';
 
 const locals = (user: object | null, isAdmin = false) => ({
 	user, supabase: { from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { is_admin: isAdmin } }) }) }) }) }
@@ -35,5 +36,20 @@ describe('English start page', () => {
 	it('shows the two parts to admins and sends learners straight to the daily lesson', async () => {
 		await expect(homeLoad({ locals: locals(learner), parent: async () => ({ labAccess: true }) } as any)).resolves.toEqual({});
 		await expect(homeLoad({ locals: locals(learner), parent: async () => ({ labAccess: false }) } as any)).rejects.toMatchObject({ status: 303, location: '/practice/english/today' });
+	});
+});
+
+import { load as daysLoad } from '../days/+page.server';
+describe('Daily lessons list', () => {
+	it('is the owner’s only: learners go to today’s lesson', async () => {
+		await expect(daysLoad({ locals: locals(learner), parent: async () => ({ labAccess: false }) } as any)).rejects.toMatchObject({ status: 303, location: '/practice/english/today' });
+		await expect(daysLoad({ locals: locals(null), parent: async () => ({ labAccess: false }) } as any)).rejects.toMatchObject({ location: '/login' });
+	});
+	it('marks the owner’s next day and a session still in progress', async () => {
+		const progress = { sessionsCompleted: 1, lastCompletedAt: '2026-10-01T10:00:00.000Z', lastThemeId: 'day-1', lastResult: 'ok', recent: [] };
+		const fresh = { ...owner, user_metadata: { target_language: 'en' } };
+		expect(await daysLoad({ locals: locals(fresh), parent: async () => ({ labAccess: true }) } as any)).toEqual({ nextDayId: 'day-1', openDayId: null });
+		const moved = { ...owner, user_metadata: { target_language: 'en', english_progress_v1: progress, english_day_v1: startSession(15, new Date(), DAY_TWO) } };
+		expect(await daysLoad({ locals: locals(moved), parent: async () => ({ labAccess: true }) } as any)).toEqual({ nextDayId: 'day-2', openDayId: 'day-2' });
 	});
 });
