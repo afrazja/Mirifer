@@ -13,7 +13,7 @@ export const LAB_MODULES: LabModule[] = [
 	{ id: 'missing-info', name: { en: 'Find the missing information', fa: 'اطلاعات گم‌شده را پیدا کن' }, href: '/practice/english/lab/missing-info' },
 	{ id: 'speaking-card', name: { en: 'Speaking card', fa: 'کارت صحبت' }, href: '/practice/english/lab/speaking-card' },
 	{ id: 'free-talk', name: { en: '60-second free talk', fa: 'صحبت آزاد ۶۰ ثانیه‌ای' }, href: '/practice/english/lab/free-talk' },
-	{ id: 'shadowing', name: { en: 'Shadowing', fa: 'تکرار همزمان' }, href: '/practice/english/lab/shadowing' },
+	{ id: 'natural-phrases', name: { en: 'Natural phrases', fa: 'عبارت‌های طبیعی' }, href: '/practice/english/lab/natural-phrases' },
 	{ id: 'quick-fire', name: { en: 'Quick-fire questions', fa: 'سؤال‌های سریع' }, href: '/practice/english/lab/quick-fire' },
 	{ id: 'listen-retell', name: { en: 'Listen and retell', fa: 'گوش بده و بازگو کن' }, href: '/practice/english/retell' },
 	{ id: 'listen-connect', name: { en: 'Listen and connect', fa: 'گوش بده و وصل کن' }, href: '/practice/english/lab/listen-connect' },

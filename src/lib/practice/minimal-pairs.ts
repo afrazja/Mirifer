@@ -6,7 +6,7 @@
  */
 import type { DisplayText } from './hotel';
 
-/** The voice: one natural US voice (Brian), as in Shadowing and Dictation sprint. */
+/** The voice: one natural US voice (Brian), as in Dictation sprint. */
 export const VOICE = 'c';
 export const MAX_REPLAYS = 1;
 export const SAY_MAX_SECONDS = 5;

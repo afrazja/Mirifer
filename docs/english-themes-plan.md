@@ -142,7 +142,7 @@ The 15 lab modules are merged into **six**, to make planning and the app simpler
 | Module | Made from | Follows the theme? | What changes per lesson |
 |---|---|---|---|
 | **Listening** | Listen and connect + Spot the lie (as a "which one is false?" question type) | yes | a new conversation or talk, and its questions (written + audio) |
-| **Phrases** | Natural phrases + Shadowing (an optional faster round) | yes | 5 sentences that tell a short story |
+| **Phrases** | Natural phrases (Shadowing was dropped by the owner: it doesn't build a skill) | yes | 5 sentences that tell a short story |
 | **Your talk** | Tell your story / Say it again, better + Speaking card + 60-second free talk + Listen and retell | yes | one prompt, sometimes a card with 2–3 points, or "tell me what you heard" |
 | **Conversation** | Scene with a twist + Find the missing information + Quick-fire + Choose and persuade | yes | a short sheet: who you talk to, your task (solve a problem, find out facts, answer quick questions, or choose and persuade), and the twist |
 | **Sharp ears** | Minimal pairs + Connected speech + Dictation | no: one game per week | built once, reused |

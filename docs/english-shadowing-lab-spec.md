@@ -1,6 +1,8 @@
 # "Shadowing" (Module lab): spec v2
 
-Status: **approved by the owner and built (Module lab).** v1 was reviewed by the English-coach and learning-UX reviewers, and their points are applied (see the end).
+Status: **dropped by the owner and removed from the Module lab** (it doesn't build a skill; Natural phrases does the job better). Kept for the record.
+
+Previous status: approved by the owner and built (Module lab). v1 was reviewed by the English-coach and learning-UX reviewers, and their points are applied (see the end).
 
 Owner's fixed decisions:
 - audio only, never the text while listening;
