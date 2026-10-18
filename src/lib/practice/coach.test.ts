@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { MIRA_LINES, checkInHello, saidSentence, daysSince, greetingMode, isMicAttempt, loadGreeting, localDate, micSentence, opening, saveGreeting } from './coach';
+import { MIRA_LINES, checkInHello, daysSince, greetingMode, isMicAttempt, loadGreeting, localDate, micSentence, opening, saveGreeting } from './coach';
 import { EMPTY_PROGRESS } from './english-progress';
 
 const at = (iso: string) => new Date(iso);
@@ -52,13 +52,6 @@ describe('Mira the coach', () => {
 		saveGreeting({ ...record, day: 'day-2' });
 		expect(loadGreeting('2026-10-05', 'day-2')?.day).toBe('day-2');
 		expect(loadGreeting('2026-10-05', 'day-1')).toBeNull();
-	});
-	it('praises today’s sentence only when they said it', () => {
-		const say = 'Could you take me to the Park Hotel, please?';
-		expect(saidSentence('could you take me to the park hotel please', say)).toBe(true);
-		expect(saidSentence('take me to Park Hotel', say)).toBe(true);
-		expect(saidSentence('hello how are you today', say)).toBe(false);
-		expect(saidSentence('', say)).toBe(false);
 	});
 	it('links a check-in hello to the story, with the name once', () => {
 		const story = { en: 'Remember Sara?', fa: 'سارا یادت هست؟' };

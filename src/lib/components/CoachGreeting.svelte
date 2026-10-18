@@ -7,8 +7,9 @@
 	 *   skip) -> "your mic works" -> today's plan.
 	 *
 	 * A day with a check-in (Day 2 on): her hello links back to the story so far,
-	 * then one screen says what today is about, and the mic check uses one of
-	 * today's sentences.
+	 * then she asks one casual question that the learner answers freely (that is
+	 * the mic check), she replies to what they said (AI, with a scripted line if
+	 * it is slow or unavailable), then today's plan.
 	 *
 	 * The day's greeting is kept in this browser, so a reload doesn't run it
 	 * twice. `readOnly` shows what happened, for looking back from a module.
@@ -16,7 +17,7 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { playAudioPromise, stopAllAudio } from '$services/tts';
 	import {
-		COACH_RATE, COACH_VOICE, MIRA_LINES, checkInHello, daysSince, greetingMode, isMicAttempt, saidSentence, loadGreeting, localDate, micSentence, opening as helloLine,
+		COACH_RATE, COACH_VOICE, MIRA_LINES, checkInHello, daysSince, greetingMode, isMicAttempt, loadGreeting, localDate, micSentence, opening as helloLine,
 		saveGreeting, type GreetingMode, type GreetingRecord
 	} from '$lib/practice/coach';
 	import type { EnglishProfile } from '$lib/practice/english-profile';
@@ -30,7 +31,7 @@
 		dayId?: string;
 		/** The day's check-in (Day 2 on); without it, the first-session welcome or a plain hello. */
 		checkIn?: DayCheckIn;
-		/** Unused since the greeting no longer asks a question; kept so callers stay simple. */
+		/** Not used here (the check-in carries its own question); kept so callers stay simple. */
 		question?: string;
 		readOnly?: boolean;
 		/** The learner has finished the greeting: show today's plan. */
@@ -43,33 +44,38 @@
 		onerror: ((event: { error: string }) => void) | null; onend: (() => void) | null;
 		start(): void; stop(): void; abort(): void;
 	};
-	/** hello: Mira's line. today: what today is about (check-in days). mic: say the sentence (or skip). result: the mic works. */
-	type Step = 'hello' | 'today' | 'mic' | 'result';
+	/** hello: Mira's line. mic: say the sentence, or answer her question (or skip). result: what she heard, and her reply. */
+	type Step = 'hello' | 'mic' | 'result';
+	/** How long to wait for Mira's AI reply before her scripted one. */
+	const REPLY_WAIT_MS = 8_000;
 
 	let ready = $state(false);
 	let mode = $state<GreetingMode>('first');
 	let step = $state<Step>('hello');
 	let opening = $state<DisplayText>({ en: '', fa: '' });
-	let answer = $state(''), typed = $state(false), tooShort = $state(false);
+	let answer = $state(''), typed = $state(false), tooShort = $state(false), nudged = $state(false);
 	let typing = $state(false), draft = $state('');
 	let listening = $state(false), micProblem = $state<'blocked' | 'unsupported' | 'none' | null>(null);
+	/** Check-in days: Mira's reply to the answer (null while she is "typing"), and one small fix for the recap. */
+	let reply = $state<DisplayText | null>(null);
+	let feedback = { improved: null as string | null, noteEn: null as string | null, noteFa: null as string | null };
 	let recognition: Recognition | null = null;
 	let stopTimer: ReturnType<typeof setTimeout> | undefined;
+	let replying: AbortController | null = null;
 	let heading: HTMLElement | undefined = $state();
 	/** Mira's lines show in the interface language only; her voice is always English. */
 	const persian = (value: DisplayText) => isFa && !!value.fa && value.fa !== value.en;
 	const text = (value: DisplayText) => (persian(value) ? value.fa : value.en);
 	const langOf = (value: DisplayText) => (persian(value) ? 'fa' : 'en');
 	const dirOf = (value: DisplayText) => (persian(value) ? 'rtl' : 'ltr');
-	const target = $derived(checkIn ? checkIn.say : micSentence(mode === 'first', profile.reason));
-	const ask = $derived(checkIn ? MIRA_LINES.warmUp : MIRA_LINES.ask);
-	/** Praise for today's sentence only if they said it; any other words still pass the mic check. */
-	const done = $derived(typed ? MIRA_LINES.typed : checkIn && saidSentence(answer, checkIn.say) ? checkIn.heard : MIRA_LINES.heard);
+	const target = $derived(micSentence(mode === 'first', profile.reason));
+	const done = $derived(typed ? MIRA_LINES.typed : MIRA_LINES.heard);
 	/** The focused heading names the step, so a screen reader hears where it is. */
-	const STEP_NAMES: Record<Step, DisplayText> = {
-		hello: { en: 'Mira: hello', fa: 'میرا: سلام' }, today: { en: 'Mira: today’s lesson', fa: 'میرا: درس امروز' },
-		mic: { en: 'Mira: mic check', fa: 'میرا: امتحان میکروفون' }, result: { en: 'Mira: your mic', fa: 'میرا: نتیجه' }
-	};
+	const stepName = $derived<DisplayText>(
+		step === 'hello' ? { en: 'Mira: hello', fa: 'میرا: سلام' }
+			: step === 'mic' ? (checkIn ? { en: 'Mira: a question for you', fa: 'میرا: یک سؤال از تو' } : { en: 'Mira: mic check', fa: 'میرا: امتحان میکروفون' })
+			: checkIn ? { en: 'Mira: her reply', fa: 'میرا: جواب میرا' } : { en: 'Mira: your mic', fa: 'میرا: نتیجه' }
+	);
 
 	onMount(() => {
 		const now = new Date();
@@ -77,7 +83,8 @@
 		const saved = loadGreeting(localDate(now), dayId);
 		if (saved && saved.mode === mode) {
 			opening = saved.opening; answer = saved.answer ?? ''; typed = saved.typed;
-			step = saved.done ? 'result' : 'hello';
+			reply = saved.reply; feedback = { improved: saved.improved, noteEn: saved.noteEn, noteFa: saved.noteFa };
+			step = saved.done || (checkIn && saved.reply) ? 'result' : 'hello';
 		} else {
 			const days = daysSince(progress.lastCompletedAt, now);
 			opening = checkIn ? checkInHello(mode, name, days, checkIn.story) : helloLine(mode, name, days);
@@ -86,29 +93,56 @@
 		// Mira speaks on her own. Phones may block sound that no tap started; her words are on screen anyway.
 		if (!readOnly && step === 'hello') say(opening.en);
 	});
-	onDestroy(() => { clearTimeout(stopTimer); recognition?.abort(); stopAllAudio(); });
+	onDestroy(() => { clearTimeout(stopTimer); recognition?.abort(); replying?.abort(); stopAllAudio(); });
 
 	function say(line: string) { stopAllAudio(); void playAudioPromise(line, COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {}); }
 	function save(finished: boolean) {
-		const record: GreetingRecord = { date: localDate(new Date()), day: dayId, mode, opening, answer: answer || null, typed, reply: answer ? done : null, done: finished, improved: null, noteEn: null, noteFa: null };
+		const record: GreetingRecord = {
+			date: localDate(new Date()), day: dayId, mode, opening, answer: answer || null, typed,
+			reply: checkIn ? reply : answer ? done : null, done: finished, ...feedback
+		};
 		saveGreeting(record);
 	}
 	function go(next: Step) { stopAllAudio(); step = next; queueMicrotask(() => heading?.focus()); }
-	/** Next on Mira's hello: what today is about (check-in days), or the mic check. Each tap lets her speak the next line. */
-	function next() {
-		if (checkIn) { go('today'); say(checkIn.today.en); } else toMic();
-	}
-	function toMic() { go('mic'); say(`${ask.en} ${target}`); }
-	function finish() { stopAllAudio(); save(true); onDone?.(); }
-	function skip() { answer = ''; finish(); }
+	/** Next on Mira's hello: the tap lets her speak the mic check, or ask her question. */
+	function toMic() { go('mic'); say(checkIn ? checkIn.question.en : `${MIRA_LINES.ask.en} ${target}`); }
+	function finish() { replying?.abort(); replying = null; stopAllAudio(); save(true); onDone?.(); }
+	function skip() { answer = ''; reply = null; finish(); }
 
 	/** Takes what the learner said or typed. */
 	function take(value: string, wasTyped: boolean) {
 		const said = value.trim().slice(0, 300);
 		if (!said) return;
-		if (!isMicAttempt(said)) { tooShort = true; return; }
+		// Too short: Mira asks once for a little more (a full sentence is the practice); after that any answer is fine.
+		if (!isMicAttempt(said) && !(checkIn && nudged)) { tooShort = true; nudged = true; return; }
 		tooShort = false; typed = wasTyped; answer = said;
-		save(false); go('result'); say(done.en);
+		if (!checkIn) { save(false); go('result'); say(done.en); return; }
+		reply = null; go('result'); void replyTo(said);
+	}
+
+	/** Mira's reply to the learner's answer: the AI's, or her scripted line if it fails or takes too long. */
+	async function replyTo(said: string) {
+		if (!checkIn) return;
+		const controller = new AbortController(); replying = controller;
+		const timer = setTimeout(() => controller.abort(), REPLY_WAIT_MS);
+		let line: DisplayText = checkIn.reply;
+		try {
+			const response = await fetch('/api/english/greeting', {
+				method: 'POST', headers: { 'content-type': 'application/json' }, signal: controller.signal,
+				body: JSON.stringify({ kind: 'reply', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', opening: checkIn.question.en, answer: said, day: dayId })
+			});
+			if (response.ok) {
+				const data = await response.json() as { line?: string; lineFa?: string | null; improved?: string | null; noteEn?: string | null; noteFa?: string | null };
+				if (typeof data.line === 'string' && data.line.trim()) {
+					line = { en: data.line.trim(), fa: data.lineFa?.trim() || '' };
+					feedback = { improved: data.improved ?? null, noteEn: data.noteEn ?? null, noteFa: data.noteFa ?? null };
+				}
+			}
+		} catch { /* her scripted line */ }
+		clearTimeout(timer);
+		// Gone on (Next or Skip) while waiting: nothing to show.
+		if (replying !== controller) return;
+		replying = null; reply = line; save(false); say(line.en);
 	}
 
 	function listen() {
@@ -135,7 +169,8 @@
 			else if (!failed) micProblem = 'none';
 		};
 		recognition = current; micProblem = null; tooShort = false;
-		try { current.start(); listening = true; stopTimer = setTimeout(() => current.stop(), 10_000); }
+		// A free answer can take longer than one given sentence.
+		try { current.start(); listening = true; stopTimer = setTimeout(() => current.stop(), checkIn ? 20_000 : 10_000); }
 		catch { micProblem = 'blocked'; typing = true; }
 	}
 	function sendTyped() { take(draft, true); draft = ''; }
@@ -158,7 +193,7 @@
 			<button class="send" type="submit" disabled={!draft.trim()}>{isFa ? 'بفرست' : 'Send'}</button>
 		</form>
 	{/if}
-	{#if tooShort}<p class="note" role="status">{text(MIRA_LINES.short)}</p>
+	{#if tooShort}<p class="note" role="status">{text(checkIn ? MIRA_LINES.more : MIRA_LINES.short)}</p>
 	{:else if micProblem === 'blocked'}<p class="note" role="status">{isFa ? 'میکروفون بسته است. در تنظیمات سایت اجازه بده، یا بنویس.' : 'Your microphone is blocked. Allow it in site settings, or type instead.'}</p>
 	{:else if micProblem === 'unsupported'}<p class="note" role="status">{isFa ? 'این مرورگر نمی‌تواند گوش بدهد. بنویس.' : 'This browser can’t listen. Type instead.'}</p>
 	{:else if micProblem === 'none'}<p class="note" role="status">{isFa ? 'صدایی نشنیدم. دوباره امتحان کن.' : 'I didn’t hear anything. Try again.'}</p>{/if}
@@ -169,8 +204,9 @@
 		{#if ready}
 			<p class="who"><span class="avatar small" aria-hidden="true">M</span> Mira</p>
 			<p class="line small-line" lang={langOf(opening)} dir={dirOf(opening)}>{text(opening)}</p>
-			{#if checkIn}<p class="line small-line" lang={langOf(checkIn.today)} dir={dirOf(checkIn.today)}>{text(checkIn.today)}</p>{/if}
+			{#if checkIn}<p class="line small-line" lang={langOf(checkIn.question)} dir={dirOf(checkIn.question)}>{text(checkIn.question)}</p>{/if}
 			{#if answer}<p class="you" lang="en" dir="ltr">“{answer}”</p>{/if}
+			{#if checkIn && reply}<p class="line small-line" lang={langOf(reply)} dir={dirOf(reply)}>{text(reply)}</p>{/if}
 		{/if}
 	</section>
 {:else}
@@ -181,27 +217,30 @@
 		</div>
 
 		<div class="middle">
-			<h2 id="coach-step" class="sr-only" tabindex="-1" bind:this={heading}>{isFa ? STEP_NAMES[step].fa : STEP_NAMES[step].en}</h2>
+			<h2 id="coach-step" class="sr-only" tabindex="-1" bind:this={heading}>{isFa ? stepName.fa : stepName.en}</h2>
 			{#if !ready}
 				<div class="dots" role="status" aria-label={isFa ? 'یک لحظه' : 'One moment'}><span></span><span></span><span></span></div>
 			{:else if step === 'hello'}
 				{@render mira(opening)}
-			{:else if step === 'today' && checkIn}
-				{@render mira(checkIn.today)}
+			{:else if step === 'mic' && checkIn}
+				{@render mira(checkIn.question)}
+				<p class="ask">{text(MIRA_LINES.answerHint)}</p>
+				<div class="speak">{@render speakArea()}</div>
 			{:else if step === 'mic'}
-				<p class="ask">{text(ask)}</p>
+				<p class="ask">{text(MIRA_LINES.ask)}</p>
 				<p class="target" lang="en" dir="ltr">“{target}”</p>
 				<div class="speak">{@render speakArea()}</div>
 			{:else}
 				{#if answer}<p class="heard"><span>{typed ? (isFa ? 'نوشتی' : 'You wrote') : (isFa ? 'شنیدم' : 'I heard')}</span> <bdi lang="en">“{answer}”</bdi></p>{/if}
-				{@render mira(done)}
+				{#if !checkIn}{@render mira(done)}
+				{:else if reply}{@render mira(reply)}
+				{:else if answer}<div class="dots" role="status" aria-label={isFa ? 'میرا دارد جواب می‌دهد' : 'Mira is replying'}><span></span><span></span><span></span></div>
+				{:else}{@render mira(MIRA_LINES.skipped)}{/if}
 			{/if}
 		</div>
 
 		<div class="bottom">
 			{#if ready && step === 'hello'}
-				<button class="primary" type="button" onclick={next}>{isFa ? 'بعدی' : 'Next'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
-			{:else if ready && step === 'today'}
 				<button class="primary" type="button" onclick={toMic}>{isFa ? 'بعدی' : 'Next'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
 			{:else if ready && step === 'mic'}
 				{#if !typing && (micProblem === null || micProblem === 'none')}<button class="text" type="button" onclick={() => { stopAllAudio(); typing = true; }}>{isFa ? 'به‌جای گفتن، بنویس' : 'Type instead'}</button>{/if}
