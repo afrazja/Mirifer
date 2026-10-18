@@ -54,7 +54,8 @@ describe('English today page', () => {
 		expect(await load(fixture('en', { english_progress_v1: progress }, undefined, true).event())).toMatchObject({ nextDayId: 'day-2' });
 		// ?day= works for the owner only, and sets aside a session on another day.
 		expect(await load(fixture('en', { english_day_v1: startSession(15) }, undefined, true, '?day=day-2').event())).toMatchObject({ nextDayId: 'day-2', session: null });
-		expect(await load(fixture('en', {}, undefined, false, '?day=day-2').event())).toMatchObject({ nextDayId: 'day-1' });
+		expect(await load(fixture('en', {}, undefined, false, '?day=day-2').event())).toMatchObject({ nextDayId: 'day-1', requestedDay: null });
+		expect(await load(fixture('en', {}, undefined, true, '?day=day-1').event())).toMatchObject({ nextDayId: 'day-1', requestedDay: 'day-1' });
 	});
 	it('saves a session on a day that is not ready only for the owner', async () => {
 		const dayTwo = startSession(15, new Date(), DAY_TWO);

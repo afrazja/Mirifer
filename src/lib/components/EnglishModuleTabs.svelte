@@ -7,7 +7,7 @@
 	import { page } from '$app/state';
 	let { current, isFa = false }: { current: 'today' | 'lab'; isFa?: boolean } = $props();
 	const tabs = [
-		{ id: 'today', href: '/practice/english/today', en: 'Daily lesson', fa: 'درس روزانه' },
+		{ id: 'today', href: '/practice/english/days', en: 'Daily lessons', fa: 'درس‌های روزانه' },
 		{ id: 'lab', href: '/practice/english/lab', en: 'Module lab', fa: 'آزمایشگاه بخش‌ها' }
 	] as const;
 	const show = $derived(page.data?.labAccess === true);

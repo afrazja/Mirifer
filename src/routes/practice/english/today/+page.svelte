@@ -122,7 +122,9 @@
 		if (session?.stage === 'done' && session.completedAt && localDate(new Date(session.completedAt)) !== localDate(new Date())) {
 			session = null; length = DEFAULT_LENGTH;
 		}
-		if (!session) { const pinned = pinnedDay(); if (pinned) upcomingId = pinned; }
+		// A day chosen from the owner's list wins over an earlier pin, and becomes the pin.
+		if (data.requestedDay) pinDay(data.requestedDay);
+		else if (!session) { const pinned = pinnedDay(); if (pinned) upcomingId = pinned; }
 		settled = true;
 		if (loadGreeting(localDate(new Date()), day.id)?.done) startStep = 'plan';
 	});
@@ -234,7 +236,7 @@
 </svelte:head>
 
 <main id="main-content" class="today" dir={isFa ? 'rtl' : 'ltr'}>
-	<AppHeader backHref={data.labAccess ? "/practice/english/home" : "/languages"} backLabel={data.labAccess ? (isFa ? "انگلیسی" : "English") : (isFa ? "زبان‌ها" : "Languages")} direction={isFa ? 'rtl' : 'ltr'} />
+	<AppHeader backHref={data.labAccess ? "/practice/english/days" : "/languages"} backLabel={data.labAccess ? (isFa ? "درس‌ها" : "Lessons") : (isFa ? "زبان‌ها" : "Languages")} direction={isFa ? 'rtl' : 'ltr'} />
 	<!-- The section switch, off the focused flow: only before a session starts and once it's done. -->
 	{#if !session || session.stage === 'done'}<EnglishModuleTabs current="today" {isFa} />{/if}
 
