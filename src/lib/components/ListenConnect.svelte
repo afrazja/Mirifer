@@ -11,12 +11,14 @@
 	import { ENGLISH_RATE } from '$lib/practice/english-voice';
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
 	import {
-		CHOICES, CONNECT, CONVERSATION, MAX_PLAYS, MIRA_LINE, MIRA_SPOKEN, PARTS, QUESTIONS, SPEAKERS, STEPS, TOTAL_POINTS,
-		emptyConnectRecord, linkParts, partLines, scoreConnect, type ConnectRecord
+		DAY_ONE_SET, MAX_PLAYS, emptyConnectRecord, linkParts as linkPartsOf, miraSpoken, partLinesOf, scoreConnect as scoreOf, stepsOf, totalPoints,
+		type ConnectRecord, type ConnectSet
 	} from '$lib/practice/listen-connect';
 
-	let { isFa = false, initial = null, onSave, onFocus, onSkip, onDone }: {
+	let { isFa = false, set = DAY_ONE_SET, initial = null, onSave, onFocus, onSkip, onDone }: {
 		isFa?: boolean;
+		/** The day's conversation and questions (Day 1's by default). */
+		set?: ConnectSet;
 		initial?: ConnectRecord | null;
 		onSave?: (record: ConnectRecord) => void;
 		/** Mira's instruction (the listening goal) shows until the first part has been heard. */
@@ -26,8 +28,18 @@
 		onSkip?: () => void;
 	} = $props();
 
+	// The set doesn't change while the module is on screen (the lesson keys it), so these are plain constants.
 	// svelte-ignore state_referenced_locally
-	let record = $state<ConnectRecord>(initial ?? emptyConnectRecord());
+	const { speakers: SPEAKERS, conversation: CONVERSATION, connect: CONNECT, choices: CHOICES, parts: PARTS, questions: QUESTIONS, miraLine: MIRA_LINE } = set;
+	// svelte-ignore state_referenced_locally
+	const STEPS = stepsOf(set), TOTAL_POINTS = totalPoints(set), MIRA_SPOKEN = miraSpoken(set);
+	// svelte-ignore state_referenced_locally
+	const partLines = (part: number) => partLinesOf(set, part), linkParts = (text: string) => linkPartsOf(text, set.linkPhrases);
+	// svelte-ignore state_referenced_locally
+	const scoreConnect = (r: ConnectRecord) => scoreOf(r, set);
+
+	// svelte-ignore state_referenced_locally
+	let record = $state<ConnectRecord>(initial ?? emptyConnectRecord(set));
 	let playing = $state(false);
 	/** Play attempts per part: "Read it instead" is offered only after trying to play that part. */
 	let attempts = $state(PARTS.map(() => 0));

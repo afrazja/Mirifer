@@ -47,3 +47,55 @@ describe('Listen and connect: Day 1 content follows the rules', () => {
 		expect(CONVERSATION[CONNECT.evidence[2]].text).toContain('pharmacy');
 	});
 });
+
+import { CONNECT as DAY_TWO_CONNECT } from './days/day-2';
+import { connectSetFor } from './day-content';
+import { DAY_ONE_SET, asConnectRecord as asRecord, emptyConnectRecord as emptyRecord, partLinesOf, scoreConnect as score, stepsOf, totalPoints } from './listen-connect';
+
+describe('Listen and connect, Day 2 (both versions)', () => {
+	const sets = [DAY_TWO_CONNECT.intermediate, DAY_TWO_CONNECT.professional];
+	const words = (text: string) => text.trim().split(/\s+/).length;
+	it('one conversation for both, in parts that cover it, with voices that are not Mira and not each other', () => {
+		for (const set of sets) {
+			expect(set.parts.flatMap((_, p) => partLinesOf(set, p))).toEqual(set.conversation);
+			const voices = Object.values(set.speakers).map(s => s.voice);
+			expect(new Set(voices).size).toBe(voices.length);
+			expect(voices).not.toContain(COACH_VOICE);
+			for (const line of set.conversation) expect(set.speakers[line.who], line.text).toBeDefined();
+			const text = set.conversation.map(line => line.text.toLowerCase()).join(' ');
+			for (const phrase of set.linkPhrases) expect(text).toContain(phrase);
+			const total = set.conversation.reduce((sum, line) => sum + words(line.text), 0);
+			expect(total).toBeGreaterThanOrEqual(110); expect(total).toBeLessThanOrEqual(160);
+		}
+		expect(DAY_TWO_CONNECT.intermediate.conversation).toBe(DAY_TWO_CONNECT.professional.conversation);
+	});
+	it('every question follows the part that proves it; every part has one; answers are fair', () => {
+		for (const set of sets) {
+			expect(totalPoints(set)).toBe(6);
+			expect(set.questions).toHaveLength(6);
+			for (const q of set.questions) {
+				const evidence = q.kind === 'connect' ? set.connect.evidence[q.index] : set.choices[q.index].evidence;
+				expect(evidence).toBeGreaterThanOrEqual(set.parts[q.part].from);
+				expect(evidence).toBeLessThanOrEqual(set.parts[q.part].to);
+			}
+			for (let p = 0; p < set.parts.length; p++) expect(set.questions.some(q => q.part === p)).toBe(true);
+			expect(new Set(set.connect.answers).size).toBe(set.connect.causes.length);
+			expect(set.connect.results.length).toBe(set.connect.causes.length + 1);
+			for (const option of [...set.connect.results, ...set.choices.flatMap(q => q.options)]) expect(words(option), option).toBeLessThanOrEqual(8);
+			for (const q of set.choices) { expect(q.answer).toBeLessThan(q.options.length); expect(q.kind.fa).toMatch(/[؀-ۿ]/); }
+			expect(set.miraLine.fa).toMatch(/[؀-ۿ]/);
+			for (const part of set.parts) expect(part.title.fa).toMatch(/[؀-ۿ]/);
+			const steps = stepsOf(set).map(s => s.kind);
+			expect(steps.at(-1)).toBe('end'); expect(steps.filter(k => k === 'listen')).toHaveLength(3);
+		}
+	});
+	it('keeps and scores a record against its own set', () => {
+		for (const set of sets) {
+			const all = { ...emptyRecord(set), connect: [...set.connect.answers], choices: set.choices.map(q => q.answer) };
+			expect(score(all, set)).toEqual({ correct: 6, total: 6 });
+			expect(asRecord(emptyRecord(set), set)).not.toBeNull();
+		}
+		expect(connectSetFor('day-1')).toBe(DAY_ONE_SET);
+		expect(connectSetFor('day-2', 'professional')).toBe(DAY_TWO_CONNECT.professional);
+	});
+});
