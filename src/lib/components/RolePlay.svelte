@@ -39,7 +39,7 @@
 	// svelte-ignore state_referenced_locally
 	let record = $state<RolePlayRecord>(initial ?? startRolePlay(scene));
 	// svelte-ignore state_referenced_locally
-	let stage = $state<'mission' | 'call' | 'end'>(initial?.done ? 'end' : initial && initial.turns.length > 1 ? 'call' : 'mission');
+	let stage = $state<'mission' | 'goals' | 'call' | 'end'>(initial?.done ? 'end' : initial && initial.turns.length > 1 ? 'call' : 'mission');
 	let draft = $state(''), pending = $state(''), checking = $state(false);
 	let problem = $state<DisplayText | null>(null), latest = $state<Correction | null>(null);
 	let review = $state<'idle' | 'loading' | 'ready' | 'failed' | 'limit'>('idle');
@@ -178,10 +178,13 @@
 		<h2 class="title">{text(scene.screen.title)}</h2>
 		<p class="lead">{#if isFa}<MixedText text={scene.screen.lead.fa} />{:else}{scene.screen.lead.en}{/if}</p>
 		{@render card()}
-		<p class="label">{text(scene.screen.missionHeading)}</p>
+		<ActionBar label={T('Next', 'بعدی')} onclick={() => { onFocus?.('hidden'); go('goals'); }} secondary={onSkip ? { label: T('Skip this step', 'این مرحله را رد کن'), onclick: () => { stopAllAudio(); onSkip?.(); } } : null} />
+
+	{:else if stage === 'goals'}
+		<h2 class="title" tabindex="-1" bind:this={heading}>{text(scene.screen.missionHeading)}</h2>
 		{@render goalList()}
 		<p class="small">{text(scene.screen.instructions)}</p>
-		<ActionBar label={T('Start the call', 'شروع تماس')} onclick={() => start(record.variant)} secondary={onSkip ? { label: T('Skip this step', 'این مرحله را رد کن'), onclick: () => { stopAllAudio(); onSkip?.(); } } : null} />
+		<ActionBar label={T('Start the call', 'شروع تماس')} onclick={() => start(record.variant)} secondary={{ label: T('Back to your card', 'برگشت به کارتت'), onclick: () => go('mission') }} />
 
 	{:else if stage === 'call'}
 		<div class="who">
