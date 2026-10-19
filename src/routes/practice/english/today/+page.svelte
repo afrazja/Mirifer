@@ -11,12 +11,18 @@
 	import SayAgain from '$lib/components/SayAgain.svelte';
 	import MiraSays from '$lib/components/MiraSays.svelte';
 	import SayItBetter from '$lib/components/SayItBetter.svelte';
+	import Traps from '$lib/components/Traps.svelte';
+	import SayInEnglish from '$lib/components/SayInEnglish.svelte';
+	import VoiceMessages from '$lib/components/VoiceMessages.svelte';
+	import { asVoiceRecord } from '$lib/practice/voice-messages';
+	import { asSayRecord as asSayInEnglishRecord } from '$lib/practice/say-in-english';
+	import { asTrapsRecord } from '$lib/practice/traps';
 	import SayItBetterReview from '$lib/components/SayItBetterReview.svelte';
 	import { asSayRecord } from '$lib/practice/say-better';
 	import PhrasePractice from '$lib/components/PhrasePractice.svelte';
 	import PhrasePracticeReview from '$lib/components/PhrasePracticeReview.svelte';
 	import { asPhraseRecord } from '$lib/practice/phrases';
-	import { connectSetFor, phrasesFor } from '$lib/practice/day-content';
+	import { connectSetFor, phrasesFor, sayItemsFor, trapsFor, voiceMessagesFor } from '$lib/practice/day-content';
 	import { COACH_RATE, COACH_VOICE, loadGreeting, localDate, planLine, type GreetingRecord } from '$lib/practice/coach';
 	import { playAudioPromise, stopAllAudio } from '$services/tts';
 	import { getLanguage } from '$services/data-layer';
@@ -53,6 +59,12 @@
 	const dayPhrases = $derived(phrasesFor(day.id, track));
 	/** Listen and connect: this day's conversation and questions, for this version. */
 	const dayConnect = $derived(connectSetFor(day.id, track));
+	/** Persian-speaker traps: this day's lesson set. */
+	const dayTraps = $derived(trapsFor(day.id));
+	/** Say it in English: this day's messages, for this version. */
+	const daySay = $derived(sayItemsFor(day.id, track));
+	/** Voice messages: this day's lesson messages. */
+	const dayMessages = $derived(voiceMessagesFor(day.id));
 	/** The day after today's (for the recap and the done screen); a day with skipped steps comes back. */
 	const following = $derived(session?.skipped.length ? day : nextDay(day.id, data.labAccess));
 	/** The owner can always try the day after this one (ready or not, skipped steps or not). */
@@ -201,6 +213,12 @@
 		{#key mod.id}<ListenConnect {isFa} {onSkip} set={dayConnect} initial={asConnectRecord(loadRecord(session.startedAt, mod.id), dayConnect)} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} {onDone} />{/key}
 	{:else if mod.id === 'phrases' && mod.built && session}
 		{#key mod.id}<PhrasePractice {isFa} {onSkip} phrases={dayPhrases} initial={asPhraseRecord(loadRecord(session.startedAt, mod.id), dayPhrases)} afterIntro={introPlay} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} onStep={index => (phraseStep = index)} {onDone} />{/key}
+	{:else if mod.id === 'traps' && mod.built && session}
+		{#key mod.id}<Traps {isFa} {onSkip} traps={dayTraps} initial={asTrapsRecord(loadRecord(session.startedAt, mod.id), dayTraps)} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} {onDone} />{/key}
+	{:else if mod.id === 'say-in-english' && mod.built && session}
+		{#key mod.id}<SayInEnglish {isFa} {onSkip} items={daySay} initial={asSayInEnglishRecord(loadRecord(session.startedAt, mod.id), daySay)} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} {onDone} />{/key}
+	{:else if mod.id === 'voice-messages' && mod.built && session}
+		{#key mod.id}<VoiceMessages {isFa} {onSkip} messages={dayMessages} initial={asVoiceRecord(loadRecord(session.startedAt, mod.id), dayMessages)} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} {onDone} />{/key}
 	{:else if mod.id === 'say-it-better' && mod.built && day.id === 'day-1' && session}
 		{#key mod.id}<SayItBetter {isFa} {onSkip} initial={asSayRecord(loadRecord(session.startedAt, mod.id))} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} {onDone} />{/key}
 	{:else}

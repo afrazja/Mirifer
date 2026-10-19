@@ -62,3 +62,40 @@ describe('records', () => {
 		expect(asTrapsRecord({ ...r, traps: [] })).toBeNull();
 	});
 });
+
+import { TRAPS as DAY_TWO_TRAPS, LESSON_TRAP_IDS } from './days/day-2';
+import { trapsFor } from './day-content';
+
+describe('Persian-speaker traps, Day 2', () => {
+	it('has 8 new traps; each wrong word is in the sentence; the right sentence passes; the mistake fails', () => {
+		expect(DAY_TWO_TRAPS).toHaveLength(8);
+		const dayOneIds = new Set(TRAPS.map(t => t.id));
+		for (const t of DAY_TWO_TRAPS) {
+			expect(dayOneIds.has(t.id), t.id).toBe(false);
+			expect(t.wrong).toBeLessThan(t.words.length);
+			expect(saidRight(t, t.right), t.id).toBe(true);
+			expect(saidRight(t, t.words.join(' ')), t.id).toBe(false);
+			expect(t.why.fa).toMatch(/[؀-ۿ]/);
+			expect(t.why.fa).not.toContain('`');
+		}
+		expect(new Set(DAY_TWO_TRAPS.map(t => t.id)).size).toBe(8);
+	});
+	it('accepts other natural fixes, and gives "good English" credit where planned', () => {
+		const by = (id: string) => DAY_TWO_TRAPS.find(t => t.id === id)!;
+		expect(saidRight(by('to-not-until'), 'How much to the Park Hotel?')).toBe(true);
+		expect(saidRight(by('how-long'), "How long's it going to take?")).toBe(true);
+		expect(checkSaid(by('near-of'), 'Is the hotel close to Central Station?')).toBe('alsoGood');
+		expect(checkSaid(by('get-out'), 'You can drop me off here')).toBe('alsoGood');
+		expect(checkSaid(by('get-out'), "I'll get off here")).toBe('wrong');
+	});
+	it('the lesson uses five of them; the lab gets all eight', () => {
+		expect(trapsFor('day-2').map(t => t.id)).toEqual(LESSON_TRAP_IDS);
+		expect(trapsFor('day-2')).toHaveLength(5);
+		expect(trapsFor('day-2', true)).toBe(DAY_TWO_TRAPS);
+		expect(trapsFor('day-1')).toBe(TRAPS);
+		const r = emptyTrapsRecord(trapsFor('day-2'));
+		expect(summarize(r).total).toBe(5);
+		expect(asTrapsRecord(r, trapsFor('day-2'))).not.toBeNull();
+		expect(asTrapsRecord(r)).toBeNull();
+	});
+});

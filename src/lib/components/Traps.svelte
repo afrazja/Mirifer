@@ -1,22 +1,32 @@
 <script lang="ts">
 	/**
-	 * "Persian-speaker traps", Module lab (docs/english-traps-spec.md, owner-approved in chat).
-	 * For each sentence: tap the mistake a Persian speaker would make, read why, then say the
-	 * sentence correctly. Checked in code, no AI; recordings are never stored.
+	 * "Persian-speaker traps" (docs/english-traps-spec.md, owner-approved in chat), in the Module lab
+	 * and the daily lesson. For each sentence: tap the mistake a Persian speaker would make, read
+	 * why, then say the sentence correctly. Checked in code, no AI; recordings are never stored.
+	 * In the daily lesson Mira's intro is the lesson's, so the start screen only has Start and Skip.
 	 */
 	import { onDestroy, onMount } from 'svelte';
 	import ActionBar from '$lib/components/ActionBar.svelte';
 	import MixedText from '$lib/components/MixedText.svelte';
 	import { playAudioUrl, stopAllAudio, ttsUrl } from '$services/tts';
 	import { SILENT_BELOW, measureLevel, type MicLevel } from '$utils/mic-level';
-	import { MAX_WRONG_TAPS, SAY_MAX_SECONDS, SAY_MIN_SECONDS, TRAPS, checkSaid, emptyTrapsRecord, missedOf, summarize, type SaidCheck, type TrapsRecord } from '$lib/practice/traps';
+	import { MAX_WRONG_TAPS, SAY_MAX_SECONDS, SAY_MIN_SECONDS, TRAPS as DEFAULT_TRAPS, checkSaid, emptyTrapsRecord, missedOf, summarize, type SaidCheck, type Trap, type TrapsRecord } from '$lib/practice/traps';
 
-	let { isFa = false, initial = null, onSave, onDone }: {
+	let { isFa = false, traps = DEFAULT_TRAPS, initial = null, onSave, onFocus, onSkip, onDone }: {
 		isFa?: boolean;
+		/** The day's sentences (Day 1's by default). */
+		traps?: Trap[];
 		initial?: TrapsRecord | null;
 		onSave?: (record: TrapsRecord) => void;
-		onDone: () => void;
+		/** The daily lesson: Mira's intro shows on the start screen only. */
+		onFocus?: (intro: 'full' | 'compact' | 'hidden') => void;
+		/** "Skip this step" on the start screen (the daily lesson; it also drops the module's own intro there). */
+		onSkip?: () => void;
+		/** How many sentences were said right, out of all. */
+		onDone: (score: { correct: number; total: number }, record: TrapsRecord) => void;
 	} = $props();
+	// svelte-ignore state_referenced_locally
+	const TRAPS = traps;
 
 	const INTRO = {
 		en: `Here are ${TRAPS.length} sentences. Each one has a mistake that Persian speakers often make. First tap the wrong word and see why. Then say the sentence correctly.`,
@@ -28,7 +38,7 @@
 
 	type Status = 'idle' | 'recording' | 'checking' | 'result' | 'silent' | 'short' | 'failed' | 'denied' | 'interrupted';
 	// svelte-ignore state_referenced_locally
-	let record = $state<TrapsRecord>(initial ?? emptyTrapsRecord());
+	let record = $state<TrapsRecord>(initial ?? emptyTrapsRecord(traps));
 	let stage = $state<'start' | 'item' | 'end'>('start');
 	let status = $state<Status>('idle'), elapsed = $state(0), playing = $state(false), showAnswer = $state(false), tries = $state(0), announce = $state('');
 	let check = $state<SaidCheck | null>(null), alsoTapped = $state<number | null>(null);
@@ -58,6 +68,7 @@
 		// A reload returns to the same sentence and step.
 		if (record.done || record.index >= TRAPS.length) stage = 'end';
 		else if (record.index > 0 || record.step !== 'spot' || record.traps[0].wrongTaps.length || record.traps[0].found !== null) stage = 'item';
+		if (stage !== 'start') onFocus?.('hidden');
 		const onHidden = () => { if (document.hidden && recorder && recorder.state !== 'inactive') { interrupted = true; recorder.stop(); } };
 		document.addEventListener('visibilitychange', onHidden);
 		return () => document.removeEventListener('visibilitychange', onHidden);
@@ -158,8 +169,8 @@
 		if (done) stage = 'end';
 		focus(() => heading);
 	}
-	function start() { stage = 'item'; focus(() => heading); }
-	function restart() { stopAllAudio(); record = emptyTrapsRecord(); persist(); status = 'idle'; tries = 0; showAnswer = false; stage = 'item'; focus(() => heading); }
+	function start() { stage = 'item'; onFocus?.('hidden'); focus(() => heading); }
+	function restart() { stopAllAudio(); record = emptyTrapsRecord(traps); persist(); status = 'idle'; tries = 0; showAnswer = false; stage = 'item'; focus(() => heading); }
 	function practise() {
 		stopAllAudio();
 		const list = missed;
@@ -167,7 +178,7 @@
 		record = { ...record, retry: list, index: list[0], step: 'say', done: false }; persist();
 		status = 'idle'; tries = 0; showAnswer = false; check = null; stage = 'item'; focus(() => heading);
 	}
-	function finish() { stopAllAudio(); closeMic(); onDone(); }
+	function finish() { stopAllAudio(); closeMic(); onDone({ correct: summary.said, total: summary.total }, $state.snapshot(record)); }
 
 	const ERRORS: Partial<Record<Status, { en: string; fa: string }>> = {
 		silent: { en: 'I couldn’t hear you. Hold the phone closer and try again.', fa: 'صدایت را نشنیدم. گوشی را نزدیک‌تر بگیر و دوباره امتحان کن.' },
@@ -196,8 +207,8 @@
 
 	{#if stage === 'start'}
 		<h2 class="sr-only" tabindex="-1" bind:this={heading}>{T('Persian-speaker traps', 'اشتباه‌های آشنا')}</h2>
-		<div class="brief"><span class="avatar" aria-hidden="true">M</span><p>{isFa ? INTRO.fa : INTRO.en}</p></div>
-		<ActionBar label={T('Start', 'شروع')} onclick={start} />
+		{#if !onSkip}<div class="brief"><span class="avatar" aria-hidden="true">M</span><p>{isFa ? INTRO.fa : INTRO.en}</p></div>{/if}
+		<ActionBar label={T('Start', 'شروع')} onclick={start} secondary={onSkip ? { label: T('Skip this step', 'این مرحله را رد کن'), onclick: () => { stopAllAudio(); onSkip?.(); } } : undefined} />
 
 	{:else if stage === 'item'}
 		<p class="label" aria-hidden="true">{label}</p>

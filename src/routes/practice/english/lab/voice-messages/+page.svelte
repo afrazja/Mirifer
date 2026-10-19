@@ -7,14 +7,23 @@
 	import { stopAllAudio } from '$services/tts';
 	import { loadLab, saveLab } from '$lib/practice/module-lab';
 	import { asVoiceRecord } from '$lib/practice/voice-messages';
+	import { voiceMessagesFor, voiceMessagesIntro } from '$lib/practice/day-content';
+	import LabSetPicker from '$lib/components/LabSetPicker.svelte';
+	import { LAB_SETS, saveLabSet, savedLabSet, type LabSet } from '$lib/practice/lab-sets';
 
-	const ID = 'voice-messages';
+	/** One set of messages per day (both versions share Day 2's). */
+	const SETS: LabSet[] = [LAB_SETS[0], { ...LAB_SETS[1], name: { en: 'Day 2', fa: 'روز ۲' } }];
+	const remembered = typeof localStorage === 'undefined' ? SETS[0] : savedLabSet('voice-messages');
+	let set = $state<LabSet>(SETS.find(item => item.day === remembered.day) ?? SETS[0]);
+	const messages = $derived(voiceMessagesFor(set.day, true));
+	const intro = $derived(voiceMessagesIntro(set.day));
+	const ID = $derived(`voice-messages:${set.day}`);
 	let language = $state<'en' | 'fa'>('en');
 	const isFa = $derived(language === 'fa');
 	let run = $state(0), finished = $state(false);
-	const saved = asVoiceRecord(loadLab(ID));
+	function initialFor() { const saved = asVoiceRecord(loadLab(ID), messages); return saved?.done ? null : saved; }
+	function choose(next: LabSet) { stopAllAudio(); set = next; finished = false; run += 1; saveLabSet('voice-messages', next.id); }
 	// A finished round starts again; an unfinished one comes back where it was.
-	const initial = saved?.done ? null : saved;
 
 	onMount(() => {
 		void getLanguage().then(value => { if (value === 'fa' || value === 'en') language = value; });
@@ -32,12 +41,13 @@
 	<AppHeader backHref="/practice/english/lab" backLabel={isFa ? 'آزمایشگاه بخش‌ها' : 'Module lab'} direction={isFa ? 'rtl' : 'ltr'} />
 	<p class="eyebrow">{isFa ? 'آزمایشگاه — شنیدن و صحبت' : 'MODULE LAB · LISTENING & SPEAKING'}</p>
 	<h1>{isFa ? 'پیام صوتی' : 'Voice messages'}</h1>
+	<LabSetPicker {isFa} current={set} sets={SETS} onChoose={choose} />
 	{#if finished}
 		<p>{isFa ? 'تمام شد.' : 'All done.'}</p>
 		<button class="primary" type="button" onclick={again}>{isFa ? 'دوباره امتحان کن' : 'Try it again'}</button>
 	{:else}
 		{#key run}
-			<VoiceMessages {isFa} initial={run === 0 ? initial : null} onSave={record => saveLab(ID, record)} onDone={() => (finished = true)} />
+			<VoiceMessages {isFa} {messages} {intro} initial={initialFor()} onSave={record => saveLab(ID, record)} onDone={() => (finished = true)} />
 		{/key}
 	{/if}
 </main>

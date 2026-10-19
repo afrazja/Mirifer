@@ -12,16 +12,25 @@
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
 	import { SILENT_BELOW, measureLevel, type MicLevel } from '$utils/mic-level';
 	import {
-		ITEMS, SAY_MAX_SECONDS, SAY_MIN_SECONDS, VOICE, betterParts, emptySayRecord, plain, summarize, verdictOf, type SayFeedback, type SayRecord, type SayTry, type Verdict
+		ITEMS as DEFAULT_ITEMS, SAY_MAX_SECONDS, SAY_MIN_SECONDS, VOICE, betterParts, emptySayRecord, plain, summarize, verdictOf, type SayFeedback, type SayItem, type SayRecord, type SayTry, type Verdict
 	} from '$lib/practice/say-in-english';
 
-	let { isFa = false, initial = null, first = false, onSave, onDone }: {
+	let { isFa = false, items = DEFAULT_ITEMS, initial = null, first = false, onSave, onFocus, onSkip, onDone }: {
 		isFa?: boolean;
+		/** The day's messages (Day 1's by default). */
+		items?: SayItem[];
 		initial?: SayRecord | null;
 		first?: boolean;
 		onSave?: (record: SayRecord) => void;
-		onDone: () => void;
+		/** The daily lesson: Mira's intro shows on the start screen only. */
+		onFocus?: (intro: 'full' | 'compact' | 'hidden') => void;
+		/** "Skip this step" on the start screen (the daily lesson; Mira's lesson intro replaces the module's own there). */
+		onSkip?: () => void;
+		/** How many messages came across clearly, out of all. */
+		onDone: (score: { correct: number; total: number }, record: SayRecord) => void;
 	} = $props();
+	// svelte-ignore state_referenced_locally
+	const ITEMS = items;
 
 	const INTRO = {
 		en: 'I’ll show you a short message in Persian and who it’s for. Say it in English, the way you’d really say it to them. Don’t translate word for word. Just make sure they understand you.',
@@ -34,7 +43,7 @@
 
 	type Status = 'say' | 'recording' | 'checking' | 'feedback' | 'silent' | 'short' | 'failed' | 'aiFailed' | 'denied' | 'interrupted';
 	// svelte-ignore state_referenced_locally
-	let record = $state<SayRecord>(initial ?? emptySayRecord());
+	let record = $state<SayRecord>(initial ?? emptySayRecord(items));
 	let stage = $state<'start' | 'item' | 'end'>('start');
 	let status = $state<Status>('say'), elapsed = $state(0), hint = $state(false), playing = $state(false), announce = $state('');
 	// The latest try is what they see; the record keeps their best try per message.
@@ -57,6 +66,7 @@
 		// A reload returns to the same message (with its feedback, if there was one).
 		if (record.done || record.index >= ITEMS.length) stage = 'end';
 		else if (record.index > 0 || record.tries.some(Boolean)) { stage = 'item'; status = record.tries[record.index] ? 'feedback' : 'say'; }
+		if (stage !== 'start') onFocus?.('hidden');
 		const onHidden = () => { if (document.hidden && recorder && recorder.state !== 'inactive') { interrupted = true; recorder.stop(); } };
 		document.addEventListener('visibilitychange', onHidden);
 		return () => document.removeEventListener('visibilitychange', onHidden);
@@ -133,9 +143,9 @@
 		if (nextIndex >= ITEMS.length) stage = 'end';
 		focusHeading();
 	}
-	function start() { stopAllAudio(); stage = 'item'; status = 'say'; focusHeading(); }
-	function restart() { stopAllAudio(); clearMine(); latest = null; attempts = ITEMS.map(() => 0); record = emptySayRecord(); persist(); hint = false; stage = 'item'; status = 'say'; focusHeading(); }
-	function finish() { stopAllAudio(); closeMic(); onDone(); }
+	function start() { stopAllAudio(); stage = 'item'; status = 'say'; onFocus?.('hidden'); focusHeading(); }
+	function restart() { stopAllAudio(); clearMine(); latest = null; attempts = ITEMS.map(() => 0); record = emptySayRecord(items); persist(); hint = false; stage = 'item'; status = 'say'; focusHeading(); }
+	function finish() { stopAllAudio(); closeMic(); onDone({ correct: summary.clear, total: summary.total }, $state.snapshot(record)); }
 
 	async function hear(text: string) {
 		if (playing) return;
@@ -171,9 +181,11 @@
 
 	{#if stage === 'start'}
 		<h2 class="sr-only" tabindex="-1" bind:this={heading}>{T('Say it in English', 'به انگلیسی بگو')}</h2>
-		<div class="brief"><span class="avatar" aria-hidden="true">M</span><p>{isFa ? INTRO.fa : INTRO.en}</p></div>
-		{#if !isFa}<button class="link" type="button" onclick={hearIntro}><span aria-hidden="true">▶</span> Hear Mira say it</button>{/if}
-		<ActionBar label={T('Start', 'شروع')} onclick={start} />
+		{#if !onSkip}
+			<div class="brief"><span class="avatar" aria-hidden="true">M</span><p>{isFa ? INTRO.fa : INTRO.en}</p></div>
+			{#if !isFa}<button class="link" type="button" onclick={hearIntro}><span aria-hidden="true">▶</span> Hear Mira say it</button>{/if}
+		{/if}
+		<ActionBar label={T('Start', 'شروع')} onclick={start} secondary={onSkip ? { label: T('Skip this step', 'این مرحله را رد کن'), onclick: () => { stopAllAudio(); onSkip?.(); } } : undefined} />
 
 	{:else if stage === 'item'}
 		<p class="label" aria-hidden="true">{label}</p>

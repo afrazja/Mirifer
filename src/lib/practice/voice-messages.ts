@@ -21,6 +21,8 @@ export interface VoiceMessage {
 	asks: { ask: DisplayText; missed: DisplayText }[];
 	/** A natural reply (A2+), shown when there's nothing better. */
 	model: string;
+	/** Names that may come up, to help speech-to-text (the Day 1 list unless said). */
+	names?: string;
 }
 
 export const MESSAGES: VoiceMessage[] = [
@@ -112,19 +114,19 @@ export const RANK: Record<ReplyVerdict, number> = { answered: 3, almost: 2, notY
 
 export interface ReplyTry { transcript: string; feedback: ReplyFeedback }
 export interface VoiceRecord { index: number; listened: boolean[]; tries: (ReplyTry | null)[]; done: boolean }
-export const emptyVoiceRecord = (): VoiceRecord => ({ index: 0, listened: MESSAGES.map(() => false), tries: MESSAGES.map(() => null), done: false });
+export const emptyVoiceRecord = (messages: VoiceMessage[] = MESSAGES): VoiceRecord => ({ index: 0, listened: messages.map(() => false), tries: messages.map(() => null), done: false });
 
 /** A saved run from this browser, or null if it doesn't look right. */
-export function asVoiceRecord(value: unknown): VoiceRecord | null {
+export function asVoiceRecord(value: unknown, messages: VoiceMessage[] = MESSAGES): VoiceRecord | null {
 	if (!value || typeof value !== 'object') return null;
 	const v = value as Partial<VoiceRecord>;
-	if (typeof v.index !== 'number' || typeof v.done !== 'boolean' || !Array.isArray(v.tries) || v.tries.length !== MESSAGES.length) return null;
-	if (!Array.isArray(v.listened) || v.listened.length !== MESSAGES.length || !v.listened.every(x => typeof x === 'boolean')) return null;
+	if (typeof v.index !== 'number' || typeof v.done !== 'boolean' || !Array.isArray(v.tries) || v.tries.length !== messages.length) return null;
+	if (!Array.isArray(v.listened) || v.listened.length !== messages.length || !v.listened.every(x => typeof x === 'boolean')) return null;
 	const ok = v.tries.every(t => t === null || (typeof t === 'object' && typeof t.transcript === 'string' && !!t.feedback && Array.isArray(t.feedback.answered) && typeof t.feedback.better === 'string'));
-	return ok ? { index: Math.max(0, Math.min(MESSAGES.length, Math.floor(v.index))), listened: v.listened, tries: v.tries, done: v.done } : null;
+	return ok ? { index: Math.max(0, Math.min(messages.length, Math.floor(v.index))), listened: v.listened, tries: v.tries, done: v.done } : null;
 }
 
 export function summarize(record: VoiceRecord): { answered: number; almost: number; total: number; verdicts: (ReplyVerdict | null)[] } {
 	const verdicts = record.tries.map(t => (t ? verdictOf(t.feedback) : null));
-	return { answered: verdicts.filter(v => v === 'answered').length, almost: verdicts.filter(v => v === 'almost').length, total: MESSAGES.length, verdicts };
+	return { answered: verdicts.filter(v => v === 'answered').length, almost: verdicts.filter(v => v === 'almost').length, total: record.tries.length, verdicts };
 }

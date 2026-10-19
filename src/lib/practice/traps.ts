@@ -135,18 +135,18 @@ export interface TrapsRecord {
 /** The sentences not yet said right, to practise again. */
 export const missedOf = (record: TrapsRecord) => record.traps.map((t, i) => (t.saidRight ? -1 : i)).filter(i => i >= 0);
 const freshTrap = (): TrapState => ({ wrongTaps: [], found: null, said: null, saidRight: false, transcript: null });
-export const emptyTrapsRecord = (): TrapsRecord => ({ index: 0, step: 'spot', traps: TRAPS.map(freshTrap), done: false, retry: null });
+export const emptyTrapsRecord = (traps: Trap[] = TRAPS): TrapsRecord => ({ index: 0, step: 'spot', traps: traps.map(freshTrap), done: false, retry: null });
 
-export function asTrapsRecord(value: unknown): TrapsRecord | null {
+export function asTrapsRecord(value: unknown, traps: Trap[] = TRAPS): TrapsRecord | null {
 	if (!value || typeof value !== 'object') return null;
 	const v = value as Partial<TrapsRecord>;
 	if (typeof v.index !== 'number' || typeof v.done !== 'boolean' || (v.step !== 'spot' && v.step !== 'say')) return null;
-	if (!Array.isArray(v.traps) || v.traps.length !== TRAPS.length) return null;
+	if (!Array.isArray(v.traps) || v.traps.length !== traps.length) return null;
 	const ok = v.traps.every(t => t && typeof t === 'object' && Array.isArray(t.wrongTaps) && typeof t.saidRight === 'boolean');
-	const retry = Array.isArray(v.retry) && v.retry.every(i => Number.isInteger(i) && i >= 0 && i < TRAPS.length) ? v.retry : null;
-	return ok ? { index: Math.max(0, Math.min(TRAPS.length, Math.floor(v.index))), step: v.step, traps: v.traps, done: v.done, retry } : null;
+	const retry = Array.isArray(v.retry) && v.retry.every(i => Number.isInteger(i) && i >= 0 && i < traps.length) ? v.retry : null;
+	return ok ? { index: Math.max(0, Math.min(traps.length, Math.floor(v.index))), step: v.step, traps: v.traps, done: v.done, retry } : null;
 }
 
 export function summarize(record: TrapsRecord): { found: number; said: number; total: number } {
-	return { found: record.traps.filter(t => t.found).length, said: record.traps.filter(t => t.saidRight).length, total: TRAPS.length };
+	return { found: record.traps.filter(t => t.found).length, said: record.traps.filter(t => t.saidRight).length, total: record.traps.length };
 }
