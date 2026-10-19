@@ -24,7 +24,7 @@ export const CONVERSATION: Line[] = [
 	{ who: 'sara', text: "It's a small green backpack. My big gray suitcase is here, that one's fine." },
 	{ who: 'agent', text: 'Let me check... OK. It was supposed to be on your flight, but it went to Frankfurt, because the tag had the wrong flight number.' },
 	{ who: 'sara', text: 'Oh no. So when can I get it?' },
-	{ who: 'agent', text: "It'll be on the evening flight, so we can bring it to your hotel tomorrow morning." },
+	{ who: 'agent', text: "It'll be on the evening flight, so we can bring it to your hotel tomorrow morning, between eight and ten." },
 	{ who: 'sara', text: "The thing is, my medicine's in that backpack, and I need it tonight." },
 	{ who: 'agent', text: "In that case, just buy what you need at the pharmacy here. We'll pay you back, as long as you keep the receipt." },
 	{ who: 'sara', text: "OK. And my phone charger's in there too. Should I buy one of those too?" },

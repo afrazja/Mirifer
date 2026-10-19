@@ -94,25 +94,46 @@ export const DAY_ONE: DayPack = {
 	id: 'day-1',
 	number: 1,
 	ready: true,
-	theme: { en: 'Handle a problem while traveling', fa: 'حل یک مشکل در سفر' } satisfies DisplayText,
+	theme: { en: 'Lost luggage at the airport', fa: 'بار گمشده در فرودگاه' } satisfies DisplayText,
 	/** How the coach names today's theme in a sentence ("Today is about …"). */
-	themePhrase: 'travel problems',
+	themePhrase: 'lost luggage',
 	/** The coach's theme-linked warm-up question for this day (Day 2+ greeting). */
 	question: 'Has anything ever gone wrong for you on a trip?',
 	goal: {
-		en: 'By the end, you can explain a problem, ask for help, and say it clearly.',
-		fa: 'در پایان می‌توانی یک مشکل را توضیح بدهی، کمک بخواهی و روشن بگویی.'
+		en: 'By the end, you can describe your bag and ask when you’ll get it back.',
+		fa: 'در پایان می‌توانی بارت را توصیف کنی و بپرسی کِی پسش می‌گیری.'
 	} satisfies DisplayText,
 	checkInMinutes: 2,
 	recapMinutes: 2,
-	modules: [
-		{ id: 'listen-act', title: { en: 'Listen and connect', fa: 'گوش بده و وصل کن' }, short: { en: 'Listen', fa: 'گوش دادن' }, does: { en: 'Hear a real conversation, then show how its facts connect.', fa: 'یک گفت‌وگوی واقعی بشنو و نشان بده اتفاق‌هایش چطور به هم ربط دارند.' }, skill: 'listening', minutes: { 15: 3, 20: 5 }, built: true,
-			intro: { en: 'Sara has a problem at the airport. Listen for what went wrong, and what the airline will do about it.', fa: 'سارا در فرودگاه به مشکل خورده. گوش بده ببین چه مشکلی پیش آمده و شرکت هواپیمایی قرار است برایش چه کار کند.' } },
-		{ id: 'phrases', title: { en: 'Natural phrases', fa: 'عبارت‌های طبیعی' }, short: { en: 'Phrases', fa: 'عبارت‌ها' }, does: { en: 'Hear five sentences that tell a short travel story, and say each one after Mira.', fa: 'پنج جمله بشنو که با هم داستان کوتاهی از یک سفر را تعریف می‌کنند و هر کدام را بعد از میرا تکرار کن.' }, skill: 'speaking', minutes: { 15: 4, 20: 5 }, built: true,
-			intro: { en: 'In this part, you’ll hear five short sentences. Together they tell a travel story. Listen, then say each one after me. Notice the phrases in bold.', fa: 'در این بخش پنج جملهٔ کوتاه می‌شنوی که با هم داستان یک سفر را تعریف می‌کنند. گوش بده و هر جمله را بعد از من تکرار کن. به عبارت‌های پررنگ دقت کن.' } },
-		{ id: 'say-it-better', title: { en: 'Tell your story', fa: 'داستانت را بگو' }, short: { en: 'Story', fa: 'داستان' }, does: { en: 'Tell a short story about a problem you had, then tell it a second time, clearer.', fa: 'ماجرای کوتاه یک مشکل را بگو، بعد دوباره و روشن‌تر بگو.' }, skill: 'speaking', minutes: { 15: 4, 20: 6 }, built: true,
-			intro: { en: 'Now it’s your turn to talk. Tell me about a problem you had on a trip. You have one minute. Then you’ll see how to say it better, and you can try again.', fa: 'حالا نوبت توست که حرف بزنی. از مشکلی که در یک سفر داشتی برایم بگو. یک دقیقه وقت داری. بعد می‌بینی چطور بهترش بگویی و می‌توانی دوباره امتحان کنی.' } }
-	]
+	modules: [],
+	// docs/english-day-1/README.md: rebuilt in two versions (the owner's choice), five modules each;
+	// both open with Sara at the baggage desk, and Day 1 stays the lightest day.
+	tracks: {
+		intermediate: [
+			{ id: 'listen-act', title: { en: 'Listen and connect', fa: 'گوش بده و وصل کن' }, short: { en: 'Listen', fa: 'گوش دادن' }, does: { en: 'Hear Sara at the airport baggage desk, then show what you caught about her missing bag.', fa: 'گفت‌وگوی سارا با کارمند باجهٔ بار گمشده را بشنو و نشان بده دربارهٔ بارش چه چیزهایی را فهمیدی.' }, skill: 'listening', minutes: { 15: 3, 20: 3 }, built: true,
+				intro: { en: 'Sara is at the airport, and one of her bags is missing. Listen for what it looks like, where it went, when it comes, and what’s inside.', fa: 'سارا در فرودگاه است و یکی از بارهایش نیامده. گوش بده ببین چه شکلی است، کجا رفته، کِی می‌رسد و داخلش چه چیزهایی هست.' } },
+			{ id: 'phrases', title: { en: 'Natural phrases', fa: 'عبارت‌های طبیعی' }, short: { en: 'Phrases', fa: 'عبارت‌ها' }, does: { en: 'Hear five sentences you can say at the baggage desk, and say each one after Mira.', fa: 'پنج جمله بشنو که می‌توانی جلوی باجهٔ بار گمشده بگویی، و هر کدام را بعد از میرا تکرار کن.' }, skill: 'speaking', minutes: { 15: 3, 20: 3 }, built: true,
+				intro: { en: 'Now it’s your turn at the baggage desk. Here, your name is Karimi, and one of your bags didn’t come out. Listen, then say each sentence after me. I only check the phrase in bold, not your accent.', fa: 'حالا نوبت خودت است که به باجهٔ بار گمشده بروی. این‌جا اسمت کریمی است و یکی از بارهایت بیرون نیامده. گوش بده و هر جمله را بعد از من تکرار کن. من فقط عبارت پررنگ را چک می‌کنم، نه لهجه‌ات را.' } },
+			{ id: 'traps', title: { en: 'Persian-speaker traps', fa: 'اشتباه‌های آشنا' }, short: { en: 'Traps', fa: 'اشتباه‌ها' }, does: { en: 'Find the mistake Persian speakers often make at the airport, then say the sentence right.', fa: 'اشتباهی را که فارسی‌زبان‌ها در فرودگاه زیاد می‌کنند پیدا کن، بعد جمله را درست بگو.' }, skill: 'speaking', minutes: { 15: 2, 20: 2 }, built: true,
+				intro: { en: 'Here are three things you might say at the baggage desk. Each one has a mistake that Persian speakers often make. Tap the wrong word, then say the sentence the right way.', fa: 'این سه جمله را ممکن است جلوی باجهٔ بار گمشده بگویی. هر کدام یک اشتباه دارد که فارسی‌زبان‌ها زیاد می‌کنند. روی کلمهٔ اشتباه بزن، بعد جمله را درست بگو.' } },
+			{ id: 'say-in-english', title: { en: 'Say it in English', fa: 'به انگلیسی بگو' }, short: { en: 'Say it', fa: 'بگو' }, does: { en: 'Read what you want to tell the baggage desk in Persian, and say it in English.', fa: 'چیزی را که می‌خواهی به باجهٔ بار گمشده بگویی به فارسی می‌خوانی و به انگلیسی می‌گویی.' }, skill: 'speaking', minutes: { 15: 3, 20: 3 }, built: true,
+				intro: { en: 'Now say it your own way. I’ll show you what you want to tell the desk, in Persian. Say it in English, the way you’d really say it at the desk.', fa: 'حالا با کلمات خودت بگو. چیزی را که می‌خواهی به باجه بگویی به فارسی نشانت می‌دهم. به انگلیسی بگو، همان‌طور که واقعاً جلوی باجه می‌گفتی.' } },
+			{ id: 'voice-messages', title: { en: 'Voice messages', fa: 'پیام صوتی' }, short: { en: 'Messages', fa: 'پیام‌ها' }, does: { en: 'Hear two voice messages, from the baggage desk and your friend Ben, and reply to each one.', fa: 'دو پیام صوتی بشنو، از باجهٔ بار گمشده و از دوستت بن، و به هر کدام جواب بده.' }, skill: 'speaking', minutes: { 15: 3, 20: 3 }, built: true,
+				intro: { en: 'You’ve just left the baggage desk, and two voice messages come in: first from the desk, then from your friend Ben. Listen, then reply with a short voice message of your own. Make sure you answer their questions.', fa: 'تازه از باجهٔ بار گمشده آمده‌ای و دو پیام صوتی برایت رسیده: اول از باجه، بعد از دوستت بن. گوش بده و با یک پیام صوتی کوتاه جواب بده. حواست باشد به سؤال‌هایشان جواب بدهی.' } }
+		],
+		professional: [
+			{ id: 'listen-act', title: { en: 'Listen and connect', fa: 'گوش بده و وصل کن' }, short: { en: 'Listen', fa: 'گوش دادن' }, does: { en: 'Hear Sara at the airport baggage desk, then show how the facts connect.', fa: 'گفت‌وگوی سارا با کارمند باجهٔ بار گمشده را بشنو و نشان بده اتفاق‌هایش چطور به هم ربط دارند.' }, skill: 'listening', minutes: { 15: 3, 20: 3 }, built: true,
+				intro: { en: 'Sara has a problem at the airport. Listen for what went wrong, and what the airline will do about it.', fa: 'سارا در فرودگاه به مشکل خورده. گوش بده ببین چه مشکلی پیش آمده و شرکت هواپیمایی قرار است برایش چه کار کند.' } },
+			{ id: 'phrases', title: { en: 'Natural phrases', fa: 'عبارت‌های طبیعی' }, short: { en: 'Phrases', fa: 'عبارت‌ها' }, does: { en: 'Hear five natural phrases from Sara’s story at the baggage desk, and say each one after Mira.', fa: 'پنج عبارت طبیعی از ماجرای سارا در باجهٔ بار گمشده بشنو و هر کدام را بعد از میرا تکرار کن.' }, skill: 'speaking', minutes: { 15: 4, 20: 4 }, built: true,
+				intro: { en: 'These five sentences tell what happened to Sara at the baggage desk, the way she tells it later. Listen, then say each one after me. You’ll use these phrases in your own story today.', fa: 'این پنج جمله ماجرای سارا در باجهٔ بار گمشده را تعریف می‌کنند، همان‌طور که خودش بعداً تعریفش می‌کند. گوش بده و هر کدام را بعد از من تکرار کن. امروز در داستان خودت هم به کارشان می‌بری.' } },
+			{ id: 'say-it-better', title: { en: 'Tell your story', fa: 'داستانت را بگو' }, short: { en: 'Story', fa: 'داستان' }, does: { en: 'Tell a short story about a problem you had, then tell it a second time, clearer.', fa: 'ماجرای کوتاه یک مشکل را بگو، بعد دوباره و روشن‌تر بگو.' }, skill: 'speaking', minutes: { 15: 4, 20: 4 }, built: true,
+			intro: { en: 'Now it’s your turn to talk. Tell me about a problem you had on a trip. You have one minute. Then you’ll see how to say it better, and you can try again.', fa: 'حالا نوبت توست که حرف بزنی. از مشکلی که در یک سفر داشتی برایم بگو. یک دقیقه وقت داری. بعد می‌بینی چطور بهترش بگویی و می‌توانی دوباره امتحان کنی.' } },
+			{ id: 'say-in-english', title: { en: 'Say it in English', fa: 'به انگلیسی بگو' }, short: { en: 'Say it', fa: 'بگو' }, does: { en: 'Read three things you want to tell the baggage desk, in Persian, and say each one in English.', fa: 'سه چیزی را که می‌خواهی به باجهٔ بار گمشده بگویی به فارسی می‌خوانی و هر کدام را به انگلیسی می‌گویی.' }, skill: 'speaking', minutes: { 15: 3, 20: 3 }, built: true,
+				intro: { en: 'Now it’s your turn at the baggage desk. Here, your name is Karimi, and your suitcase didn’t come out. I’ll show you three things you want to say, in Persian. Say each one in English, the way you’d really say it.', fa: 'حالا نوبت خودت است که به باجهٔ بار گمشده بروی. این‌جا اسمت کریمی است و چمدانت بیرون نیامده. سه چیزی را که می‌خواهی بگویی به فارسی نشانت می‌دهم. هر کدام را به انگلیسی بگو، همان‌طور که واقعاً جلوی باجه می‌گفتی.' } },
+			{ id: 'scenario', title: { en: 'A lost bag with a twist', fa: 'چمدان گمشده، با یک غافلگیری' }, short: { en: 'Lost bag', fa: 'چمدان' }, does: { en: 'Report your own missing suitcase at the baggage desk, and handle a surprise.', fa: 'گم شدن چمدان خودت را در باجهٔ بار گمشده گزارش بده؛ وسط کار هم یک اتفاق غیرمنتظره می‌افتد.' }, skill: 'speaking', minutes: { 15: 5, 20: 5 }, built: true,
+				intro: { en: 'Now it’s your turn. You’ve just landed in Riverton too, and one of your own suitcases didn’t come out. Go to the baggage desk and talk to Ryan. Something unexpected will happen, so take your time.', fa: 'حالا نوبت توست. تو هم تازه در Riverton فرود آمده‌ای و یکی از چمدان‌های خودت روی نوار نیامده. به باجهٔ بار گمشده برو و با رایان حرف بزن. یک اتفاق غیرمنتظره هم می‌افتد، پس عجله نکن.' } }
+		]
+	}
 };
 
 /**

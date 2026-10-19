@@ -24,6 +24,9 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 	let session = saved.success ? saved.data : null;
 	if (requested && session && session.day !== requested.id) session = null;
 	if (requestedTrack && session?.track && session.track !== requestedTrack) session = null;
+	// A session saved before its day had two versions (Day 1 before its rebuild) carries on in the
+	// learner's own version; the version is saved with it from the next save on.
+	if (session && !session.track && dayById(session.day)?.tracks) session = { ...session, track: requestedTrack ?? trackFor(profile) };
 	// The day a new session starts on: the one after the last finished day.
 	const upcoming = requested ?? nextDay(progress.lastThemeId, labAccess);
 	const track = requestedTrack ?? trackFor(profile);
