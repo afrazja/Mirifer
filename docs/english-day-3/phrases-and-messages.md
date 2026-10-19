@@ -14,22 +14,25 @@ in its built format: the field names below are the ones in its `.ts` file, and t
 | Say it in English | Professional (3 items, B1) | Professional | the same | the same |
 | Voice messages | one set (A2+) | Intermediate | `src/lib/practice/voice-messages.ts` | `docs/english-voice-messages-spec.md` |
 
-**Daily lesson subsets.** Traps (Intermediate): 5 of 6 (without #6 `im-staying`, the same point as
-phrase A2 #2). Voice messages (Intermediate): 2 of 4 (Tom and the baggage desk). Say it in English:
-the whole set in both versions (4 and 3), so `LESSON_SAY_IDS` is `null` for both. Each section says
-which.
+**Daily lesson subsets.** Traps (Intermediate): 5 of 6 (without #4 `phone-dead`, so the lesson
+practises the dates with `im-staying`). Voice messages (Intermediate): both of the 2 (Tom and the
+baggage desk); there are no lab-only messages. Say it in English: the whole set in both versions (4
+and 3), so `LESSON_SAY_IDS` is `null` for both. Each section says which.
 
-**Who "you" are.**
-- **Natural phrases (both sets), Say it in English (Professional) and Voice messages:** you follow
-  Sara's check-in. In the phrases you say her name (Demir); in Say it (Professional) and Voice
-  messages, Mira's intro says "you're Sara".
+**Who "you" are.** One name for the learner everywhere: **Karimi** («کریمی»). Sara stays Demir only
+where the item is Sara's check-in.
+- **Natural phrases (both sets), Say it in English (Professional) and Voice messages:** these are
+  Sara's check-in and Sara's evening. In the phrases you repeat her lines, so you say her name
+  (Demir), as Day 2's phrases followed Sara's ride; in Say it (Professional) and Voice messages,
+  Mira's intro says "you're Sara".
 - **Traps and Say it in English (Intermediate):** "you" are the learner, on your own trip at the
   Park Hotel (`world.md`: "with their own booking"). Your booking is under **Karimi** (a Persian
-  name, like Day 1's Rezaei; see notes).
+  name, like Day 1's Rezaei), the same name as in the role-play.
 
-**The day's goal** (give your booking name and ask about the Wi-Fi) is in both phrase sets (A2 #1
-and #3; B1 #1 and #3), in two lesson traps (`under-name`, `password-for`) and in two Intermediate
-Say-it items (`d3-checkin`, `d3-wifi`).
+**The day's goal** (give your booking name and ask about the Wi-Fi; the dates and breakfast too) is
+in both phrase sets (A2 #1–#4; B1 #1–#3), in three lesson traps (`under-name`, `im-staying`,
+`password-for`) and in all four Intermediate Say-it items (`d3-checkin`, `d3-dates`, `d3-wifi`,
+`d3-breakfast`).
 
 ---
 
@@ -49,9 +52,9 @@ Order of the check-in: **arrive and give the name → the booking → Wi-Fi → 
 
 | # | `situation` (en / fa) | `shown` (chunk in bold) | Habit it replaces | `tip` (en / fa) |
 |---|---|---|---|---|
-| 1 | You get to the front desk. / به پذیرش هتل می‌رسی. | Hi, **I'm here to check‿in**. The name's Demir. | "I came to take my room." / "I want to receive my room." (from «اومدم اتاقم رو تحویل بگیرم») | `check in`: link the words and stress `IN`: `che-KIN`. / `check in` را پیوسته بگو و روی `IN` تأکید کن: `che-KIN`. |
+| 1 | You get to the front desk. / به پذیرش هتل می‌رسی. | Hi, **I'm here to check‿in**. It's under Demir. | "I came to take my room." / "I want to receive my room." (from «اومدم اتاقم رو تحویل بگیرم») | `check in`: link the words and stress `IN`: `che-KIN`. / `check in` را پیوسته بگو و روی `IN` تأکید کن: `che-KIN`. |
 | 2 | The receptionist asks how long you're staying. / مسئول پذیرش می‌پرسد چند شب می‌مانی. | **I'm staying for** three nights, until Tuesday. | "I stay three nights." (from «سه شب می‌مونم») | `for` is short and weak: `fer`, so `STAY-ing-fer`. / `for` را کوتاه و ضعیف بگو، مثل `fer`: `STAY-ing-fer`. |
-| 3 | You want to get online in your room. / می‌خواهی در اتاقت به اینترنت وصل شوی. | How do I **connect‿to the Wi-Fi**? | "How can I connect the Wi-Fi?" / "How do I enter the Wi-Fi?" (from «چطوری به وای‌فای وصل شم؟») | `connect to`: say the `t` only once: `kuh-NEK-tuh`. / در `connect to` صدای `t` فقط یک بار گفته می‌شود: `kuh-NEK-tuh`. |
+| 3 | You want to get online in your room. / می‌خواهی در اتاقت به اینترنت وصل شوی. | How do I **connect‿to the Wi-Fi**? | "How can I connect the Wi-Fi?" / "How do I enter the Wi-Fi?" (from «چطوری به وای‌فای وصل شم؟») | `connect to`: say the `t` only once: `kuh-NEK-tuh`. / در `connect to` صدای `t` را فقط یک بار بگو: `kuh-NEK-tuh`. |
 | 4 | You want to know if you pay extra for breakfast. / می‌خواهی بدانی صبحانه پول جدا دارد یا نه. | **Is breakfast included**, or is it extra? | "Breakfast is free?" (from «صبحونه مجانیه؟»: statement order and "free") | `included`: stress the middle, `in-CLOO-did`. / در `included` تأکید روی بخش وسط است: `in-CLOO-did`. |
 | 5 | Your backpack is coming tomorrow morning. / کوله‌پشتی‌ات فردا صبح می‌رسد. | Could you call my room **when‿it arrives**? | "…when it will arrive" / "When it arrived, call me." (from «وقتی رسید زنگ بزنید»: Persian uses the past here) | `when it` runs together: `weh-nit`. / `when it` را پیوسته بگو: `n` به `it` می‌چسبد، یعنی `weh-nit`. |
 
@@ -59,7 +62,7 @@ Order of the check-in: **arrive and give the name → the booking → Wi-Fi → 
 
 | # | `sentence` | `chunk` |
 |---|---|---|
-| 1 | Hi, I'm here to check in. The name's Demir. | i'm here to check in |
+| 1 | Hi, I'm here to check in. It's under Demir. | i'm here to check in |
 | 2 | I'm staying for three nights, until Tuesday. | i'm staying for |
 | 3 | How do I connect to the Wi-Fi? | connect to the wi-fi |
 | 4 | Is breakfast included, or is it extra? | is breakfast included |
@@ -73,8 +76,8 @@ the variants listed and rejects the habit):
 |---|---|---|
 | 1 | check in / checking in ("I'm here to check in", "I'd like to check in", "I'm checking in"); "take my room" doesn't count | `/\bcheck(?:ing)? in\b/` |
 | 2 | I'm / we're / I'll be staying ("I'm staying three nights", "I'll be staying for two nights"); "I stay" and "I will stay" don't count | `/\b(?:i am\|we are\|i will be\|we will be) staying\b/` |
-| 3 | connect to / get on / log on to / log into the Wi-Fi (or the internet, the network); "connect the Wi-Fi" and "enter the Wi-Fi" don't count | `/\b(?:connect(?:ed)? to\|get on\|get onto\|log on to\|log onto\|log into\|log in to) (?:the )?(?:wi ?fi\|internet\|network)\b/` |
-| 4 | is (the) breakfast included / does it (the room, the price) include breakfast; "breakfast is free?", "breakfast is included?" and "is breakfast free?" don't count | `/\bis (?:the )?breakfast included\b\|\bincludes? breakfast\b/` |
+| 3 | connect / connecting to, join, get on / log on to / log into the Wi-Fi (or the internet, the network) ("How do I join the WiFi?", "I'm having trouble connecting to the Wi-Fi"); "connect the Wi-Fi" and "enter the Wi-Fi" don't count | `/\b(?:connect(?:ed\|ing)? to\|join\|get on\|get onto\|log on to\|log onto\|log into\|log in to) (?:the )?(?:wi ?fi\|internet\|network)\b/` |
+| 4 | is (the) breakfast included / does it (the room, the price) include breakfast / does the room come with breakfast; "breakfast is free?", "breakfast is included?" and "is breakfast free?" don't count | `/\bis (?:the )?breakfast included\b\|\bincludes? breakfast\b\|\bcomes? with breakfast\b/` |
 | 5 | when / once / as soon as it (the backpack, the bag) arrives / gets here / comes / is here; "when it will arrive", "when it arrived" and "when it come" don't count | `/\b(?:when\|once\|as soon as) (?:it\|the backpack\|my backpack\|the bag\|my bag\|the package)(?: arrives\| gets here\| comes\| comes in\|'s here\| is here)\b/` |
 
 ### 1b. B1 set (Professional)
@@ -88,7 +91,7 @@ has one sound feature only.
 | 1 | You get to the front desk after a long day. / بعد از یک روز طولانی به پذیرش هتل می‌رسی. | Hi, **there should be a reservation‿under** Demir. | "I reserved on the name of Demir." / "I have a reservation with the name Demir." (from «به اسم دمیر رزرو کردم») | `reservation under`: the `n` moves to `under`: `rez-er-VAY-shuh-NUN-der`. / در `reservation under` صدای `n` به `under` می‌چسبد: `rez-er-VAY-shuh-NUN-der`. |
 | 2 | The receptionist finds your booking. / مسئول پذیرش رزروت را پیدا می‌کند. | **Just to double-check**, I'm checking out on Tuesday, right? | "I want to control it." / "Just for checking…" (from «فقط برای اینکه مطمئن بشم» and «کنترل کنم») | `double-check`: stress `CHECK`, not `double`: `dub-ul-CHECK`. / در `double-check` تأکید روی `CHECK` است، نه `double`: `dub-ul-CHECK`. |
 | 3 | The receptionist says the Wi-Fi password very fast. / مسئول پذیرش رمز وای‌فای را خیلی تند می‌گوید. | Sorry, is the Wi-Fi password **all‿one word**? | "Is it attached?" / "Is it together or separate?" (from «سرهمه؟» / «چسبیده‌ست؟») | `all one word`: say it as one group, `aw-lwun-WURD`. / `all one word` را یک‌نفس بگو: `l` به `one` می‌چسبد، یعنی `aw-lwun-WURD`. |
-| 4 | You'd like to leave a little later on Tuesday. / می‌خواهی سه‌شنبه کمی دیرتر از هتل بروی. | **Would‿it be possible to** get a late check-out on Tuesday? | "Is it possible that I go later?" (from «امکانش هست که دیرتر برم؟») | `would it` runs together, with a soft `d`: `WU-dit`. / `would it` را پیوسته بگو؛ `d` نرم می‌شود و به `it` می‌چسبد: `WU-dit`. |
+| 4 | You'd like to leave a little later on Tuesday. / می‌خواهی سه‌شنبه کمی دیرتر از هتل بروی. | **Would‿it be possible to** get a late check-out on Tuesday? | "Is it possible that I go later?" (from «امکانش هست که دیرتر برم؟») | `would it` runs together, quick and soft: `wu-dit-be-POSS-uh-bul`. / `would it` را پیوسته، سریع و نرم بگو: `wu-dit-be-POSS-uh-bul`. |
 | 5 | Your backpack arrives tomorrow morning, and you might not be in your room. / کوله‌پشتی‌ات فردا صبح می‌رسد و شاید آن موقع در اتاقت نباشی. | My backpack's coming tomorrow. Could you **hold‿on to it** for me? | "Can you receive it?" / "Can you take it and keep?" (from «تحویلش بگیرید» / «نگهش دارید») | `hold on`: the `d` moves to `on`: `hol-DON`. / در `hold on` صدای `d` به `on` می‌چسبد: `hol-DON`. |
 
 | # | `sentence` | `chunk` |
@@ -103,7 +106,7 @@ has one sound feature only.
 
 | # | What it listens for | `found` |
 |---|---|---|
-| 1 | a reservation / booking / room under, it's / it should be under ("I have a booking under the name Demir", "It's under Demir"); "on the name of", "with the name" don't count; "in the name of" is fine English but isn't the chunk, so it doesn't count either | `/\b(?:reservations?\|bookings?\|room\|it\|it's\|it is\|that's\|that is\|should be) under\b/` |
+| 1 | a reservation / booking / room under, booked under, it's / it should be under ("I have a booking under the name Demir", "It's under Demir", "I booked under Demir"); "on the name of", "with the name" don't count; "in the name of" is fine English but isn't the chunk, so it doesn't count either | `/\b(?:reservations?\|bookings?\|room\|booked\|it\|it's\|it is\|that's\|that is\|should be) under\b/` |
 | 2 | double-check / double-checking ("just to double-check", "let me double-check", "I'm just double-checking"); "control" and "just for checking" don't count | `/\bdouble check(?:ing\|ed)?\b/` |
 | 3 | (all) one word ("is it all one word?", "is it one word?"); "attached" and "together" don't count | `/\b(?:all )?one word\b/` |
 | 4 | would / will it be possible to, is it possible to (for me / us); "is it possible that I…" doesn't count | `/\b(?:would it be\|will it be\|is it) possible (?:for (?:me\|us) )?to\b/` |
@@ -128,73 +131,76 @@ All six were run through the code's check (`checkSaid`): `right` passes, the sen
 mistake fails, and the extra forms listed get the result shown.
 
 **Daily lesson:** the Intermediate lesson uses 5 of the 6, in the order of a check-in:
-`under-name`, `on-the-floor`, `password-for`, `phone-dead`, `lend-me`. Left out: #6 `im-staying` (the
-same point as phrase A2 #2); it stays as lab practice.
+`under-name`, `im-staying`, `on-the-floor`, `password-for`, `lend-me`. `im-staying` is in on purpose:
+with phrase A2 #2 and Say-it `d3-dates`, the lesson practises the dates three ways. Left out: #4
+`phone-dead` (the charger is already in `lend-me` and Tom's message); it stays as lab practice. All
+six stay defined in `TRAPS`.
 
-`LESSON_TRAP_IDS = ['under-name', 'on-the-floor', 'password-for', 'phone-dead', 'lend-me']`
+`LESSON_TRAP_IDS = ['under-name', 'im-staying', 'on-the-floor', 'password-for', 'lend-me']`
 
 **1. `id`: `under-name`** · `kind`: under (a name) / under (به اسمِ)
 - `words`: `["I", "have", "a", "reservation", "on", "the", "name", "Karimi."]` · `wrong`: 4 (`on`)
 - `right`: I have a reservation under the name Karimi.
 - `why` en: A booking is “under” a name: “a reservation under the name Karimi”, or just “under Karimi”.
-- `why` fa: در فارسی می‌گوییم «به اسمِ کریمی» و «به» را «on» یا «with» ترجمه می‌کنیم. در انگلیسی رزرو «under» یک اسم است: «under the name Karimi» یا خیلی ساده «under Karimi».
-- `accept`: `/\b(?:reservation|booking|room|it's|it is) under\b/`, `/\bunder (?:the|my) name\b/`
+- `why` fa: در فارسی می‌گوییم «به اسمِ کریمی» و برای همین «on the name» یا «with the name» به ذهنمان می‌رسد. در انگلیسی رزرو را «under» یک اسم می‌گویند: «under the name Karimi» یا خیلی ساده «under Karimi».
+- `accept`: `/\b(?:reservation|booking|room|booked|it's|it is) under\b/`, `/\bunder (?:the|my) name\b/`
 - `reject`: `/\b(?:on|with|by|to) (?:the|my) name\b/`
 - `alsoGood`: patterns `/\bin (?:the|my) name\b/` · word "under"
-- Also passes: "It's under Karimi.", "I have a booking under my name." "I have a reservation in the name of Karimi" is good English, so it gets "also good" and is asked for "under".
+- Also passes: "It's under Karimi.", "I have a booking under my name.", "I booked a room under Karimi." "I have a reservation in the name of Karimi" is good English, so it gets "also good" and is asked for "under".
 - The goal of the day (give your booking name).
 
 **2. `id`: `on-the-floor`** · `kind`: on the … floor / on the … floor (طبقه)
-- `words`: `["My", "room", "is", "in", "the", "seventh", "floor."]` · `wrong`: 3 (`in`)
-- `right`: My room is on the seventh floor.
-- `why` en: Floors take “on”: “on the seventh floor”, “on the ground floor”.
-- `why` fa: در فارسی می‌گوییم «تو طبقهٔ هفتم» و برای همین «in» به ذهنمان می‌رسد. ولی در انگلیسی برای طبقه «on» می‌گوییم: «on the seventh floor».
-- `accept`: `/\bon the (?:seventh|7th|7) floor\b/`
-- `reject`: `/\b(?:in|at) the (?:seventh|7th|7) floor\b/`
-- Also passes: "My room's on the 7th floor." ("at the seventh floor" fails.)
-- From this trip: room 714 is on the seventh floor (world).
+- `words`: `["The", "gym", "is", "in", "the", "second", "floor."]` · `wrong`: 3 (`in`)
+- `right`: The gym is on the second floor.
+- `why` en: Floors take “on”: “on the second floor”, “on the ground floor”.
+- `why` fa: در فارسی می‌گوییم «باشگاه تو طبقهٔ دومه» و برای همین «in» به ذهنمان می‌رسد. ولی در انگلیسی برای طبقه «on» می‌گوییم: «on the second floor».
+- `accept`: `/\bon the (?:second|2nd|2) floor\b/`, `/\bon floor (?:two|2)\b/`
+- `reject`: `/\b(?:in|at) the (?:second|2nd|2) floor\b/`, `/\b(?:in|at) floor (?:two|2)\b/`
+- Also passes: "The gym's on the 2nd floor.", "The gym is on floor two." ("at the second floor" and "in floor two" fail.)
+- From this trip: the gym is on the second floor (world). It was "My room is on the seventh floor" in the draft, but the learner's room is 908 or 412 in the role-play (not the seventh floor), so the sentence now uses a hotel fact that's true for everyone.
 
 **3. `id`: `password-for`** · `kind`: the password for / the password for (رمزِ)
 - `words`: `["What's", "the", "password", "of", "the", "Wi-Fi?"]` · `wrong`: 3 (`of`)
 - `right`: What's the password for the Wi-Fi?
 - `why` en: Say “the password for the Wi-Fi”, or just “the Wi-Fi password”, not “of”.
 - `why` fa: در فارسی می‌گوییم «رمزِ وای‌فای» و همین کسره باعث می‌شود «of» بگوییم. در انگلیسی «the password for the Wi-Fi» یا خیلی ساده «the Wi-Fi password» می‌گوییم.
-- `accept`: `/\bpassword for (?:the )?wi ?fi\b/`, `/\bwi ?fi password\b/`
+- `accept`: `/\bpassword (?:for|to) (?:the )?wi ?fi\b/`, `/\bwi ?fi password\b/`
 - `reject`: `/\b(?:password|code) of (?:the )?wi ?fi\b/`
-- Also passes: "What's the WiFi password?" ("the code of the Wi-Fi" fails.)
+- Also passes: "What's the WiFi password?", "What's the password to the Wi-Fi?" ("the code of the Wi-Fi" fails.)
 - The goal of the day (ask about the Wi-Fi).
 
-**4. `id`: `phone-dead`** · `kind`: a dead phone / شارژ تمام‌شده (dead)
+**4. `id`: `phone-dead`** (lab only) · `kind`: a dead phone / a dead phone (گوشی بی‌شارژ)
 - `words`: `["My", "phone", "battery", "is", "finished."]` · `wrong`: 4 (`finished.`)
 - `right`: My phone battery is dead.
 - `why` en: A phone or battery with no charge left is “dead”, not “finished”. You can also say “My phone died.”
-- `why` fa: در فارسی می‌گوییم «شارژ گوشیم تموم شده». در انگلیسی گوشی یا باتری‌ای که شارژ ندارد «dead» است: «My phone is dead» یا «My phone died».
-- `accept`: `/\b(?:phone|battery)(?: is|'s) (?:almost )?dead\b/`, `/\b(?:phone|battery) died\b/`
-- `reject`: `/\b(?:phone|battery|charge)(?: is|'s) (?:almost )?finished\b/`
-- `alsoGood`: patterns `/\b(?:ran|run|running) out of (?:battery|charge|power)\b/`, `/\bneeds? (?:to be )?charg/` · word "dead"
-- Also passes: "My phone's dead.", "My phone died." "My phone ran out of battery" and "My phone needs charging" get "also good".
+- `why` fa: در فارسی می‌گوییم «شارژ گوشیم تموم شده» و برای همین «finished» به ذهنمان می‌رسد. در انگلیسی گوشی یا باتری‌ای که شارژ ندارد «dead» است: «My phone is dead» یا «My phone died».
+- `accept`: `/\b(?:phone|battery)(?: is|'s) (?:\w+ )?dead\b/`, `/\b(?:phone|battery)(?: has| just|'s)* died\b/`
+- `reject`: `/\b(?:phone|battery|charge)(?: is|'s) (?:\w+ )?finished\b/`
+- `alsoGood`: patterns `/\bout of (?:battery|charge|power)\b/`, `/\bneeds? (?:to be )?charg/` · word "dead"
+- Also passes: "My phone's dead.", "My phone is completely dead.", "My phone died.", "My phone just died.", "My battery has died." "My phone ran out of battery", "My phone is out of charge" and "My phone needs charging" get "also good".
 - From this trip: Sara's phone is dead (world); Day 1's phrase "my phone was almost dead".
 
 **5. `id`: `lend-me`** · `kind`: lend / borrow / lend / borrow
 - `words`: `["Can", "you", "borrow", "me", "a", "charger?"]` · `wrong`: 2 (`borrow`)
 - `right`: Can you lend me a charger?
 - `why` en: You “borrow” something from someone; they “lend” it to you. So: “Can you lend me…?” or “Can I borrow…?”
-- `why` fa: در فارسی هر دو با «قرض» گفته می‌شود. در انگلیسی کسی که می‌دهد «lend» می‌کند و کسی که می‌گیرد «borrow». پس بگو «Can you lend me a charger» یا «Can I borrow a charger».
+- `why` fa: در فارسی هر دو را با «قرض» می‌گوییم: قرض دادن و قرض گرفتن. در انگلیسی کسی که می‌دهد «lend» می‌گوید و کسی که می‌گیرد «borrow». پس بگو «Can you lend me a charger» یا «Can I borrow a charger».
 - `accept`: `/\b(?:lend|loan) me\b/`, `/\b(?:can|could|may) i borrow\b/`
 - `reject`: `/\bborrow me\b/`
 - `alsoGood`: patterns `/\b(?:can|could|may) i (?:have|get|use)\b/`, `/\bdo you have a (?:phone )?charger\b/` · word "lend"
 - Also passes: "Could I borrow a charger?" "Can I have a charger?" and "Do you have a charger?" get "also good".
 - From this trip: the desk lends chargers (world).
 
-**6. `id`: `im-staying`** (lab only) · `kind`: I’m staying (plans) / I’m staying (برنامه)
-- `words`: `["I", "stay", "here", "for", "three", "nights."]` · `wrong`: 1 (`stay`)
-- `right`: I'm staying here for three nights.
+**6. `id`: `im-staying`** (in the lesson, second) · `kind`: I’m staying (plans) / I’m staying (برنامه)
+- `words`: `["I", "stay", "here", "for", "four", "nights."]` · `wrong`: 1 (`stay`)
+- `right`: I'm staying here for four nights.
 - `why` en: For your plans on this trip, say “I’m staying”. “I stay” sounds like something you always do.
-- `why` fa: در فارسی می‌گوییم «سه شب این‌جا می‌مونم». در انگلیسی برای برنامهٔ همین سفر «I’m staying» می‌گوییم. «I stay» یعنی کاری که همیشه انجام می‌دهی.
+- `why` fa: در فارسی می‌گوییم «چهار شب این‌جا می‌مونم». در انگلیسی برای برنامهٔ همین سفر «I’m staying» می‌گوییم. «I stay» یعنی کاری که همیشه انجام می‌دهی.
 - `accept`: `/\b(?:i'm|i am|im|i'll be|i will be) staying\b/`
 - `reject`: `/\bi stay\b/`
 - `alsoGood`: patterns `/\b(?:i'll|i will) stay\b/`, `/\b(?:i'm|i am|im) here for\b/` · word "staying"
-- Also passes: "I'll be staying for three nights." "I'll stay here for three nights" and "I'm here for three nights" get "also good". ("I stayed here…" fails.)
+- Also passes: "I'll be staying for four nights." "I'll stay here for four nights" and "I'm here for four nights" get "also good". ("I stayed here…" fails.)
+- From this trip: your booking (the role-play's) is four nights, until Wednesday. The dates part of the day's goal, and what the role-play's `booking` goal asks you to say.
 
 **Candidates left out**
 - "Breakfast is free?" for "Is breakfast included?": the mistake is word order (and "free" isn't
@@ -226,17 +232,24 @@ Park Hotel under the name Karimi. In check-in order.
 | # | `id` | `fa` | `points` (en / fa) | `models` | `hints` (en / fa) |
 |---|---|---|---|---|---|
 | 1 | `d3-checkin` | سلام، اومدم اتاقم رو تحویل بگیرم. رزرو به اسم کریمیه. | you're here to check in / آمده‌ای اتاقت را تحویل بگیری · the reservation is under Karimi / رزرو به اسم کریمی است | "Hi, I'm here to check in. The reservation is under Karimi." · "Hi, I'd like to check in, please. It's under Karimi." | check in / تحویل گرفتن اتاق · under… / به اسمِ… |
-| 2 | `d3-wifi` | ببخشید، وای‌فای مجانیه؟ رمزش چیه؟ | you're asking if the Wi-Fi is free / می‌پرسی وای‌فای مجانی است یا نه · you're asking for the password / رمز وای‌فای را می‌خواهی | "Excuse me, is the Wi-Fi free? What's the password?" · "Is the Wi-Fi free? And could I get the password, please?" | free / مجانی · the Wi-Fi password / رمز وای‌فای |
-| 3 | `d3-breakfast` | صبحونه هم جزو قیمت اتاقه؟ فردا از ساعت چند شروع می‌شه؟ | you're asking if breakfast is included / می‌پرسی صبحانه جزو قیمت اتاق است یا نه · you're asking what time it starts tomorrow / می‌پرسی فردا صبحانه از ساعت چند شروع می‌شود | "Is breakfast included? What time does it start tomorrow?" · "Is breakfast included in the price? And what time is it tomorrow?" | included / جزو قیمت · What time does it start? / از ساعت چند…؟ |
-| 4 | `d3-charger` | شارژ گوشیم تموم شده و شارژرم همراهم نیست. می‌شه یه شارژر بهم قرض بدید؟ | your phone is dead and you don't have your charger / شارژ گوشی‌ات تمام شده و شارژرت همراهت نیست · you'd like to borrow a charger / می‌خواهی یک شارژر قرض بگیری | "My phone is dead, and I don't have my charger. Could I borrow one?" · "My phone's dead and my charger isn't with me. Can you lend me a charger?" | my phone is dead / شارژ گوشیم تموم شده · borrow, lend / قرض گرفتن، قرض دادن |
+| 2 | `d3-dates` | فقط برای این‌که مطمئن بشم: چهار شب می‌مونم، تا چهارشنبه، درسته؟ چهارشنبه ساعت چند باید اتاق رو تحویل بدم؟ | you're checking that you're staying four nights, until Wednesday / می‌خواهی مطمئن شوی که چهار شب، تا چهارشنبه، می‌مانی · you're asking what time you have to check out on Wednesday / می‌پرسی چهارشنبه ساعت چند باید اتاق را تحویل بدهی | "Just to check, I'm staying for four nights, until Wednesday, right? And what time is check-out?" · "So that's four nights, until Wednesday? What time do I have to check out?" | I'm staying for… / … می‌مونم · check out / تحویل دادن اتاق |
+| 3 | `d3-wifi` | ببخشید، وای‌فای مجانیه؟ رمزش چیه؟ | you're asking if the Wi-Fi is free / می‌پرسی وای‌فای مجانی است یا نه · you're asking for the password / رمز وای‌فای را می‌خواهی | "Excuse me, is the Wi-Fi free? What's the password?" · "Is the Wi-Fi free? And could I get the password, please?" | free / مجانی · the Wi-Fi password / رمز وای‌فای |
+| 4 | `d3-breakfast` | صبحونه هم جزو قیمت اتاقه؟ فردا از ساعت چند شروع می‌شه؟ | you're asking if breakfast is included / می‌پرسی صبحانه جزو قیمت اتاق است یا نه · you're asking what time it starts tomorrow / می‌پرسی فردا صبحانه از ساعت چند شروع می‌شود | "Is breakfast included? What time does it start tomorrow?" · "Is breakfast included in the price? And what time is it tomorrow?" | included / جزو قیمت · What time does it start? / از ساعت چند…؟ |
 
 - Traps on purpose: «تحویل بگیرم» is "check in", not "receive my room"; «به اسمِ» is "under", not
-  "on the name of" (trap `under-name`); «رمزش» is "the password", not "its code" (trap
-  `password-for`); «جزو قیمت» is "included", not "part of the price"; «شارژ گوشیم تموم شده» is "my
-  phone is dead" (trap `phone-dead`); «قرض بدید» is "lend me" or "Could I borrow" (trap `lend-me`).
-- Word counts: 11, 10 · 9, 11 · 9, 12 · 14, 15 (all within 25).
-- Facts: Wi-Fi free with a password; breakfast included, from 7 tomorrow (Sunday); the desk lends
-  chargers (world). The learner's own booking under Karimi is new (see notes).
+  "on the name of" (trap `under-name`); «چهار شب می‌مونم» is "I'm staying for four nights", not "I
+  stay four nights" (trap `im-staying`, phrase A2 #2); «اتاق رو تحویل بدم» is "check out", not
+  "give back the room"; «رمزش» is "the password", not "its code" (trap `password-for`); «جزو قیمت»
+  is "included", not "part of the price".
+- `d3-dates` uses the dates freely (the lesson's phrase A2 #2 only has them repeated after Mira).
+  The charger item it replaces is gone, so the charger comes up only in trap `lend-me` and Tom's
+  message.
+- Word counts: 11, 10 · 16, 14 · 9, 11 · 9, 12 (all within 25).
+- Facts: the learner's booking is the role-play's: under Karimi, four nights, until Wednesday,
+  check-out by 11 a.m. (`conversation.md`; new fact 4). Wi-Fi free with a password; breakfast
+  included, from 7 tomorrow (Sunday) (world). `d3-dates` practises exactly what the role-play's
+  `booking` goal asks for ("four nights, until Wednesday"). The desk's answer (eleven) isn't part of
+  the item.
 - `NAMES`: "Park Hotel, Karimi."
 
 ### 3b. Professional set (B1): three items, all in the lesson
@@ -244,33 +257,33 @@ Park Hotel under the name Karimi. In check-in order.
 Three longer messages Sara says to Daniel at the front desk, in the order of her check-in. Each needs
 a B1 move: checking you've understood ("just to double-check"), a possibility ("I might be at
 breakfast"), or a condition ("if it costs extra"). Items 2 and 3 reuse B1 phrases #5 and #4 for
-transfer.
+transfer. ("Hold it for me" or "keep it for me" is natural too; the AI check never calls it wrong.)
 
 All three `to`: **To Daniel at the front desk / به دنیل، در پذیرش هتل.** `level`: `'B1'`.
 
 **1. `id`: `d3-hold`**
-- `fa`: فقط می‌خوام مطمئن بشم: این شبی پنجاه دلاری که روی کارتم نگه می‌دارید، از حسابم کم نمی‌شه، درسته؟ کی آزادش می‌کنید؟
+- `fa`: فقط می‌خوام مطمئن بشم: این شبی پنجاه دلار که روی کارتم بلوکه می‌کنید از حسابم کم نمی‌شه، درسته؟ کی آزاد می‌شه؟
 - `points`:
-  1. you want to make sure the fifty dollars a night is only a hold, not a charge / می‌خواهی مطمئن شوی شبی پنجاه دلار فقط روی کارتت نگه داشته می‌شود و از حسابت کم نمی‌شود
-  2. you're asking when they'll give it back / می‌پرسی کی آن را آزاد می‌کنند
+  1. you want to make sure the fifty dollars a night is only a hold, not a charge / می‌خواهی مطمئن شوی شبی پنجاه دلار فقط روی کارتت بلوکه می‌شود و از حسابت کم نمی‌شود
+  2. you're asking when you'll get it back / می‌پرسی کی آزاد می‌شود
 - `models`:
   - "Just to double-check, the fifty dollars a night is only a hold, not a charge, right? When do I get it back?" (22 words)
-  - "So it's just a hold on my card, and you won't charge it unless I use something? When will it be released?" (22 words)
-- `hints`: just to double-check / فقط برای اینکه مطمئن بشم · a hold, not a charge / نگه داشتن، نه برداشت
-- Main trap: «آزادش می‌کنید» → "free it" (natural: "release it", "when do I get it back"); «از حسابم کم نمی‌شه» → "it doesn't decrease from my account" (natural: "you won't charge it").
+  - "So it's just a hold on my card, and you won't actually charge it, right? When will it be released?" (20 words)
+- `hints`: just to double-check / فقط برای این‌که مطمئن بشم · a hold, not a charge / بلوکه کردن، نه برداشت
+- Main trap: «بلوکه می‌کنید» → "you block" (natural in the US: "a hold", "you put a hold on my card"); «آزاد می‌شه» → "when is it free?" (natural: "when will it be released", "when do I get it back"); «از حسابم کم نمی‌شه» → "it doesn't decrease from my account" (natural: "you won't charge it").
 - Facts: a $50-a-night hold for incidentals, given back after check-out; nothing is charged unless she uses something (world, step 3).
 
 **2. `id`: `d3-backpack-desk`**
-- `fa`: فردا صبح بین هشت تا ده، شرکت هواپیمایی کوله‌پشتیم رو میاره. شاید اون موقع سر صبحونه باشم. می‌شه نگهش دارید و وقتی رسید به اتاقم زنگ بزنید؟
+- `fa`: فردا صبح بین هشت تا ده، شرکت هواپیمایی کوله‌پشتیم رو میاره. شاید اون موقع سر صبحونه باشم. می‌شه نگهش دارید تا بعد از صبحونه بیام بگیرمش؟
 - `points`:
   1. the airline is bringing your backpack tomorrow between eight and ten, and you might be at breakfast then / شرکت هواپیمایی فردا بین هشت تا ده کوله‌پشتی‌ات را می‌آورد و شاید آن موقع سر صبحانه باشی
-  2. you'd like them to keep it and call your room when it arrives / می‌خواهی آن را نگه دارند و وقتی رسید به اتاقت زنگ بزنند
+  2. you'd like them to keep it until you pick it up after breakfast / می‌خواهی آن را نگه دارند تا بعد از صبحانه بیایی و بگیری
 - `models`:
-  - "The airline's bringing my backpack tomorrow between eight and ten. I might be at breakfast, so could you hold on to it and call my room?" (26 words)
-  - "My backpack should get here tomorrow, between eight and ten. If I'm at breakfast, would you mind keeping it and calling my room when it arrives?" (26 words)
+  - "The airline's bringing my backpack tomorrow between eight and ten. I might be at breakfast, so could you hold on to it? I'll pick it up after." (27 words)
+  - "My backpack should get here tomorrow, between eight and ten. If I'm at breakfast, would you mind keeping it at the desk? I'll come get it after that." (28 words)
 - `hints`: I might be at breakfast / شاید سر صبحونه باشم · hold on to it / نگهش دارید
-- Main trap: «وقتی رسید» → "when it arrived" / "when it will arrive" (natural: "when it arrives", "when it gets here"); «سر صبحونه» → "on breakfast" (natural: "at breakfast").
-- Facts: delivery tomorrow 8–10 a.m.; the desk keeps deliveries and calls the room (world, step 8); breakfast is 7–10:30 on weekends, so she could be there. "Might be at breakfast" is new (see notes).
+- Main trap: «سر صبحونه» → "on breakfast" (natural: "at breakfast"); «بیام بگیرمش» → "come and take it" (natural: "pick it up", "come get it").
+- Facts: delivery tomorrow 8–10 a.m.; the desk keeps deliveries (world, step 8); breakfast is 7–10:30 on weekends, so she could be there. She no longer asks for a call to her room here, since she may be at breakfast (Persian review); world step 8's call to room 714 still happens in the conversation. "Might be at breakfast" is new (see notes).
 
 **3. `id`: `d3-late-checkout`**
 - `fa`: امکانش هست سه‌شنبه یه کم دیرتر اتاق رو تحویل بدم، مثلاً ساعت یک؟ اگه هزینهٔ اضافه داره، ترجیح می‌دم همون ساعت یازده برم.
@@ -292,40 +305,40 @@ All three `to`: **To Daniel at the front desk / به دنیل، در پذیرش 
 ## 4. Voice messages (Intermediate, A2+)
 
 Built format (`VoiceMessage`): `id`, `from {name, who {en, fa}, voice}`, `sentences` (one audio
-request each; 120 characters or fewer, the code's test limit; the longest here is 99), `asks` (each
-`{ask {en, fa}, missed {en, fa}}`), `model` (a natural reply, 40 words or fewer), `names`. Four
-messages; like Day 2, three have 2 asks and the last has 1. The natural reply is read by Mira (Ava,
-`b`). Voices: `a` Andrew, `c` Brian, `d` Emma; never `b`. Ids start with `d3-`.
+request each; 120 characters or fewer, the code's test limit; the longest here is 101), `asks` (each
+`{ask {en, fa}, missed {en, fa}}`), `model` (a natural reply, 40 words or fewer), `names`. Two
+messages, each with 2 asks. The natural reply is read by Mira (Ava, `b`). Voices: `a` Andrew, `c`
+Brian; never `b`. Ids start with `d3-`.
 
-Timeline: Sara has charged her phone in room 714 (Saturday, after 5:15 p.m.) → that evening → Sunday
-morning. The learner is Sara (the intros say so, and give the room number, which the baggage desk
-asks for).
+Timeline: Sara has charged her phone in room 714 (Saturday, after 5:15 p.m.) → that evening. The
+learner is Sara (the intros say so, and give the room number, which the baggage desk asks for).
 
-**Daily lesson:** the Intermediate lesson uses 2: Tom (`d3-tom`) and the baggage desk
-(`d3-baggage`). The other two (`d3-desk`, `d3-backpack`) are lab practice.
+**Daily lesson:** the Intermediate lesson uses both: Tom (`d3-tom`) and the baggage desk
+(`d3-baggage`). There are no lab-only messages (the two drafted ones, from Daniel and from the
+desk on Sunday morning, were dropped in review v1), so the Module lab has the same two.
 
 `LESSON_MESSAGE_IDS = ['d3-tom', 'd3-baggage']`
 
 **`MESSAGES_INTRO`** (the Module lab's introduction):
-- en: "Today, you’re Sara, in room 714 at the Park Hotel. You’ll get four voice messages: from your friend Tom, the airline, and two from the hotel’s front desk. Listen, then reply with a voice message. Make sure you answer their questions."
-- fa: امروز جای سارا هستی، در اتاق ۷۱۴ هتل پارک. چهار پیام صوتی می‌گیری: از دوستت تام، از شرکت هواپیمایی و دو تا از پذیرش هتل. گوش بده و با یک پیام صوتی جواب بده. حواست باشد به سؤال‌هایشان جواب بدهی.
+- en: "Today, you’re Sara, in room 714 at the Park Hotel. You’ll get two voice messages: from your friend Tom and the airline. Listen, then reply with a voice message. Make sure you answer their questions."
+- fa: امروز جای سارا هستی، در اتاق ۷۱۴ هتل پارک. دو پیام صوتی می‌گیری: از دوستت تام و از شرکت هواپیمایی. گوش بده و با یک پیام صوتی جواب بده. حواست باشد به سؤال‌هایشان جواب بدهی.
 
-`NAMES` (all four): "Tom, Rosa's, Elm Street, Riverton, Park Hotel, Main Street, Daniel, RideNow."
+`NAMES` (both): "Tom, Rosa's, Elm Street, Riverton, Park Hotel, Main Street, Daniel, RideNow."
 
 ### Message 1. `id`: `d3-tom` (Saturday, about 5:30: her phone is back on)
 
 - `from`: name **Tom** · who: your friend in Riverton / دوستت در ریورتون · voice `c` (Brian; Daniel isn't in this message)
 - `sentences`:
-  1. Hey, it's Tom. I tried to call you, but your phone's off. Is everything OK?
+  1. Hey, it's Tom. I tried to call you, but it went straight to voicemail. Is everything OK?
   2. Anyway, dinner's at seven, at Rosa's. It's on Elm Street, about ten minutes from your hotel by car.
   3. I'll get there a little early and get us a table.
   4. So how are you getting there?
   5. Let me know. See you soon!
 - `asks`:
-  1. ask: Is everything OK? Why was your phone off? / همه‌چیز رو به راه است؟ چرا گوشی‌ات خاموش بود؟ · missed: You didn't say why your phone was off. / نگفتی چرا گوشی‌ات خاموش بود.
+  1. ask: Is everything OK? Why couldn't he call you? / همه‌چیز روبه‌راه است؟ چرا نتوانست به تو زنگ بزند؟ · missed: You didn't say why he couldn't call you. / نگفتی چرا نتوانست به تو زنگ بزند.
   2. ask: How are you getting to Rosa's? / چطور به رستوران رزا می‌روی؟ · missed: You didn't say how you're getting to Rosa's. / نگفتی چطور به رستوران رزا می‌روی.
 - `model`: "Hi Tom! Sorry, my phone battery was dead, but the hotel lent me a charger. I'm taking a RideNow at six forty. See you at Rosa's!" (26 words)
-- Facts: dinner at 7; Rosa's on Elm Street, ten minutes by car; Tom's car still broken (so he doesn't offer a ride); her phone was dead; the desk lent a charger; RideNow at 6:40 (world). Tom's call and the table are new (see notes).
+- Facts: dinner at 7; Rosa's on Elm Street, ten minutes by car, Tom's choice (new fact 1); Tom's car still broken (so he doesn't offer a ride); her phone was dead; the desk lent a charger; RideNow at 6:40 (world). Tom's call and the table are new (see notes).
 
 ### Message 2. `id`: `d3-baggage` (Saturday evening)
 
@@ -338,39 +351,9 @@ asks for).
   5. Thanks, and have a good evening.
 - `asks`:
   1. ask: What's your room number? / شمارهٔ اتاقت چند است؟ · missed: You didn't say your room number. / نگفتی شمارهٔ اتاقت چند است.
-  2. ask: Will you be in your room, or should they leave it at the front desk? / آن موقع در اتاقت هستی، یا کوله‌پشتی را به پذیرش هتل بدهند؟ · missed: You didn't say if you'll be in your room or if they should leave it at the front desk. / نگفتی در اتاقت هستی یا کوله‌پشتی را به پذیرش بدهند.
-- `model`: "Hi, thanks for calling. My room number is 714. I might be at breakfast then, so please leave it at the front desk. They'll call my room. Thanks!" (28 words)
-- Facts: small green backpack, delivered tomorrow 8–10 a.m.; room 714; the desk keeps deliveries and calls the room (world). The call itself is new (see notes); its second question is the one Day 2's lab message `d2-baggage` asked, which Intermediate learners didn't have in their Day 2 lesson.
-
-### Message 3. `id`: `d3-desk` (lab; Saturday, about 6 p.m.)
-
-- `from`: name **Park Hotel** · who: your hotel / هتلت · voice `c` (Brian: Daniel; Tom isn't in this message)
-- `sentences`:
-  1. Hi, this is Daniel at the front desk. I hope you like your room.
-  2. I forgot to tell you: check-out on Tuesday is at eleven.
-  3. If you need more time, you can stay until one for free, but please ask by Monday.
-  4. Would you like a late check-out?
-  5. Also, does the charger work with your phone? If not, we have another kind.
-  6. Enjoy your evening!
-- `asks`:
-  1. ask: Would you like a late check-out on Tuesday? / سه‌شنبه می‌خواهی دیرتر اتاق را تحویل بدهی؟ · missed: You didn't say if you'd like a late check-out. / نگفتی می‌خواهی دیرتر اتاق را تحویل بدهی یا نه.
-  2. ask: Does the charger work with your phone? / شارژر به گوشی‌ات می‌خورد؟ · missed: You didn't say if the charger works with your phone. / نگفتی شارژر به گوشی‌ات می‌خورد یا نه.
-- `model`: "Hi Daniel, thanks! The room is great. Yes, please, I'd like a late check-out on Tuesday, until one. And the charger works fine. Thank you!" (25 words)
-- Facts: check-out by 11; late check-out until 1 free if asked the day before ("by Monday"); the desk has two kinds of charger (world; no brand named). The message is new (see notes).
-
-### Message 4. `id`: `d3-backpack` (lab; Sunday morning)
-
-- `from`: name **Park Hotel** · who: the front desk / پذیرش هتل · voice `d` (Emma; see notes)
-- `sentences`:
-  1. Good morning, this is the front desk at the Park Hotel.
-  2. Your backpack just arrived from the airline. It's here with us at the desk.
-  3. We called your room, but there was no answer.
-  4. Would you like us to bring it up to your room, or will you come down and get it?
-  5. Just let us know. Thanks!
-- `asks`:
-  1. ask: Should they bring it up to your room, or will you come down and get it? / کوله‌پشتی را به اتاقت بیاورند، یا خودت پایین می‌روی و می‌گیری‌اش؟ · missed: You didn't say if they should bring it up or if you'll come down. / نگفتی آن را به اتاقت بیاورند یا خودت می‌روی پایین.
-- `model`: "Good morning, thank you so much! I'm at breakfast right now, at the café downstairs. I'll come and get it on my way back, in about ten minutes." (28 words)
-- Facts: the backpack arrives 8–10; the desk calls the room; The Corner Café is on the ground floor, open from 7 on weekends (world). The message, bringing bags up and Sara at breakfast are new (see notes).
+  2. ask: Will you be in your room, or should they leave it at the front desk? / آن موقع در اتاقت هستی، یا کوله‌پشتی را تحویل پذیرش بدهند؟ · missed: You didn't say if you'll be in your room or if they should leave it at the front desk. / نگفتی در اتاقت هستی یا کوله‌پشتی را تحویل پذیرش بدهند.
+- `model`: "Hi, thanks for calling. My room number is 714. I might be at breakfast then, so please leave it at the front desk. They'll keep it for me. Thanks!" (29 words)
+- Facts: small green backpack, delivered tomorrow 8–10 a.m.; room 714; the desk keeps deliveries (world). The call itself is new (see notes); its second question is the one Day 2's lab message `d2-baggage` asked, which Intermediate learners didn't have in their Day 2 lesson.
 
 ---
 
