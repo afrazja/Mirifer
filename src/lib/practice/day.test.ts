@@ -98,7 +98,8 @@ describe('more than one day', () => {
 		expect(DAY_TWO.ready).toBe(false);
 		expect(nextDay('day-1').id).toBe('day-1');
 		// After the last day: the last one again.
-		expect(nextDay('day-2', true).id).toBe('day-2');
+		expect(nextDay('day-2', true).id).toBe('day-3');
+	expect(nextDay('day-3', true).id).toBe('day-3');
 		expect(nextDay('unknown').id).toBe('day-1');
 		expect(dayById('day-2')).toBe(DAY_TWO);
 		expect(dayById('nope')).toBeNull();

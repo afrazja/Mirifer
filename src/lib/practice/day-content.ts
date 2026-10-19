@@ -13,6 +13,7 @@ import { APARTMENTS, type PersuadeSet } from './persuade';
 import { HOTEL_SCENE, type RoleScene } from './roleplay';
 import type { DisplayText } from './hotel';
 import * as dayTwo from './days/day-2';
+import * as dayThree from './days/day-3';
 import type { Track } from './day';
 
 /** One later day's content: every part optional; a version without its own set uses the other's. */
@@ -32,7 +33,7 @@ export interface DayContent {
 }
 
 /** Every later day's content, by day id. */
-export const DAY_CONTENT: Record<string, DayContent> = { 'day-2': dayTwo };
+export const DAY_CONTENT: Record<string, DayContent> = { 'day-2': dayTwo, 'day-3': dayThree };
 const contentOf = (dayId: string): DayContent => DAY_CONTENT[dayId] ?? {};
 const LATER: DayContent[] = Object.values(DAY_CONTENT);
 /** This version's set, or the day's other version's. */
