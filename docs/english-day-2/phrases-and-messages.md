@@ -138,15 +138,15 @@ natural phrase #4 (`cash on me`, paying by card) for transfer.
 
 **1. `id`: `pay-tip`**
 - `to`: To the taxi driver / به رانندهٔ تاکسی
-- `fa`: با کارت حساب می‌کنم، آخه پول نقد زیادی همراهم نیست. ده دلار هم انعام بذارید روش، که بشه شصت‌وپنج.
+- `fa`: با کارت حساب می‌کنم، آخه پول نقد زیادی همراهم نیست. ده دلار هم انعام بذارید روش، بشه شصت‌وپنج دلار.
 - `points`:
   1. you'll pay by card, because you don't have much cash on you / با کارت حساب می‌کنی، چون پول نقد زیادی همراهت نیست
   2. you want to add a ten-dollar tip, so it comes to sixty-five dollars / می‌خواهی ده دلار انعام اضافه کنی، که روی هم شصت‌وپنج دلار شود
 - `models`:
   - "I'll pay by card, if that's OK. I don't have much cash on me. Could you make it sixty-five, with the tip?"
-  - "Can I pay by card? I don't have much cash on me. Please add a ten-dollar tip. Let's make it sixty-five."
+  - "Can I pay by card? I don't have much cash on me. Could you add a ten-dollar tip? That makes it sixty-five."
 - `hints`: cash on me / پول نقد همراهم · make it sixty-five / بشه شصت‌وپنج
-- Main trap: «همراهم نیست» → "with me"; «انعام بذارید روش» → "put the tip on it" (natural: "make it sixty-five", "add a tip").
+- Main trap: «همراهم نیست» → "I don't have cash with me" is fine, but "on me" is the more natural spoken chunk; «انعام بذارید روش» → "put the tip on it" (natural: "make it sixty-five", "add a tip").
 - Facts: the fare is $55 (world); $10 is about 18%, inside the usual 15–20%.
 
 **2. `id`: `hotel-bags`**
@@ -173,10 +173,10 @@ natural phrase #4 (`cash on me`, paying by card) for transfer.
   - "Seven works for me. Since your car's still in the shop, I'll find my own way there. Could you text me the address?"
 - `hints`: on my own / خودم · text me the address / آدرس رو برام بفرست
 - Main trap: «خودم میام» → "I come myself" (natural: "I'll get there on my own").
-- Facts: dinner at 7 (world); Tom's car is still broken tonight (new, see notes). The restaurant isn't named, so nothing new is fixed about it.
+- Facts: dinner at 7; Tom's car is still broken tonight (world). Sara asking for the address is new (see notes); the restaurant isn't named.
 
 **4. `id`: `ridenow-pickup`**
-- `to`: To your RideNow driver / به رانندهٔ RideNow
+- `to`: To your RideNow driver / به رانندهٔ تاکسی اینترنتی
 - `fa`: سلام، من جلوی در اصلی هتل منتظرم. اگه این‌جا نمی‌تونید نگه دارید، اشکالی نداره؛ می‌تونم بیام اون طرف خیابون، جلوی ایستگاه.
 - `points`:
   1. you're waiting at the hotel's main entrance / جلوی در اصلی هتل منتظر هستی
@@ -186,7 +186,7 @@ natural phrase #4 (`cash on me`, paying by card) for transfer.
   - "Hi, I'm by the hotel's front door. If it's hard to pull over here, I can meet you across the street, at the station."
 - `hints`: the main entrance / در اصلی · pull over / نگه دارید
 - Main trap: «نگه دارید» → "keep here" / "hold here" (natural: "stop", "pull over"); «اون طرف خیابون» → "the other side of the street" is fine, "across the street" is shorter.
-- Facts: the hotel is right across from Central Station; traffic near the station is bad today (world). Sara takes a RideNow to dinner (new, see notes).
+- Facts: the hotel is right across from Central Station; traffic near the station is bad today; Sara takes a RideNow to dinner, and Carlos waits across from the hotel (world).
 
 - `NAMES`: "Park Hotel, Central Station, Tom, Riverton, RideNow."
 
@@ -198,11 +198,14 @@ Built format (`VoiceMessage`): `id`, `from {name, who {en, fa}, voice}`, `senten
 request each; 120 characters or fewer, the code's test limit), `asks` (each `{ask {en, fa}, missed
 {en, fa}}`), `model` (a natural reply, 40 words or fewer). Four messages; like Day 1, three have 2
 asks and the last has 1. The natural reply is read by Mira (Ava, `b`). Voices: `a` Andrew, `c` Brian.
-Timeline order: on the plane → after landing → in the taxi → that evening.
+Timeline order: on the plane → after landing, before the taxi → in the taxi → that evening.
+
+**Daily lesson:** the Intermediate daily lesson uses 2 messages, Tom (`tom`) and Daniel (`hotel`).
+The other two (`baggage`, `ridenow`) are lab practice.
 
 **Intro** (the built intro names Day 1's senders, so Day 2 needs its own; it's a constant in
 `VoiceMessages.svelte`, not in the `.ts` file):
-- en: "Today you're in Sara's place. You'll get four voice messages: from your friend Tom, the
+- en: "Today, you're Sara. You'll get four voice messages: from your friend Tom, the
   airline, the Park Hotel and your RideNow driver. Listen, then reply with a voice message. Make sure
   you answer their questions."
 - fa: امروز جای سارا هستی. چهار پیام صوتی می‌گیری: از دوستت تام، شرکت هواپیمایی، هتل پارک و رانندهٔ تاکسی اینترنتی‌ات. گوش بده و با یک پیام صوتی جواب بده. حواست باشد به سؤال‌هایشان جواب بدهی.
@@ -215,25 +218,25 @@ Timeline order: on the plane → after landing → in the taxi → that evening.
   2. My car broke down this morning, so I can't pick you up at the airport.
   3. The easiest way is the Airport Express. Just follow the green signs, and it takes you to Central Station.
   4. Your hotel's right across from the station.
-  5. Or take a taxi, if you're too tired. Let me know which one!
+  5. Or take a taxi, if you're too tired. Let me know what you decide!
   6. And let's have dinner at seven tonight. Does that work for you?
 - `asks`:
   1. ask: Will you take the train or a taxi? / با قطار می‌روی یا با تاکسی؟ · missed: You didn't say if you'll take the train or a taxi. / نگفتی با قطار می‌روی یا با تاکسی.
   2. ask: Is dinner at seven OK? / شام ساعت هفت برایت خوب است؟ · missed: You didn't say if dinner at seven is OK. / نگفتی شام ساعت هفت برایت خوب است یا نه.
 - `model`: "Hi Tom, sorry about your car! My suitcase is really heavy and I'm tired, so I'll take a taxi. Dinner at seven sounds great. See you then!" (27 words; matches Sara's choice)
 
-### Message 2. `id`: `baggage` (after landing)
+### Message 2. `id`: `baggage` (after landing, before the taxi)
 
 - `from`: name **Baggage desk** · who: the airline / شرکت هواپیمایی · voice `a` (Andrew; Mike isn't in this scene)
 - `sentences`:
-  1. Hello, this is the airline's baggage desk at Riverton Airport, about your small green backpack.
+  1. Hello, this is the airline's baggage desk at Riverton Airport. I'm calling about your small green backpack.
   2. It's coming on the evening flight, so we can bring it to your hotel tomorrow morning.
   3. We have the Park Hotel on Main Street. Is that right?
-  4. Our driver will come between eight and ten.
+  4. Our driver will come between eight and ten a.m.
   5. Will you be there then, or should we leave it at the front desk?
   6. Thank you, and sorry again.
 - `asks`:
-  1. ask: Is the Park Hotel the right hotel? / هتل پارک درست است؟ · missed: You didn't say if the Park Hotel is right. / نگفتی هتل پارک درست است یا نه.
+  1. ask: Is the Park Hotel the right hotel? / هتلت همان هتل پارک است؟ · missed: You didn't say if the Park Hotel is right. / نگفتی هتلت همان هتل پارک است یا نه.
   2. ask: Will you be there between eight and ten, or should they leave it at the front desk? / ساعت هشت تا ده آن‌جا هستی، یا کوله‌پشتی را به پذیرش هتل بدهند؟ · missed: You didn't say if you'll be there or if they should leave it at the front desk. / نگفتی آن‌جا هستی یا کوله‌پشتی را به پذیرش بدهند.
 - `model`: "Hi, thanks for your message. Yes, it's the Park Hotel on Main Street. I'm not sure I'll be there, so please leave it at the front desk." (27 words)
 
@@ -248,9 +251,9 @@ Timeline order: on the plane → after landing → in the taxi → that evening.
   5. And will you need any help with your bags when you arrive?
   6. See you soon!
 - `asks`:
-  1. ask: What time will you get to the hotel? / چه ساعتی به هتل می‌رسی؟ · missed: You didn't say when you'll get there. / نگفتی چه ساعتی به هتل می‌رسی.
+  1. ask: When will you get to the hotel? / کی به هتل می‌رسی؟ · missed: You didn't say when you'll get there. / نگفتی کی به هتل می‌رسی.
   2. ask: Do you need help with your bags? / برای بردن وسایلت کمک لازم داری؟ · missed: You didn't say if you need help with your bags. / نگفتی برای بردن وسایلت کمک لازم داری یا نه.
-- `model`: "Hi Daniel, thanks. I'm in a taxi now, so I'll be there in about forty minutes. And yes, please. My suitcase is really heavy." (24 words)
+- `model`: "Hi Daniel, thanks! I'm in a taxi now, so I'll be there around two. And yes, please, my suitcase is really heavy." (22 words; she arrives at about 2:10)
 
 ### Message 4. `id`: `ridenow` (that evening, going to dinner)
 
@@ -258,9 +261,9 @@ Timeline order: on the plane → after landing → in the taxi → that evening.
 - `sentences`:
   1. Hi, this is Carlos, your RideNow driver.
   2. I'm on Main Street, but the traffic by the station is really bad, so I can't stop at your hotel door.
-  3. Right now I'm across the street, in front of Central Station. It's a white car.
+  3. Right now I'm across the street, in front of Central Station. I'm in a white car.
   4. Can you cross the street and meet me here?
-  5. Or I can drive around to the hotel door, but that's about ten minutes.
+  5. Or I can drive around to the hotel door, but that'll take about ten minutes.
   6. Just let me know. Thanks!
 - `asks`:
   1. ask: Will you cross the street, or should he come to the hotel door? / از خیابان رد می‌شوی و پیشش می‌روی، یا او دور بزند و جلوی در هتل بیاید؟ · missed: You didn't say if you'll cross the street or if he should come to the hotel door. / نگفتی از خیابان رد می‌شوی یا او بیاید جلوی در هتل.
@@ -270,7 +273,7 @@ Timeline order: on the plane → after landing → in the taxi → that evening.
 
 ---
 
-## 4. Persian-speaker traps (Starter)
+## 4. Persian-speaker traps (Intermediate)
 
 Built format (`Trap`): `id`, `kind {en, fa}`, `words` (the sentence with the mistake, word by word),
 `wrong` (index of the word to tap), optional `alsoOk` (`{index, sentence}`), `right`, `why {en, fa}`,
@@ -283,14 +286,18 @@ keeps its direction.
 All eight were run through the code's checks: `right` passes, the sentence with the mistake fails,
 and the extra forms listed pass.
 
+**Daily lesson:** the Intermediate daily lesson uses 5 of the 8. Left out: #1 `been-waiting` (B1
+grammar) and #4 `how-long` (the same sentence as Natural phrases A2 #3); they stay as lab practice.
+That leaves six for five places, so one more must move to the lab (see notes).
+
 **1. `id`: `been-waiting`** · `kind`: I've been waiting / I’ve been waiting
 - `words`: `["I'm", "waiting", "here", "for", "twenty", "minutes.", "Where's", "the", "bus?"]` · `wrong`: 0 (`I'm`)
 - `right`: I've been waiting here for twenty minutes. Where's the bus?
 - `why` en: For something that started earlier and is still going on, say “I’ve been waiting”, not “I’m waiting”.
-- `why` fa: در فارسی می‌گوییم «بیست دقیقه است منتظرم». در انگلیسی برای کاری که قبلاً شروع شده و هنوز ادامه دارد، «I’ve been waiting» می‌گوییم، نه «I’m waiting».
+- `why` fa: در فارسی می‌گوییم «بیست دقیقه است که منتظرم». در انگلیسی برای کاری که قبلاً شروع شده و هنوز ادامه دارد، «I’ve been waiting» می‌گوییم، نه «I’m waiting».
 - `accept`: `/\b(?:i've|i have|ive) been waiting\b/`
 - `reject`: `/\b(?:i'm|i am|im) waiting\b/`
-- `alsoGood`: patterns `/\b(?:i've|i have|ive) waited\b/` · word "been waiting"
+- `alsoGood`: patterns `/\b(?:i've|i have|ive) waited\b/`, `/\b(?:i've|i have|ive) been here\b/` · word "been waiting"
 - From this trip: Bus 7 comes every 30 minutes (world).
 
 **2. `id`: `to-not-until`** · `kind`: to (a place) / to (مقصد)
@@ -325,36 +332,36 @@ and the extra forms listed pass.
 - `words`: `["The", "traffic", "is", "very", "much", "today."]` · `wrong`: 4 (`much`)
 - `right`: The traffic is very bad today.
 - `why` en: In English, traffic is “bad” or “heavy”, not “much”.
-- `why` fa: در فارسی می‌گوییم «ترافیک خیلی زیاد است»، ولی در انگلیسی ترافیک «bad» یا «heavy» است، نه «much».
+- `why` fa: در فارسی می‌گوییم «ترافیک خیلی زیاد است»، ولی در انگلیسی ترافیک «bad» یا «heavy» است، نه «much». مثل «ترافیک سنگین» در فارسی، «heavy traffic» هم درست است.
 - `accept`: `/\btraffic(?: is|'s) (?:really |very |so |pretty )?(?:bad|heavy|terrible|awful)\b/`
 - `reject`: `/\btraffic(?: is|'s) (?:very |so |too )?much\b/`
 - `alsoGood`: patterns `/\b(?:a lot of|lots of|so much|too much) traffic\b/` · word "bad"
 - From this trip: the highway is closed, and the traffic near the station is bad (world).
 
-**6. `id`: `by-card`** · `kind`: pay by card / pay by card
-- `words`: `["Can", "I", "pay", "with", "card?"]` · `wrong`: 3 (`with`)
-- `alsoOk`: index 4 (`card?`), sentence "Can I pay with a card?"
-- `right`: Can I pay by card?
-- `why` en: Say “pay by card” or “pay with a card”, not “with card”.
-- `why` fa: در فارسی می‌گوییم «با کارت»، بدون هیچ کلمهٔ دیگری. در انگلیسی یا «by card» می‌گوییم، یا «with a card».
-- `accept`: `/\bpay (?:by|with (?:a|my|your|the)) (?:credit |debit )?card\b/`
-- `reject`: `/\bpay with (?:credit |debit )?card\b/`
-- Also passes: "Can I pay with a card?", "Can I pay with my credit card?"
+**6. `id`: `on-the-bus`** · `kind`: on the bus / on the bus
+- `words`: `["I'm", "in", "the", "bus", "now."]` · `wrong`: 1 (`in`)
+- `right`: I'm on the bus now.
+- `why` en: You’re “on” a bus or a train, but “in” a taxi or a car.
+- `why` fa: در فارسی می‌گوییم «تو اتوبوسم». در انگلیسی برای اتوبوس و قطار «on» می‌گوییم (on the bus) و برای تاکسی و ماشین «in» (in a taxi).
+- `accept`: `/\bon (?:the |a )?(?:bus|train)\b/`
+- `reject`: `/\bin (?:the |a )?(?:bus|train)\b/`
+- Also passes: "I'm on a train now." ("I'm in a taxi" is neither accepted nor rejected.)
+- From this trip: Bus 7 and the Airport Express (world).
 
 **7. `id`: `get-out`** · `kind`: get out (of a car) / get out (از ماشین)
 - `words`: `["I'll", "get", "down", "here,", "thanks."]` · `wrong`: 2 (`down`)
 - `right`: I'll get out here, thanks.
 - `why` en: You “get out of” a car or a taxi, and “get off” a bus or a train. “Get down” means to go lower, like off a chair.
-- `why` fa: در فارسی از ماشین و اتوبوس هر دو «پیاده می‌شویم». در انگلیسی از ماشین و تاکسی «get out» و از اتوبوس و قطار «get off». «get down» یعنی پایین آمدن، مثلاً از صندلی.
+- `why` fa: در فارسی از ماشین و اتوبوس هر دو «پیاده می‌شویم». در انگلیسی از ماشین و تاکسی «get out» می‌گوییم و از اتوبوس و قطار «get off». «get down» یعنی پایین آمدن، مثلاً از صندلی.
 - `accept`: `/\bget out\b/`
-- `reject`: `/\bget down\b/`
+- `reject`: `/\bget (?:down|off)\b/`
 - `alsoGood`: patterns `/\bdrop (?:me|us) off\b/`, `/\bhere(?:'s| is) fine\b/` · word "out"
 
 **8. `id`: `help-with`** · `kind`: help with / help with
 - `words`: `["Can", "you", "help", "me", "for", "my", "suitcase?"]` · `wrong`: 4 (`for`)
 - `right`: Can you help me with my suitcase?
 - `why` en: You help someone “with” something, not “for” it.
-- `why` fa: در فارسی می‌گوییم «برای چمدانم کمکم کن»، ولی در انگلیسی بعد از «help me» کلمهٔ «with» می‌آید، نه «for».
+- `why` fa: در فارسی می‌گوییم «برای بردن چمدانم کمکم می‌کنید؟» و «برای» را «for» ترجمه می‌کنیم. ولی در انگلیسی بعد از «help me» کلمهٔ «with» می‌آید، نه «for».
 - `accept`: `/\bhelp me with\b/`
 - `reject`: `/\bhelp me for\b/`
 - `alsoGood`: patterns `/\bhelp me (?:carry|take|lift|get)\b/`, `/\bgive me a hand\b/` · word "with"
@@ -367,74 +374,54 @@ and the extra forms listed pass.
   mistake that comes from Persian. (Day 1 also has a comparative trap, "taller from".)
 - "in front of" for "across from": three words, so there's no single word to tap, and "The hotel is in
   front of the station" isn't wrong without the story. It's taught in Natural phrases A2 #2 instead.
-- "Do you accept card?": "accept" is fine English, so the only mistake is the missing "s", which is
-  close to the "with card" trap. It's taught in Natural phrases A2 #4 instead.
+- "Do you accept card?": "accept" is fine English, so the only mistake is the missing "s". It's
+  taught in Natural phrases A2 #4 instead.
+- "Can I pay with card?": everyday US speech, so it isn't a mistake (replaced by `on-the-bus`).
 
 ---
 
 ## Notes for the editor
 
+Only what's still open.
+
 ### (a) New facts to add to `world.md`
 
-1. **The airline's baggage desk** (voice Andrew; a new character, never in a scene with Mike) sends a
-   voice message after Sara lands: the backpack is on the evening flight (Day 1) and will be
-   delivered to the Park Hotel **tomorrow between 8 and 10 a.m.**, or left at the front desk.
-2. **The front desk's message reaches Sara during the taxi ride** (Daniel: check-in at 3, leave your
-   bags, "What time do you think you'll get here?", help with bags). `world.md` step 5 puts "the
-   front desk's message" at the hotel; this makes it a voice message sent before she arrives.
-3. **Tom's car is still at the garage tonight**, so Sara gets to dinner on her own and asks Tom for
-   the restaurant's address (the restaurant isn't named).
-4. **Sara takes a RideNow to dinner.** Carlos, in a white car, can't stop at the hotel door because of
-   the traffic by the station; he waits across the street in front of Central Station, and she
-   crosses.
-5. **Sara pays Mike by card and adds a $10 tip ($65 in all).**
-6. In Say it in English (Confident) and Voice messages, **the learner stands in Sara's place** and
-   isn't named.
-7. Traps #1: a generic wait of twenty minutes for the bus (not Sara's).
+1. **Carlos's message:** a white car; the traffic by the station stops him from reaching the hotel
+   door, so he waits across the street in front of Central Station and Sara crosses. (`world.md`
+   says only that he waits across from the hotel.)
+2. **Daniel's message** also asks when Sara will get to the hotel and if she needs help with her bags.
+3. **Sara pays the $55 fare plus the $10 tip by card ($65 in all).**
+4. **Sara asks Tom for the restaurant's address** and gets there on her own (the restaurant isn't
+   named).
+5. **The learner is Sara** in Say it in English (Professional) and Voice messages. `world.md` still
+   describes "you" only as a learner on their own trip, and still names the tracks Starter /
+   Confident (now Intermediate / Professional).
 
-### (b) Couldn't fit or unsure
+### (b) Open questions
 
-1. **Sara's phone in the evening.** She leaves her phone in the taxi when she reaches the hotel, but
-   Say-it #3–4 and Voice message 4 need it that evening. `world.md` step 7 (Tom texts, Sara reads
-   RideNow reviews) already assumes she has it back. The role-play file (`conversation.md`) should say
-   how she gets it back, for example Mike brings it to the hotel.
-2. **B1 chunk choices.** Of the five candidates, "right across from" and "drop me off" are already the
-   A2 set's chunks (#2, #5), and "across from" is A2. I replaced them with "Have you heard of it?" and
-   "Have a good one!" ("Good luck" and "Don't be tired" are real Persian-speaker goodbyes). If you'd
-   rather keep the owner's two, either fits in place of #2 or #5. "drop me off" is still heard in the
-   conversation.
-3. **No B1 chunk is in the conversation yet.** The changes are in the table in section 1b: lines 2,
-   7, 8 and 11 change and line 13 is new (about +30 words, so about 170). All A2 chunks stay, but A2
-   #5 would be heard as "dropping me off". The ride-v2 automatic check "every phrase chunk appears in
-   the conversation" then needs to allow "-ing" forms. B1 #3 is only heard as "I think it'll take"
-   (line 7) and as "What time do you think you'll get here?" (Daniel). Putting the full question in
-   Sara's line 6 would remove A2 #3 ("How long does it take").
-4. **The lost-phone item was left out of Say it in English (Confident) on purpose.** In the Confident
-   lesson, Say it comes right before the role-play, so the item would give away the role-play's
-   surprise. A spare, if the surprise is something else:
+1. **Traps daily lesson: one more to drop.** Leaving out #1 and #4 leaves six traps for five places.
+   A candidate is #7 `get-out`, whose `alsoGood` ("drop me off") is Natural phrases A2 #5 again.
+2. **B1 chunk choices.** "Have you heard of it?" and "Have a good one!" replace the owner's "right
+   across from" and "drop me off", which are already A2 chunks. Either of the owner's could go back
+   in place of #2 or #5.
+3. **Spare Say-it item.** The lost-phone item is left out of the Professional set so it doesn't give
+   away the role-play's surprise. A spare, if the surprise changes:
    - `id` `lost-phone` · `to` To Riverton Taxi / به تاکسی ریورتون
    - `fa`: سلام، امروز با یکی از تاکسی‌هاتون از فرودگاه اومدم هتل پارک و گوشیم رو تو ماشین جا گذاشتم. می‌شه از راننده بپرسید؟
    - `points`: you left your phone in one of their taxis (airport → Park Hotel) / گوشی‌ات را در یکی از تاکسی‌هایشان جا گذاشته‌ای (از فرودگاه تا هتل پارک) · you're asking them to check with the driver / از آن‌ها می‌خواهی از راننده بپرسند
    - `models`: "Hi, I left my phone in one of your taxis today, from the airport to the Park Hotel. Could you check with the driver?" · "I think I left my phone in one of your taxis. It took me from the airport to the Park Hotel. Can you check?"
    - `hints`: I left my phone / گوشیم رو جا گذاشتم · check with the driver / از راننده بپرسید
-5. **Three of the four voice messages use Brian** (Tom, Daniel, Carlos). Each is its own scene, as in
-   Day 1, where the clinic shares Sara's voice. The airline uses Andrew so that two Brian messages
-   never come one after the other at the start.
-6. **Code and prompts outside the content arrays** (not edited):
+4. **Code and prompts outside the content arrays** (not edited):
    - the Voice messages intro is a constant in `VoiceMessages.svelte`; the Day 2 version is above;
    - `src/lib/server/voice-messages-ai.ts` names "Mr Brown and the clinic" in its tone rule, which
      needs to become per-day (for example "To the hotel, the airline and a driver: polite but
      simple");
-   - `say-in-english.ts` and its AI prompt say A2. The Confident models are B1, so the "better"
-     version may need a B1 level for that set.
-7. **Formatting of Persian text.** Backticks are rendered only in Natural phrases tips, so they're
-   used there. Say-it and Voice-message Persian is plain text (no backticks are rendered), and
-   `why.fa` in traps must not contain backticks (a code test). In those fields, English names stay
-   plain or go in «».
-   - One place keeps "RideNow" in Latin script inside Persian: the Say-it #4 `to`, «به رانندهٔ
-     RideNow». Elsewhere it's «تاکسی اینترنتی». The Persian reviewer should check this.
-8. **Speech-to-text risk for the traps** (as the spec says): it may quietly fix "near of", "with
-   card" or "how much does it take". Record each wrong sentence with a Persian accent before these
+   - `say-in-english.ts` and its AI prompt say A2. The Professional models are B1, so the "better"
+     version may need a B1 level for that set;
+   - the daily-lesson subsets (Say it 3 of 4, Voice messages 2 of 4, traps 5 of 8) need a way to
+     pick items per track; today each module runs its whole array.
+5. **Speech-to-text risk for the traps** (as the spec says): it may quietly fix "near of", "in the
+   bus" or "how much does it take". Record each wrong sentence with a Persian accent before these
    ship.
-9. **The A2 `found` regexes are mine**, not reviewed. `ride-v2.md` gives the word check only in prose.
-10. **Voice message 1's model has Sara take a taxi**, as in the story. The AI accepts either choice.
+6. **Only A2 #3's `found` regex has been reviewed**; the other A2 regexes are mine (`ride-v2.md` gives
+   the word check only in prose).
