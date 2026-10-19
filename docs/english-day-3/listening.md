@@ -31,7 +31,7 @@ Neither voice is Ava, and the two don't share a voice. Tom (also Brian) isn't in
 
 ### 1.2 `conversation`
 
-There are 15 lines and 146 words; the built test allows 110 to 160. `#` is the line index that
+There are 15 lines and 148 words; the built test allows 110 to 160. `#` is the line index that
 `evidence` uses. Each line carries one idea, in short spoken A2 English with contractions.
 
 | # | `who` | `text` | Words |
@@ -44,7 +44,7 @@ There are 15 lines and 146 words; the built test allows 110 to 160. `#` is the l
 | 5 | daniel | Thanks. Here are your key cards. You're in room 714, on the seventh floor. | 14 |
 | 6 | sara | Great. Is the Wi-Fi free? | 5 |
 | 7 | daniel | Yes. The network is ParkHotel-Guest, and the password is mainstreet210. | 10 |
-| 8 | daniel | It's also on your key-card holder. That way, you won't forget it. | 12 |
+| 8 | daniel | It's also on your key-card holder. That way, you don't have to remember it. | 14 |
 | 9 | sara | And is breakfast included? | 4 |
 | 10 | daniel | Yes. Tomorrow it's from seven to ten-thirty, in The Corner Café. | 11 |
 | 11 | sara | Oh, by the way, my phone's dead, and my charger's in my backpack. | 13 |
@@ -57,7 +57,7 @@ There are 15 lines and 146 words; the built test allows 110 to 160. `#` is the l
 | Part | `from` | `to` | `title.en` | `title.fa` | Words |
 |---|---|---|---|---|---|
 | 0 | 0 | 4 | The booking | رزرو | 43 |
-| 1 | 5 | 10 | Room, Wi-Fi, breakfast | اتاق، وای‌فای، صبحانه | 56 |
+| 1 | 5 | 10 | Room, Wi-Fi, breakfast | اتاق، وای‌فای، صبحانه | 58 |
 | 2 | 11 | 14 | The phone and the backpack | گوشی و کوله‌پشتی | 47 |
 
 ### 1.4 `linkPhrases`
@@ -76,8 +76,8 @@ a time (`as soon as`).
 
 This is the module `intro`, the same text as in section 3.
 
-- en: Sara is checking in at the Park Hotel. Listen for the name on her booking, the Wi-Fi password, and how Daniel helps her.
-- fa: سارا در پذیرش هتل پارک است و می‌خواهد اتاقش را تحویل بگیرد. گوش بده ببین رزروش به چه اسمی است، رمز وای‌فای چیست و دنیل چطور کمکش می‌کند.
+- en: Sara is checking in at the Park Hotel. Listen for her room number, the Wi-Fi password, the breakfast time, and how Daniel helps her.
+- fa: سارا در پذیرش Park Hotel است و می‌خواهد اتاقش را تحویل بگیرد. گوش بده ببین شمارهٔ اتاقش چند است، رمز وای‌فای چیست، صبحانه چه ساعتی است و دنیل چطور کمکش می‌کند.
 
 ### 1.6 `connect`
 
@@ -85,7 +85,7 @@ This is the module `intro`, the same text as in section 3.
 
 | # | Cause | `answers` (result index) | `evidence` (line) |
 |---|---|---|---|
-| 0 | Daniel doesn't know how to spell Demir. | 1 | 3 |
+| 0 | Daniel isn't sure how to spell Demir. | 1 | 3 |
 | 1 | Sara's phone is dead. | 3 | 12 |
 | 2 | The backpack arrives at the hotel. | 0 | 14 |
 
@@ -93,7 +93,7 @@ This is the module `intro`, the same text as in section 3.
 
 | # | Result | Words |
 |---|---|---|
-| 0 | Daniel calls her room. | 4 |
+| 0 | Daniel calls to say it's here. | 6 |
 | 1 | Sara spells her last name. | 5 |
 | 2 | Daniel gives her the key cards. *(the fourth result: true (line 5), but its cause isn't listed)* | 6 |
 | 3 | Daniel lends her a charger. | 5 |
@@ -101,23 +101,23 @@ This is the module `intro`, the same text as in section 3.
 **Second-match check** (every cause against every result):
 - Cause 0 (the spelling): Daniel finds the booking and only then gives the key cards. That is a
   chain of events, not a result of the spelling, so result 2 doesn't match.
-- Cause 1 (the dead phone): Daniel calls the room because the backpack has arrived (line 14), not
-  because Sara's phone is dead. A learner could still argue "her phone is dead, so he calls the
-  room phone". The conversation never says that, and result 3 is said almost word for word. Flagged
-  in the notes.
+- Cause 1 (the dead phone): result 0 is now "Daniel calls to say it's here". "It" can only be
+  something that arrives, so the old reading "her phone is dead, so he calls the room phone" no
+  longer fits, and result 3 is said almost word for word (line 12).
 - Cause 2 (the backpack arrives): the charger is lent tonight, before the backpack comes. Its
   arrival tomorrow doesn't cause the loan. I wrote this cause as an arrival ("arrives at the hotel")
   and not "comes tomorrow" for that reason.
 
 The two right answers about Daniel use other words than the conversation: "lends her a charger" for
-"You can borrow one of our chargers", and "calls her room" for "I'll call your room".
+"You can borrow one of our chargers", and "calls to say it's here" for "I'll call your room as soon
+as it gets here".
 
 ### 1.7 `choices`
 
 | # | `kind.en` / `kind.fa` | `question` | `options` (the answer in bold) | `answer` | `evidence` |
 |---|---|---|---|---|---|
 | 0 | Room number / شمارهٔ اتاق | What's Sara's room number? | Room 740. / **Room 714.** / Room 417. | 1 | 5 |
-| 1 | Wi-Fi password / رمز وای‌فای | What's the Wi-Fi password? | **mainstreet210** / ParkHotel-Guest / mainstreet201 | 0 | 7 |
+| 1 | Wi-Fi password / رمز وای‌فای | What's the Wi-Fi password? | **mainstreet210** / ParkHotel-Guest / mainstreet120 | 0 | 7 |
 | 2 | What time / چه ساعتی | When is breakfast tomorrow? | From six-thirty to ten. / From seven to eleven. / **From seven to ten-thirty.** | 2 | 10 |
 
 The password options have no full stop, because a full stop would look like part of the password.
@@ -128,7 +128,9 @@ Where the wrong options come from:
   - I deliberately used no real number from the conversation here. "Room 210" would hint at the
     password on the next screen.
 - **Question 1:** "ParkHotel-Guest" is the network name: a real detail, linked to the wrong thing.
-  "mainstreet201" isn't said, and it tests the number ("two-ten" or "two-oh-one").
+  "mainstreet120" isn't said, and it tests the number: "one-twenty" sounds clearly different from
+  "two-ten" (or "two-one-oh"), unlike the first draft's "mainstreet201" ("two-oh-one"), which was
+  too close by ear.
   - I left out "mainstreet714" on purpose. Once Question 0 has shown that 714 is the room, the
     learner could rule it out without listening.
 - **Question 2:** "From six-thirty to ten" is the world's weekday time. It isn't said, and it is
@@ -198,22 +200,22 @@ guest, written as third-person narration and read by Andrew (not Daniel's voice)
 | `level` | `B1` |
 | `voice` | `a` (Andrew narrates) |
 | `imageAlt` | none (no picture yet) |
-| Words | 188 |
-| Listening (`listenSeconds`) | ≈ 0:57 (188 ÷ (3.1 × 1.06)) |
-| Speaking limit (`speakLimit`) | 1:30 (about 67 s at its written pace, 188 ÷ (3.1 × 0.9), so it is under 90 s) |
+| Words | 187 |
+| Listening (`listenSeconds`) | ≈ 0:57 (187 ÷ (3.1 × 1.06)) |
+| Speaking limit (`speakLimit`) | 1:30 (about 67 s at its written pace, 187 ÷ (3.1 × 0.9), so it is under 90 s) |
 
 **`text`**
 
-> Daniel has worked at the front desk of the Park Hotel since it opened last year, and his favorite story is from its very first week. It was almost midnight when a tired man walked in with a big suitcase. He said he had a booking under the name Walker. Daniel couldn't find it, so he asked the man to spell it, and he tried every spelling he could think of. Nothing. The man was getting upset, so he showed Daniel the email. It turned out that his booking was at the Parkside Hotel, near the airport, twenty miles away. He had forgotten the full name, so in the taxi he asked for “the Park Hotel,” and the driver brought him downtown. It was too late to go back, but luckily, there was one free room left. So he ended up staying, and Daniel called the Parkside to cancel his booking for him. The man liked the hotel so much that he has stayed there on every trip to Riverton ever since. And when he checks in, he always says, “Walker. And yes, I'm sure it's this one.”
+> Daniel has worked at the front desk of the Park Hotel since it opened last year, and his favorite story is from its very first week. It was almost midnight when a tired man walked in with a big suitcase. He said he had a booking under the name Walker. Daniel couldn't find it, so he asked the man to spell it. Then Daniel tried every spelling he could think of. Nothing. The man was getting upset, so he showed Daniel the email. It turned out that his booking was at the Parkside Hotel, near the airport, twenty miles away. He had forgotten the full name, so in the taxi he asked for “the Park Hotel,” and the driver brought him downtown. It was too late to go back, but luckily, there was one room left. So he ended up staying, and Daniel called the Parkside to cancel his booking for him. The man liked the hotel so much that he has stayed there on every trip to Riverton ever since. And when he checks in, he always says, “Walker. And yes, I'm sure it's this one.”
 
 (In the `.ts` file, use curly apostrophes as Day 2 does: couldn’t, I’m, it’s.)
 
 **`keyPoints`** (6, plain English)
-1. Daniel has worked at the Park Hotel's front desk since it opened, and his favorite story is from its first week.
-2. Late one night, a tired man said he had a booking under the name Walker, but Daniel couldn't find it.
-3. Daniel tried every spelling, and the upset man showed him his booking email.
-4. The booking was at the Parkside Hotel near the airport: he had forgotten the full name and asked the taxi for the Park Hotel.
-5. It was too late to go back, so he stayed in the last free room, and Daniel canceled the other booking for him.
+1. In the hotel's first week, late at night, a tired man said he had a booking under the name Walker, but Daniel couldn't find it.
+2. Daniel tried every spelling he could think of, and the upset man showed him his booking email.
+3. The booking was at the Parkside Hotel, near the airport, twenty miles away.
+4. He had forgotten the full name, so he asked the taxi driver for "the Park Hotel" and ended up downtown.
+5. It was too late to go back, so he took the last room, and Daniel canceled the other booking for him.
 6. He has stayed at the Park Hotel on every trip since, and jokes that he's sure it's the right one.
 
 Level notes:
@@ -232,29 +234,12 @@ Level notes:
 
 | Track | Module | `title` / `short` | `does` (en / fa) | `intro` (en / fa) |
 |---|---|---|---|---|
-| Intermediate | `listen-act` | As on Day 2: Listen and connect / گوش بده و وصل کن · Listen / گوش دادن | Hear Sara check in with Daniel at the front desk, then show how the facts connect. / گفت‌وگوی سارا و دنیل را در پذیرش هتل بشنو و نشان بده اتفاق‌هایش چطور به هم ربط دارند. | Sara is checking in at the Park Hotel. Listen for the name on her booking, the Wi-Fi password, and how Daniel helps her. / سارا در پذیرش هتل پارک است و می‌خواهد اتاقش را تحویل بگیرد. گوش بده ببین رزروش به چه اسمی است، رمز وای‌فای چیست و دنیل چطور کمکش می‌کند. |
-| Professional | `listen-retell` | As on Day 2: Listen and retell / گوش بده و بازگو کن · Retell / بازگویی | Hear Daniel's funniest check-in story, then tell it in your own words. / بامزه‌ترین ماجرای دنیل در پذیرش هتل را بشنو و بعد با کلمات خودت تعریفش کن. | Here's the story Daniel, at the front desk, loves to tell about one of his guests. Listen, then tell it in your own words. / این ماجرایی است که دنیل، مسئول پذیرش هتل، دوست دارد دربارهٔ یکی از مهمان‌هایش تعریف کند. گوش بده و بعد با کلمات خودت تعریفش کن. |
+| Intermediate | `listen-act` | As on Day 2: Listen and connect / گوش بده و وصل کن · Listen / گوش دادن | Hear Sara check in with Daniel at the front desk, then show how the facts connect. / گفت‌وگوی سارا و دنیل را در پذیرش هتل بشنو و نشان بده اتفاق‌هایش چطور به هم ربط دارند. | Sara is checking in at the Park Hotel. Listen for her room number, the Wi-Fi password, the breakfast time, and how Daniel helps her. / سارا در پذیرش Park Hotel است و می‌خواهد اتاقش را تحویل بگیرد. گوش بده ببین شمارهٔ اتاقش چند است، رمز وای‌فای چیست، صبحانه چه ساعتی است و دنیل چطور کمکش می‌کند. |
+| Professional | `listen-retell` | As on Day 2: Listen and retell / گوش بده و بازگو کن · Retell / بازگویی | Hear Daniel's favorite check-in story, then tell it in your own words. / ماجرای موردعلاقهٔ دنیل در پذیرش هتل را بشنو و بعد با کلمات خودت تعریفش کن. | Daniel at the front desk has a favorite story about a guest. Listen, then tell it in your own words. / دنیل، مسئول پذیرش هتل، ماجرایی دربارهٔ یکی از مهمان‌هایش دارد که عاشق تعریف کردنش است. گوش بده و بعد با کلمات خودت تعریفش کن. |
 
-The minutes are as on Day 2: `{ 15: 4, 20: 4 }`. In Persian, the hotel is «هتل پارک», as in Day 2's
-Persian strings, so no English needs «…» in these lines.
-
----
-
-## New facts for world.md
-
-These come from the retell only. The conversation uses only facts already in `world.md`.
-
-- **Daniel's favorite story** comes from the hotel's very first week, last year. A tired man named
-  **Walker** came in at almost midnight with a big suitcase and a booking Daniel couldn't find. His
-  booking was at the **Parkside Hotel** (fictional, near the airport, twenty miles from downtown). He
-  had forgotten the full name, so he asked his taxi driver for "the Park Hotel". The Park Hotel had
-  one free room left, so he stayed, and Daniel canceled the Parkside booking for him.
-  - Since then, Walker has stayed at the Park Hotel on every trip to Riverton. His joke at check-in
-    is "Walker. And yes, I'm sure it's this one."
-- **The Parkside Hotel**: a different, fictional hotel near Riverton Airport. It appears only in this
-  story.
-- The twenty miles agree with Day 2's world (the airport is about 20 miles from downtown). The first
-  week fits Day 2's opening date (March 13 last year).
+The minutes are as on Day 2: `{ 15: 4, 20: 4 }`. In Persian lines, the hotel's name is written in
+Latin letters, `Park Hotel` (as in the Intermediate intro), with one exception: the retell title
+«هتل پارکِ اشتباهی».
 
 ---
 
@@ -270,7 +255,7 @@ These come from the retell only. The conversation uses only facts already in `wo
    - Daniel bringing out the suitcase (step 9).
 
    None of them is tested. If the owner wants the hold, line 4 could become "…a credit card, please?
-   It's just for extras, like the minibar." That makes 154 words. Its fact (a card "for
+   It's just for extras, like the minibar." That makes 156 words. Its fact (a card "for
    incidentals") is already in `world.md`.
 2. **Question order inside the parts.** The counts per part are the same as Day 2 (1, 3, 2), but the
    order is different: part 1 is three choice questions and part 2 is two Connect questions. The
@@ -281,9 +266,8 @@ These come from the retell only. The conversation uses only facts already in `wo
    its answer). `that way` isn't tested, as Day 2's `unless` wasn't in the Intermediate set.
    - If a reviewer wants a third logical link instead, `before` is the most natural choice: "Just
      bring it back before you check out" (the charger).
-4. **The dead phone and "Daniel calls her room".** Someone could reason "her phone is dead, so he
-   calls the room phone". The conversation doesn't say it, but check this in the no-listening test.
-   If needed, change result 0 to "Daniel calls her when it comes."
+4. **The dead phone and "Daniel calls her room".** Resolved in review v1: result 0 is now "Daniel
+   calls to say it's here", which can't be read as a result of the dead phone.
 5. **Spec rule 5 on number options.** In "What's Sara's room number?" only 714 is in the
    conversation. This is the same exception as Day 2's "About forty minutes". With numbers, the
    learner can't tell which option is the said one without listening, and I avoided real numbers
@@ -292,7 +276,7 @@ These come from the retell only. The conversation uses only facts already in `wo
    - Connect 0 (the spelling) is easy to guess, like Day 2's "Sara says it's across from Central
      Station".
    - In the password question, a Day 2 learner knows the hotel is on Main Street, so they could rule
-     out "ParkHotel-Guest". "mainstreet201" keeps it a real listening item (two-ten or two-oh-one).
+     out "ParkHotel-Guest". "mainstreet120" keeps it a real listening item (two-ten or one-twenty).
 7. **Things to check in the audio.** When the TTS is generated, check how it reads:
    - "714": it should be "seven-fourteen", not "seven hundred fourteen";
    - "mainstreet210": "main street two-ten" or "two-one-oh". If the TTS reads it badly, write the
@@ -314,10 +298,10 @@ These come from the retell only. The conversation uses only facts already in `wo
 ### (b) Checks done
 
 - **Word counts** (counted with a script, `split(/\s+/)` as in the tests):
-  - the conversation is 146 words, within the test's 110–160;
-  - the parts are 43, 56 and 47 words, and there are 15 lines;
+  - the conversation is 148 words, within the test's 110–160;
+  - the parts are 43, 58 and 47 words, and there are 15 lines;
   - results and options have 1–6 words, under the test's 8;
-  - the retell is 188 words, within 160–190, with `listenSeconds` 57 and `speakLimit` 90.
+  - the retell is 187 words, within 160–190, with `listenSeconds` 57 and `speakLimit` 90.
 - **Voices:** Daniel is `c` and Sara is `d`. They are different, and neither is Ava (`b`). The
   retell narrator is `a`.
 - **The retell id:** `wrong-park-hotel` is kebab-case, 16 characters (40 or fewer) and unique among
@@ -339,3 +323,57 @@ These come from the retell only. The conversation uses only facts already in `wo
     `world.md` fact.
 - **No real brands or places, and no prices.** The retell has no money in it, and the conversation
   doesn't mention the $50 hold. US spelling throughout.
+
+### (c) Review v1 applied
+
+Applied (English, Persian and learning-UX reviews):
+- **Line 8:** "That way, you won't forget it." became "That way, you don't have to remember it." The
+  conversation is now 148 words (part 1: 58).
+- **Connect:** cause 0 is "Daniel isn't sure how to spell Demir."; result 0 is "Daniel calls to say
+  it's here." (6 words). This also closes open question 4 (the dead phone).
+- **Password distractor:** "mainstreet201" became "mainstreet120". "One-twenty" is clearly different
+  from "two-ten" when heard; "two-oh-one" was too close.
+- **Intermediate intro (1.5 and section 3):** en now lists the room number, the Wi-Fi password, the
+  breakfast time and how Daniel helps, matching the three choice questions and the Connect. The fa
+  line says the same, with the hotel as Latin `Park Hotel`.
+- **Retell text:** "and he tried every spelling" became "Then Daniel tried every spelling" (it was
+  unclear who "he" was). "One free room left" became "one room left" ("free" already means "no
+  cost" in the Wi-Fi line). Now 187 words; `listenSeconds` and `speakLimit` don't change.
+- **Retell key points:** the first point (Daniel's job since the opening) is folded into the second
+  ("In the hotel's first week, late at night…"). To keep the six points the test expects, the old
+  point 4 is split in two (the Parkside booking; the forgotten name and the taxi).
+- **Retell `does`:** "funniest" became "favorite", as in the text; fa «ماجرای موردعلاقهٔ دنیل…».
+- **Retell intro:** en "Daniel at the front desk has a favorite story about a guest. Listen, then
+  tell it in your own words."; fa as the Persian reviewer wrote it.
+- **Hotel name in Persian:** Latin `Park Hotel` in Persian lines, except the retell title «هتل پارکِ
+  اشتباهی». The note under section 3 now says so.
+
+Declined or not for this file:
+- The learner's name (Karimi) doesn't appear in the listening modules, so nothing changed.
+- "Is the Wi-Fi free?" (line 6) stays: there "free" means "no cost", the only sense left in this
+  file.
+- The other review points (role-play prompt, twists, goals, Persuade, Say it, traps, world.md's goal
+  line) concern other files.
+
+---
+
+## New facts for world.md
+
+These come from the retell only. The conversation uses only facts already in `world.md`.
+
+### Other hotels, near the airport
+
+- **The Parkside Hotel**: a different, fictional hotel near Riverton Airport, twenty miles from
+  downtown. It appears only in the retell (the wrong hotel), never in Choose and persuade.
+
+### Daniel's favorite story (the retell)
+
+- It comes from the hotel's very first week, last year. A tired man named **Walker** came in at
+  almost midnight with a big suitcase and a booking Daniel couldn't find. His booking was at the
+  **Parkside Hotel**. He had forgotten the full name, so he asked his taxi driver for "the Park
+  Hotel". The Park Hotel had one room left, so he stayed, and Daniel canceled the Parkside booking
+  for him.
+- Since then, Walker has stayed at the Park Hotel on every trip to Riverton. His joke at check-in
+  is "Walker. And yes, I'm sure it's this one."
+- The twenty miles agree with Day 2's world (the airport is about 20 miles from downtown). The first
+  week fits Day 2's opening date (March 13 last year).
