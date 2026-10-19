@@ -67,7 +67,7 @@ describe('/api/english/review', () => {
 		const ids = CALL.goals.map(goal => goal.id);
 		fetchMock.mockResolvedValue(openAi([]));
 		const turns = [{ speaker: 'reception', text: CALL.greeting }, { speaker: 'learner', text: 'I forget my phone in taxi.' }];
-		const ok = await POST(fixture({ scene: CALL.id, variant: 'busy', turns, goals: ids, proof: signGoals('u1', 'busy', ids, ids) }).event);
+		const ok = await POST(fixture({ scene: CALL.id, variant: 'busy', turns, goals: ids, proof: signGoals('u1', 'busy', ids, ids, CALL.id) }).event);
 		expect(ok.status).toBe(200);
 		const system = JSON.stringify(fetchMock.mock.calls[0][1].body);
 		expect(system).toContain('a phone call to a taxi company');

@@ -23,6 +23,7 @@ import { env } from '$env/dynamic/private';
 import { verifyJamieLine } from '$lib/server/jamie-line';
 import { ALL_ROLE_SCENES, roleSceneById } from '$lib/practice/day-content';
 import { preparedLines } from '$lib/practice/roleplay';
+import { createLimiter, tooMany, verifiedUser } from '$lib/server/rate-limit';
 import { retellPieceById as getPiece } from '$lib/practice/day-content';
 
 const MODEL = env.OPENAI_TTS_MODEL || 'gpt-4o-mini-tts';
@@ -44,11 +45,20 @@ const ALLOWED = new Set<string>(ALL_ROLE_SCENES.flatMap(preparedLines));
 
 const CACHE = 'public, max-age=31536000, s-maxage=31536000, immutable';
 
-export const GET: RequestHandler = async ({ url, locals }) => {
+/** Only these parameters: anything else would make a new cache entry, and a new paid request. */
+const PARAMS = new Set(['v', 'voice', 'text', 'sig', 'piece', 'scene']);
+/** Per caller, per instance: a burst stops here before it reaches OpenAI. */
+const perMinute = createLimiter(30, 60_000);
+
+export const GET: RequestHandler = async ({ url, locals, getClientAddress }) => {
+	if ([...url.searchParams.keys()].some(key => !PARAMS.has(key)) || url.searchParams.get('v') !== null && url.searchParams.get('v') !== '1') return new Response('Unknown parameter', { status: 400 });
+	const sceneId = url.searchParams.get('scene');
+	const scene = sceneId === null ? ALL_ROLE_SCENES[0] : roleSceneById(sceneId);
+	if (!scene) return new Response('Unknown scene', { status: 400 });
 	const piece = url.searchParams.has('piece') ? getPiece(url.searchParams.get('piece') ?? '') : null;
 	if (url.searchParams.has('piece') && !piece) return new Response('Unknown piece', { status: 400 });
 	// A story is about a thousand characters of narration: only for signed-in learners.
-	if (piece && !locals.user) return new Response('Sign in', { status: 401 });
+	if (piece && !(await verifiedUser(locals))) return new Response('Sign in', { status: 401 });
 	const text = piece?.text ?? url.searchParams.get('text') ?? '';
 	const voice = VOICES[url.searchParams.get('voice') ?? 'a'];
 	const known = !!piece || ALLOWED.has(text) || (text.length <= 400 && verifyJamieLine(text, url.searchParams.get('sig')));
@@ -56,6 +66,9 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		return new Response('Unknown line', { status: 400 });
 	}
 	if (!env.OPENAI_API_KEY) return new Response('Voice unavailable', { status: 503 });
+	let caller = 'unknown';
+	try { caller = getClientAddress(); } catch { /* tests, local */ }
+	if (!perMinute(caller)) return tooMany();
 
 	const controller = new AbortController();
 	const timeout = setTimeout(() => controller.abort(), piece ? 55_000 : 15_000);
@@ -63,7 +76,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		const response = await fetch('https://api.openai.com/v1/audio/speech', {
 			method: 'POST',
 			headers: { Authorization: `Bearer ${env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
-			body: JSON.stringify({ model: MODEL, voice, input: text, instructions: piece ? NARRATION : (roleSceneById(url.searchParams.get('scene')) ?? ALL_ROLE_SCENES[0]).voiceDirection, response_format: 'mp3' }),
+			body: JSON.stringify({ model: MODEL, voice, input: text, instructions: piece ? NARRATION : scene.voiceDirection, response_format: 'mp3' }),
 			signal: controller.signal
 		});
 		if (!response.ok) {

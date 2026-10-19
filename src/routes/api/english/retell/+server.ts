@@ -20,7 +20,7 @@ import { speakLimit } from '$lib/practice/retell';
 import { retellPieceById as getPiece } from '$lib/practice/day-content';
 import { RetellRecordSchema } from '$lib/practice/progress';
 import { askChain, englishLearner, spendAllowance } from '$lib/server/english-ai';
-import { signJamieLine } from '$lib/server/jamie-line';
+import { signBetter } from '$lib/server/jamie-line';
 import { transcribe } from '$lib/server/transcribe';
 
 /** Transcription and feedback together can take a while for a 2-minute answer. */
@@ -110,7 +110,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const key = normalise(original);
 		if (!key || !better || seen.has(key) || key === normalise(better) || !said.includes(key) || !item.whyEn.trim() || !item.whyFa.trim()) return [];
 		seen.add(key);
-		return [{ original, better, why: { en: item.whyEn.trim(), fa: item.whyFa.trim() }, voiceSig: signJamieLine(better) }];
+		return [{ original, better, why: { en: item.whyEn.trim(), fa: item.whyFa.trim() }, voiceSig: signBetter(better) }];
 	}).slice(0, 4);
 	const inaccuracies = result.inaccuracies.filter(item => item.said.trim() && item.fact.trim()).slice(0, 4);
 

@@ -162,9 +162,11 @@ describe('/api/english/converse', () => {
 			env.OPENAI_API_KEY = 'o';
 			const turns = [...first, { speaker: 'reception', text: CALL.twist!.lines.busy }, { speaker: 'learner', text: 'I will meet Mike at the taxi stand at 5. My name is Sara, call the Park Hotel front desk.' }];
 			fetchMock.mockResolvedValueOnce(openAi({ reply: 'Great, you’re all set, Sara. Mike will see you at 5.', goalsMet: ['plan', 'contact'], done: true }));
-			const body = await (await POST(call(turns, { goals: ['ride', 'phone'], proof: signGoals('u1', 'busy', ['ride', 'phone'], ['ride', 'phone', 'plan', 'contact']) }).event)).json();
+			const body = await (await POST(call(turns, { goals: ['ride', 'phone'], proof: signGoals('u1', 'busy', ['ride', 'phone'], ['ride', 'phone', 'plan', 'contact'], 'taxi-lost-phone-v1') }).event)).json();
 			expect(body).toMatchObject({ goals: ['ride', 'phone', 'plan', 'contact'], done: true });
-			expect(provenGoals('u1', 'busy', body.goals, body.proof, ['ride', 'phone', 'plan', 'contact'])).toHaveLength(4);
+			expect(provenGoals('u1', 'busy', body.goals, body.proof, ['ride', 'phone', 'plan', 'contact'], 'taxi-lost-phone-v1')).toHaveLength(4);
+			// Bound to the scene: the same goals without it don't verify.
+			expect(provenGoals('u1', 'busy', body.goals, body.proof, ['ride', 'phone', 'plan', 'contact'])).toEqual([]);
 			// A hotel proof never vouches for the call, and the call's variants are its own.
 			expect(provenGoals('u1', 'lift', body.goals, body.proof)).toEqual([]);
 			expect((await POST(call(first, { variant: 'lift' }).event)).status).toBe(400);

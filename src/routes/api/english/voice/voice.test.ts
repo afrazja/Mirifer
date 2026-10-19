@@ -68,7 +68,8 @@ describe('/api/english/voice', () => {
 	it('narrates a Listen & retell piece by id with a narrator direction', async () => {
 		env.OPENAI_API_KEY = 'k';
 		fetchMock.mockResolvedValueOnce(new Response(new Uint8Array([1]), { status: 200 }));
-		const learner = { user: { id: 'u1' } };
+		const as = (user: unknown) => ({ supabase: { auth: { getUser: async () => ({ data: { user }, error: null }) } } });
+		const learner = as({ id: 'u1' });
 		const res = await GET({ url: new URL('http://localhost/api/english/voice?piece=lost-phone&voice=d'), locals: learner } as any);
 		expect(res.status).toBe(200);
 		const body = JSON.parse(fetchMock.mock.calls[0][1].body);
@@ -79,7 +80,7 @@ describe('/api/english/voice', () => {
 		fetchMock.mockResolvedValueOnce(new Response(new Uint8Array([1]), { status: 200 }));
 		expect((await GET({ url: new URL('http://localhost/api/english/voice?piece=wedding-cake&voice=a'), locals: learner } as any)).status).toBe(200);
 		expect(JSON.parse(fetchMock.mock.calls[1][1].body).input).toContain('Mike has driven a taxi');
-		expect((await GET({ url: new URL('http://localhost/api/english/voice?piece=wedding-cake&voice=a'), locals: { user: null } } as any)).status).toBe(401);
+		expect((await GET({ url: new URL('http://localhost/api/english/voice?piece=wedding-cake&voice=a'), locals: as(null) } as any)).status).toBe(401);
 		expect(fetchMock).toHaveBeenCalledTimes(2);
 	});
 
@@ -92,5 +93,13 @@ describe('/api/english/voice', () => {
 		expect((await call({ text: CALL.twist!.lines['off-duty'], voice: 'c', scene: CALL.id })).status).toBe(200);
 		expect((await call({ text: GREETING, voice: 'b' })).status).toBe(200);
 		expect(JSON.parse(fetchMock.mock.calls[2][1].body).instructions).toContain('receptionist');
+	});
+
+	it('refuses unknown parameters and scenes, so nobody can make new paid requests by changing the URL', async () => {
+		env.OPENAI_API_KEY = 'k';
+		expect((await call({ text: GREETING, voice: 'b', x: '1' })).status).toBe(400);
+		expect((await call({ text: GREETING, voice: 'b', v: '2' })).status).toBe(400);
+		expect((await call({ text: GREETING, voice: 'b', scene: 'nope' })).status).toBe(400);
+		expect(fetchMock).not.toHaveBeenCalled();
 	});
 });

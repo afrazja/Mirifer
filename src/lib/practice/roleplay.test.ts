@@ -32,7 +32,11 @@ describe('Role-play scenes', () => {
 			expect(twist.leak.test(twist.lines[variant])).toBe(true);
 		}
 		expect(twist.leak.test('Mike has it.')).toBe(true);
-		expect(twist.leak.test('Has anyone got your phone?')).toBe(true);
+		expect(twist.leak.test('Our driver can meet you at the taxi stand at 5.')).toBe(true);
+		// Lines Kevin is told to say are fine.
+		expect(twist.leak.test('Got it. And what does your phone look like?')).toBe(false);
+		expect(twist.leak.test('Do you have a phone number where we can reach you?')).toBe(false);
+		expect(twist.leak.test('Did you have it with you in the taxi?')).toBe(false);
 		expect(twist.leak.test('When did you take the taxi, and where did it go?')).toBe(false);
 		expect(twist.leak.test('What does your phone look like?')).toBe(false);
 		const run = startRolePlay(call);

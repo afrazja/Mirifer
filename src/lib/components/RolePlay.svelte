@@ -77,7 +77,8 @@
 
 	function start(variant = record.variant) {
 		generation++; stopAllAudio();
-		record = startRolePlay(scene, variant); persist();
+		// Saved with the first reply, so a finished run isn't lost by just opening a new one.
+		record = startRolePlay(scene, variant);
 		draft = ''; pending = ''; checking = false; problem = null; latest = null; review = 'idle';
 		if (!scene.voice) voice = ENGLISH_VOICES[Math.floor(Math.random() * ENGLISH_VOICES.length)].id;
 		onFocus?.('hidden'); go('call');
@@ -126,7 +127,8 @@
 	}
 
 	async function loadReview() {
-		if (review === 'loading' || !record.done || !record.proof) return;
+		if (review === 'loading' || !record.done) return;
+		if (!record.proof) { review = 'failed'; return; }
 		if (record.upgrades) { review = 'ready'; return; }
 		const current = generation;
 		review = 'loading';
@@ -175,7 +177,7 @@
 
 <section class="roleplay" dir={isFa ? 'rtl' : 'ltr'}>
 	{#if stage === 'mission'}
-		<h2 class="title">{text(scene.screen.title)}</h2>
+		<h2 class="title" tabindex="-1" bind:this={heading}>{text(scene.screen.title)}</h2>
 		<p class="lead">{#if isFa}<MixedText text={scene.screen.lead.fa} />{:else}{scene.screen.lead.en}{/if}</p>
 		{@render card()}
 		<ActionBar label={T('Next', 'بعدی')} onclick={() => { onFocus?.('hidden'); go('goals'); }} secondary={onSkip ? { label: T('Skip this step', 'این مرحله را رد کن'), onclick: () => { stopAllAudio(); onSkip?.(); } } : null} />
@@ -184,7 +186,7 @@
 		<h2 class="title" tabindex="-1" bind:this={heading}>{text(scene.screen.missionHeading)}</h2>
 		{@render goalList()}
 		<p class="small">{text(scene.screen.instructions)}</p>
-		<ActionBar label={T('Start the call', 'شروع تماس')} onclick={() => start(record.variant)} secondary={{ label: T('Back to your card', 'برگشت به کارتت'), onclick: () => go('mission') }} />
+		<ActionBar label={T('Start the call', 'شروع تماس')} onclick={() => start(record.variant)} secondary={{ label: T('Back to your card', 'برگشت به کارتت'), onclick: () => { onFocus?.('full'); go('mission'); } }} />
 
 	{:else if stage === 'call'}
 		<div class="who">

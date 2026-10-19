@@ -21,7 +21,7 @@ import { json } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { RequestHandler } from './$types';
 import { MAX_REPLY, MAX_TURNS } from '$lib/practice/hotel';
-import { fallbackFor, goalIdsOf, twistSaid, type RoleScene } from '$lib/practice/roleplay';
+import { HOTEL_SCENE, fallbackFor, goalIdsOf, twistSaid, type RoleScene } from '$lib/practice/roleplay';
 import { roleSceneById } from '$lib/practice/day-content';
 import { askChain, englishLearner, spendAllowance } from '$lib/server/english-ai';
 import { provenGoals, sceneLineProblem, signGoals, signJamieLine } from '$lib/server/jamie-line';
@@ -77,13 +77,15 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const { variant, turns, goals: claimed, proof } = parsed.data;
 	if (!scene || !scene.variants.includes(variant)) return json({ error: 'Invalid request' }, { status: 400 });
 	const ids = goalIdsOf(scene);
+	/** Proofs are bound to the scene (the hotel's keep their original form). */
+	const scope = scene === HOTEL_SCENE ? '' : scene.id;
 	const learnerCount = turns.filter(turn => turn.speaker === 'learner').length;
 	if (turns.at(-1)?.speaker !== 'learner' || learnerCount > MAX_TURNS) return json({ error: 'Invalid request' }, { status: 400 });
 
 	const refused = await spendAllowance(locals, user, learnerCount);
 	if (refused) return refused;
 
-	const met = provenGoals(user.id, variant, claimed, proof, ids);
+	const met = provenGoals(user.id, variant, claimed, proof, ids, scope);
 	const { learner, character } = scene.labels;
 	const transcript = `Conversation so far (${character} speaks next):\n` +
 		turns.map(turn => `${turn.speaker === 'learner' ? learner : character}: ${turn.text.replace(/\s+/g, ' ')}`).join('\n');
@@ -121,5 +123,5 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		: problem ? fallbackFor(scene, done ? ids : goals) : result.reply.replace(/\s+/g, ' ').trim();
 	const correction = result.improved && result.noteEn && result.noteFa && result.improved.trim() !== turns.at(-1)!.text.trim()
 		? { improved: result.improved.trim(), note: { en: result.noteEn, fa: result.noteFa } } : null;
-	return json({ reply, voiceSig: signJamieLine(reply), goals, proof: signGoals(user.id, variant, goals, ids), done, correction });
+	return json({ reply, voiceSig: signJamieLine(reply), goals, proof: signGoals(user.id, variant, goals, ids, scope), done, correction });
 };

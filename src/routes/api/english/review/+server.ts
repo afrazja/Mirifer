@@ -13,10 +13,10 @@ import { json } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { RequestHandler } from './$types';
 import { MAX_REPLY, MAX_TURNS } from '$lib/practice/hotel';
-import { goalIdsOf, type RoleScene } from '$lib/practice/roleplay';
+import { HOTEL_SCENE, goalIdsOf, type RoleScene } from '$lib/practice/roleplay';
 import { roleSceneById } from '$lib/practice/day-content';
 import { askChain, englishLearner, spendAllowance } from '$lib/server/english-ai';
-import { provenGoals, signJamieLine } from '$lib/server/jamie-line';
+import { provenGoals, signBetter } from '$lib/server/jamie-line';
 
 const RequestSchema = z.object({
 	scene: z.string().max(40).optional(),
@@ -70,7 +70,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const { variant, turns, goals, proof } = parsed.data;
 	if (!scene || !scene.variants.includes(variant)) return json({ error: 'Invalid request' }, { status: 400 });
 	const ids = goalIdsOf(scene);
-	if (provenGoals(user.id, variant, goals, proof, ids).length !== ids.length) return json({ error: 'Finish the conversation first' }, { status: 409 });
+	if (provenGoals(user.id, variant, goals, proof, ids, scene === HOTEL_SCENE ? '' : scene.id).length !== ids.length) return json({ error: 'Finish the conversation first' }, { status: 409 });
 	const said = turns.filter(turn => turn.speaker === 'learner').map(turn => turn.text);
 	if (!said.length || said.length > MAX_TURNS) return json({ error: 'Invalid request' }, { status: 400 });
 
@@ -94,7 +94,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		if (!said.some(line => normalise(line).includes(key))) return [];
 		if (!item.whyEn.trim() || !item.whyFa.trim()) return [];
 		seen.add(key);
-		return [{ original, better, why: { en: item.whyEn.trim(), fa: item.whyFa.trim() }, voiceSig: signJamieLine(better) }];
+		return [{ original, better, why: { en: item.whyEn.trim(), fa: item.whyFa.trim() }, voiceSig: signBetter(better) }];
 	}).slice(0, 5);
 	return json({ upgrades });
 };

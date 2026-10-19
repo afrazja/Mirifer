@@ -578,7 +578,8 @@ export const CALL: RoleScene = {
 			'off-duty': 'Good news: your driver, Mike, found a black phone in a red case on his back seat. That sounds like yours. The bad news is, he’s finished work for today and gone home. He’s back tomorrow at 7 a.m. There are two ways you can get it back.'
 		},
 		unlocks: ['plan'],
-		leak: /\b(mike|found|good news|turned in|handed in)\b|\b(has|have|got) (it|your phone|a phone)\b/i
+		// Not "got it" or "have a phone number": Kevin is told to say those.
+		leak: /\b(mike|found|good news|turned in|handed in|back seat|taxi stand|gone home|went home|off duty|finished work)\b|\b(he|mike|driver|someone|somebody) (has|had|got) (it|your phone|a phone)\b/i
 	},
 	voiceDirection:
 		'You are Kevin, a calm, friendly taxi dispatcher answering the phone in a busy office in the afternoon, ' +
