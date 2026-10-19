@@ -5,6 +5,11 @@ Status: **writing, then review, then owner approval.** Theme 1.9 in `docs/englis
 five modules per version as Day 2**, and content for **the lesson's modules only** (no extra Module
 lab content this time).
 
+Review v1 (English ×2, Persian ×2, learning UX) is applied by three editors; the lead's decisions:
+the learner is Karimi everywhere; the role-play's fourth goal is breakfast (Professional had none);
+the lesson's traps include `im-staying` (the dates) instead of `phone-dead`; the two lab-only voice
+messages are dropped.
+
 - `world.md`: the shared world. Every module's content comes from it.
 - `listening.md`: Listen and connect (Intermediate), Listen and retell (Professional).
 - `phrases-and-messages.md`: Natural phrases (A2 and B1 sets), Persian-speaker traps, Say it in

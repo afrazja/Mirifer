@@ -3,7 +3,8 @@
 The shared source for every Day 3 module. Every fact a module uses must come from here (or be
 added here first), so the modules never contradict each other, Day 1 or Day 2. Theme 1.9
 ("Checking in at the hotel") in `docs/english-themes-plan.md`, week 1 "Your first trip". Goal of
-the day: **give your booking name and ask about the Wi-Fi** (A2). US English (US voices; "gray",
+the day: **give your booking name, check your dates, and ask about the Wi-Fi and breakfast** (A2;
+the course plan's goal, booking name and Wi-Fi, plus the dates and breakfast that every check-in has). US English (US voices; "gray",
 "elevator", "check-out"). Not a real city, hotel or company.
 
 ## Two tracks (owner's decision, as on Day 2)
@@ -38,6 +39,7 @@ same five modules per version as Day 2 (see `README.md`).
 | Phone chargers | The desk **lends chargers** (for iPhone and for USB-C phones). Free; give it back before check-out. |
 | Packages and bags | The desk keeps deliveries for guests and **calls the room** when something arrives. |
 | Late check-out | Until **1 p.m., free**, if you ask the day before. After 1 p.m., it's half the price of a night. |
+| Price | About **$180 a night** (Choose and persuade uses it; Daniel never says prices). |
 | Gym | Second floor, 6 a.m. to 10 p.m. Your key card opens the door. No pool. |
 | Quiet | Rooms on the courtyard side are the quietest; Main Street side rooms have the city view and some street noise. |
 
@@ -52,7 +54,7 @@ Only four English voices: **Andrew** (a), **Ava** (b, always Mira, the coach), *
 | **Daniel**, front desk | Brian | The same Daniel who left Sara a voice message on Day 2 (room ready at 3). Calm, helpful, likes explaining things clearly. Has worked at the Park Hotel since it opened. |
 | **Tom**, Sara's friend | Brian | Never in the same scene as Daniel. Dinner tonight at 7; his car is still broken (Day 2). |
 | **The airline's baggage desk** | Andrew | Calls or leaves messages about the backpack (Day 1–2). |
-| **The learner ("you")** | – | Also staying at the Park Hotel, on their own trip, with their own booking. The role-play is the learner's own check-in, not Sara's. Personal questions are about the learner's own life. |
+| **The learner ("you")** | – | Also staying at the Park Hotel, on their own trip, with their own booking **under Karimi** (K-A-R-I-M-I, «کریمی»), the same name in every module where the learner gives a name. The role-play is the learner's own check-in, not Sara's. Personal questions are about the learner's own life. |
 | **A friend of the learner's** | – | Only in Choose and persuade (see that module's content). Not part of Sara's story. |
 
 ## What happens (Sara's check-in, about 5:15 p.m.)
@@ -76,8 +78,16 @@ Only four English voices: **Andrew** (a), **Ava** (b, always Mira, the coach), *
 - The Park Hotel's email: desk@park-riverton.com (fictional). Front desk phone: (402) 555-0148.
 - Room 714 is on the Main Street side: city view, a little street noise. Courtyard rooms are quieter.
 - The paper key-card holder shows: room number, Wi-Fi name and password, breakfast times.
-- Daniel's tip for dinner: Rosa's, on Elm Street, is ten minutes away by car.
+- Rosa's, on Elm Street, ten minutes by car: Tom's choice for dinner tonight. Daniel recommends it to guests, too.
 - The hotel has no restaurant for dinner, only The Corner Café (breakfast and coffee until 3 p.m.).
+
+## Other hotels, near the airport
+
+- **The Parkside Hotel**, near the airport, twenty miles from downtown: only in Daniel's story (Listen
+  and retell), where a guest with a Parkside booking came to the Park Hotel by mistake.
+- **The Riverton Airport Inn**: only in Choose and persuade. About $110 a night; breakfast not
+  included; a free shuttle to the airport; nothing near it for dinner; far from downtown (see
+  `conversation.md`).
 
 ## Topics for the learner's own speech (personal, never about Sara)
 
