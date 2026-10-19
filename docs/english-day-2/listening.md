@@ -1,7 +1,7 @@
 # English Day 2: listening modules (draft)
 
-Status: **draft, for review and owner approval.** Modules: Listen and connect (Starter and
-Confident questions), Spot the lie, Listen and retell. Every fact comes from `world.md` (new facts
+Status: **draft, for review and owner approval.** Modules: Listen and connect (Intermediate and
+Professional questions), Spot the lie, Listen and retell. Every fact comes from `world.md` (new facts
 are listed in "Notes for the editor" at the end). US English. Each module is written in the shape of
 its built `.ts` file, field by field.
 
@@ -65,7 +65,7 @@ Neither is Ava, and they don't share a voice.
 2 → 2 questions → end. That is `listen, question, listen, question, question, question, listen,
 question, question, end`. Score out of 6 (`TOTAL_POINTS`), with Connect counting 3.
 
-### 1.2 Confident set (B1+)
+### 1.2 Professional set (B1+)
 
 The v2 set from `ride-v2.md`, with **two small changes** to meet the spec and the built test (marked
 ⚠ below; the v2 wording is kept in the notes so it can be restored).
@@ -85,14 +85,15 @@ The v2 set from `ride-v2.md`, with **two small changes** to meet the spec and th
 | # | Result |
 |---|---|
 | 0 | They go through downtown. |
-| 1 | ⚠ Sara pays fifty-five dollars. *(the fourth result: true, but none of the three causes leads to it)* |
+| 1 | ⚠ The ride costs fifty-five dollars. *(the fourth result: true, but none of the three causes leads to it)* |
 | 2 | The driver stops at the entrance. |
 | 3 | Sara tells him it's across from Central Station. |
 
 ⚠ v2's fourth result was "Sara should have some cash ready." It is visible on the Connect screens in
 parts 1 and 2, so it gives away the answer to the "Just in case" question in part 3 (spec rule 4:
-no option on one screen gives away another screen's answer). "Sara pays fifty-five dollars." is
-true, and it isn't tested anywhere else.
+no option on one screen gives away another screen's answer). "The ride costs fifty-five dollars."
+is true (line 12), and it isn't tested anywhere else. It names the fare, not what Sara pays (she
+pays $55 plus a $10 tip).
 
 **`CHOICES`**
 
@@ -119,11 +120,11 @@ detail from line 9, bent the wrong way.
 | 5 | 2 | choice | 2 | Just in case |
 | 6 | 2 | connect | 2 | The heavy suitcase → ? |
 
-**`MIRA_LINE`** (from v2, unchanged)
+**`MIRA_LINE`** (from v2; the Persian is reworded)
 - en: The driver used three small phrases: `because of` (the reason), `unless` (except if), `just in case` (to be ready if something goes wrong). They go by fast, so listen out for them.
-- fa: کلیدِ حرف‌های راننده سه عبارت کوتاه بود: `because of` (به خاطرِ)، `unless` (مگر اینکه)، `just in case` (محض احتیاط). این‌ها تند گفته می‌شوند، پس حواست بهشان باشد.
+- fa: حرف‌های راننده به سه عبارت کوتاه بند بود: `because of` (به خاطرِ)، `unless` (مگر اینکه)، `just in case` (محض احتیاط). این‌ها تند گفته می‌شوند، پس حواست به آن‌ها باشد.
 
-### 1.3 Starter set (A1–A2)
+### 1.3 Intermediate set (A1–A2)
 
 The same format and conversation, but easier. Causes are short and close to what is said. Two of
 the three choice questions ask about one literal fact (a reason, a time). The options use A2 words.
@@ -156,9 +157,9 @@ downtown *because the highway is closed*, not because the driver doesn't know th
 
 | # | `kind.en` / `kind.fa` | `question` | `options` (the answer in bold) | `answer` | `evidence` |
 |---|---|---|---|---|---|
-| 0 | Because of / به خاطرِ | Why is the highway closed? | Because of the traffic. / **Because of an accident.** / Because of bad weather. | 1 | 5 |
+| 0 | Because of / دلیل | Why is the highway closed? | Because of the traffic. / **Because of an accident.** / Because of bad weather. | 1 | 5 |
 | 1 | How long / چقدر طول می‌کشد | How long does the ride take? | About fourteen minutes. / About fifty-five minutes. / **About forty minutes.** | 2 | 7 |
-| 2 | Why / چرا | Why does Sara want to get out at the entrance? | **Her suitcase is very heavy.** / The hotel is hard to find. / She wants to pay in cash. | 0 | 11 |
+| 2 | Why / چرا | Why does Sara ask the driver to stop at the entrance? | **Her suitcase is very heavy.** / The hotel is hard to find. / She wants to pay in cash. | 0 | 11 |
 
 Where the wrong options come from:
 - Question 0: "the traffic" (line 7). "Bad weather" isn't in the ride. It is realistic and
@@ -181,7 +182,7 @@ Where the wrong options come from:
 Question 0 and connect 1 share line 5, but they test different links: the accident → the closed
 highway, then the closed highway → downtown.
 
-**`MIRA_LINE`** (simpler than the Confident one)
+**`MIRA_LINE`** (simpler than the Professional one)
 - en: The driver used three small phrases: `because of` (why), `unless` (except if), `just in case` (to be ready). Tap a line and listen for them again.
 - fa: راننده سه عبارت کوتاه به کار برد: `because of` (به خاطرِ)، `unless` (مگر اینکه)، `just in case` (محض احتیاط). روی یک خط بزن و دوباره به این‌ها گوش بده.
 
@@ -217,7 +218,7 @@ a, d, a`.
 
 | # | `speaker` / `speakerFa` | `voice` | `trap` | `lie` | `proof` | Words |
 |---|---|---|---|---|---|---|
-| 0 | Tom / تام | `c` (Brian) | maybe | 1 | 2 | 62 |
+| 0 | Tom / تام | `c` (Brian) | maybe | 1 | 2 | 59 |
 | 1 | Sara / سارا | `d` (Emma) | detail | 2 | 0 | 61 |
 | 2 | Mike / مایک | `a` (Andrew) | used-to | 0 | 1 | 60 |
 | 3 | Sara / سارا | `d` (Emma) | negative | 1 | 3 | 56 |
@@ -228,21 +229,21 @@ a, d, a`.
 ### Talk 0: Tom (trap: maybe or for sure)
 
 `sentences`
-0. Hi Sara, it's Tom, and I'm really sorry: my car broke down this morning.
-1. So I can't pick you up, but the Airport Express is easy, or take a taxi if you're too tired.
+0. Hi Sara, it's Tom. I'm really sorry, but my car broke down this morning.
+1. So I can't pick you up. Take the Airport Express, it's easy, or a taxi if you're too tired.
 2. The mechanic says my car might be ready tomorrow, so maybe I can drive you around the city then.
-3. Anyway, I'll see you for dinner tonight at seven!
+3. And let's have dinner tonight at seven!
 
 `statements`
 - A: Tom's car stopped working this morning. *(true, other words)*
 - B: **Tom's car will be ready tomorrow.** *(the lie)*
-- C: Tom and Sara are meeting for dinner at seven. *(true, keeps "dinner … at seven")*
+- C: Tom wants to have dinner with Sara at seven. *(true, keeps "have dinner … at seven")*
 
 `lie`: 1 · `proof`: 2
 
 `why`
 - en: “might” means maybe, not for sure. The lie said Tom’s car will be ready tomorrow, but the mechanic only said it might be.
-- fa: `might` یعنی شاید، نه حتماً. جملهٔ دروغ گفت ماشینِ تام فردا حتماً آماده است (`will`)، ولی تعمیرکار فقط گفته شاید آماده باشد.
+- fa: «might» یعنی شاید، نه حتماً. جملهٔ دروغ گفت ماشینِ تام فردا حتماً آماده است («will»)، ولی مکانیک فقط گفته شاید آماده باشد.
 
 ### Talk 1: Sara at the airport (trap: a changed detail)
 
@@ -250,7 +251,7 @@ a, d, a`.
 0. The Airport Express is only nine dollars, and it gets to Central Station in twenty-five minutes.
 1. My hotel is right across from the station, so that's really easy.
 2. But my suitcase is so heavy, and I'm really tired after my long flight.
-3. So I'm going to take a taxi: it's about fifty-five dollars, but it takes me right to the door.
+3. So I'm going to take a taxi. It's about fifty-five dollars, but it takes me right to the door.
 
 `statements`
 - A: The Airport Express takes less than half an hour. *(true, other words)*
@@ -261,7 +262,7 @@ a, d, a`.
 
 `why`
 - en: The lie used a real price from the talk, but for the wrong thing. The Airport Express is nine dollars; the taxi is about fifty-five.
-- fa: جملهٔ دروغ یک قیمتِ واقعی از صحبت را آورد، ولی برای چیز دیگری: قطارِ `Airport Express` ۹ دلار است و تاکسی حدود ۵۵ دلار.
+- fa: جملهٔ دروغ یک قیمتِ واقعی از حرف‌های سارا را آورد، ولی برای چیز دیگری: قطارِ «Airport Express» ۹ دلار است و تاکسی حدود ۵۵ دلار.
 
 ### Talk 2: Mike on his job (trap: then, "used to", or now)
 
@@ -280,7 +281,7 @@ a, d, a`.
 
 `why`
 - en: “used to” means it was true before, but not now. Mike doesn’t know every hotel anymore: there are so many new ones.
-- fa: `used to` یعنی قبلاً این‌طور بود، ولی الان نیست. مایک دیگر همهٔ هتل‌های شهر را نمی‌شناسد، چون هتل‌های جدید خیلی زیاد شده‌اند.
+- fa: «used to» یعنی قبلاً این‌طور بود، ولی الان نیست. مایک دیگر همهٔ هتل‌های شهر را نمی‌شناسد، چون هتل‌های جدید خیلی زیاد شده‌اند.
 
 ### Talk 3: Sara at the hotel (trap: a flipped "not")
 
@@ -299,7 +300,7 @@ a, d, a`.
 
 `why`
 - en: The lie dropped one small word. Sara said she doesn’t have to carry her suitcase around: she can leave it at the front desk. Listen for “don’t” and “not”.
-- fa: جملهٔ دروغ یک کلمهٔ کوچک را جا انداخت. سارا گفت لازم نیست چمدانش را همه‌جا با خودش ببرد (`don't have to`)، چون می‌تواند آن را پیش پذیرش بگذارد. به `don't` و `not` دقت کن.
+- fa: جملهٔ دروغ یک کلمهٔ کوچک را جا انداخت. سارا گفت لازم نیست چمدانش را همه‌جا با خودش ببرد («don’t have to»)، چون می‌تواند آن را به پذیرش بسپارد. به «don’t» و «not» دقت کن.
 
 ### Talk 4: Mike after the ride (trap: the wrong person)
 
@@ -307,7 +308,7 @@ a, d, a`.
 0. One of my passengers today was a woman from Istanbul, on her first trip to Riverton.
 1. A friend was going to pick her up at the airport, but his car broke down this morning.
 2. Her suitcase was really heavy, so I dropped her off right at the entrance.
-3. On the way, I told her about my strangest passenger ever: the man with the wedding cake.
+3. I told her my wedding cake story, and later I found her phone on the back seat!
 
 `statements`
 - A: **Mike's car broke down this morning.** *(the lie)*
@@ -329,12 +330,13 @@ a, d, a`.
   C: "can't check in until three p.m." = check-in starts at three.
 - In talk 3 a true statement (A) and the talk itself contain negatives. Talk 2 uses "still" in a
   true statement and in the lie. So no single word marks the lie.
-- Talk 4 links back to talk 0 (Tom's car) and forward to the retell (the wedding cake), so the world
-  holds together.
+- Talk 4 links back to talk 0 (Tom's car), forward to the retell (the wedding cake) and to the
+  day's surprise (Mike finds Sara's phone on his back seat, as in the world), so the world holds
+  together. Mike mentions the phone in passing; no statement is about it.
 
 ---
 
-## 3. Listen and retell (Confident)
+## 3. Listen and retell (Professional)
 
 Built in `src/lib/practice/retell.ts`; page `src/routes/practice/english/retell`. One new
 `RetellPiece`, the same shape as the built B1 piece "A shorter working week" (158 words, 6 key
@@ -350,7 +352,7 @@ points). This one is 185 words. It is a third-person narration, like the built p
 
 **`text`**
 
-> Mike has driven a taxi in Riverton for twenty years, and his favorite story is about his strangest passenger. One Saturday, he picked up a man at the airport who was carrying a big white box. The man was the bride's uncle, and inside the box was the wedding cake. He wanted to stop at his hotel first to change, and then go to the wedding at a restaurant on the other side of the city. At the hotel, he was in such a hurry that he grabbed his suitcase and ran inside. Twenty minutes later, Mike looked in the mirror and saw the white box. The cake was still on the back seat! He didn't have the man's phone number, but he remembered the name of the restaurant. So he turned around and drove all the way back across the city. He got there just in time, a few minutes before dinner, while the uncle was looking everywhere for the cake. The family was so happy that they invited Mike to stay for dinner. He says it was the best tip he's ever gotten.
+> Mike has driven a taxi in Riverton for twenty years, and his favorite story is about his strangest passenger. One Saturday, he picked up a man at the airport. The man was carrying a big white box. He was the bride's uncle, and inside the box was the wedding cake. He wanted to stop at his hotel first to change, and then go to the wedding at a restaurant on the other side of the city. At the hotel, he was in such a hurry that he grabbed his suitcase and ran inside. Twenty minutes later, Mike looked in the mirror and saw the white box. The cake was still on the back seat! He didn't have the man's phone number, but he remembered the name of the restaurant. So he turned around and drove all the way back across the city. He got there just in time, a few minutes before dinner, while the uncle was looking everywhere for the cake. The family was so happy that they invited Mike to stay for dinner. He says it was the best tip he's ever gotten.
 
 **`keyPoints`** (6, plain English)
 1. Mike, a taxi driver for twenty years, once picked up a man at the airport with a big box.
@@ -372,65 +374,54 @@ is a small joke that links to the day's tipping topic. US spelling ("favorite").
 
 ## Notes for the editor
 
+Only what is still open.
+
 ### (a) New facts to add to `world.md`
 
 - **Tom:** the mechanic says his car *might* be ready tomorrow; if so, Tom may drive Sara around the
-  city then. (Spot the lie, talk 0. Nothing is promised, so later days aren't tied to it.)
-- **Mike:** he used to know every hotel in Riverton, but there are many new ones now. When he
-  doesn't know a place, he asks if it's near anything. He loves the job because he meets people
-  from all over the world. (Talk 2)
-- **During the ride**, Sara told Mike that her friend's car broke down, and Mike told her the wedding
-  cake story. The world already places the story "on the way". (Talk 4)
-- **At the hotel:** the man at the front desk (Daniel) was nice, and Sara leaves her big suitcase
-  with him. This fits the world's "she can leave her suitcase and come back". (Talk 3)
+  city then. The world has "maybe tomorrow"; the drive around the city is new. (Spot the lie, talk 0)
+- **Mike** loves his job because he meets people from all over the world. (Talk 2)
+- **At the hotel:** the man at the front desk (Daniel) was nice. (Talk 3)
 - **Sara's flight** is called a "long flight" (Day 1 and the world say "a long day"). (Talk 1)
-- **The wedding cake story:**
-  - It happened one Saturday. Mike picked the man up at the airport.
-  - The man was the bride's uncle, and he carried the cake in a big white box.
-  - He stopped at his hotel first to change, in a hurry, and left the cake on the back seat.
-  - The wedding was at a restaurant on the other side of the city.
-  - Mike saw the box in the mirror about 20 minutes later. He had no phone number, but he remembered
-    the restaurant's name.
-  - He arrived a few minutes before dinner. Mike calls the dinner "the best tip he's ever gotten".
+- **The wedding cake story**, details the world doesn't have yet (retell):
+  - The cake was in a big white box.
+  - The uncle stopped at his hotel to change, and grabbed his suitcase in a hurry.
+  - Mike saw the box in the mirror about 20 minutes later. He didn't have the man's phone number.
+  - He arrived a few minutes before dinner, while the uncle was looking everywhere for the cake.
 
-### (b) Couldn't fit, or unsure
+### (b) Open questions
 
-1. **Confident set, two changes from v2** (marked ⚠ in 1.2):
-   - Question 2's right option was 9 words, which fails the built 8-word test, and its wrong option
-     "Only at the hotel." could be read as true.
-   - The fourth Connect result "Sara should have some cash ready." gave away question 2. The v2
-     wording was "Yes, but she should have some cash ready too." / "Only at the hotel." / "Sara
-     should have some cash ready."
-
-   Revert if the owner prefers v2 exactly.
-2. **Code will need changes before this can be built.** I didn't make them, as asked.
-   - `listen-connect.ts` holds one question set. Two tracks need a set per track.
-   - `SPEAKERS` uses the key `agent`; this needs `driver`.
-   - `listen-connect.test.ts` hard-codes Day 1: its `STEPS` shape and its evidence strings. Day 2's
-     shape is `listen, q, listen, q, q, q, listen, q, q, end`.
-3. **Speaker label:** v2 calls the driver "Driver", and I kept it. The world names him Mike, and the
-   retell and Spot the lie use "Mike". Labeling him "Mike" in Listen and connect would tie the
-   modules together, but it changes reviewed content.
-4. **Spec vs. code on option length:** the spec says 7 words or fewer, but the test allows 8. Two v2
+1. **Professional set, two changes from v2** (marked ⚠ in 1.2). Revert if the owner prefers v2
+   exactly. The v2 wording was:
+   - question 2: "Yes, but she should have some cash ready too." (9 words, over the built 8-word
+     limit) / "Only at the hotel." (could be read as true);
+   - the fourth Connect result: "Sara should have some cash ready." (it gave away question 2).
+2. **Code changes needed before this can be built** (not made):
+   - `listen-connect.ts` holds one question set; two tracks need a set per track.
+   - `SPEAKERS` uses the key `agent` (Brian); Day 2 needs `driver` (Andrew).
+   - `listen-connect.test.ts` hard-codes Day 1's `STEPS` shape and evidence strings. Day 2's shape is
+     `listen, q, listen, q, q, q, listen, q, q, end`.
+3. **Speaker label:** v2 calls the driver "Driver", and it is kept. Spot the lie and the retell call
+   him "Mike". Labeling him "Mike" in Listen and connect would tie the modules together, but it
+   changes reviewed content.
+4. **Spec vs. code on option length:** the spec says 7 words or fewer, the test allows 8. Two v2
    strings have 8 words.
-5. **The Starter set** doesn't test `unless`. That is on purpose, since it uses more literal facts.
-   One wrong option ("Because of bad weather.") isn't from the ride; the spec allows this when no
-   ride detail fits.
-6. **Spot the lie voices:** the built Day 1-style content has Tom = Andrew and Mike = Brian, and the
-   spec table agrees. Both contradict the world. Day 2 follows the world: Tom is Brian and Mike is
-   Andrew.
-   - Daniel and Carlos aren't used, because they would share Brian with Tom in the same module.
-   - Sara and Mike appear twice each instead.
-7. **Spot the lie talk 3 (Sara at the hotel):** I didn't say who she's talking to, and I avoided
-   anything that sounds like a phone call, because she discovers soon after that her phone is in the
-   taxi. The talk happens before that discovery.
-8. **Retell voice:** the page picks a random narrator voice from all four, including Ava (Mira) and
-   Andrew (Mike's voice). The narrator isn't a character, but the owner may want the voice pinned
-   (a code change).
-9. **Retell overlap:** the existing A2 retell piece "The phone in the taxi" (Maria leaves her phone
-   in a taxi) is close to Day 2's surprise (Sara leaves her phone in Mike's taxi). The two may feel
-   repetitive side by side.
-10. **Retell image:** the image files `/images/retell/wedding-cake.webp` and `-sm.webp` still need to
-    be made.
-11. **Not done yet:** the spec's no-listening test for Listen and connect, and timing all the audio
+5. **Intermediate set:** it doesn't test `unless` (on purpose; it uses more literal facts), and one
+   wrong option ("Because of bad weather.") isn't from the ride, which the spec allows. Confirm.
+6. **Spot the lie voices:** the built Day 1 content and the spec table have Tom = Andrew and Mike =
+   Brian, which contradicts the world. Day 2 follows the world (Tom = Brian, Mike = Andrew), so Sara
+   and Mike each talk twice and Daniel and Carlos aren't used.
+7. **Spot the lie track:** this file tags it for both tracks (aim A2+), but `README.md` lists it under
+   Intermediate only.
+8. **Spot the lie talk 4 and the surprise:** Mike now says he found Sara's phone on the back seat.
+   If a learner meets this before the role-play "The phone in the taxi", it gives away the twist.
+   If that order is possible, set the talk before he finds the phone instead.
+9. **Track names:** `world.md`, `conversation.md` and `phrases-and-messages.md` still say "Starter"
+   and "Confident". `world.md` also gives the first track as A1–A2, while `README.md` says A2.
+10. **Retell voice:** the page picks a random narrator from all four voices, including Ava (Mira) and
+    Andrew (Mike). The owner may want it pinned (a code change).
+11. **Retell overlap:** the built A2 piece "The phone in the taxi" (Maria leaves her phone in a taxi)
+    is close to Day 2's surprise, so the two may feel repetitive side by side.
+12. **Retell image:** `/images/retell/wedding-cake.webp` and `-sm.webp` still need to be made.
+13. **Not done yet:** the spec's no-listening test for Listen and connect, and timing all the audio
     with the real voices.
