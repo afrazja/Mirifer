@@ -7,6 +7,7 @@ import { DAY_ONE_SET, type ConnectSet } from './listen-connect';
 import { TRAPS as DAY_ONE_TRAPS, type Trap } from './traps';
 import { ITEMS as DAY_ONE_SAY, type SayItem } from './say-in-english';
 import { MESSAGES as DAY_ONE_MESSAGES, type VoiceMessage } from './voice-messages';
+import { RETELL_PIECES, type RetellPiece } from './retell';
 import type { DisplayText } from './hotel';
 import * as dayTwo from './days/day-2';
 import type { Track } from './day';
@@ -50,4 +51,15 @@ export const voiceMessagesIntro = (dayId: string): DisplayText | null => (dayId 
 /** Any day's voice message, by its id (ids are unique across days): what the server checks a reply against. */
 export function voiceMessageById(id: string): VoiceMessage | null {
 	return [...DAY_ONE_MESSAGES, ...dayTwo.MESSAGES].find(message => message.id === id) ?? null;
+}
+
+/** Listen and retell: the day's story (Day 2 Professional), or null when the day has none. */
+export function retellPieceFor(dayId: string): RetellPiece | null {
+	return dayId === 'day-2' ? dayTwo.RETELL : null;
+}
+/** Every story: the Module lab's own, then the daily lessons'. */
+export const ALL_RETELL_PIECES: RetellPiece[] = [...RETELL_PIECES, dayTwo.RETELL];
+/** Any story, by its id (ids are unique): what the server narrates and checks a retelling against. */
+export function retellPieceById(id: string): RetellPiece | null {
+	return ALL_RETELL_PIECES.find(piece => piece.id === id) ?? null;
 }

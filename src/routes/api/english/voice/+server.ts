@@ -22,7 +22,7 @@ import type { RequestHandler } from './$types';
 import { env } from '$env/dynamic/private';
 import { verifyJamieLine } from '$lib/server/jamie-line';
 import { FALLBACK_LINES, GREETING } from '$lib/practice/hotel';
-import { getPiece } from '$lib/practice/retell';
+import { retellPieceById as getPiece } from '$lib/practice/day-content';
 
 const MODEL = env.OPENAI_TTS_MODEL || 'gpt-4o-mini-tts';
 
