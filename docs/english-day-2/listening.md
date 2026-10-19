@@ -416,9 +416,7 @@ Only what is still open.
 8. **Spot the lie talk 4 and the surprise:** Mike now says he found Sara's phone on the back seat.
    If a learner meets this before the role-play "The phone in the taxi", it gives away the twist.
    If that order is possible, set the talk before he finds the phone instead.
-9. **Track names:** `world.md`, `conversation.md` and `phrases-and-messages.md` still say "Starter"
-   and "Confident". `world.md` also gives the first track as A1–A2, while `README.md` says A2.
-10. **Retell voice:** the page picks a random narrator from all four voices, including Ava (Mira) and
+9. **Retell voice:** the page picks a random narrator from all four voices, including Ava (Mira) and
     Andrew (Mike). The owner may want it pinned (a code change).
 11. **Retell overlap:** the built A2 piece "The phone in the taxi" (Maria leaves her phone in a taxi)
     is close to Day 2's surprise, so the two may feel repetitive side by side.

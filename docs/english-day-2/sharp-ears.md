@@ -212,10 +212,7 @@ ten" (it must not sound like "two to ten" or "two, ten"), #7 "G J", #9 "D, A, N,
 
 ## Notes for the editor (still open)
 
-1. **Track names in `world.md`.** It still says "Starter (A1–A2)" and "Confident (B1+)". Rename
-   them to Intermediate and Professional there (outside this file), and confirm the level range for
-   Intermediate.
-2. **Lines put in someone's mouth** (no new facts, but not in `world.md`): Tom says "With RideNow,
+1. **Lines put in someone's mouth** (no new facts, but not in `world.md`): Tom says "With RideNow,
    you gotta pay in the app" and, at dinner, "You could've taken the train"; the front desk asks
    "Did you leave it in the taxi?"; Sara says "I should've checked the back seat". The owner should
    confirm them.

@@ -394,9 +394,8 @@ Only what's still open.
 3. **Sara pays the $55 fare plus the $10 tip by card ($65 in all).**
 4. **Sara asks Tom for the restaurant's address** and gets there on her own (the restaurant isn't
    named).
-5. **The learner is Sara** in Say it in English (Professional) and Voice messages. `world.md` still
-   describes "you" only as a learner on their own trip, and still names the tracks Starter /
-   Confident (now Intermediate / Professional).
+5. **The learner is Sara** in Say it in English (Professional) and Voice messages. `world.md` describes
+   "you" only as a learner on their own trip; add this when the day file is built.
 
 ### (b) Open questions
 

@@ -265,8 +265,6 @@ just read: a review, a notice or a web page.` Names that may come up (`NAMES` in
    minutes; book early at busy times".
 2. **The Park Hotel's "Getting here" page** doesn't mention Bus 7 or RideNow (a reply to Text 3 can
    name either as "one thing it doesn't tell them").
-3. **Track name:** `world.md` still calls the B1+ track "Confident"; `README.md` and this file say
-   "Professional".
 
 **(b) Still open:**
 
