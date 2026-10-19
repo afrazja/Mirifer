@@ -15,6 +15,8 @@
 	import SayInEnglish from '$lib/components/SayInEnglish.svelte';
 	import VoiceMessages from '$lib/components/VoiceMessages.svelte';
 	import ListenRetell from '$lib/components/ListenRetell.svelte';
+	import ChoosePersuade from '$lib/components/ChoosePersuade.svelte';
+	import { asPersuadeRecord } from '$lib/practice/persuade';
 	import { asRetellRun } from '$lib/practice/retell';
 	import { asVoiceRecord } from '$lib/practice/voice-messages';
 	import { asSayRecord as asSayInEnglishRecord } from '$lib/practice/say-in-english';
@@ -24,7 +26,7 @@
 	import PhrasePractice from '$lib/components/PhrasePractice.svelte';
 	import PhrasePracticeReview from '$lib/components/PhrasePracticeReview.svelte';
 	import { asPhraseRecord } from '$lib/practice/phrases';
-	import { connectSetFor, phrasesFor, retellPieceFor, sayItemsFor, trapsFor, voiceMessagesFor } from '$lib/practice/day-content';
+	import { connectSetFor, persuadeSetFor, phrasesFor, retellPieceFor, sayItemsFor, trapsFor, voiceMessagesFor } from '$lib/practice/day-content';
 	import { COACH_RATE, COACH_VOICE, loadGreeting, localDate, planLine, type GreetingRecord } from '$lib/practice/coach';
 	import { playAudioPromise, stopAllAudio } from '$services/tts';
 	import { getLanguage } from '$services/data-layer';
@@ -69,6 +71,8 @@
 	const dayMessages = $derived(voiceMessagesFor(day.id));
 	/** Listen and retell: this day's story (Day 2 Professional). */
 	const dayStory = $derived(retellPieceFor(day.id));
+	/** Choose and persuade: this day's choice. */
+	const dayChoice = $derived(persuadeSetFor(day.id));
 	/** The day after today's (for the recap and the done screen); a day with skipped steps comes back. */
 	const following = $derived(session?.skipped.length ? day : nextDay(day.id, data.labAccess));
 	/** The owner can always try the day after this one (ready or not, skipped steps or not). */
@@ -225,6 +229,8 @@
 		{#key mod.id}<VoiceMessages {isFa} {onSkip} messages={dayMessages} initial={asVoiceRecord(loadRecord(session.startedAt, mod.id), dayMessages)} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} {onDone} />{/key}
 	{:else if mod.id === 'listen-retell' && mod.built && dayStory && session}
 		{#key mod.id}<ListenRetell {isFa} {onSkip} piece={dayStory} voice={dayStory.voice} initial={asRetellRun(loadRecord(session.startedAt, mod.id))} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} {onDone} />{/key}
+	{:else if mod.id === 'choose-persuade' && mod.built && session}
+		{#key mod.id}<ChoosePersuade {isFa} {onSkip} set={dayChoice} initial={asPersuadeRecord(loadRecord(session.startedAt, mod.id))} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} {onDone} />{/key}
 	{:else if mod.id === 'say-it-better' && mod.built && day.id === 'day-1' && session}
 		{#key mod.id}<SayItBetter {isFa} {onSkip} initial={asSayRecord(loadRecord(session.startedAt, mod.id))} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} {onDone} />{/key}
 	{:else}

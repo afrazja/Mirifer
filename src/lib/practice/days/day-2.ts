@@ -9,6 +9,7 @@ import type { Trap } from '../traps';
 import type { SayItem } from '../say-in-english';
 import type { VoiceMessage } from '../voice-messages';
 import type { RetellPiece } from '../retell';
+import type { PersuadeSet } from '../persuade';
 import type { DisplayText } from '../hotel';
 import type { Track } from '../day';
 
@@ -421,4 +422,69 @@ export const RETELL: RetellPiece = {
 		'Mike drove back across the city and got there just in time, before dinner.',
 		'The family invited Mike to stay for dinner, and he calls it his best tip ever.'
 	]
+};
+
+/**
+ * Choose and persuade (Professional): the train or a taxi for a friend (docs/english-day-2/conversation.md §4).
+ * Today the train is cheaper and faster; the taxi's case is the big suitcase, door to door. No photos yet.
+ */
+export const PERSUADE: PersuadeSet = {
+	id: 'd2-ride',
+	intro: {
+		en: 'Your friend is coming to Riverton for the first time. She has a big suitcase and a laptop bag, she’s paying for the trip herself, and she has a meeting at the Park Hotel an hour after she lands. Pick the better way for her, tell me why, and I’ll try to change your mind.',
+		fa: 'دوستت برای اولین بار به Riverton می‌آید. یک چمدان بزرگ و یک کیف لپ‌تاپ دارد، هزینهٔ سفر را خودش می‌دهد و یک ساعت بعد از فرود، در Park Hotel جلسه دارد. راه بهتر را برایش انتخاب کن، بگو چرا، و من سعی می‌کنم نظرت را عوض کنم.'
+	},
+	rows: [{ en: 'Price', fa: 'قیمت' }, { en: 'Time today', fa: 'مدت راه (امروز)' }, { en: 'Waiting', fa: 'انتظار' }, { en: 'To the hotel', fa: 'تا هتل' }, { en: 'Minus', fa: 'عیب' }],
+	options: {
+		a: { id: 'a', label: 'A · Train', title: 'Airport Express train', alt: 'A modern airport train at an underground platform, with green signs on the wall.',
+			facts: ['$9', '25 minutes, then a 2-minute walk', 'A train every 15 minutes, under the terminal', 'Across the street; elevators at both stations', 'She carries her own bags'] },
+		b: { id: 'b', label: 'B · Taxi', title: 'Taxi', alt: 'A taxi waiting at the taxi stand outside the airport doors.',
+			facts: ['About $55, plus a tip', 'About 40 minutes (highway closed)', 'Always waiting, outside door 3', 'Door to door', 'Card machines can be slow'] }
+	},
+	factIds: ['price', 'tip', 'time', 'highway', 'often', 'signs', 'walk', 'elevators', 'bags', 'waiting', 'door', 'card', 'personal'],
+	objections: {
+		a: [
+			{ point: 'wait', line: 'If she just misses a train, she has to wait 15 minutes. What if she’s late for her meeting?', again: 'You said she might have to wait, but 15 minutes, with a meeting to get to? What if she’s late?', keys: ['wait', 'waiting', 'every', '15', 'often', 'miss', 'late'] },
+			{ point: 'bags', line: 'She’ll carry a big suitcase and a laptop bag through two stations and across the street. Won’t that be hard?', again: 'You talked about her bags, but a big suitcase and a laptop bag, on her own? Won’t that be hard?', keys: ['bag', 'bags', 'suitcase', 'carry', 'heavy', 'elevator', 'elevators', 'walk', 'street', 'cross', 'across'] },
+			{ point: 'find', line: 'The train’s under the terminal, and it’s her first time here. What if she can’t find it?', again: 'You mentioned finding it, but it’s her first time here. What if she gets lost?', keys: ['find', 'signs', 'green', 'under', 'terminal', 'lost'] }
+		],
+		b: [
+			{ point: 'price', line: 'It’s about $55, plus a tip, and the train’s only $9. Is it really worth it?', again: 'You mentioned the price, but $55 plus a tip, when she’s paying herself? Is it really worth it?', keys: ['price', 'expensive', 'cheap', 'cheaper', 'money', 'cost', 'costs', 'pay', 'paying', 'tip', 'dollars', '55', '9'] },
+			{ point: 'time', line: 'The highway’s closed, so it’s about 40 minutes, and the train’s only 25. What if the traffic near the station is bad and she’s late?', again: 'You said it’s slower today, but 40 minutes, with a meeting to get to? Won’t she be late?', keys: ['highway', 'closed', 'accident', '40', 'slow', 'slower', 'fast', 'faster', 'traffic'] },
+			{ point: 'card', line: 'Taxi card machines can be slow. What if she’s still trying to pay when her meeting starts?', again: 'You talked about paying, but what if the machine is slow and her meeting’s starting?', keys: ['card', 'cards', 'cash', 'machine'] }
+		]
+	},
+	reasonPhrases: [
+		{ en: 'The main reason is that…', fa: 'دلیل اصلی این است که…' },
+		{ en: 'Another thing is…', fa: 'یک چیز دیگر این است که…' },
+		{ en: 'Even though it costs more, …', fa: 'با اینکه گران‌تر است، … (بدون but)' },
+		{ en: 'For her, getting there on time matters more than comfort.', fa: 'برای او به‌موقع رسیدن از راحتی مهم‌تر است.' }
+	],
+	answerPhrases: [
+		{ en: 'That’s true, but…', fa: 'درست است، ولی…' },
+		{ en: 'You have a point, but…', fa: 'حق با توست، ولی…' },
+		{ en: 'It’s not a big problem for her, because…', fa: 'برای او مشکل بزرگی نیست، چون…' },
+		{ en: 'She can always…', fa: 'همیشه می‌تواند… (یک راه‌حل)' }
+	],
+	numbers: { nine: '9', fifteen: '15', 'twenty five': '25', 'twenty-five': '25', forty: '40', 'fifty five': '55', 'fifty-five': '55' },
+	extraNumbers: ['46'],
+	groupLabel: { en: 'The two ways', fa: 'دو راه' },
+	pick: { a: { en: 'I’d pick the train', fa: 'قطار را انتخاب می‌کنم' }, b: { en: 'I’d pick the taxi', fa: 'تاکسی را انتخاب می‌کنم' } },
+	reasonsPrompt: { en: 'Why this one? Give me two reasons, and say why they matter for her.', fa: 'چرا این یکی؟ دو دلیل بگو، و بگو چرا برای او مهم‌اند.' },
+	ai: {
+		situation: 'They chose one of two ways for a friend to get from Riverton Airport to the Park Hotel, and spoke twice. The friend: first time in Riverton, a big suitcase and a laptop bag, paying for the trip herself, a meeting at the hotel an hour after she lands.',
+		optionsName: 'The two ways',
+		personal: '"personal" if the reason is about the friend\'s situation or the learner\'s own experience',
+		answered: 'why it is not a problem for her, why something else matters more, how she will deal with it, or why they changed their mind',
+		switched: 'they would now choose the other way',
+		objectionExamples: ['You agreed it costs more, then said she won\'t have to carry her bags. That keeps your choice strong.', 'Next time, say why the wait isn\'t a problem for her.'],
+		better: [
+			'makes a vague reason specific with a listed fact ("it\'s fast" -> "it\'s only 25 minutes to the station"; "it\'s cheap" -> "it\'s only $9, and a taxi is about $55")',
+			'compares the two ways ("it\'s quicker" -> "it\'s 15 minutes faster than a taxi today")',
+			'agrees, then keeps the choice ("yes it\'s expensive" -> "That\'s true, but she won\'t have to carry her bags")',
+			'says what matters more ("it\'s easy" -> "For her, not carrying a big suitcase matters more than the price")'
+		],
+		details: 'never invent anything about the friend or their life. Never suggest a tip amount.',
+		transcription: 'They are explaining which of two ways from the airport, the Airport Express train or a taxi, they would choose for a friend, and why.'
+	}
 };

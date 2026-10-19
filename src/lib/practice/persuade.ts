@@ -1,8 +1,11 @@
 /**
  * "Choose and persuade" (docs/english-choose-persuade-spec.md, owner-approved v2):
- * two apartments, one choice, two reasons, one objection from Mira, an answer, then
- * feedback and a second try. The apartments and objections are written by us; the
+ * two options, one choice, two reasons, one objection from Mira, an answer, then
+ * feedback and a second try. The options and objections are written by us; the
  * server picks the objection and never lets the AI make one up.
+ *
+ * Each day brings its own set (`PersuadeSet`): the apartments are Day 1's and the
+ * Module lab's; Day 2's is in days/day-2.ts.
  */
 import type { DisplayText } from './hotel';
 import { normalise, type Fix, type FixUse } from './say-better';
@@ -17,9 +20,10 @@ export interface Flat {
 	id: FlatId;
 	label: string;
 	title: string;
-	photo: string;
+	/** The photo's path without the extension (`-640.webp` and `.webp`); an option without one shows as text. */
+	photo?: string;
 	alt: string;
-	/** One per row, in the same order for both apartments. */
+	/** One per row, in the same order for both options. */
 	facts: string[];
 }
 export const ROWS: DisplayText[] = [
@@ -64,11 +68,56 @@ export const ANSWER_PHRASES: Phrase[] = [
 	{ en: 'I can always…', fa: 'همیشه می‌توانم… (یک راه‌حل)' }
 ];
 
-const NUMBERS: Record<string, string> = { seven: '7', seventh: '7', 'forty five': '45', 'forty-five': '45', 'one hundred fifty': '150', 'a hundred and fifty': '150', 'one hundred and fifty': '150', 'hundred and fifty': '150', 'nine hundred fifty': '950', 'nine hundred and fifty': '950', thirty: '30', eight: '8', 'eight hundred': '800' };
+const APARTMENT_NUMBERS: Record<string, string> = { seven: '7', seventh: '7', 'forty five': '45', 'forty-five': '45', 'one hundred fifty': '150', 'a hundred and fifty': '150', 'one hundred and fifty': '150', 'hundred and fifty': '150', 'nine hundred fifty': '950', 'nine hundred and fifty': '950', thirty: '30', eight: '8', 'eight hundred': '800' };
+/** One day's choice: the two options, the facts, Mira's objections and the words to help. */
+export interface PersuadeSet {
+	id: string;
+	/** Mira's instruction in the Module lab (the daily lesson has the day's own). */
+	intro: DisplayText;
+	rows: DisplayText[];
+	options: Record<FlatId, Flat>;
+	/** The facts as the AI may tag a reason, ending in 'personal'. */
+	factIds: readonly string[];
+	objections: Record<FlatId, Objection[]>;
+	reasonPhrases: Phrase[];
+	answerPhrases: Phrase[];
+	/** Number words said aloud, as digits (for matching objections and checking the AI's numbers). */
+	numbers: Record<string, string>;
+	/** Numbers the AI may use that aren't written in the facts (a difference, a count). */
+	extraNumbers: string[];
+	/** The options group's name, for screen readers. */
+	groupLabel: DisplayText;
+	/** The main button once an option is picked. */
+	pick: Record<FlatId, DisplayText>;
+	/** Mira's question after the choice (shown, and said in English). */
+	reasonsPrompt: DisplayText;
+	/** What the AI is told about this set (see persuadePrompt). */
+	ai: {
+		/** What they chose between, e.g. "one of two apartments to rent". */
+		situation: string;
+		/** How the options are listed, e.g. "The apartments". */
+		optionsName: string;
+		/** When a reason counts as "personal". */
+		personal: string;
+		/** What "answered" means: the reasons or solutions that count. */
+		answered: string;
+		/** "switched": what they would now do. */
+		switched: string;
+		/** Two examples of objectionEn: a good answer, and what to add. */
+		objectionExamples: [string, string];
+		/** "A good better does one of these" (four examples). */
+		better: [string, string, string, string];
+		/** Who never to invent details about, and any extra rule. */
+		details: string;
+		/** Speech-to-text context. */
+		transcription: string;
+	};
+}
+
 /** Lower case, no punctuation, contractions spelled out, number words as digits. */
-export function normaliseSaid(text: string): string {
+export function normaliseSaid(text: string, numbers: Record<string, string> = APARTMENT_NUMBERS): string {
 	let said = ` ${normalise(text.replace(/-/g, ' '))} `;
-	for (const [word, digit] of Object.entries(NUMBERS).sort((x, y) => y[0].length - x[0].length)) said = said.replaceAll(` ${word.replace(/-/g, ' ')} `, ` ${digit} `);
+	for (const [word, digit] of Object.entries(numbers).sort((x, y) => y[0].length - x[0].length)) said = said.replaceAll(` ${word.replace(/-/g, ' ')} `, ` ${digit} `);
 	return said;
 }
 const mentions = (said: string, key: string) => said.includes(` ${key} `);
@@ -78,16 +127,16 @@ const mentions = (said: string, key: string) => said.includes(` ${key} `);
  * If they covered every point, the second form of the least-mentioned one, so Mira never
  * sounds as if she wasn't listening.
  */
-export function pickObjection(flat: FlatId, reasons: string): { point: string; line: string } {
-	const said = normaliseSaid(reasons);
-	const list = OBJECTIONS[flat];
+export function pickObjection(flat: FlatId, reasons: string, set: PersuadeSet = APARTMENTS): { point: string; line: string } {
+	const said = normaliseSaid(reasons, set.numbers);
+	const list = set.objections[flat];
 	const free = list.find(o => !o.keys.some(key => mentions(said, key)));
 	if (free) return { point: free.point, line: free.line };
 	const count = (o: Objection) => o.keys.reduce((n, key) => n + said.split(` ${key} `).length - 1, 0);
 	const least = [...list].sort((x, y) => count(x) - count(y))[0];
 	return { point: least.point, line: least.again };
 }
-export const objectionPoint = (flat: FlatId, point: string) => OBJECTIONS[flat].find(o => o.point === point) ?? null;
+export const objectionPoint = (flat: FlatId, point: string, set: PersuadeSet = APARTMENTS) => set.objections[flat].find(o => o.point === point) ?? null;
 
 const PERSIAN = /[؀-ۿ]/g;
 /** Too little to object to: under 15 words, or mostly Persian. */
@@ -131,3 +180,39 @@ export function asPersuadeRecord(value: unknown): PersuadeRecord | null {
 	if (r.feedback !== null && (typeof r.feedback !== 'object' || !Array.isArray(r.feedback.reasons) || !Array.isArray(r.feedback.phrases))) return null;
 	return r;
 }
+
+/** Day 1's set (and the Module lab's): two apartments in a new city. */
+export const APARTMENTS: PersuadeSet = {
+	id: 'apartments',
+	intro: {
+		en: 'You’re moving to a new city for work, and you can rent one of these two apartments. Look at both, and pick one. Then tell me why, and I’ll try to change your mind.',
+		fa: 'برای کار به یک شهر تازه می‌روی و می‌توانی یکی از این دو آپارتمان را اجاره کنی. هر دو را ببین و یکی را انتخاب کن. بعد بگو چرا، و من سعی می‌کنم نظرت را عوض کنم.'
+	},
+	rows: ROWS,
+	options: FLATS,
+	factIds: FACT_IDS,
+	objections: OBJECTIONS,
+	reasonPhrases: REASON_PHRASES,
+	answerPhrases: ANSWER_PHRASES,
+	numbers: APARTMENT_NUMBERS,
+	extraNumbers: ['150', '2'],
+	groupLabel: { en: 'The two apartments', fa: 'دو آپارتمان' },
+	pick: { a: { en: 'I’d take Apartment A', fa: 'آپارتمان A را می‌گیرم' }, b: { en: 'I’d take Apartment B', fa: 'آپارتمان B را می‌گیرم' } },
+	reasonsPrompt: { en: 'Why this one? Give me two reasons, and say why they matter to you.', fa: 'چرا این یکی؟ دو دلیل بگو، و بگو چرا برایت مهم‌اند.' },
+	ai: {
+		situation: 'They chose one of two apartments to rent and spoke twice.',
+		optionsName: 'The apartments',
+		personal: '"personal" if it is about their own life',
+		answered: 'why it is not a problem for them, why something else matters more, how they will deal with it, or why they changed their mind',
+		switched: 'they would now take the other apartment',
+		objectionExamples: ['You agreed it\'s noisy, then said you sleep with earplugs. That keeps your choice strong.', 'Next time, say why the bus ride isn\'t a problem for you.'],
+		better: [
+			'makes a vague reason specific with a listed fact ("it\'s near" -> "it\'s only a five-minute walk to work")',
+			'compares the apartments ("it\'s big" -> "it\'s more than twice as big as the studio")',
+			'agrees, then keeps the choice ("yes it\'s noisy" -> "That\'s true, but I can sleep with earplugs")',
+			'says what matters more ("I like quiet" -> "For me, a quiet home matters more than a short trip")'
+		],
+		details: 'never invent anything about their life.',
+		transcription: 'They are explaining which of two apartments they would rent, and why.'
+	}
+};

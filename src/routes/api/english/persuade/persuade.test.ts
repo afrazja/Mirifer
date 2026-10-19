@@ -25,11 +25,26 @@ const good = { reasons: [{ quote: 'only five minutes from my work', text: 'It is
 beforeEach(() => { for (const k of Object.keys(env)) delete env[k]; env.OPENAI_API_KEY = 'k'; env.ADMIN_EMAIL = 'owner@m.test'; askChain.mockReset(); transcribeMock.mockReset(); });
 
 describe('/api/english/persuade', () => {
-	it('is a Module lab route: anyone but the owner gets 404', async () => {
+	it('is open to every English learner (it is in the daily lesson now)', async () => {
 		env.ADMIN_EMAIL = 'someone-else@m.test';
-		const f = fixture(audio());
-		expect((await POST(f.event)).status).toBe(404);
-		expect(transcribeMock).not.toHaveBeenCalled();
+		transcribeMock.mockResolvedValue(REASONS);
+		expect((await POST(fixture(audio()).event)).status).toBe(200);
+	});
+	it('uses the day’s choice: Day 2’s train or taxi, with its own transcription hint and facts', async () => {
+		transcribeMock.mockResolvedValue(REASONS);
+		const f = audio(); f.set('set', 'd2-ride');
+		await POST(fixture(f).event);
+		expect(transcribeMock.mock.calls[0][2]).toContain('Airport Express train or a taxi');
+		askChain.mockResolvedValue({ ...good, evidence: 'she can use the elevators', reasons: [] });
+		const body = await (await POST(fixture({ kind: 'feedback', set: 'd2-ride', flat: 'a', reasons: 'The train is only nine dollars and it is fast, she is paying herself.', answer: 'That is true, but she can use the elevators at both stations.' }).event)).json();
+		const system = askChain.mock.calls[0][0].system;
+		expect(system).toContain('About $55, plus a tip');
+		expect(system).toContain('Never suggest a tip amount');
+		expect(system).not.toContain('apartment');
+		expect(body.objection.verdict).toBe('answered');
+		const bad = audio(); bad.set('set', 'nope');
+		expect((await POST(fixture(bad).event)).status).toBe(400);
+		expect((await POST(fixture({ kind: 'feedback', set: 'nope', flat: 'a', reasons: 'x', answer: 'y' }).event)).status).toBe(400);
 	});
 	it('transcribes a recording without spending allowance', async () => {
 		transcribeMock.mockResolvedValue(REASONS);

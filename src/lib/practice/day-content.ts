@@ -8,6 +8,7 @@ import { TRAPS as DAY_ONE_TRAPS, type Trap } from './traps';
 import { ITEMS as DAY_ONE_SAY, type SayItem } from './say-in-english';
 import { MESSAGES as DAY_ONE_MESSAGES, type VoiceMessage } from './voice-messages';
 import { RETELL_PIECES, type RetellPiece } from './retell';
+import { APARTMENTS, type PersuadeSet } from './persuade';
 import type { DisplayText } from './hotel';
 import * as dayTwo from './days/day-2';
 import type { Track } from './day';
@@ -62,4 +63,13 @@ export const ALL_RETELL_PIECES: RetellPiece[] = [...RETELL_PIECES, dayTwo.RETELL
 /** Any story, by its id (ids are unique): what the server narrates and checks a retelling against. */
 export function retellPieceById(id: string): RetellPiece | null {
 	return ALL_RETELL_PIECES.find(piece => piece.id === id) ?? null;
+}
+
+/** Choose and persuade: the day's choice (Day 1 and the Module lab: the apartments). */
+export function persuadeSetFor(dayId: string): PersuadeSet {
+	return dayId === 'day-2' ? dayTwo.PERSUADE : APARTMENTS;
+}
+/** Any day's choice, by its id: what the server objects with and checks against. */
+export function persuadeSetById(id: string | null | undefined): PersuadeSet | null {
+	return [APARTMENTS, dayTwo.PERSUADE].find(set => set.id === (id ?? APARTMENTS.id)) ?? null;
 }

@@ -1,5 +1,5 @@
 <script lang="ts">
-	/** Module lab: "Choose and persuade" on its own, to try and judge before it joins a daily lesson. */
+	/** Module lab: "Choose and persuade" on its own, with any day's choice. Each set's run is kept apart. */
 	import { onMount } from 'svelte';
 	import AppHeader from '$lib/components/AppHeader.svelte';
 	import ChoosePersuade from '$lib/components/ChoosePersuade.svelte';
@@ -8,21 +8,26 @@
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
 	import { loadLab, saveLab } from '$lib/practice/module-lab';
 	import { asPersuadeRecord } from '$lib/practice/persuade';
+	import { persuadeSetFor } from '$lib/practice/day-content';
+	import LabSetPicker from '$lib/components/LabSetPicker.svelte';
+	import { saveLabSet, savedLabSet, type LabSet } from '$lib/practice/lab-sets';
 
-	const INTRO = {
-		en: 'You’re moving to a new city for work, and you can rent one of these two apartments. Look at both, and pick one. Then tell me why, and I’ll try to change your mind.',
-		fa: 'برای کار به یک شهر تازه می‌روی و می‌توانی یکی از این دو آپارتمان را اجاره کنی. هر دو را ببین و یکی را انتخاب کن. بعد بگو چرا، و من سعی می‌کنم نظرت را عوض کنم.'
-	};
-	const ID = 'choose-persuade';
+	let set = $state<LabSet>(typeof localStorage === 'undefined' ? savedLabSet('') : savedLabSet('choose-persuade'));
+	const content = $derived(persuadeSetFor(set.day));
+	/** Day 1's run keeps its old key, so a run in progress isn't lost. */
+	const ID = $derived(content.id === 'apartments' ? 'choose-persuade' : `choose-persuade:${content.id}`);
+	const INTRO = $derived(content.intro);
 	let language = $state<'en' | 'fa'>('en');
 	const isFa = $derived(language === 'fa');
 	let intro = $state<'full' | 'compact' | 'hidden'>('full');
 	let run = $state(0), finished = $state(false);
-	const initial = asPersuadeRecord(loadLab(ID));
+	const initialFor = () => asPersuadeRecord(loadLab(ID));
+	function speakIntro() { void playAudioPromise(INTRO.en.replace(/’/g, "'"), COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {}); }
+	function choose(next: LabSet) { stopAllAudio(); set = next; finished = false; run += 1; intro = 'full'; saveLabSet('choose-persuade', next.id); if (!initialFor()) speakIntro(); }
 
 	onMount(() => {
 		void getLanguage().then(value => { if (value === 'fa' || value === 'en') language = value; });
-		if (!initial) void playAudioPromise(INTRO.en.replace(/’/g, "'"), COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {});
+		if (!initialFor()) speakIntro();
 		return () => stopAllAudio();
 	});
 	function again() { saveLab(ID, null); finished = false; run += 1; intro = 'full'; }
@@ -37,6 +42,7 @@
 	<AppHeader backHref="/practice/english/lab" backLabel={isFa ? 'آزمایشگاه بخش‌ها' : 'Module lab'} direction={isFa ? 'rtl' : 'ltr'} />
 	<p class="eyebrow">{isFa ? 'آزمایشگاه — صحبت کردن' : 'MODULE LAB · SPEAKING'}</p>
 	<h1>{isFa ? 'انتخاب کن و قانع کن' : 'Choose and persuade'}</h1>
+	<LabSetPicker {isFa} current={set} onChoose={choose} />
 	{#if finished}
 		<p>{isFa ? 'تمام شد.' : 'All done.'}</p>
 		<button class="primary" type="button" onclick={again}>{isFa ? 'دوباره امتحان کن' : 'Try it again'}</button>
@@ -45,7 +51,7 @@
 			<div class="brief"><span class="avatar" aria-hidden="true">M</span><p lang={isFa ? 'fa' : 'en'} dir={isFa ? 'rtl' : 'ltr'}>{isFa ? INTRO.fa : INTRO.en}</p></div>
 		{/if}
 		{#key run}
-			<ChoosePersuade {isFa} initial={run === 0 ? initial : null} onFocus={mode => (intro = mode)} onSave={record => saveLab(ID, record)} onDone={() => (finished = true)} />
+			<ChoosePersuade {isFa} set={content} initial={initialFor()} onFocus={mode => (intro = mode)} onSave={record => saveLab(ID, record)} onDone={() => (finished = true)} />
 		{/key}
 	{/if}
 </main>

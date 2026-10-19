@@ -4,22 +4,28 @@
 	 * Choose an apartment → two reasons (spoken) → Mira's objection → your answer →
 	 * how you argued → phrases to sound more persuasive → answer again → result.
 	 * One focused screen at a time; kept in this browser for the day; audio never stored.
+	 * The options, facts and objections come from the day's set (the apartments by default).
 	 */
 	import { onDestroy, onMount } from 'svelte';
+	import ActionBar from '$lib/components/ActionBar.svelte';
 	import { playAudioPromise, stopAllAudio, ttsIsPlaying } from '$services/tts';
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
 	import { fixUse } from '$lib/practice/say-better';
 	import {
-		ANSWER_MAX, ANSWER_MIN, ANSWER_PHRASES, FLATS, REASONS_MAX, REASONS_MIN, REASON_PHRASES, ROWS,
-		emptyPersuadeRecord, pickObjection, tooLittle, type FlatId, type PersuadeFeedback, type PersuadeRecord, type Phrase
+		ANSWER_MAX, ANSWER_MIN, APARTMENTS, REASONS_MAX, REASONS_MIN,
+		emptyPersuadeRecord, pickObjection, tooLittle, type FlatId, type PersuadeFeedback, type PersuadeRecord, type PersuadeSet, type Phrase
 	} from '$lib/practice/persuade';
 
-	let { isFa = false, initial = null, onSave, onFocus, onDone }: {
+	let { isFa = false, set = APARTMENTS, initial = null, onSave, onFocus, onSkip, onDone }: {
 		isFa?: boolean;
+		/** The day's choice (the apartments by default). */
+		set?: PersuadeSet;
 		initial?: PersuadeRecord | null;
 		onSave?: (record: PersuadeRecord) => void;
 		/** Mira's instruction shows on the choice screen only. */
 		onFocus?: (intro: 'full' | 'compact' | 'hidden') => void;
+		/** "Skip this step" (the daily lesson): on the choice screen, and when the microphone or the server fails. */
+		onSkip?: () => void;
 		onDone: (score: { correct: number; total: number } | undefined, record: PersuadeRecord) => void;
 	} = $props();
 
@@ -38,6 +44,9 @@
 	let heading: HTMLElement | undefined = $state();
 	const playing = $derived($ttsIsPlaying);
 	const T = (en: string, fa: string) => (isFa ? fa : en);
+	// svelte-ignore state_referenced_locally
+	const FLATS = set.options, ROWS = set.rows, REASON_PHRASES = set.reasonPhrases, ANSWER_PHRASES = set.answerPhrases;
+	const skip = $derived(onSkip ? { label: T('Skip this step', 'این مرحله را رد کن'), onclick: () => { stopAllAudio(); onSkip?.(); } } : null);
 	const flat = $derived(record.flat ? FLATS[record.flat] : null);
 	const feedback = $derived(record.feedback);
 	const maxFor = (t: Take) => (t === 'reasons' ? REASONS_MAX : ANSWER_MAX);
@@ -56,9 +65,11 @@
 		document.addEventListener('visibilitychange', onHidden);
 		return () => document.removeEventListener('visibilitychange', onHidden);
 	});
-	onDestroy(() => { clearInterval(timer); if (recorder?.state === 'recording') recorder.stop(); stream?.getTracks().forEach(t => t.stop()); });
+	/** Gone (Back, another lab set): nothing is sent or saved after this. */
+	let destroyed = false;
+	onDestroy(() => { destroyed = true; clearInterval(timer); if (recorder?.state === 'recording') { recorder.onstop = null; recorder.stop(); } stream?.getTracks().forEach(t => t.stop()); });
 
-	function persist() { onSave?.($state.snapshot(record)); }
+	function persist() { if (!destroyed) onSave?.($state.snapshot(record)); }
 	function go(next: Stage) { stage = next; queueMicrotask(() => heading?.focus()); }
 	function onHidden() { if (document.hidden && recorder?.state === 'recording') { interrupted = true; recorder.stop(); } }
 	function say(line: string) { stopAllAudio(); return playAudioPromise(line, COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {}); }
@@ -68,7 +79,7 @@
 		if (!picked) return;
 		record = { ...record, flat: picked }; persist();
 		take = 'reasons'; go('ready');
-		void say('Why this one? Give me two reasons, and say why they matter to you.');
+		void say(set.reasonsPrompt.en.replace(/’/g, "'"));
 	}
 	function chooseOther() { record = { ...record, flat: null }; picked = null; go('choose'); }
 
@@ -103,7 +114,7 @@
 	async function transcribeBlob(): Promise<string | null> {
 		if (!blob) return null;
 		const body = new FormData();
-		body.set('audio', blob, 'speech'); body.set('seconds', String(elapsed));
+		body.set('audio', blob, 'speech'); body.set('seconds', String(elapsed)); body.set('set', set.id);
 		try {
 			const response = await fetch('/api/english/persuade', { method: 'POST', body });
 			const data = response.ok ? await response.json() : null;
@@ -112,8 +123,10 @@
 	}
 
 	async function send() {
+		if (destroyed) return;
 		go('processing'); note = 'listening';
 		const transcript = await transcribeBlob();
+		if (destroyed) return;
 		if (transcript === null) {
 			failures += 1; failedAt = 'transcribe';
 			// Reasons that can't be heard twice: Mira still objects (the apartment's first point), so nobody gets stuck.
@@ -138,7 +151,7 @@
 	/** Mira objects: the objection is picked from what they said (no AI), saved at once, then spoken. */
 	function afterReasons() {
 		if (!record.flat) return;
-		const objection = record.objection ?? pickObjection(record.flat, record.reasons ?? '');
+		const objection = record.objection ?? pickObjection(record.flat, record.reasons ?? '', set);
 		record = { ...record, objection }; persist();
 		take = 'answer'; objectionShown = false; go('ready');
 		void say(`Okay. ${objection.line}`).then(() => (objectionShown = true));
@@ -153,11 +166,12 @@
 		try {
 			const response = await fetch('/api/english/persuade', {
 				method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: controller.signal,
-				body: JSON.stringify({ kind: 'feedback', flat: record.flat, reasons: record.reasons || '…', answer: record.answer })
+				body: JSON.stringify({ kind: 'feedback', set: set.id, flat: record.flat, reasons: record.reasons || '…', answer: record.answer })
 			});
 			result = response.ok ? await response.json() : null;
 		} catch { result = null; }
 		finally { clearTimeout(wait); }
+		if (destroyed) return;
 		if (!result || !Array.isArray(result.reasons)) { failures += 1; failedAt = 'feedback'; go('failed'); return; }
 		failures = 0;
 		record = { ...record, feedback: result }; persist();
@@ -186,8 +200,8 @@
 	const verdictText = (v: string) => (v === 'answered' ? T('You answered it', 'جوابش را دادی') : v === 'partly' ? T('You partly answered it', 'تا حدی جواب دادی') : T('Not answered yet', 'هنوز جواب ندادی'));
 </script>
 
-{#snippet bottom(label: string, action: () => void, disabled = false)}
-	<div class="bar"><button class="primary" type="button" onclick={action} {disabled}>{label}</button></div>
+{#snippet bottom(label: string, action: () => void, disabled = false, secondary: { label: string; onclick: () => void } | null = null)}
+	<ActionBar {label} onclick={action} {disabled} {secondary} />
 {/snippet}
 
 {#snippet compare()}
@@ -206,28 +220,29 @@
 	<h2 class="sr-only" tabindex="-1" bind:this={heading}>{T('Choose and persuade', 'انتخاب کن و قانع کن')}</h2>
 
 	{#if stage === 'choose'}
-		<div class="flats" role="group" aria-label={T('The two apartments', 'دو آپارتمان')}>
+		<div class="flats" role="group" aria-label={isFa ? set.groupLabel.fa : set.groupLabel.en}>
 			{#each [FLATS.a, FLATS.b] as option}
-				<button class="flat" type="button" class:on={picked === option.id} aria-pressed={picked === option.id} onclick={() => (picked = option.id)}
+				<button class="flat" type="button" class:on={picked === option.id} class:text={!option.photo} aria-pressed={picked === option.id} onclick={() => (picked = option.id)}
 					aria-label={`${option.label}, ${option.title}, ${option.facts[0]}`}>
-					<picture><source srcset={`${option.photo}-640.webp`} type="image/webp" /><img src={`${option.photo}-640.webp`} alt={option.alt} width="640" height="480" /></picture>
+					{#if option.photo}<picture><source srcset={`${option.photo}-640.webp`} type="image/webp" /><img src={`${option.photo}-640.webp`} alt={option.alt} width="640" height="480" /></picture>{/if}
 					<span class="flat-label" lang="en" dir="ltr">{option.label}</span>
+					{#if !option.photo}<span class="flat-title" lang="en" dir="ltr">{option.title}</span>{/if}
 					{#if picked === option.id}<span class="selected">✓ {T('Selected', 'انتخاب شد')}</span>{/if}
 				</button>
 			{/each}
 		</div>
 		{@render compare()}
-		{#if picked}<button class="link" type="button" onclick={() => { photoOf = picked ?? 'a'; go('photo'); }}>{T('See the photo', 'دیدن عکس')}</button>{/if}
-		{@render bottom(picked ? T(`I'd take Apartment ${picked.toUpperCase()}`, `آپارتمان ${picked.toUpperCase()} را می‌گیرم`) : T('Pick one', 'یکی را انتخاب کن'), choose, !picked)}
+		{#if picked && FLATS[picked].photo}<button class="link" type="button" onclick={() => { photoOf = picked ?? 'a'; go('photo'); }}>{T('See the photo', 'دیدن عکس')}</button>{/if}
+		{@render bottom(picked ? (isFa ? set.pick[picked].fa : set.pick[picked].en) : T('Pick one', 'یکی را انتخاب کن'), choose, !picked, skip)}
 
 	{:else if stage === 'photo'}
-		<img class="big" src={`${FLATS[photoOf].photo}.webp`} alt={FLATS[photoOf].alt} width="1200" height="900" />
+		<img class="big" src={`${FLATS[photoOf].photo ?? ''}.webp`} alt={FLATS[photoOf].alt} width="1200" height="900" />
 		{@render bottom(T('Back', 'برگشت'), () => go('choose'))}
 
 	{:else if stage === 'ready' || stage === 'recording'}
 		{#if flat}<p class="chosen" lang="en" dir="ltr">{flat.label} · {flat.facts[0]}</p>{/if}
 		{#if take === 'reasons'}
-			<p class="mira">{T('Why this one? Give me two reasons, and say why they matter to you.', 'چرا این یکی؟ دو دلیل بگو، و بگو چرا برایت مهم‌اند.')}</p>
+			<p class="mira">{isFa ? set.reasonsPrompt.fa : set.reasonsPrompt.en}</p>
 		{:else if record.objection}
 			{#if objectionShown || stage === 'recording'}<p class="mira" lang="en" dir="ltr">“{record.objection.line}”</p>
 			{:else}<p class="mira muted" role="status">{T('Mira is speaking…', 'میرا دارد حرف می‌زند…')}</p>{/if}
@@ -247,11 +262,11 @@
 
 	{:else if stage === 'short'}
 		<p class="lead">{T('That was very short. Try to say a bit more.', 'خیلی کوتاه بود. سعی کن کمی بیشتر بگویی.')}</p>
-		{@render bottom(T('Record again', 'دوباره ضبط کن'), recordAgain)}
+		{@render bottom(T('Record again', 'دوباره ضبط کن'), recordAgain, false, take === 'again' ? { label: T('Finish', 'تمام'), onclick: finish } : skip)}
 
 	{:else if stage === 'more'}
 		<p class="lead">{T('Tell me a bit more: why this one?', 'کمی بیشتر بگو: چرا این یکی؟')}</p>
-		{@render bottom(T('Record again', 'دوباره ضبط کن'), recordAgain)}
+		{@render bottom(T('Record again', 'دوباره ضبط کن'), recordAgain, false, skip)}
 
 	{:else if stage === 'interrupted'}
 		<p class="lead">{T('The recording stopped when you left the page.', 'وقتی از صفحه بیرون رفتی، ضبط متوقف شد.')}</p>
@@ -260,7 +275,7 @@
 
 	{:else if stage === 'denied'}
 		<p class="lead">{T('Mira can’t hear you: the microphone is blocked. Allow it in your browser’s site settings, then try again.', 'میرا صدایت را نمی‌شنود: میکروفون بسته است. در تنظیمات سایتِ مرورگر اجازه‌اش را بده و دوباره امتحان کن.')}</p>
-		{@render bottom(T('Try again', 'دوباره امتحان کن'), recordAgain)}
+		{@render bottom(T('Try again', 'دوباره امتحان کن'), recordAgain, false, skip)}
 
 	{:else if stage === 'processing'}
 		<div class="center"><div class="dots" aria-hidden="true"><span></span><span></span><span></span></div>
@@ -269,7 +284,7 @@
 	{:else if stage === 'failed'}
 		<p class="lead">{failedAt === 'transcribe' ? T('I couldn’t hear that clearly. Check your connection and try again.', 'نتوانستم واضح بشنوم. اینترنت را بررسی کن و دوباره امتحان کن.') : T('I couldn’t check that one.', 'نتوانستم آن را بررسی کنم.')}</p>
 		{#if failedAt === 'feedback' && failures >= 2}<button class="link" type="button" onclick={continueWithout}>{T('Continue without feedback', 'بدون بازخورد ادامه بده')}</button>{/if}
-		{@render bottom(T('Try again', 'دوباره امتحان کن'), retry)}
+		{@render bottom(T('Try again', 'دوباره امتحان کن'), retry, false, failures >= 2 && failedAt === 'transcribe' ? (take === 'again' ? { label: T('Finish', 'تمام'), onclick: finish } : skip) : null)}
 
 	{:else if stage === 'f1' && feedback}
 		{#if feedback.praise}<p class="praise">{isFa ? feedback.praise.fa : feedback.praise.en}</p>{/if}
@@ -314,12 +329,16 @@
 </section>
 
 <style>
-	.persuade { display: grid; gap: 12px; padding-bottom: 96px; }
+	.persuade { display: grid; gap: 12px; padding-bottom: 130px; }
 	.flats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 	.flat { position: relative; display: grid; gap: 6px; padding: 6px; border: 2px solid var(--line); border-radius: 14px; background: var(--paper-raised); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
 	.flat.on { border-color: var(--accent); background: var(--accent-wash); }
 	.flat img { inline-size: 100%; block-size: auto; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 10px; display: block; }
 	.flat-label { font-weight: 700; font-size: .92rem; padding: 0 4px 2px; }
+	.flat-title { padding: 0 4px 6px; font-size: .9rem; color: var(--ink-soft); }
+	/* A card without a photo: the badge sits under the words instead of on the picture. */
+	.flat.text { align-content: start; padding: 10px 8px; }
+	.flat.text .selected { position: static; justify-self: start; order: 3; }
 	.selected { position: absolute; inset-block-start: 12px; inset-inline-start: 12px; padding: 2px 8px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: .78rem; font-weight: 700; }
 	.compare { inline-size: 100%; border-collapse: collapse; font-size: .86rem; line-height: 1.35; }
 	.compare th, .compare td { padding: 7px 6px; border-block-end: 1px solid var(--line); text-align: left; vertical-align: top; }
@@ -360,9 +379,6 @@
 	@keyframes blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
 	.link { justify-self: start; min-height: 44px; padding: 8px 0; background: none; border: 0; color: var(--accent-deep); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 	.link.quiet { color: var(--ink-soft); }
-	.bar { position: fixed; inset-inline: 0; inset-block-end: 0; z-index: 20; padding: 12px 20px calc(14px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--paper) 35%); }
-	.primary { display: flex; align-items: center; justify-content: center; inline-size: 100%; max-inline-size: 680px; margin-inline: auto; min-height: 54px; border: 0; border-radius: 14px; background: var(--accent); color: var(--on-accent); font: inherit; font-size: 1.05rem; font-weight: 600; cursor: pointer; }
-	.primary:disabled { opacity: .5; cursor: default; }
 	.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 	h2:focus { outline: none; }
 	button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }

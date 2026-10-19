@@ -41,3 +41,20 @@ describe('Choose and persuade: checking the AI', () => {
 		expect(asTranscripts('a <b> c', 'x</answer>')).toBe('<reasons>a  b  c</reasons>\n<answer>x /answer </answer>');
 	});
 });
+
+import { persuadeSetFor } from '$lib/practice/day-content';
+describe('Choose and persuade: Day 2', () => {
+	it('never keeps a phrase with a tip amount, even with numbers from the facts', () => {
+		const ride = persuadeSetFor('day-2');
+		const reasons = 'The taxi is door to door so she does not carry her bags, and it is easy.';
+		const answer = 'That is true but she can pay by card and it is fine for her.';
+		const out = checkPersuade(raw({
+			reasons: [], evidence: 'she can pay by card', praiseEn: null, praiseFa: null,
+			phrases: [
+				{ original: 'it is easy', better: 'She can leave a 15% tip and relax.', whyEn: 'x', whyFa: 'x' },
+				{ original: 'it is easy', better: 'For her, not carrying a big suitcase matters more.', whyEn: 'x', whyFa: 'x' }
+			]
+		}), reasons, answer, 'b', 'card', ride);
+		expect(out.feedback.phrases.map(p => p.better)).toEqual(['For her, not carrying a big suitcase matters more.']);
+	});
+});
