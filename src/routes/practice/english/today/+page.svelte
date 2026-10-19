@@ -15,7 +15,8 @@
 	import { asSayRecord } from '$lib/practice/say-better';
 	import PhrasePractice from '$lib/components/PhrasePractice.svelte';
 	import PhrasePracticeReview from '$lib/components/PhrasePracticeReview.svelte';
-	import { PHRASES, asPhraseRecord } from '$lib/practice/phrases';
+	import { asPhraseRecord } from '$lib/practice/phrases';
+	import { phrasesFor } from '$lib/practice/day-content';
 	import { COACH_RATE, COACH_VOICE, loadGreeting, localDate, planLine, type GreetingRecord } from '$lib/practice/coach';
 	import { playAudioPromise, stopAllAudio } from '$services/tts';
 	import { getLanguage } from '$services/data-layer';
@@ -48,6 +49,8 @@
 	const day = $derived(dayById(session?.day ?? upcomingId) ?? DAY_ONE);
 	/** The day's version (a day with two): the session's, or the learner's (the owner may pick one). */
 	const track = $derived<Track>(session?.track ?? data.track);
+	/** Natural phrases: this day's sentences, for this version. */
+	const dayPhrases = $derived(phrasesFor(day.id, track));
 	/** The day after today's (for the recap and the done screen); a day with skipped steps comes back. */
 	const following = $derived(session?.skipped.length ? day : nextDay(day.id, data.labAccess));
 	/** The owner can always try the day after this one (ready or not, skipped steps or not). */
@@ -194,8 +197,8 @@
 {#snippet moduleBody(mod: DayModule, onDone: (score?: { correct: number; total: number }, record?: unknown) => void, onSkip?: () => void)}
 	{#if mod.id === 'listen-act' && mod.built && day.id === 'day-1' && session}
 		{#key mod.id}<ListenConnect {isFa} {onSkip} initial={asConnectRecord(loadRecord(session.startedAt, mod.id))} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} {onDone} />{/key}
-	{:else if mod.id === 'phrases' && mod.built && day.id === 'day-1' && session}
-		{#key mod.id}<PhrasePractice {isFa} {onSkip} initial={asPhraseRecord(loadRecord(session.startedAt, mod.id))} afterIntro={introPlay} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} onStep={index => (phraseStep = index)} {onDone} />{/key}
+	{:else if mod.id === 'phrases' && mod.built && session}
+		{#key mod.id}<PhrasePractice {isFa} {onSkip} phrases={dayPhrases} initial={asPhraseRecord(loadRecord(session.startedAt, mod.id), dayPhrases)} afterIntro={introPlay} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} onStep={index => (phraseStep = index)} {onDone} />{/key}
 	{:else if mod.id === 'say-it-better' && mod.built && day.id === 'day-1' && session}
 		{#key mod.id}<SayItBetter {isFa} {onSkip} initial={asSayRecord(loadRecord(session.startedAt, mod.id))} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} {onDone} />{/key}
 	{:else}
@@ -210,13 +213,13 @@
 {#snippet reviewBody(mod: DayModule)}
 	{@const actRecord = mod.id === 'listen-act' ? asConnectRecord(reviewedRecord) : null}
 	{@const sayRecord = mod.id === 'say-it-better' ? asSayRecord(reviewedRecord) : null}
-	{@const phraseRecord = mod.id === 'phrases' ? asPhraseRecord(reviewedRecord) : null}
+	{@const phraseRecord = mod.id === 'phrases' ? asPhraseRecord(reviewedRecord, dayPhrases) : null}
 	{#if actRecord}
 		<ListenConnectReview {isFa} record={actRecord} />
 	{:else if sayRecord}
 		<SayItBetterReview {isFa} record={sayRecord} />
 	{:else if phraseRecord}
-		<PhrasePracticeReview {isFa} record={phraseRecord} />
+		<PhrasePracticeReview {isFa} phrases={dayPhrases} record={phraseRecord} />
 	{:else if session?.skipped.includes(mod.id as ModuleId)}
 		<div class="card" role="note"><p>{isFa ? 'این مرحله را رد کردی، پس چیزی برای دیدن نیست.' : 'You skipped this step, so there is nothing to look back at.'}</p></div>
 	{:else}
@@ -303,7 +306,7 @@
 		<section aria-labelledby="step-title">
 			{@render backButton()}
 			{@render strip()}
-			<p class="eyebrow">{isFa ? `مرحلهٔ ${stepNumber.toLocaleString('fa-IR')} از ${stepCount.toLocaleString('fa-IR')}` : `STEP ${stepNumber} OF ${stepCount}`}{#if step.id === 'phrases' && phraseStep !== null}{isFa ? ' — ' : ' · '}{isFa ? `${(phraseStep + 1).toLocaleString('fa-IR')} از ${PHRASES.length.toLocaleString('fa-IR')}` : `${phraseStep + 1}/${PHRASES.length}`}{/if}{isFa ? ' — ' : ' · '}{step.skill === 'listening' ? (isFa ? 'شنیدن' : 'LISTENING') : (isFa ? 'صحبت کردن' : 'SPEAKING')}</p>
+			<p class="eyebrow">{isFa ? `مرحلهٔ ${stepNumber.toLocaleString('fa-IR')} از ${stepCount.toLocaleString('fa-IR')}` : `STEP ${stepNumber} OF ${stepCount}`}{#if step.id === 'phrases' && phraseStep !== null}{isFa ? ' — ' : ' · '}{isFa ? `${(phraseStep + 1).toLocaleString('fa-IR')} از ${dayPhrases.length.toLocaleString('fa-IR')}` : `${phraseStep + 1}/${dayPhrases.length}`}{/if}{isFa ? ' — ' : ' · '}{step.skill === 'listening' ? (isFa ? 'شنیدن' : 'LISTENING') : (isFa ? 'صحبت کردن' : 'SPEAKING')}</p>
 			<h1 id="step-title">{text(step.title)}</h1>
 			{#if intro === 'full'}{@render instruction(step)}{/if}
 			{@render moduleBody(step, (score, record) => finish('done', score, record), skipStep)}

@@ -2,14 +2,14 @@
 	/** Read-only look back at "Natural phrases": the five sentences, chunks in bold, Mira's voice, and a ✓ where the chunk was caught. */
 	import { playAudioPromise, stopAllAudio } from '$services/tts';
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
-	import { PHRASES, shownParts, type PhraseRecord } from '$lib/practice/phrases';
-	let { isFa = false, record }: { isFa?: boolean; record: PhraseRecord } = $props();
+	import { PHRASES, shownParts, type Phrase, type PhraseRecord } from '$lib/practice/phrases';
+	let { isFa = false, phrases = PHRASES, record }: { isFa?: boolean; phrases?: Phrase[]; record: PhraseRecord } = $props();
 	const T = (en: string, fa: string) => (isFa ? fa : en);
 	function hear(text: string) { stopAllAudio(); void playAudioPromise(text, COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {}); }
 </script>
 
 <ol class="review">
-	{#each PHRASES as phrase, i}
+	{#each phrases as phrase, i}
 		<li>
 			<button class="hear" type="button" onclick={() => hear(phrase.sentence)} aria-label={T('Hear Mira', 'شنیدن صدای میرا')}><span aria-hidden="true">▶</span></button>
 			<p lang="en" dir="ltr">{#each shownParts(phrase.shown) as part}{#if part.tie}<span class="tie" aria-hidden="true"></span>{:else if part.bold}<strong>{part.text}</strong>{:else}{part.text}{/if}{/each}</p>
