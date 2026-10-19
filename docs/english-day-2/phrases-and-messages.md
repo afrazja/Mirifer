@@ -15,7 +15,8 @@ its built format: the field names below are the ones in its `.ts` file.
 
 **Daily lesson subsets.** Some sets are longer than their daily-lesson slot; the rest stays as Module
 lab practice. Say it in English (Professional): 3 of 4 items. Voice messages (Intermediate): 2 of 4.
-Traps (Intermediate): 5 of 8. Each section says which.
+Traps (Intermediate): 5 of 8 (without #1 `been-waiting`, B1 grammar; #4, the same sentence as
+phrase A2 #3; and #7 `get-out`, whose "drop me off" repeats phrase A2 #5). Each section says which.
 
 **Who "you" are.** In Say it in English (Professional) and Voice messages, the learner is Sara (the
 Voice messages intro says so): Tom is "your friend", the backpack is "your" backpack. Sara isn't
@@ -399,8 +400,7 @@ Only what's still open.
 
 ### (b) Open questions
 
-1. **Traps daily lesson: one more to drop.** Leaving out #1 and #4 leaves six traps for five places.
-   A candidate is #7 `get-out`, whose `alsoGood` ("drop me off") is Natural phrases A2 #5 again.
+1. (Settled: the traps daily lesson leaves out #1, #4 and #7.)
 2. **B1 chunk choices.** "Have you heard of it?" and "Have a good one!" replace the owner's "right
    across from" and "drop me off", which are already A2 chunks. Either of the owner's could go back
    in place of #2 or #5.

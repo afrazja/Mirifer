@@ -89,7 +89,9 @@ Brian voices several people, but never two in the same scene.
    - Sara's own ending (the role-play's first run, `busy`): Mike is on a long ride across town; she
      meets him at the **taxi stand at Central Station**, across the street, at about 5 p.m., and gets
      her phone back.
-   - The role-play's replay variant (`off-duty`): Mike is off duty until 7 a.m. tomorrow.
+     (Or Mike leaves it at the hotel front desk at about 5:30.)
+   - The role-play's replay variant (`off-duty`): Mike is off duty until 7 a.m. tomorrow; he meets the
+     caller at the hotel entrance at 7 a.m., or leaves the phone at the front desk by 8 a.m.
 8. **Evening:** Tom's message about dinner at 7 (his car is still broken). Sara reads RideNow reviews,
    then takes a RideNow to the restaurant; Carlos waits across from the hotel.
 
