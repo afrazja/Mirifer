@@ -9,10 +9,12 @@
 	import { playAudioPromise, stopAllAudio, ttsIsPlaying } from '$services/tts';
 	import ActionBar from '$lib/components/ActionBar.svelte';
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
-	import { MAX_CLIP_SECONDS, MAX_TRIES, PHRASES, caught, emptyPhraseRecord, shownParts, tipParts, type PhraseRecord } from '$lib/practice/phrases';
+	import { MAX_CLIP_SECONDS, MAX_TRIES, PHRASES, caught, emptyPhraseRecord, shownParts, tipParts, type Phrase, type PhraseRecord } from '$lib/practice/phrases';
 
-	let { isFa = false, initial = null, afterIntro = null, onSave, onFocus, onStep, onSkip, onDone }: {
+	let { isFa = false, phrases = PHRASES, initial = null, afterIntro = null, onSave, onFocus, onStep, onSkip, onDone }: {
 		isFa?: boolean;
+		/** The day's sentences (Day 1's by default). */
+		phrases?: Phrase[];
 		/** What was saved earlier today (reload). */
 		initial?: PhraseRecord | null;
 		/** Mira's spoken instruction, started by the tap that opened the module; the first sentence follows it. */
@@ -29,7 +31,7 @@
 
 	type Stage = 'listen' | 'recording' | 'result';
 	// svelte-ignore state_referenced_locally
-	let record = $state<PhraseRecord>(initial ?? emptyPhraseRecord());
+	let record = $state<PhraseRecord>(initial ?? emptyPhraseRecord(phrases));
 	// svelte-ignore state_referenced_locally
 	let stage = $state<Stage>('listen');
 	let micOff = $state(false), check = $state<'checking' | 'caught' | 'missed' | 'failed' | null>(null);
@@ -37,9 +39,9 @@
 	let recorder: MediaRecorder | null = null, stream: MediaStream | null = null, chunks: Blob[] = [];
 	let startedAt = 0, timer: ReturnType<typeof setInterval> | undefined, discard = false, self: HTMLAudioElement | null = null;
 	const playing = $derived($ttsIsPlaying);
-	const phrase = $derived(PHRASES[record.index]);
+	const phrase = $derived(phrases[record.index]);
 	const item = $derived(record.items[record.index]);
-	const last = $derived(record.index === PHRASES.length - 1);
+	const last = $derived(record.index === phrases.length - 1);
 	const T = (en: string, fa: string) => (isFa ? fa : en);
 
 	/** Mira's instruction stays above the first sentence until the learner starts. */
@@ -112,7 +114,7 @@
 		finally { clearTimeout(wait); }
 		if (record.index !== index) return; // the learner already moved on
 		if (transcript === null) { check = 'failed'; return; }
-		const got = caught(PHRASES[index], transcript);
+		const got = caught(phrases[index], transcript);
 		check = got ? 'caught' : 'missed';
 		// The best try counts.
 		record.items[index] = { ...record.items[index], caught: got || record.items[index].caught === true };

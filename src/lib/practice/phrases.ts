@@ -89,13 +89,13 @@ export interface PhraseTry { tries: number; caught: boolean | null }
 /** What the module keeps in this browser for the day (reload, Back). Recordings and transcripts are never kept. */
 export interface PhraseRecord { index: number; items: PhraseTry[]; done: boolean }
 
-export const emptyPhraseRecord = (): PhraseRecord => ({ index: 0, items: PHRASES.map(() => ({ tries: 0, caught: null })), done: false });
+export const emptyPhraseRecord = (phrases: Phrase[] = PHRASES): PhraseRecord => ({ index: 0, items: phrases.map(() => ({ tries: 0, caught: null })), done: false });
 
 /** Checks a saved record before using it (it comes back from browser storage). */
-export function asPhraseRecord(value: unknown): PhraseRecord | null {
+export function asPhraseRecord(value: unknown, phrases: Phrase[] = PHRASES): PhraseRecord | null {
 	const r = value as PhraseRecord | null;
-	if (!r || typeof r !== 'object' || typeof r.done !== 'boolean' || !Number.isInteger(r.index) || r.index < 0 || r.index >= PHRASES.length) return null;
-	if (!Array.isArray(r.items) || r.items.length !== PHRASES.length) return null;
+	if (!r || typeof r !== 'object' || typeof r.done !== 'boolean' || !Number.isInteger(r.index) || r.index < 0 || r.index >= phrases.length) return null;
+	if (!Array.isArray(r.items) || r.items.length !== phrases.length) return null;
 	if (!r.items.every(item => item && Number.isInteger(item.tries) && item.tries >= 0 && (item.caught === null || typeof item.caught === 'boolean'))) return null;
 	return r;
 }
