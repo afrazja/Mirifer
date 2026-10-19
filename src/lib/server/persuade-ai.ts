@@ -98,7 +98,9 @@ export function checkPersuade(raw: RawPersuade, reasons: string, answer: string,
 	const phrases: Fix[] = raw.phrases
 		.map(p => ({ original: p.original.replace(/\s+/g, ' ').trim(), better: p.better.replace(/\s+/g, ' ').trim(), why: { en: p.whyEn.trim(), fa: p.whyFa.trim() || p.whyEn.trim() } }))
 		.filter(p => p.original && p.better && normalise(p.original) !== normalise(p.better) && (has(reasons, p.original) || has(answer, p.original))
-			&& words(p.better).length <= 14 && !PERSIAN.test(p.better) && numbers(p.better).every(n => allowed.has(n)))
+			&& words(p.better).length <= 14 && !PERSIAN.test(p.better) && numbers(p.better).every(n => allowed.has(n))
+			// Never a tip amount, whatever numbers the facts allow.
+			&& !(/\btip/i.test(p.better) && /\d|percent/i.test(p.better)))
 		.slice(0, 2).map(p => ({ type: 'natural' as const, ...p }));
 
 	const quotes = [...(raw.praiseEn ?? '').matchAll(/["“”]([^"“”]{2,80})["“”]/g)].map(m => m[1]);

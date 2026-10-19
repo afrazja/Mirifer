@@ -441,7 +441,7 @@ export const PERSUADE: PersuadeSet = {
 		b: { id: 'b', label: 'B · Taxi', title: 'Taxi', alt: 'A taxi waiting at the taxi stand outside the airport doors.',
 			facts: ['About $55, plus a tip', 'About 40 minutes (highway closed)', 'Always waiting, outside door 3', 'Door to door', 'Card machines can be slow'] }
 	},
-	factIds: ['price', 'tip', 'time', 'highway', 'often', 'signs', 'walk', 'elevators', 'waiting', 'door', 'card', 'personal'],
+	factIds: ['price', 'tip', 'time', 'highway', 'often', 'signs', 'walk', 'elevators', 'bags', 'waiting', 'door', 'card', 'personal'],
 	objections: {
 		a: [
 			{ point: 'wait', line: 'If she just misses a train, she has to wait 15 minutes. What if she’s late for her meeting?', again: 'You said she might have to wait, but 15 minutes, with a meeting to get to? What if she’s late?', keys: ['wait', 'waiting', 'every', '15', 'often', 'miss', 'late'] },

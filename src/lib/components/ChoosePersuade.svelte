@@ -65,9 +65,11 @@
 		document.addEventListener('visibilitychange', onHidden);
 		return () => document.removeEventListener('visibilitychange', onHidden);
 	});
-	onDestroy(() => { clearInterval(timer); if (recorder?.state === 'recording') recorder.stop(); stream?.getTracks().forEach(t => t.stop()); });
+	/** Gone (Back, another lab set): nothing is sent or saved after this. */
+	let destroyed = false;
+	onDestroy(() => { destroyed = true; clearInterval(timer); if (recorder?.state === 'recording') { recorder.onstop = null; recorder.stop(); } stream?.getTracks().forEach(t => t.stop()); });
 
-	function persist() { onSave?.($state.snapshot(record)); }
+	function persist() { if (!destroyed) onSave?.($state.snapshot(record)); }
 	function go(next: Stage) { stage = next; queueMicrotask(() => heading?.focus()); }
 	function onHidden() { if (document.hidden && recorder?.state === 'recording') { interrupted = true; recorder.stop(); } }
 	function say(line: string) { stopAllAudio(); return playAudioPromise(line, COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {}); }
@@ -121,8 +123,10 @@
 	}
 
 	async function send() {
+		if (destroyed) return;
 		go('processing'); note = 'listening';
 		const transcript = await transcribeBlob();
+		if (destroyed) return;
 		if (transcript === null) {
 			failures += 1; failedAt = 'transcribe';
 			// Reasons that can't be heard twice: Mira still objects (the apartment's first point), so nobody gets stuck.
@@ -167,6 +171,7 @@
 			result = response.ok ? await response.json() : null;
 		} catch { result = null; }
 		finally { clearTimeout(wait); }
+		if (destroyed) return;
 		if (!result || !Array.isArray(result.reasons)) { failures += 1; failedAt = 'feedback'; go('failed'); return; }
 		failures = 0;
 		record = { ...record, feedback: result }; persist();
@@ -257,11 +262,11 @@
 
 	{:else if stage === 'short'}
 		<p class="lead">{T('That was very short. Try to say a bit more.', 'خیلی کوتاه بود. سعی کن کمی بیشتر بگویی.')}</p>
-		{@render bottom(T('Record again', 'دوباره ضبط کن'), recordAgain)}
+		{@render bottom(T('Record again', 'دوباره ضبط کن'), recordAgain, false, take === 'again' ? { label: T('Finish', 'تمام'), onclick: finish } : skip)}
 
 	{:else if stage === 'more'}
 		<p class="lead">{T('Tell me a bit more: why this one?', 'کمی بیشتر بگو: چرا این یکی؟')}</p>
-		{@render bottom(T('Record again', 'دوباره ضبط کن'), recordAgain)}
+		{@render bottom(T('Record again', 'دوباره ضبط کن'), recordAgain, false, skip)}
 
 	{:else if stage === 'interrupted'}
 		<p class="lead">{T('The recording stopped when you left the page.', 'وقتی از صفحه بیرون رفتی، ضبط متوقف شد.')}</p>
@@ -279,7 +284,7 @@
 	{:else if stage === 'failed'}
 		<p class="lead">{failedAt === 'transcribe' ? T('I couldn’t hear that clearly. Check your connection and try again.', 'نتوانستم واضح بشنوم. اینترنت را بررسی کن و دوباره امتحان کن.') : T('I couldn’t check that one.', 'نتوانستم آن را بررسی کنم.')}</p>
 		{#if failedAt === 'feedback' && failures >= 2}<button class="link" type="button" onclick={continueWithout}>{T('Continue without feedback', 'بدون بازخورد ادامه بده')}</button>{/if}
-		{@render bottom(T('Try again', 'دوباره امتحان کن'), retry, false, failures >= 2 && !(failedAt === 'feedback') ? skip : null)}
+		{@render bottom(T('Try again', 'دوباره امتحان کن'), retry, false, failures >= 2 && failedAt === 'transcribe' ? (take === 'again' ? { label: T('Finish', 'تمام'), onclick: finish } : skip) : null)}
 
 	{:else if stage === 'f1' && feedback}
 		{#if feedback.praise}<p class="praise">{isFa ? feedback.praise.fa : feedback.praise.en}</p>{/if}
