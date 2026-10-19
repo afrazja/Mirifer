@@ -73,6 +73,8 @@ export interface DayPack {
 	/** Its number in the course (shown as "Day 2"). */
 	number: number;
 	theme: DisplayText;
+	/** A day with two versions can give each its own title (the day's `theme` otherwise). */
+	themes?: Partial<Record<Track, DisplayText>>;
 	/** How the coach names the day's theme in a sentence ("Today is about …"). */
 	themePhrase: string;
 	/** The coach's theme-linked warm-up question for this day (Day 2+ greeting). */
@@ -127,6 +129,8 @@ export const DAY_TWO: DayPack = {
 	number: 2,
 	ready: false,
 	theme: { en: 'Taking a taxi', fa: 'گرفتن تاکسی' },
+	// Professional is about the lost phone, Mike's story and talking a friend into a choice.
+	themes: { professional: { en: 'When a taxi ride goes wrong', fa: 'وقتی تاکسی‌سواری به مشکل می‌خورد' } },
 	themePhrase: 'taking a taxi',
 	question: 'And you? When you travel, how do you usually get from the airport to your hotel?',
 	goal: {
@@ -209,6 +213,9 @@ export function modulesFor(length: Length, day: DayPack = DAY_ONE, track: Track 
 	return day.modules.filter(module => module.minutes[length] !== undefined);
 }
 /** Every module a day has, in all its versions (for counting what's built). */
+/** The day's title for this version. */
+export const themeOf = (day: DayPack, track: Track = 'intermediate'): DisplayText => day.themes?.[track] ?? day.theme;
+
 export const allModules = (day: DayPack): DayModule[] => (day.tracks ? [...day.tracks.intermediate, ...day.tracks.professional] : day.modules);
 /** A module's minutes in this session (a version's modules have the same minutes in every length). */
 export const minutesOf = (module: DayModule, length: Length) => module.minutes[length] ?? module.minutes[15] ?? module.minutes[20] ?? 0;
@@ -292,7 +299,7 @@ export interface Recommendation { title: DisplayText; why: DisplayText }
  * what the learner skipped: that comes back first. With nothing skipped the
  * learner moves on to the next theme (named when `upcoming` is given).
  */
-export function recommend(session: DaySession, upcoming?: DayPack | null): Recommendation {
+export function recommend(session: DaySession, upcoming?: DayPack | null, track: Track = session.track ?? 'intermediate'): Recommendation {
 	const modules = sessionModules(session);
 	const skipped = modules.find(module => session.skipped.includes(module.id));
 	const weak = modules.find(module => { const score = session.scores?.[module.id]; return score && score.correct / score.total < 0.6; });
@@ -304,7 +311,7 @@ export function recommend(session: DaySession, upcoming?: DayPack | null): Recom
 		return { title: { en: `Next time: Day ${day.number} again`, fa: `دفعهٔ بعد: دوباره روز ${day.number.toLocaleString('fa-IR')}` }, why: { en: 'New days are on the way. Until then, practising this one again helps it stick.', fa: 'روزهای تازه در راه است. تا آن موقع، تمرین دوبارهٔ همین روز کمک می‌کند بهتر یادت بماند.' } };
 	}
 	const title = upcoming
-		? { en: `Next time: Day ${upcoming.number}, ${upcoming.theme.en}`, fa: `دفعهٔ بعد: روز ${upcoming.number.toLocaleString('fa-IR')}، ${upcoming.theme.fa}` }
+		? { en: `Next time: Day ${upcoming.number}, ${themeOf(upcoming, track).en}`, fa: `دفعهٔ بعد: روز ${upcoming.number.toLocaleString('fa-IR')}، ${themeOf(upcoming, track).fa}` }
 		: { en: 'Next time: a new theme', fa: 'دفعهٔ بعد: یک موضوع تازه' };
 	return { title, why: { en: 'You finished every step today, so you move on.', fa: 'امروز همهٔ مرحله‌ها را تمام کردی، پس جلو می‌روی.' } };
 }
