@@ -338,14 +338,14 @@ a, d, a`.
 
 Built in `src/lib/practice/retell.ts`; page `src/routes/practice/english/retell`. One new
 `RetellPiece`, the same shape as the built B1 piece "A shorter working week" (158 words, 6 key
-points). This one is 175 words. It is a third-person narration, like the built pieces.
+points). This one is 185 words. It is a third-person narration, like the built pieces.
 
 | Field | Value |
 |---|---|
 | `id` | `wedding-cake` |
 | `title` | en: The cake on the back seat · fa: کیکِ روی صندلی عقب |
 | `level` | `B1` |
-| Listening (`listenSeconds`) | ≈ 0:53 |
+| Listening (`listenSeconds`) | ≈ 0:56 |
 | Speaking limit (`speakLimit`) | 1:30 (the piece is under 90 s at its written pace) |
 
 **`text`**
