@@ -7,15 +7,18 @@ ride apps") in `docs/english-themes-plan.md`, week 1 "Your first trip". US Engli
 
 ## Two tracks (owner's decision)
 
-- **Starter (A1–A2):** short, guided speaking; recognising and repeating; short answers.
-- **Confident (B1+):** own, longer speech; conversations; reasons and stories.
+- **Intermediate (A2):** short, guided speaking; recognising and repeating; short answers.
+- **Professional (B1+):** own, longer speech; conversations; reasons and stories.
+
+(Earlier drafts called them Starter and Confident.)
 
 Every module is tagged with the track(s) it suits (see `README.md` in this folder). Same story for
 both; only the modules and how hard their content is change.
 
 ## Where we are
 
-**Riverton**, a mid-size US city. **Riverton Airport** is about 20 miles from downtown.
+**Riverton**, a mid-size US city. **Riverton Airport** is about 20 miles from downtown. **Today is
+Saturday.**
 
 - **The Park Hotel**, 210 Main Street, downtown. New: it opened last year, so some drivers don't
   know it yet. It's right **across from Central Station**. Check-in from 3 p.m.; you can leave bags
@@ -56,16 +59,17 @@ Only four English voices exist: **Andrew** (a), **Ava** (b, always Mira, the coa
 | **Nick**, the airport information desk | Brian | Answers questions about getting downtown (Find the missing information). |
 | **The airline's baggage desk** | Andrew | Calls about the backpack (delivery tomorrow, 8–10 a.m.). |
 | **A friend of the learner's** | – | Only in Choose and persuade: first time in Riverton, big suitcase and a laptop bag, paying for herself, a meeting at the Park Hotel an hour after landing. Not part of Sara's story. |
+| **The learner ("you")** | – | Also arriving in Riverton, on their own trip. Personal questions are about the learner's own life and habits. |
 
 Brian voices several people, but never two in the same scene.
-| **The learner ("you")** | – | Also arriving in Riverton, on their own trip. Personal questions are about the learner's own life and habits. |
 
 ## What happens (the day's timeline)
 
 1. **On the plane (before landing):** Tom's voice message: his car broke down, he can't pick Sara
    up; take the Airport Express, it's easy, or a taxi if she's too tired. He'll meet her for dinner
    at 7.
-2. **At the airport:** Sara reads the signs and checks her options (the table above). The train is
+2. **At the airport:** after landing, the airline's baggage desk calls (Andrew): the backpack comes
+   tomorrow between 8 and 10 a.m. Sara reads the signs and checks her options (the table above). The train is
    cheap and fast, but her suitcase is heavy and she's tired after a long day. She takes a taxi.
 3. **The ride** (the Listen and connect conversation, `ride-v2.md`): Mike doesn't know the hotel;
    Sara says it's across from Central Station; the highway is closed because of an accident, so they
@@ -74,18 +78,18 @@ Brian voices several people, but never two in the same scene.
 4. **Mike's story** (on the way): his strangest passenger. A man left a wedding cake on the back
    seat; Mike drove back across the city to the wedding with it and arrived just in time; they
    invited him to stay for dinner.
-5. **During the ride:** a voice message from the Park Hotel front desk (Daniel): the room isn't ready
-   until 3 p.m.; she can leave her suitcase at the desk. The airline's baggage desk also calls: the
-   backpack comes tomorrow between 8 and 10 a.m. Sara tells Mike about Tom's car.
+5. **During the ride:** a voice message from the Park Hotel front desk (Daniel): the room will be
+   ready at 3 p.m.; she can leave her suitcase at the desk. Sara tells Mike about Tom's car.
 6. **Arrival:** the taxi left the airport at about 1:30 p.m. and reaches the hotel at about 2:10. Sara
    pays the $55 fare plus a $10 tip, and leaves her suitcase at the desk.
 7. **The surprise:** at about 2:30, Sara realizes she left her phone in the taxi (black, red case,
    a small crack in the top corner; the battery was almost dead, since her charger is in the backpack,
    so it's switched off). She calls Riverton Taxi from the front desk phone (the role-play). Mike had
    already called the office at 2:20: he found it on his back seat. Getting it back is free.
-   - Sara's own ending: Mike is on a long ride across town; she meets him at the **taxi stand at
-     Central Station**, across the street, at about 5 p.m., and gets her phone back.
-   - The role-play's replay variant: Mike is off duty until 7 a.m. tomorrow.
+   - Sara's own ending (the role-play's first run, `busy`): Mike is on a long ride across town; she
+     meets him at the **taxi stand at Central Station**, across the street, at about 5 p.m., and gets
+     her phone back.
+   - The role-play's replay variant (`off-duty`): Mike is off duty until 7 a.m. tomorrow.
 8. **Evening:** Tom's message about dinner at 7 (his car is still broken). Sara reads RideNow reviews,
    then takes a RideNow to the restaurant; Carlos waits across from the hotel.
 
