@@ -57,6 +57,12 @@ describe('English today page', () => {
 		expect(await load(fixture('en', {}, undefined, false, '?day=day-2').event())).toMatchObject({ nextDayId: 'day-1', requestedDay: null });
 		expect(await load(fixture('en', {}, undefined, true, '?day=day-1').event())).toMatchObject({ nextDayId: 'day-1', requestedDay: 'day-1' });
 	});
+	it('a Day 1 session saved before Day 1 had two versions carries on in the learner’s version', async () => {
+		const { track: _dropped, ...legacy } = startSession(15);
+		const loaded = await load(fixture('en', { english_day_v1: { ...legacy, done: ['listen-act'] } }).event()) as unknown as { session: { track?: string; done: string[] } };
+		expect(loaded.session.track).toBe('intermediate');
+		expect(loaded.session.done).toEqual(['listen-act']);
+	});
 	it('gives each learner their version of a day; the owner may pick either', async () => {
 		// The fixture's onboarding answer is "simple": Intermediate.
 		expect(await load(fixture('en').event())).toMatchObject({ track: 'intermediate' });

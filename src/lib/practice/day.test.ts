@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { completeLater, moduleBefore, LENGTHS, agendaFor, agendaMinutes, completeSession, currentModule, finishModule, modulesFor, recommend, sessionProgress, startSession, DaySessionSchema, DAYS, DAY_ONE, DAY_TWO, dayById, nextDay, TRACKS, trackFor } from './day';
 
 describe('English day shell', () => {
-	it('fills each session length exactly', () => { for (const length of LENGTHS) expect(agendaMinutes(length)).toBe(length); });
+	// Day 1 has two versions now (no fixed length): Intermediate is the lightest lesson, Professional a little longer.
+	it('Day 1 stays the lightest day', () => { for (const length of LENGTHS) { expect(agendaMinutes(length)).toBe(18); expect(agendaMinutes(length, DAY_ONE, 'professional')).toBe(23); } });
 	it('puts check-in first and recap last', () => {
 		const ids = agendaFor(15).map(item => item.id);
 		expect(ids[0]).toBe('check-in'); expect(ids.at(-1)).toBe('recap');
@@ -33,11 +34,11 @@ describe('English day shell', () => {
 	it('finds the module before another, or before the recap', () => {
 		expect(moduleBefore(15, 'listen-act')).toBeNull();
 		expect(moduleBefore(15, 'phrases')?.id).toBe('listen-act');
-		expect(moduleBefore(15, 'say-it-better')?.id).toBe('phrases');
-		expect(moduleBefore(15, null)?.id).toBe('say-it-better');
-		expect(moduleBefore(20, 'phrases')?.id).toBe('listen-act');
-		expect(moduleBefore(20, 'say-it-better')?.id).toBe('phrases');
-		expect(moduleBefore(20, null)?.id).toBe('say-it-better');
+		expect(moduleBefore(15, 'traps')?.id).toBe('phrases');
+		expect(moduleBefore(15, null)?.id).toBe('voice-messages');
+		expect(moduleBefore(15, 'say-it-better', DAY_ONE, 'professional')?.id).toBe('phrases');
+		expect(moduleBefore(15, 'say-in-english', DAY_ONE, 'professional')?.id).toBe('say-it-better');
+		expect(moduleBefore(20, null, DAY_ONE, 'professional')?.id).toBe('scenario');
 	});
 	it('lets a skipped module be done later, keeping the score', () => {
 		let s = finishModule(startSession(15), 'listen-act', 'skipped');
@@ -79,8 +80,9 @@ describe('more than one day', () => {
 		}
 		expect(modulesFor(15, DAY_TWO, 'intermediate').map(m => m.id)).toEqual(['listen-act', 'phrases', 'traps', 'say-in-english', 'voice-messages']);
 		expect(modulesFor(15, DAY_TWO, 'professional').map(m => m.id)).toEqual(['listen-retell', 'phrases', 'say-in-english', 'choose-persuade', 'scenario']);
-		// Day 1 has one version: no track in its session.
-		expect(startSession(15, new Date(), DAY_ONE, 'professional').track).toBeUndefined();
+		// Day 1 has two versions too (rebuilt): its session keeps its version.
+		expect(startSession(15, new Date(), DAY_ONE, 'professional').track).toBe('professional');
+		expect(modulesFor(15, DAY_ONE, 'professional').map(m => m.id)).toEqual(['listen-act', 'phrases', 'say-it-better', 'say-in-english', 'scenario']);
 		expect(DaySessionSchema.safeParse({ ...startSession(15, new Date(), DAY_TWO), day: 'day-9' }).success).toBe(false);
 		expect(DaySessionSchema.safeParse({ ...startSession(15, new Date(), DAY_TWO), track: 'expert' }).success).toBe(false);
 	});
@@ -123,11 +125,11 @@ describe('more than one day', () => {
 describe('skipping a step', () => {
 	it('moves on to the next day when some steps were done; the same day comes back only when every step was skipped', async () => {
 		const { completeSession: complete, recommend: rec, startSession: start, DAY_TWO: two } = await import('./day');
-		const some = complete({ ...start(15), stage: 'recap', done: ['listen-act', 'phrases'], skipped: ['say-it-better'] } as never);
+		const some = complete({ ...start(15, new Date(), DAY_ONE, 'professional'), stage: 'recap', done: ['listen-act', 'phrases'], skipped: ['say-it-better'] } as never);
 		const next = rec(some, two);
 		expect(next.title.en).toBe('Next time: Day 2, Taking a taxi');
 		expect(next.why.en).toContain('You skipped Tell your story today');
-		const all = complete({ ...start(15), stage: 'recap', done: [], skipped: ['listen-act', 'phrases', 'say-it-better'] } as never);
+		const all = complete({ ...start(15, new Date(), DAY_ONE, 'professional'), stage: 'recap', done: [], skipped: ['listen-act', 'phrases', 'say-it-better', 'say-in-english', 'scenario'] } as never);
 		expect(rec(all, two).title.en).toBe('Next time: Listen and connect');
 	});
 });

@@ -84,7 +84,8 @@ describe('Natural phrases, Day 2 (both versions)', () => {
 		expect(caught(goodOne, 'have a nice day')).toBe(true);
 	});
 	it('gives each day and version its own sentences', () => {
-		expect(phrasesFor('day-1')).toBe(PHRASES);
+		expect(phrasesFor('day-1', 'professional')).toBe(PHRASES);
+		expect(phrasesFor('day-1')[0].sentence).toBe('Hi, only one of my bags came out.');
 		expect(phrasesFor('day-2', 'intermediate')).toBe(DAY_TWO_PHRASES.intermediate);
 		expect(phrasesFor('day-2', 'professional')).toBe(DAY_TWO_PHRASES.professional);
 		const record = emptyPhraseRecord(DAY_TWO_PHRASES.professional);

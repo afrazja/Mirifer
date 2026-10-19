@@ -95,7 +95,10 @@ describe('Listen and connect, Day 2 (both versions)', () => {
 			expect(score(all, set)).toEqual({ correct: 6, total: 6 });
 			expect(asRecord(emptyRecord(set), set)).not.toBeNull();
 		}
-		expect(connectSetFor('day-1')).toBe(DAY_ONE_SET);
+		// Day 1: the built B1 set is Professional's; Intermediate has its own A2 questions on the same conversation.
+		expect(connectSetFor('day-1', 'professional')).toBe(DAY_ONE_SET);
+		expect(connectSetFor('day-1').conversation).toBe(DAY_ONE_SET.conversation);
+		expect(connectSetFor('day-1')).not.toBe(DAY_ONE_SET);
 		expect(connectSetFor('day-2', 'professional')).toBe(DAY_TWO_CONNECT.professional);
 	});
 });

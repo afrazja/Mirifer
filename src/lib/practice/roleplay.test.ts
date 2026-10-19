@@ -5,8 +5,9 @@ import { sceneLineProblem } from '$lib/server/jamie-line';
 
 describe('Role-play scenes', () => {
 	const call = roleSceneFor('day-2');
-	it('Day 1 and the pilot are the hotel; Day 2 is the call to Riverton Taxi, with Kevin’s fixed voice', () => {
-		expect(roleSceneFor('day-1')).toBe(HOTEL_SCENE);
+	it('the pilot is the hotel; Day 1 is your lost suitcase; Day 2 is the call to Riverton Taxi, with Kevin’s fixed voice', () => {
+		expect(roleSceneFor('day-1').id).toBe('airport-bag-v1');
+		expect(roleSceneFor('day-9')).toBe(HOTEL_SCENE);
 		expect(call.id).toBe('taxi-lost-phone-v1');
 		expect(call.voice).toBe('c');
 		expect(roleSceneById(undefined)).toBe(HOTEL_SCENE);
