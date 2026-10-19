@@ -57,6 +57,24 @@ describe('English today page', () => {
 		expect(await load(fixture('en', {}, undefined, false, '?day=day-2').event())).toMatchObject({ nextDayId: 'day-1', requestedDay: null });
 		expect(await load(fixture('en', {}, undefined, true, '?day=day-1').event())).toMatchObject({ nextDayId: 'day-1', requestedDay: 'day-1' });
 	});
+	it('gives each learner their version of a day; the owner may pick either', async () => {
+		// The fixture's onboarding answer is "simple": Intermediate.
+		expect(await load(fixture('en').event())).toMatchObject({ track: 'intermediate' });
+		expect(await load(fixture('en', { english_profile_v1: { reason: 'travel', comfort: 'natural', minutes: 20, skipped: false, completedAt: '2026-10-01T10:00:00.000Z' } }).event())).toMatchObject({ track: 'professional' });
+		expect(await load(fixture('en', {}, undefined, false, '?day=day-2&track=professional').event())).toMatchObject({ track: 'intermediate', requestedDay: null });
+		expect(await load(fixture('en', {}, undefined, true, '?day=day-2&track=professional').event())).toMatchObject({ track: 'professional', requestedDay: 'day-2' });
+		expect(await load(fixture('en', {}, undefined, true, '?day=day-2&track=expert').event())).toMatchObject({ track: 'intermediate' });
+		// A session on the other version is set aside, as one on another day is.
+		const pro = startSession(15, new Date(), DAY_TWO, 'professional');
+		expect(await load(fixture('en', { english_day_v1: pro }, undefined, true, '?day=day-2&track=intermediate').event())).toMatchObject({ session: null });
+		expect(await load(fixture('en', { english_day_v1: pro }, undefined, true, '?day=day-2&track=professional').event())).toMatchObject({ session: pro });
+	});
+	it('counts a two-version day by its own modules', async () => {
+		const pro = { ...startSession(15, new Date(), DAY_TWO, 'professional'), stage: 'done', done: ['choose-persuade'], scores: { 'choose-persuade': { correct: 4, total: 5 } }, completedAt: new Date().toISOString() };
+		const f = fixture('en', {}, pro, true);
+		await actions.save(f.event());
+		expect(f.supabase.auth.updateUser).toHaveBeenCalledWith({ data: expect.objectContaining({ english_progress_v1: expect.objectContaining({ sessionsCompleted: 1, lastResult: 'strong' }) }) });
+	});
 	it('saves a session on a day that is not ready only for the owner', async () => {
 		const dayTwo = startSession(15, new Date(), DAY_TWO);
 		expect(await actions.save(fixture('en', {}, dayTwo).event())).toMatchObject({ status: 400 });

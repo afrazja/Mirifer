@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { completeLater, moduleBefore, LENGTHS, agendaFor, agendaMinutes, completeSession, currentModule, finishModule, modulesFor, recommend, sessionProgress, startSession, DaySessionSchema, DAYS, DAY_ONE, DAY_TWO, dayById, nextDay } from './day';
+import { completeLater, moduleBefore, LENGTHS, agendaFor, agendaMinutes, completeSession, currentModule, finishModule, modulesFor, recommend, sessionProgress, startSession, DaySessionSchema, DAYS, DAY_ONE, DAY_TWO, dayById, nextDay, TRACKS, trackFor } from './day';
 
 describe('English day shell', () => {
 	it('fills each session length exactly', () => { for (const length of LENGTHS) expect(agendaMinutes(length)).toBe(length); });
@@ -51,25 +51,45 @@ describe('English day shell', () => {
 
 describe('more than one day', () => {
 	it('every day fills each session length exactly, check-in first and recap last', () => {
-		for (const day of DAYS) for (const length of LENGTHS) {
+		for (const day of DAYS.filter(d => !d.tracks)) for (const length of LENGTHS) {
 			expect(agendaMinutes(length, day), `${day.id} ${length}`).toBe(length);
 			const ids = agendaFor(length, day).map(item => item.id);
 			expect(ids[0]).toBe('check-in'); expect(ids.at(-1)).toBe('recap');
 		}
+		// A day with two versions has no time limit (owner's decision): five modules, check-in first and recap last.
+		for (const day of DAYS.filter(d => d.tracks)) for (const track of TRACKS) {
+			const ids = agendaFor(15, day, track).map(item => item.id);
+			expect(ids, `${day.id} ${track}`).toHaveLength(7);
+			expect(ids[0]).toBe('check-in'); expect(ids.at(-1)).toBe('recap');
+			expect(new Set(ids).size).toBe(ids.length);
+		}
 		expect(new Set(DAYS.map(d => d.id)).size).toBe(DAYS.length);
 		expect(DAYS.map(d => d.number)).toEqual(DAYS.map((_, i) => i + 1));
 	});
-	it('a day-2 session runs on day 2’s modules and validates', () => {
-		let s = startSession(15, new Date('2026-01-02T10:00:00Z'), DAY_TWO);
-		expect(s.day).toBe('day-2');
-		expect(DaySessionSchema.safeParse(s).success).toBe(true);
-		const ids = modulesFor(15, DAY_TWO).map(m => m.id);
-		expect(ids).toEqual(['listen-act', 'phrases', 'say-in-english']);
-		for (const id of ids) { expect(currentModule(s)?.id).toBe(id); s = finishModule(s, id, 'done'); }
-		expect(s.stage).toBe('recap');
-		expect(modulesFor(20, DAY_TWO).map(m => m.id)).toEqual(['listen-act', 'phrases', 'say-in-english', 'scenario']);
-		expect(moduleBefore(20, null, DAY_TWO)?.id).toBe('scenario');
-		expect(DaySessionSchema.safeParse({ ...s, day: 'day-9' }).success).toBe(false);
+	it('a day-2 session runs on its version’s modules and validates', () => {
+		for (const track of TRACKS) {
+			let s = startSession(15, new Date('2026-01-02T10:00:00Z'), DAY_TWO, track);
+			expect(s).toMatchObject({ day: 'day-2', track });
+			expect(DaySessionSchema.safeParse(s).success).toBe(true);
+			const ids = modulesFor(15, DAY_TWO, track).map(m => m.id);
+			for (const id of ids) { expect(currentModule(s)?.id).toBe(id); s = finishModule(s, id, 'done'); }
+			expect(s.stage).toBe('recap');
+			expect(moduleBefore(15, null, DAY_TWO, track)?.id).toBe(ids.at(-1));
+			expect(sessionProgress(completeSession(s))).toBe(1);
+		}
+		expect(modulesFor(15, DAY_TWO, 'intermediate').map(m => m.id)).toEqual(['listen-act', 'phrases', 'traps', 'say-in-english', 'voice-messages']);
+		expect(modulesFor(15, DAY_TWO, 'professional').map(m => m.id)).toEqual(['listen-retell', 'phrases', 'say-in-english', 'choose-persuade', 'scenario']);
+		// Day 1 has one version: no track in its session.
+		expect(startSession(15, new Date(), DAY_ONE, 'professional').track).toBeUndefined();
+		expect(DaySessionSchema.safeParse({ ...startSession(15, new Date(), DAY_TWO), day: 'day-9' }).success).toBe(false);
+		expect(DaySessionSchema.safeParse({ ...startSession(15, new Date(), DAY_TWO), track: 'expert' }).success).toBe(false);
+	});
+	it('picks a learner’s version from their onboarding answer', () => {
+		expect(trackFor({ comfort: 'natural' })).toBe('professional');
+		expect(trackFor({ comfort: 'simple' })).toBe('intermediate');
+		expect(trackFor({ comfort: 'hard' })).toBe('intermediate');
+		expect(trackFor({ comfort: null })).toBe('intermediate');
+		expect(trackFor(null)).toBe('intermediate');
 	});
 	it('the next day follows the last finished one; a day that isn’t ready is only for the owner', () => {
 		expect(nextDay(null).id).toBe('day-1');

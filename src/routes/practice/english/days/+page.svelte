@@ -1,13 +1,14 @@
 <script lang="ts">
 	/**
 	 * The owner's list of daily lessons: one row per day, with its theme and whether learners
-	 * get it yet. A row opens that day on the Today page (`?day=`).
+	 * get it yet. A row opens that day on the Today page (`?day=`); a day with two versions has a
+	 * link for each (`&track=`).
 	 */
 	import { onMount } from 'svelte';
 	import type { PageProps } from './$types';
 	import AppHeader from '$lib/components/AppHeader.svelte';
 	import EnglishModuleTabs from '$lib/components/EnglishModuleTabs.svelte';
-	import { DAYS, type DayPack } from '$lib/practice/day';
+	import { DAYS, TRACKS, TRACK_NAMES, type DayModule, type DayPack } from '$lib/practice/day';
 	import { getLanguage } from '$services/data-layer';
 
 	let { data }: PageProps = $props();
@@ -19,8 +20,13 @@
 	/** Live, or how many of its parts (across both lengths) are built. */
 	function status(day: DayPack): string {
 		if (day.ready) return isFa ? 'آماده برای زبان‌آموزها' : 'Live for learners';
-		const built = day.modules.filter(part => part.built).length, total = day.modules.length;
-		return isFa ? `در حال ساخت؛ ${num(built)} از ${num(total)} بخش آماده` : `Being built: ${built} of ${total} parts ready`;
+		if (day.tracks) return isFa ? 'در حال ساخت' : 'Being built';
+		return isFa ? `در حال ساخت؛ ${built(day.modules)}` : `Being built: ${built(day.modules)}`;
+	}
+	/** "2 of 5 parts ready". */
+	function built(modules: DayModule[]): string {
+		const done = modules.filter(part => part.built).length;
+		return isFa ? `${num(done)} از ${num(modules.length)} بخش آماده` : `${done} of ${modules.length} parts ready`;
 	}
 </script>
 
@@ -36,16 +42,37 @@
 	<ul class="list">
 		{#each DAYS as day}
 			<li>
-				<a class="day" href={`/practice/english/today?day=${day.id}`}>
-					<span class="number">{isFa ? `روز ${num(day.number)}` : `Day ${day.number}`}</span>
-					<span class="theme">{isFa ? day.theme.fa : day.theme.en}</span>
-					<span class="meta">
-						<span class="status" class:live={day.ready}>{status(day)}</span>
-						{#if data.openDayId === day.id}<span class="tag">{isFa ? 'نیمه‌کاره' : 'In progress'}</span>
-						{:else if data.nextDayId === day.id}<span class="tag">{isFa ? 'روز بعدی تو' : 'Your next day'}</span>{/if}
-					</span>
-					<span class="arrow" aria-hidden="true">{isFa ? '←' : '→'}</span>
-				</a>
+				{#if day.tracks}
+					<div class="day versions">
+						<span class="number">{isFa ? `روز ${num(day.number)}` : `Day ${day.number}`}</span>
+						<span class="theme">{isFa ? day.theme.fa : day.theme.en}</span>
+						<span class="meta">
+							<span class="status" class:live={day.ready}>{status(day)}</span>
+							{#if data.openDayId === day.id}<span class="tag">{isFa ? 'نیمه‌کاره' : 'In progress'}</span>
+							{:else if data.nextDayId === day.id}<span class="tag">{isFa ? 'روز بعدی تو' : 'Your next day'}</span>{/if}
+						</span>
+						<span class="links">
+							{#each TRACKS as track}
+								<a class="version" href={`/practice/english/today?day=${day.id}&track=${track}`}>
+									<span class="version-name">{isFa ? TRACK_NAMES[track].fa : TRACK_NAMES[track].en}</span>
+									<span class="version-meta">{built(day.tracks[track])}</span>
+									<span class="arrow" aria-hidden="true">{isFa ? '←' : '→'}</span>
+								</a>
+							{/each}
+						</span>
+					</div>
+				{:else}
+					<a class="day" href={`/practice/english/today?day=${day.id}`}>
+						<span class="number">{isFa ? `روز ${num(day.number)}` : `Day ${day.number}`}</span>
+						<span class="theme">{isFa ? day.theme.fa : day.theme.en}</span>
+						<span class="meta">
+							<span class="status" class:live={day.ready}>{status(day)}</span>
+							{#if data.openDayId === day.id}<span class="tag">{isFa ? 'نیمه‌کاره' : 'In progress'}</span>
+							{:else if data.nextDayId === day.id}<span class="tag">{isFa ? 'روز بعدی تو' : 'Your next day'}</span>{/if}
+						</span>
+						<span class="arrow" aria-hidden="true">{isFa ? '←' : '→'}</span>
+					</a>
+				{/if}
 			</li>
 		{/each}
 	</ul>
@@ -57,7 +84,15 @@
 	h1 { margin: 18px 0 14px; font-family: var(--font-display); }
 	.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 	.day { display: grid; grid-template-columns: 1fr auto; grid-template-areas: 'number arrow' 'theme arrow' 'meta arrow'; align-items: center; gap: 4px 12px; padding: 16px 20px; border: 1px solid var(--line); border-radius: 18px; background: var(--paper-raised); color: var(--ink); text-decoration: none; }
-	.day:hover { border-color: var(--accent); }
+	a.day:hover { border-color: var(--accent); }
+	.day.versions { grid-template-columns: 1fr; grid-template-areas: 'number' 'theme' 'meta' 'links'; }
+	.links { grid-area: links; display: grid; gap: 8px; margin-top: 10px; }
+	.version { display: grid; grid-template-columns: 1fr auto; grid-template-areas: 'name arrow' 'vmeta arrow'; align-items: center; gap: 2px 12px; min-height: 56px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); color: var(--ink); text-decoration: none; }
+	.version:hover { border-color: var(--accent); }
+	.version:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+	.version-name { grid-area: name; font-weight: 700; }
+	.version-meta { grid-area: vmeta; color: var(--ink-soft); font-size: .88rem; }
+	.version .arrow { grid-area: arrow; }
 	.day:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 	.number { grid-area: number; color: var(--accent-deep); font-size: .8rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
 	.theme { grid-area: theme; font-size: 1.15rem; font-weight: 700; line-height: 1.3; }
