@@ -68,11 +68,18 @@ describe('/api/english/voice', () => {
 	it('narrates a Listen & retell piece by id with a narrator direction', async () => {
 		env.OPENAI_API_KEY = 'k';
 		fetchMock.mockResolvedValueOnce(new Response(new Uint8Array([1]), { status: 200 }));
-		const res = await GET({ url: new URL('http://localhost/api/english/voice?piece=lost-phone&voice=d') } as any);
+		const learner = { user: { id: 'u1' } };
+		const res = await GET({ url: new URL('http://localhost/api/english/voice?piece=lost-phone&voice=d'), locals: learner } as any);
 		expect(res.status).toBe(200);
 		const body = JSON.parse(fetchMock.mock.calls[0][1].body);
 		expect(body).toMatchObject({ voice: 'nova', input: expect.stringContaining('Maria took a taxi') });
 		expect(body.instructions).toContain('narrat');
-		expect((await GET({ url: new URL('http://localhost/api/english/voice?piece=nope&voice=d') } as any)).status).toBe(400);
+		expect((await GET({ url: new URL('http://localhost/api/english/voice?piece=nope&voice=d'), locals: learner } as any)).status).toBe(400);
+		// A day's story is found too; nobody signed out gets any narration.
+		fetchMock.mockResolvedValueOnce(new Response(new Uint8Array([1]), { status: 200 }));
+		expect((await GET({ url: new URL('http://localhost/api/english/voice?piece=wedding-cake&voice=a'), locals: learner } as any)).status).toBe(200);
+		expect(JSON.parse(fetchMock.mock.calls[1][1].body).input).toContain('Mike has driven a taxi');
+		expect((await GET({ url: new URL('http://localhost/api/english/voice?piece=wedding-cake&voice=a'), locals: { user: null } } as any)).status).toBe(401);
+		expect(fetchMock).toHaveBeenCalledTimes(2);
 	});
 });

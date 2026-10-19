@@ -8,6 +8,7 @@ import type { ConnectSet, Line, Part, Speaker } from '../listen-connect';
 import type { Trap } from '../traps';
 import type { SayItem } from '../say-in-english';
 import type { VoiceMessage } from '../voice-messages';
+import type { RetellPiece } from '../retell';
 import type { DisplayText } from '../hotel';
 import type { Track } from '../day';
 
@@ -400,4 +401,24 @@ export const LESSON_MESSAGE_IDS = ['d2-tom', 'd2-hotel'];
 export const MESSAGES_INTRO: DisplayText = {
 	en: 'Today, you’re Sara. You’ll get four voice messages: from your friend Tom, the airline, the Park Hotel and your RideNow driver. Listen, then reply with a voice message. Make sure you answer their questions.',
 	fa: 'امروز جای سارا هستی. چهار پیام صوتی می‌گیری: از دوستت تام، شرکت هواپیمایی، هتل پارک و رانندهٔ تاکسی اینترنتی‌ات. گوش بده و با یک پیام صوتی جواب بده. حواست باشد به سؤال‌هایشان جواب بدهی.'
+};
+
+/**
+ * Listen and retell (Professional): the story Mike, the taxi driver, likes to tell (docs/english-day-2/listening.md §3).
+ * B1, 185 words. No picture yet. Andrew narrates, Mike's voice letter.
+ */
+export const RETELL: RetellPiece = {
+	id: 'wedding-cake',
+	title: { en: 'The cake on the back seat', fa: 'کیکِ روی صندلی عقب' },
+	level: 'B1',
+	voice: 'a',
+	text: 'Mike has driven a taxi in Riverton for twenty years, and his favorite story is about his strangest passenger. One Saturday, he picked up a man at the airport. The man was carrying a big white box. He was the bride’s uncle, and inside the box was the wedding cake. He wanted to stop at his hotel first to change, and then go to the wedding at a restaurant on the other side of the city. At the hotel, he was in such a hurry that he grabbed his suitcase and ran inside. Twenty minutes later, Mike looked in the mirror and saw the white box. The cake was still on the back seat! He didn’t have the man’s phone number, but he remembered the name of the restaurant. So he turned around and drove all the way back across the city. He got there just in time, a few minutes before dinner, while the uncle was looking everywhere for the cake. The family was so happy that they invited Mike to stay for dinner. He says it was the best tip he’s ever gotten.',
+	keyPoints: [
+		'Mike, a taxi driver for twenty years, once picked up a man at the airport with a big box.',
+		'The man was the bride’s uncle, and the box had the wedding cake in it.',
+		'He stopped at his hotel first, and in his hurry he left the cake on the back seat.',
+		'Mike saw the cake later; he didn’t have the man’s number, but he remembered the restaurant.',
+		'Mike drove back across the city and got there just in time, before dinner.',
+		'The family invited Mike to stay for dinner, and he calls it his best tip ever.'
+	]
 };

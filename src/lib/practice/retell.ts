@@ -20,11 +20,14 @@ export interface RetellPiece {
 	text: string;
 	/** What a complete retelling covers, in plain English. */
 	keyPoints: string[];
-	/** Describes the piece's picture, /images/retell/<id>.webp (and -sm.webp). */
-	imageAlt: DisplayText;
+	/** Describes the piece's picture, /images/retell/<id>.webp (and -sm.webp). A piece without one has no picture yet. */
+	imageAlt?: DisplayText;
+	/** The narrator (a daily lesson's piece keeps its own); without one, the Module lab picks a voice at random. */
+	voice?: 'a' | 'b' | 'c' | 'd';
 }
 
-export const pieceImage = (piece: Pick<RetellPiece, 'id'>, small = false) => `/images/retell/${piece.id}${small ? '-sm' : ''}.webp`;
+/** The piece's picture, or null while it has none. */
+export const pieceImage = (piece: Pick<RetellPiece, 'id' | 'imageAlt'>, small = false) => (piece.imageAlt ? `/images/retell/${piece.id}${small ? '-sm' : ''}.webp` : null);
 
 /**
  * The narration comes out at about 185 words a minute; it plays at the
@@ -115,3 +118,49 @@ export const RETELL_PIECES: RetellPiece[] = [
 ];
 
 export const getPiece = (id: string) => RETELL_PIECES.find(piece => piece.id === id) ?? null;
+
+/** What the server sends back for a retelling (see /api/english/retell). */
+export interface RetellResult {
+	transcript: string;
+	words: number;
+	seconds: number;
+	wordsPerMinute: number | null;
+	total: number;
+	/** Key point numbers (1-based) the retelling got across. */
+	covered: number[];
+	inaccuracies: { said: string; fact: string }[];
+	upgrades: { original: string; better: string; why: DisplayText; voiceSig?: string }[];
+	feedback: DisplayText | null;
+	feedbackError?: boolean;
+	/** The best score per story was saved to the account. */
+	saved?: boolean;
+}
+
+/** One go at a story, kept in this browser so a reload comes back to it (the recording itself never is). */
+export interface RetellRun {
+	listens: number;
+	textShown: boolean;
+	result: RetellResult | null;
+}
+export const emptyRetellRun = (): RetellRun => ({ listens: 0, textShown: false, result: null });
+
+const isText = (value: unknown): value is DisplayText => !!value && typeof (value as DisplayText).en === 'string' && typeof (value as DisplayText).fa === 'string';
+function asResult(value: unknown): RetellResult | null | undefined {
+	if (value === null) return null;
+	const r = value as Partial<RetellResult> | undefined;
+	if (!r || typeof r !== 'object' || typeof r.transcript !== 'string' || typeof r.words !== 'number' || typeof r.seconds !== 'number' || typeof r.total !== 'number') return undefined;
+	if (!Array.isArray(r.covered) || !r.covered.every(n => Number.isInteger(n))) return undefined;
+	if (!Array.isArray(r.inaccuracies) || !r.inaccuracies.every(i => i && typeof i.said === 'string' && typeof i.fact === 'string')) return undefined;
+	if (!Array.isArray(r.upgrades) || !r.upgrades.every(u => u && typeof u.original === 'string' && typeof u.better === 'string' && isText(u.why))) return undefined;
+	if (r.feedback !== null && !isText(r.feedback)) return undefined;
+	return { ...r, wordsPerMinute: typeof r.wordsPerMinute === 'number' ? r.wordsPerMinute : null } as RetellResult;
+}
+/** A saved run, or null when it isn't one (an older shape, or nothing saved). */
+export function asRetellRun(value: unknown): RetellRun | null {
+	if (!value || typeof value !== 'object') return null;
+	const v = value as Partial<RetellRun>;
+	if (typeof v.listens !== 'number' || typeof v.textShown !== 'boolean') return null;
+	const result = asResult(v.result ?? null);
+	if (result === undefined) return null;
+	return { listens: Math.max(0, Math.min(MAX_LISTENS, Math.floor(v.listens))), textShown: v.textShown, result };
+}
