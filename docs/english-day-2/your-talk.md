@@ -209,7 +209,7 @@ own reason, which the AI never marks wrong).
 
 1. We're at 210 Main Street, downtown, right across from Central Station. We opened last year, so some taxi drivers don't know us yet. Just tell them we're across from the station.
 2. By train: take the Airport Express from under the terminal (follow the green signs). Trains leave every 15 minutes, and the trip to Central Station takes 25 minutes. Then just cross the street. The last train is at 11:30 p.m.
-3. By taxi: it's about 30 minutes and about $55, plus a tip. Check-in is from 3 p.m., but you can leave your bags at the front desk before that.
+3. By taxi: it's 30 to 40 minutes, depending on traffic, and about $55, plus a tip. Check-in is from 3 p.m., but you can leave your bags at the front desk before that.
 
 `glosses`:
 
