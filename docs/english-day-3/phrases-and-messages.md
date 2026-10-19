@@ -69,7 +69,7 @@ Order of the check-in: **arrive and give the name → the booking → Wi-Fi → 
 | 5 | Could you call my room when it arrives? | when it arrives |
 
 **Word check** (only the chunk, never the accent), with the `found` regex text (tested against
-`normalise()`: each finds its own sentence, ignores the other nine sentences of both sets, accepts
+`normalise()`: each finds its own sentence, ignores the other four sentences of its set, accepts
 the variants listed and rejects the habit):
 
 | # | What it listens for | `found` |
@@ -89,7 +89,7 @@ has one sound feature only.
 | # | `situation` (en / fa) | `shown` (chunk in bold) | Habit it replaces | `tip` (en / fa) |
 |---|---|---|---|---|
 | 1 | You get to the front desk after a long day. / بعد از یک روز طولانی به پذیرش هتل می‌رسی. | Hi, **there should be a reservation‿under** Demir. | "I reserved on the name of Demir." / "I have a reservation with the name Demir." (from «به اسم دمیر رزرو کردم») | `reservation under`: the `n` moves to `under`: `rez-er-VAY-shuh-NUN-der`. / در `reservation under` صدای `n` به `under` می‌چسبد: `rez-er-VAY-shuh-NUN-der`. |
-| 2 | The receptionist finds your booking. / مسئول پذیرش رزروت را پیدا می‌کند. | **Just to double-check**, I'm checking out on Tuesday, right? | "I want to control it." / "Just for checking…" (from «فقط برای اینکه مطمئن بشم» and «کنترل کنم») | `double-check`: stress `CHECK`, not `double`: `dub-ul-CHECK`. / در `double-check` تأکید روی `CHECK` است، نه `double`: `dub-ul-CHECK`. |
+| 2 | The receptionist finds your booking. / مسئول پذیرش رزروت را پیدا می‌کند. | **Just to double-check**, I'm checking out on Tuesday, right? | "I want to control it." / "Just for checking…" (from «فقط برای این‌که مطمئن بشم» and «کنترل کنم») | `double-check`: stress `CHECK`, not `double`: `dub-ul-CHECK`. / در `double-check` تأکید روی `CHECK` است، نه `double`: `dub-ul-CHECK`. |
 | 3 | The receptionist says the Wi-Fi password very fast. / مسئول پذیرش رمز وای‌فای را خیلی تند می‌گوید. | Sorry, is the Wi-Fi password **all‿one word**? | "Is it attached?" / "Is it together or separate?" (from «سرهمه؟» / «چسبیده‌ست؟») | `all one word`: say it as one group, `aw-lwun-WURD`. / `all one word` را یک‌نفس بگو: `l` به `one` می‌چسبد، یعنی `aw-lwun-WURD`. |
 | 4 | You'd like to leave a little later on Tuesday. / می‌خواهی سه‌شنبه کمی دیرتر از هتل بروی. | **Would‿it be possible to** get a late check-out on Tuesday? | "Is it possible that I go later?" (from «امکانش هست که دیرتر برم؟») | `would it` runs together, quick and soft: `wu-dit-be-POSS-uh-bul`. / `would it` را پیوسته، سریع و نرم بگو: `wu-dit-be-POSS-uh-bul`. |
 | 5 | Your backpack arrives tomorrow morning, and you might not be in your room. / کوله‌پشتی‌ات فردا صبح می‌رسد و شاید آن موقع در اتاقت نباشی. | My backpack's coming tomorrow. Could you **hold‿on to it** for me? | "Can you receive it?" / "Can you take it and keep?" (from «تحویلش بگیرید» / «نگهش دارید») | `hold on`: the `d` moves to `on`: `hol-DON`. / در `hold on` صدای `d` به `on` می‌چسبد: `hol-DON`. |
@@ -283,7 +283,7 @@ All three `to`: **To Daniel at the front desk / به دنیل، در پذیرش 
   - "My backpack should get here tomorrow, between eight and ten. If I'm at breakfast, would you mind keeping it at the desk? I'll come get it after that." (28 words)
 - `hints`: I might be at breakfast / شاید سر صبحونه باشم · hold on to it / نگهش دارید
 - Main trap: «سر صبحونه» → "on breakfast" (natural: "at breakfast"); «بیام بگیرمش» → "come and take it" (natural: "pick it up", "come get it").
-- Facts: delivery tomorrow 8–10 a.m.; the desk keeps deliveries (world, step 8); breakfast is 7–10:30 on weekends, so she could be there. She no longer asks for a call to her room here, since she may be at breakfast (Persian review); world step 8's call to room 714 still happens in the conversation. "Might be at breakfast" is new (see notes).
+- Facts: delivery tomorrow 8–10 a.m.; the desk keeps deliveries (world, step 8); breakfast is 7–10:30 on weekends, so she could be there. She no longer asks for a call to her room here, since she may be at breakfast (Persian review); world step 8 (Daniel says he'll call room 714) is still true in her check-in story. "Might be at breakfast" is new (see New facts).
 
 **3. `id`: `d3-late-checkout`**
 - `fa`: امکانش هست سه‌شنبه یه کم دیرتر اتاق رو تحویل بدم، مثلاً ساعت یک؟ اگه هزینهٔ اضافه داره، ترجیح می‌دم همون ساعت یازده برم.
@@ -295,7 +295,7 @@ All three `to`: **To Daniel at the front desk / به دنیل، در پذیرش 
   - "Could I check out a bit later on Tuesday, say at one? If there's an extra charge, eleven is fine." (20 words)
 - `hints`: a late check-out / دیرتر تحویل دادن اتاق · if it costs extra / اگه هزینهٔ اضافه داره
 - Main trap: «اتاق رو تحویل بدم» → "give back the room" / "deliver the room" (natural: "check out"); «ترجیح می‌دم… برم» → "I prefer to go at eleven" (natural: "I'll just leave at eleven", "eleven is fine").
-- Facts: check-out Tuesday by 11; late check-out until 1 p.m. is free if you ask the day before (world). Sara asking for it is new (see notes).
+- Facts: check-out Tuesday by 11; late check-out until 1 p.m. is free if you ask the day before (world). Sara asking for it is new (see New facts).
 
 - `NAMES`: "Park Hotel, Daniel, Demir, Riverton."
 - `LESSON_SAY_IDS`: `{ intermediate: null, professional: null }` (both sets are used whole).
@@ -305,7 +305,7 @@ All three `to`: **To Daniel at the front desk / به دنیل، در پذیرش 
 ## 4. Voice messages (Intermediate, A2+)
 
 Built format (`VoiceMessage`): `id`, `from {name, who {en, fa}, voice}`, `sentences` (one audio
-request each; 120 characters or fewer, the code's test limit; the longest here is 101), `asks` (each
+request each; 120 characters or fewer, the code's test limit; the longest here is 100), `asks` (each
 `{ask {en, fa}, missed {en, fa}}`), `model` (a natural reply, 40 words or fewer), `names`. Two
 messages, each with 2 asks. The natural reply is read by Mira (Ava, `b`). Voices: `a` Andrew, `c`
 Brian; never `b`. Ids start with `d3-`.
@@ -338,7 +338,7 @@ desk on Sunday morning, were dropped in review v1), so the Module lab has the sa
   1. ask: Is everything OK? Why couldn't he call you? / همه‌چیز روبه‌راه است؟ چرا نتوانست به تو زنگ بزند؟ · missed: You didn't say why he couldn't call you. / نگفتی چرا نتوانست به تو زنگ بزند.
   2. ask: How are you getting to Rosa's? / چطور به رستوران رزا می‌روی؟ · missed: You didn't say how you're getting to Rosa's. / نگفتی چطور به رستوران رزا می‌روی.
 - `model`: "Hi Tom! Sorry, my phone battery was dead, but the hotel lent me a charger. I'm taking a RideNow at six forty. See you at Rosa's!" (26 words)
-- Facts: dinner at 7; Rosa's on Elm Street, ten minutes by car, Tom's choice (new fact 1); Tom's car still broken (so he doesn't offer a ride); her phone was dead; the desk lent a charger; RideNow at 6:40 (world). Tom's call and the table are new (see notes).
+- Facts: dinner at 7; Rosa's on Elm Street, ten minutes by car, Tom's choice (new fact 1); Tom's car still broken (so he doesn't offer a ride); her phone was dead; the desk lent a charger; RideNow at 6:40 (world). Tom's call and the table are new (see New facts).
 
 ### Message 2. `id`: `d3-baggage` (Saturday evening)
 
@@ -353,7 +353,7 @@ desk on Sunday morning, were dropped in review v1), so the Module lab has the sa
   1. ask: What's your room number? / شمارهٔ اتاقت چند است؟ · missed: You didn't say your room number. / نگفتی شمارهٔ اتاقت چند است.
   2. ask: Will you be in your room, or should they leave it at the front desk? / آن موقع در اتاقت هستی، یا کوله‌پشتی را تحویل پذیرش بدهند؟ · missed: You didn't say if you'll be in your room or if they should leave it at the front desk. / نگفتی در اتاقت هستی یا کوله‌پشتی را تحویل پذیرش بدهند.
 - `model`: "Hi, thanks for calling. My room number is 714. I might be at breakfast then, so please leave it at the front desk. They'll keep it for me. Thanks!" (29 words)
-- Facts: small green backpack, delivered tomorrow 8–10 a.m.; room 714; the desk keeps deliveries (world). The call itself is new (see notes); its second question is the one Day 2's lab message `d2-baggage` asked, which Intermediate learners didn't have in their Day 2 lesson.
+- Facts: small green backpack, delivered tomorrow 8–10 a.m.; room 714; the desk keeps deliveries (world). The call itself is new (see New facts); its second question is the one Day 2's lab message `d2-baggage` asked, which Intermediate learners didn't have in their Day 2 lesson.
 
 ---
 
@@ -365,8 +365,8 @@ In the style of `DAY_TWO` in `src/lib/practice/day.ts`: `does` is one line for t
 ### Intermediate
 
 **Natural phrases** (`phrases`)
-- `does`: Hear five sentences from Sara’s check-in, and say each one after Mira. / پنج جمله از ورود سارا به هتل بشنو و هر کدام را بعد از میرا تکرار کن.
-- `intro`: Here are five sentences from Sara’s check-in at the Park Hotel, in order. Listen, then say each one after me. Notice the phrases in bold. / این پنج جمله از ورود سارا به هتل پارک است، به همان ترتیب. گوش بده و هر جمله را بعد از من تکرار کن. به عبارت‌های پررنگ دقت کن.
+- `does`: Hear five sentences from Sara’s check-in, and say each one after Mira. / پنج جمله از پذیرش سارا در هتل بشنو و هر کدام را بعد از میرا تکرار کن.
+- `intro`: Here are five sentences from Sara’s check-in at the Park Hotel, in order. Listen, then say each one after me. Notice the phrases in bold. / این پنج جمله از پذیرش سارا در هتل پارک است، به همان ترتیب. گوش بده و هر جمله را بعد از من تکرار کن. به عبارت‌های پررنگ دقت کن.
 
 **Persian-speaker traps** (`traps`)
 - `does`: Find the mistake Persian speakers often make at a hotel desk, then say the sentence right. / اشتباهی را که فارسی‌زبان‌ها در پذیرش هتل زیاد می‌کنند پیدا کن، بعد جمله را درست بگو.
@@ -374,17 +374,17 @@ In the style of `DAY_TWO` in `src/lib/practice/day.ts`: `does` is one line for t
 
 **Say it in English** (`say-in-english`)
 - `does`: Read what you want to tell the front desk in Persian, and say it in English. / چیزی را که می‌خواهی به پذیرش هتل بگویی به فارسی می‌خوانی و به انگلیسی می‌گویی.
-- `intro`: Now it’s your turn to check in. I’ll show you what you want to say, in Persian. Say it in English, the way you’d really say it at the desk. / حالا نوبت خودت است که وارد هتل شوی. چیزی را که می‌خواهی بگویی به فارسی نشانت می‌دهم. همان را به انگلیسی بگو، همان‌طور که واقعاً در پذیرش می‌گفتی.
+- `intro`: Now it’s your turn to check in. Your booking is under Karimi. I’ll show you what you want to say, in Persian. Say it in English, the way you’d really say it at the desk. / حالا نوبت خودت است که اتاقت را تحویل بگیری. رزروت به اسم کریمی است. چیزی را که می‌خواهی بگویی به فارسی نشانت می‌دهم. همان را به انگلیسی بگو، همان‌طور که واقعاً در پذیرش می‌گفتی.
 
 **Voice messages** (`voice-messages`)
 - `does`: Hear two voice messages, from Tom and from the airline, and reply to each one. / دو پیام صوتی بشنو، از تام و از شرکت هواپیمایی، و به هر کدام جواب بده.
-- `intro`: Today, you’re Sara, in room 714. Your phone is charging, and two voice messages come in. Listen, then reply with a short voice message of your own. / امروز جای سارا هستی، در اتاق ۷۱۴. گوشی‌ات را زده‌ای به شارژ و دو پیام صوتی برایت آمده. گوش بده و با یک پیام صوتی کوتاه جواب بده.
+- `intro`: Today, you’re Sara, in room 714. Your phone is charging, and two voice messages come in. Listen, then reply with a short voice message of your own. Make sure you answer their questions. / امروز جای سارا هستی، در اتاق ۷۱۴. گوشی‌ات را زده‌ای به شارژ و دو پیام صوتی برایت آمده. گوش بده و با یک پیام صوتی کوتاه جواب بده. حواست باشد به سؤال‌هایشان جواب بدهی.
 
 ### Professional
 
 **Natural phrases** (`phrases`)
 - `does`: Hear five natural phrases for checking in, and say each one after Mira. / پنج عبارت طبیعی برای ورود به هتل بشنو و هر کدام را بعد از میرا تکرار کن.
-- `intro`: Here are five phrases that sound natural at a hotel front desk, and that you’ll use today. Listen, then say each one after me. / این پنج عبارت در پذیرش هتل طبیعی است و امروز به کارشان می‌بری. گوش بده و هر کدام را بعد از من تکرار کن.
+- `intro`: Here are five phrases from Sara’s check-in at the Park Hotel. You’ll need them later today, too. Listen, then say each one after me. / این پنج عبارت از پذیرش سارا در هتل پارک است. امروز بعداً خودت هم به کارشان می‌بری. گوش بده و هر کدام را بعد از من تکرار کن.
 
 **Say it in English** (`say-in-english`)
 - `does`: Read three things Sara wants to ask the front desk, in Persian, and say each one in English. / سه چیزی را که سارا می‌خواهد از پذیرش هتل بپرسد به فارسی می‌خوانی و هر کدام را به انگلیسی می‌گویی.
@@ -394,87 +394,142 @@ In the style of `DAY_TWO` in `src/lib/practice/day.ts`: `does` is one line for t
 
 ## New facts for world.md
 
-1. **Tom's message (about 5:30 p.m.):** he tried to call Sara, but her phone was off (dead); he
-   names the restaurant, Rosa's on Elm Street, and says he'll get there a little early to get a
-   table. (`world.md` gives Rosa's only as Daniel's tip; see (b) 1.)
-2. **The baggage desk calls again on Saturday evening** to confirm tomorrow's 8–10 a.m. delivery and
-   ask for Sara's room number; Sara asks them to leave the backpack at the front desk because she
-   might be at breakfast.
-3. **Daniel's message (about 6 p.m., lab):** he forgot to give the check-out time, offers a late
-   check-out (ask by Monday) and asks if the charger fits her phone. **Sara asks for a late
-   check-out until 1 p.m. on Tuesday** (here and in Say it, Professional). The desk has two kinds of
-   charger (world: iPhone and USB-C; the content names no brand).
-4. **Sunday morning (lab):** the backpack arrives while Sara is at breakfast in The Corner Café; the
-   front desk calls her room, gets no answer, leaves a message and offers to bring it up; she
-   collects it on her way back. A front-desk voice other than Daniel's (Emma).
-5. **Sara checks the incidentals hold** with Daniel ("only a hold, not a charge?"): Say it,
+1. **Rosa's is Tom's choice for dinner.** Replace the line "Daniel's tip for dinner: Rosa's, on Elm
+   Street, is ten minutes away by car." with "Rosa's, on Elm Street, ten minutes by car: Tom's
+   choice for dinner. Daniel recommends it to guests, too."
+2. **Tom's message (about 5:30 p.m.):** he tried to call Sara, but it went straight to voicemail
+   (her phone was dead); he names Rosa's on Elm Street and says he'll get there a little early to
+   get a table.
+3. **The baggage desk calls again on Saturday evening** to confirm tomorrow's 8–10 a.m. delivery and
+   ask for Sara's room number; Sara asks them to leave the backpack at the front desk, which keeps
+   it for her, because she might be at breakfast.
+4. **The learner ("you") is Karimi** («کریمی») everywhere it's the learner; Sara stays Demir where
+   the item is Sara's check-in. The learner's booking is the role-play's (`conversation.md`): under
+   Karimi, four nights, until Wednesday, check-out by 11 a.m. (Intermediate traps `under-name` and
+   `im-staying`, Say it `d3-checkin` and `d3-dates`). This file never names the learner's room or
+   floor. `world.md`'s learner row should name Karimi.
+5. **In Natural phrases (both sets) the learner repeats Sara's lines** (says "Demir"), as Day 2's
+   phrases followed Sara's ride.
+6. **Sara checks the incidentals hold** with Daniel ("only a hold, not a charge?"): Say it,
    Professional.
-6. **The learner's own booking** (Intermediate traps and Say it): under the name **Karimi**; room on
-   the seventh floor, like Sara's (trap `on-the-floor`). `world.md` describes "you" only as staying at
-   the Park Hotel with their own booking.
-7. **In Natural phrases (both sets) the learner speaks as Sara** (says "Demir").
+7. **Sara might be at breakfast when the backpack comes tomorrow;** she asks Daniel to hold on to it
+   until she picks it up after breakfast (Say it, Professional).
+8. **Sara asks for a late check-out until 1 p.m. on Tuesday** (Say it, Professional; free if asked
+   the day before, so asking on Saturday is fine).
 
 ---
 
 ## Notes for the editor
 
-### (a) Checks done
+### Review v1 applied
+
+Sources: `en-phrases.md` (all), `fa-phrases.md` (all), `ux.md` items 5 and 6, and the lead's
+decisions (which override the reviewers).
+
+**Changed**
+- **One learner name, Karimi** (lead; en 2, UX 6). Karimi was already used for "you" in the traps
+  and Intermediate Say it; the header now says so, and the Intermediate Say-it intro names it ("Your
+  booking is under Karimi"). Sara stays Demir in the phrases, Professional Say it and Voice messages,
+  since those are Sara's check-in. en 2 suggested Rahimi: ignored (lead).
+- **Karimi's facts now match the role-play** (`conversation.md`: four nights, until Wednesday; room
+  908 or 412). So trap `im-staying` says "four nights", and trap `on-the-floor` is now "The gym is in
+  the second floor" (it put Karimi in a seventh-floor room).
+- **Traps in the lesson:** `phone-dead` out, `im-staying` in (second, after `under-name`), so the
+  lesson practises the dates (lead, UX 5). All six stay defined; `phone-dead` is lab only.
+- **`d3-charger` → `d3-dates`** (lead, UX 5): "Just to check, I'm staying for four nights, until
+  Wednesday, right? And what time is check-out?" It uses the dates freely and practises the
+  role-play's `booking` goal; it's second, in check-in order. The charger now comes up only in
+  `lend-me` and Tom's message (en 6's model fix to `d3-charger` is moot; en 8 is answered).
+- **Voice messages:** `d3-desk` and `d3-backpack` dropped (lead, en 1): two messages, both in the
+  lesson. `MESSAGES_INTRO` names only Tom and the airline. Lesson intro gains "Make sure you answer
+  their questions." (en 7). Tom: "your phone's off" → "it went straight to voicemail" (en 6); his
+  first ask is now "Why couldn't he call you?". The baggage reply ends "They'll keep it for me."
+  (not "They'll call my room": she may be at breakfast).
+- **Rosa's** is Tom's choice; Daniel also recommends it (lead, en 5): new fact 1.
+- **Regexes** (en 3): `password-for` accepts "password to"; `phone-dead` accepts "is completely /
+  almost dead", "just died", "has died", and its alsoGood is "out of battery / charge / power";
+  `under-name` and B1 #1 accept "booked under"; A2 #3 accepts "connecting to" and "join the Wi-Fi";
+  A2 #4 accepts "come(s) with breakfast".
+- **A2 #1:** "The name's Demir." → "It's under Demir." (en 6).
+- **B1 #4 tip** (en 4): "`would it` runs together, quick and soft: `wu-dit-be-POSS-uh-bul`."
+- **Professional phrases intro** (en 2, fa 6): "Here are five phrases from Sara's check-in at the
+  Park Hotel. You'll need them later today, too." The Persian follows the new English, not fa 6's
+  wording (which was for the old English).
+- **Persian** (fa 1–7): `d3-hold` uses «بلوکه» (prompt, point 1, hint); `why.fa` rewritten for
+  `under-name`, `phone-dead` (and its `kind.fa`: «گوشی بی‌شارژ») and `lend-me`; the Intermediate
+  Say-it intro says «اتاقت را تحویل بگیری»; «پذیرش سارا در هتل» in the Intermediate phrases and
+  Professional intro; A2 #3 tip is active («را فقط یک بار بگو»); «روبه‌راه»; «تحویل پذیرش بدهند»;
+  «این‌که» with a half-space throughout.
+- **fa review's English notes:** `d3-hold` model 2 no longer adds "unless I use something" (now "you
+  won't actually charge it, right?"). `d3-backpack-desk` no longer asks for a call to her room while
+  she may be at breakfast: "could you hold on to it? I'll pick it up after."
+
+**Declined, and why**
+- **on-the-floor: "on floor seven/two" as alsoGood** (en 3): it uses "on" correctly, which is the
+  point of the drill, so it's in `accept` (gives "right"), and "in/at floor two" is in `reject`.
+- **UX 6, phrase #1 as "The name's Karimi"**: the lead's rule keeps Demir where the item is Sara's
+  check-in, and both phrase sets are introduced as Sara's check-in.
+- **Lead's example "three nights until Tuesday" for `d3-dates`**: those are Sara's dates. The item is
+  the learner's (Karimi's) check-in, and the role-play gives Karimi four nights until Wednesday, so
+  the item uses those.
+- **Trap `im-staying` dropped** (en 1's own fix): overridden by the lead's note in that report; it's
+  in the lesson now.
+- **UX items 1–4 and 7–10**: about the role-play, listening and `world.md`, not this file.
+
+### (a) Checks done (re-run after review v1)
 
 - **Regexes**, run in Node with copies of both `normalise()` functions (say-better for `found`,
-  traps for `accept`/`reject`):
-  - each `found` matches its own sentence and none of the other nine;
-  - each accepts the variants listed in its table ("I'd like to check in", "How do I get on the
-    WiFi?", "does the room include breakfast", "call me as soon as it arrives", "It's under Demir",
-    "let me double-check", "is it one word", "is it possible to check out late", "hang on to it");
-  - each rejects its habit ("I want to take my room", "I stay three nights", "connect the wifi",
-    "breakfast is free?", "when it will arrive", "on the name of Demir", "is it possible that I go
-    later", "can you receive it").
+  traps for `accept`/`reject`); 0 failures:
+  - each `found` matches its own sentence and none of the other four in its set. Across sets, B1 #1
+    (`it's under`) also matches A2 #1's new "It's under Demir."; harmless, since the two sets are
+    different tracks and each phrase only checks its own repetition;
+  - each accepts the variants listed in its table ("I'd like to check in", "How do I join the
+    WiFi?", "I'm having trouble connecting to the Wi-Fi", "Does the room come with breakfast?",
+    "call me as soon as it arrives", "I booked under Demir", "let me double-check", "is it one
+    word", "is it possible to check out late", "hang on to it");
+  - each rejects its habit ("I want to take my room", "I stay three nights", "I'll stay three
+    nights", "connect the wifi", "breakfast is free?", "when it will arrive", "on the name of Demir",
+    "in the name of Demir", "is it possible that I go later", "can you receive it", "could you hold
+    it for me").
   - Each trap: `right` gives "right", the wrong sentence gives "wrong", and every extra form listed
-    gives the result shown (right, also good, or self-fixed).
+    gives the result shown (right, also good, wrong, or self-fixed), including "My phone's just
+    died" (right), "My phone is out of charge" (also good), "The gym is on floor two" (right), "The
+    gym is in floor two" (wrong), "What's the password to the Wi-Fi?" (right).
 - **Shapes:** each `shown` minus `**` and with `‿` as a space equals its `sentence`; every bold part
   has two or more words; every Persian field has Persian letters; no `why.fa` has a backtick.
-- **Limits:** A2 models 9–15 words (limit 25); B1 models 20–26 (limit 30); message sentences 99
-  characters or fewer (limit 120); model replies 25–28 words (limit 40). Ids are new: trap ids don't
-  clash with Day 1 or Day 2; Say-it and message ids start with `d3-`.
-- **Each trap's `right` is natural US English:** "I have a reservation under the name Karimi.", "My
-  room is on the seventh floor.", "What's the password for the Wi-Fi?", "My phone battery is dead.",
-  "Can you lend me a charger?", "I'm staying here for three nights."
-- **No contradictions found with Days 1–2:** the backpack is small and green and comes tomorrow 8–10
-  (Days 1–2); Tom's car is still broken, so his message doesn't offer a ride; Day 2's `d2-tom-dinner`
-  had Sara ask for the address, and Tom now names Rosa's; Day 2's RideNow pickup stays as it was (the
-  reply only says "a RideNow at six forty"). Day 1's phrase "my phone was almost dead" leads into
-  `phone-dead`. Intermediate content never mentions the lost phone or Mike.
+- **Limits:** A2 models 9–16 words (limit 25); B1 models 20–28 (limit 30); message sentences 100
+  characters or fewer (limit 120); model replies 26 and 29 words (limit 40). Ids are new: trap ids
+  don't clash with Day 1 or Day 2; Say-it and message ids start with `d3-`.
+- **Each trap's `right` is natural US English:** "I have a reservation under the name Karimi.", "The
+  gym is on the second floor.", "What's the password for the Wi-Fi?", "My phone battery is dead.",
+  "Can you lend me a charger?", "I'm staying here for four nights."
+- **No contradictions found with Days 1–2 or the role-play:** the backpack is small and green and
+  comes tomorrow 8–10 (Days 1–2); Tom's car is still broken, so his message doesn't offer a ride; Day
+  2's `d2-tom-dinner` had Sara ask for the address, and Tom now names Rosa's; Day 2's RideNow pickup
+  stays as it was (the reply only says "a RideNow at six forty"). Karimi's dates match
+  `conversation.md`, and nothing here names Karimi's room. Intermediate content never mentions the
+  lost phone or Mike.
 - **No real brands** (the chargers aren't named); only `world.md` prices ($50 a night).
 
 ### (b) Open questions
 
-1. **Rosa's: Tom's choice or Daniel's tip?** `world.md` lists Rosa's as "Daniel's tip for dinner",
-   but the brief has Tom naming it. If Daniel recommends it at check-in, Tom's message reads oddly.
-   Suggest rewording the world line to "Daniel knows Rosa's: ten minutes away by car."
-2. **Voice for Message 4 (`d3-backpack`).** Emma is Sara's voice in the other Day 3 modules. Sara
-   never speaks in Voice messages, and Day 1 used Emma for two senders, but a learner might hear it
-   as Sara. Options: keep Emma, or make it Daniel (Brian), which needs "Daniel works Sunday
-   morning". Message 4 also moves into Sunday morning, so drop it if Day 4 tells the backpack's
-   arrival.
-3. **Who says "Demir".** In Natural phrases the learner says Sara's name. In the Intermediate traps
-   and Say it, "you" are Karimi. If that mix is confusing, A2 phrase #1 could be "Hi, I'm here to
-   check in. The name's Karimi." (the regex doesn't depend on the name).
-4. **Overlap with Day 1:** Day 1's Say-it item `hotel` is also "a booking under the name Rezaei".
+1. **Overlap with Day 1:** Day 1's Say-it item `hotel` is also "a booking under the name Rezaei".
    `d3-checkin` adds "I'm here to check in" and is the day's theme, so it's kept.
-5. **Professional Say it has no lab spare** (3 items, all in the lesson). A spare, if wanted (it
+2. **Professional Say it has no lab spare** (3 items, all in the lesson). A spare, if wanted (it
    doesn't move Sara, so room 714 stays true):
    - `id` `d3-quiet-room` · `to` To Daniel at the front desk / به دنیل، در پذیرش هتل
    - `fa`: اتاقم رو به خیابون اصلیه و یه کم سر و صدا داره. اگه امشب اتاقی سمت حیاط خالی باشه، می‌شه عوضش کنم؟ اگه نه، اشکالی نداره.
    - `points`: your room faces Main Street and it's a little noisy / اتاقت رو به خیابان اصلی است و کمی سر و صدا دارد · if a courtyard room is free tonight, you'd like to move, but it's OK if not / اگر امشب اتاقی سمت حیاط خالی باشد، می‌خواهی جابه‌جا شوی، ولی اگر نباشد اشکالی ندارد
    - `models`: "My room's on the Main Street side, and it's a little noisy. If there's a courtyard room free tonight, could I switch? If not, that's fine." · "Would it be possible to move to the courtyard side tonight? My room's a bit noisy. No problem if you're full, though."
    - `hints`: on the Main Street side / رو به خیابون اصلی · switch rooms / اتاق عوض کردن
-6. **Speech-to-text risk:** "Demir" and "Karimi" may come out wrong; no regex depends on them. "Wi-Fi"
-   may be written "WiFi", "wifi" or "Wi-Fi"; every regex accepts all three (`wi ?fi`). "714" may
-   come out as "seven fourteen"; the voice-message check is AI, so either works. As on Day 2, record
-   each wrong trap sentence with a Persian accent before these ship ("in the seventh floor" may be
-   quietly fixed).
-7. **Code outside the content arrays** (not edited): `day-content.ts` needs `day-3` branches;
+3. **Speech-to-text risk:** "Demir" and "Karimi" may come out wrong; no regex depends on them.
+   "Wi-Fi" may be written "WiFi", "wifi" or "Wi-Fi"; every regex accepts all three (`wi ?fi`). "714"
+   may come out as "seven fourteen"; the voice-message check is AI, so either works. As on Day 2,
+   record each wrong trap sentence with a Persian accent before these ship ("in the second floor"
+   may be quietly fixed).
+4. **Code outside the content arrays** (not edited): `day-content.ts` needs `day-3` branches;
    `DAY_IDS` and a `DAY_THREE` pack in `day.ts`; the Day 2 tests check Day 2's counts (Day 3 has 6
-   traps, a Professional Say-it set of 3, and voice messages only in Intermediate), so Day 3 needs its
-   own tests; the voice-messages AI tone rule may need "To a friend, the airline and the hotel:
-   polite but simple".
+   traps, a Professional Say-it set of 3, and 2 voice messages, both in the lesson, only in
+   Intermediate), so Day 3 needs its own tests; with no lab-only messages, `voiceMessagesFor('day-3',
+   true)` returns the same two as the lesson. The voice-messages AI tone rule may need "To a friend
+   and the airline: polite but simple".
