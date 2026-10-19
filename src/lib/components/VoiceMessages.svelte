@@ -12,18 +12,30 @@
 	import { SILENT_BELOW, measureLevel, type MicLevel } from '$utils/mic-level';
 	import { betterParts, plain } from '$lib/practice/say-in-english';
 	import {
-		MESSAGES, RANK, REPLY_MAX_SECONDS, REPLY_MIN_SECONDS, REPLY_VOICE, emptyVoiceRecord, summarize, verdictOf,
-		type ReplyFeedback, type ReplyTry, type ReplyVerdict, type VoiceRecord
+		MESSAGES as DEFAULT_MESSAGES, RANK, REPLY_MAX_SECONDS, REPLY_MIN_SECONDS, REPLY_VOICE, emptyVoiceRecord, summarize, verdictOf,
+		type ReplyFeedback, type ReplyTry, type ReplyVerdict, type VoiceMessage, type VoiceRecord
 	} from '$lib/practice/voice-messages';
+	import type { DisplayText } from '$lib/practice/hotel';
 
-	let { isFa = false, initial = null, onSave, onDone }: {
+	let { isFa = false, messages = DEFAULT_MESSAGES, intro = null, initial = null, onSave, onFocus, onSkip, onDone }: {
 		isFa?: boolean;
+		/** The day's messages (Day 1's by default). */
+		messages?: VoiceMessage[];
+		/** The day's own introduction (Day 1's by default); not shown in the daily lesson, where Mira's is. */
+		intro?: DisplayText | null;
 		initial?: VoiceRecord | null;
 		onSave?: (record: VoiceRecord) => void;
-		onDone: () => void;
+		/** The daily lesson: Mira's intro shows on the start screen only. */
+		onFocus?: (mode: 'full' | 'compact' | 'hidden') => void;
+		/** "Skip this step" on the start screen (the daily lesson). */
+		onSkip?: () => void;
+		/** How many replies answered everything, out of all. */
+		onDone: (score: { correct: number; total: number }, record: VoiceRecord) => void;
 	} = $props();
+	// svelte-ignore state_referenced_locally
+	const MESSAGES = messages;
 
-	const INTRO = {
+	const DAY_ONE_INTRO = {
 		en: 'You’ll get four voice messages, like on WhatsApp or Telegram: from a friend, a colleague, your landlord and a clinic. Listen, then reply with a voice message. Make sure you answer their questions.',
 		fa: 'چهار پیام صوتی می‌گیری، مثل واتس‌اپ یا تلگرام: از یک دوست، یک همکار، صاحبخانه‌ات و یک درمانگاه. گوش بده، بعد با یک پیام صوتی جواب بده. حواست باشد به سؤال‌هایشان جواب بدهی.'
 	};
@@ -35,7 +47,9 @@
 
 	type Status = 'say' | 'recording' | 'checking' | 'feedback' | 'silent' | 'short' | 'failed' | 'aiFailed' | 'denied' | 'interrupted';
 	// svelte-ignore state_referenced_locally
-	let record = $state<VoiceRecord>(initial ?? emptyVoiceRecord());
+	let record = $state<VoiceRecord>(initial ?? emptyVoiceRecord(messages));
+	// svelte-ignore state_referenced_locally
+	const INTRO = intro ?? DAY_ONE_INTRO;
 	let stage = $state<'start' | 'message' | 'end'>('start');
 	let status = $state<Status>('say'), elapsed = $state(0), words = $state(false), announce = $state('');
 	let playingAt = $state(-1), playFailed = $state(false), hearing = $state(false);
@@ -69,6 +83,7 @@
 		// A reload returns to the same message (with its feedback, if there was one).
 		if (record.done || record.index >= MESSAGES.length) stage = 'end';
 		else if (record.index > 0 || record.listened[0]) { stage = 'message'; status = record.tries[record.index] ? 'feedback' : 'say'; prefetch(record.index); }
+		if (stage !== 'start') onFocus?.('hidden');
 		const onHidden = () => { if (document.hidden && recorder && recorder.state !== 'inactive') { interrupted = true; recorder.stop(); } };
 		document.addEventListener('visibilitychange', onHidden);
 		return () => document.removeEventListener('visibilitychange', onHidden);
@@ -173,9 +188,9 @@
 		if (nextIndex >= MESSAGES.length) stage = 'end'; else prefetch(nextIndex + 1);
 		focusHeading();
 	}
-	function start() { stopAllAudio(); stage = 'message'; status = 'say'; prefetch(0); prefetch(1); focusHeading(); }
-	function restart() { stopPlaying(); clearMine(); latest = null; attempts = MESSAGES.map(() => 0); record = emptyVoiceRecord(); persist(); words = false; stage = 'message'; status = 'say'; focusHeading(); }
-	function finish() { stopPlaying(); closeMic(); onDone(); }
+	function start() { stopAllAudio(); stage = 'message'; status = 'say'; onFocus?.('hidden'); prefetch(0); prefetch(1); focusHeading(); }
+	function restart() { stopPlaying(); clearMine(); latest = null; attempts = MESSAGES.map(() => 0); record = emptyVoiceRecord(messages); persist(); words = false; stage = 'message'; status = 'say'; focusHeading(); }
+	function finish() { stopPlaying(); closeMic(); onDone({ correct: summary.answered, total: summary.total }, $state.snapshot(record)); }
 
 	async function hear(text: string) {
 		if (hearing) return;
@@ -214,8 +229,8 @@
 
 	{#if stage === 'start'}
 		<h2 class="sr-only" tabindex="-1" bind:this={heading}>{T('Voice messages', 'پیام صوتی')}</h2>
-		<div class="brief"><span class="avatar" aria-hidden="true">M</span><p>{isFa ? INTRO.fa : INTRO.en}</p></div>
-		<ActionBar label={T('Start', 'شروع')} onclick={start} />
+		{#if !onSkip}<div class="brief"><span class="avatar" aria-hidden="true">M</span><p>{isFa ? INTRO.fa : INTRO.en}</p></div>{/if}
+		<ActionBar label={T('Start', 'شروع')} onclick={start} secondary={onSkip ? { label: T('Skip this step', 'این مرحله را رد کن'), onclick: () => { stopAllAudio(); onSkip?.(); } } : undefined} />
 
 	{:else if stage === 'message'}
 		<p class="label" aria-hidden="true">{label}</p>

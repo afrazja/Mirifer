@@ -39,3 +39,38 @@ describe('records', () => {
 		expect(asVoiceRecord(null)).toBeNull();
 	});
 });
+
+import { MESSAGES as DAY_TWO_MESSAGES, LESSON_MESSAGE_IDS } from './days/day-2';
+import { voiceMessageById, voiceMessagesFor, voiceMessagesIntro } from './day-content';
+import { MESSAGES as DAY_ONE_MESSAGES, REPLY_VOICE, emptyVoiceRecord as emptyRecord, asVoiceRecord as asRecord, summarize as summary } from './voice-messages';
+
+describe('Voice messages, Day 2', () => {
+	it('four messages from Sara’s day: short sentences, Persian asks, a short model reply, never Mira’s voice', () => {
+		expect(DAY_TWO_MESSAGES).toHaveLength(4);
+		for (const m of DAY_TWO_MESSAGES) {
+			expect(m.from.voice).not.toBe(REPLY_VOICE);
+			for (const s of m.sentences) expect(s.length, s).toBeLessThanOrEqual(120);
+			expect(m.asks.length).toBeGreaterThan(0);
+			for (const a of m.asks) { expect(a.ask.fa).toMatch(/[؀-ۿ]/); expect(a.missed.fa).toMatch(/[؀-ۿ]/); }
+			expect(m.model.split(/\s+/).length).toBeLessThanOrEqual(40);
+			expect(m.from.who.fa).toMatch(/[؀-ۿ]/);
+		}
+	});
+	it('has ids no other day uses, so the server finds the right message', () => {
+		const ids = [...DAY_ONE_MESSAGES, ...DAY_TWO_MESSAGES].map(m => m.id);
+		expect(new Set(ids).size).toBe(ids.length);
+		for (const m of DAY_TWO_MESSAGES) expect(voiceMessageById(m.id)).toBe(m);
+		expect(voiceMessageById('friend')).toBe(DAY_ONE_MESSAGES[0]);
+		expect(voiceMessageById('nope')).toBeNull();
+	});
+	it('the Intermediate lesson uses Tom and the hotel; the lab gets all four with Day 2’s intro', () => {
+		expect(voiceMessagesFor('day-2').map(m => m.id)).toEqual(LESSON_MESSAGE_IDS);
+		expect(voiceMessagesFor('day-2', true)).toBe(DAY_TWO_MESSAGES);
+		expect(voiceMessagesFor('day-1')).toBe(DAY_ONE_MESSAGES);
+		expect(voiceMessagesIntro('day-2')?.en).toContain('you’re Sara');
+		expect(voiceMessagesIntro('day-1')).toBeNull();
+		const r = emptyRecord(voiceMessagesFor('day-2'));
+		expect(summary(r).total).toBe(2);
+		expect(asRecord(r, voiceMessagesFor('day-2'))).not.toBeNull();
+	});
+});

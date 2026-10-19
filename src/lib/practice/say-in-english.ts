@@ -23,6 +23,10 @@ export interface SayItem {
 	models: string[];
 	/** Key words, shown only if they ask for a hint. */
 	hints: { en: string; fa: string }[];
+	/** The level the coach writes the natural version for (A2 unless said). */
+	level?: 'A2' | 'B1';
+	/** Names that may come up, to help speech-to-text (the Day 1 list unless said). */
+	names?: string;
 }
 
 export const ITEMS: SayItem[] = [
@@ -95,20 +99,20 @@ export function verdictOf(feedback: SayFeedback): Verdict {
 
 export interface SayTry { transcript: string; feedback: SayFeedback }
 export interface SayRecord { index: number; tries: (SayTry | null)[]; done: boolean }
-export const emptySayRecord = (): SayRecord => ({ index: 0, tries: ITEMS.map(() => null), done: false });
+export const emptySayRecord = (items: SayItem[] = ITEMS): SayRecord => ({ index: 0, tries: items.map(() => null), done: false });
 
 /** A saved run from this browser, or null if it doesn't look right (an older shape, a bad edit). */
-export function asSayRecord(value: unknown): SayRecord | null {
+export function asSayRecord(value: unknown, items: SayItem[] = ITEMS): SayRecord | null {
 	if (!value || typeof value !== 'object') return null;
 	const v = value as Partial<SayRecord>;
-	if (typeof v.index !== 'number' || !Array.isArray(v.tries) || v.tries.length !== ITEMS.length || typeof v.done !== 'boolean') return null;
+	if (typeof v.index !== 'number' || !Array.isArray(v.tries) || v.tries.length !== items.length || typeof v.done !== 'boolean') return null;
 	const ok = v.tries.every(t => t === null || (typeof t === 'object' && typeof t.transcript === 'string' && !!t.feedback && Array.isArray(t.feedback.points) && typeof t.feedback.better === 'string'));
-	return ok ? { index: Math.max(0, Math.min(ITEMS.length, Math.floor(v.index))), tries: v.tries, done: v.done } : null;
+	return ok ? { index: Math.max(0, Math.min(items.length, Math.floor(v.index))), tries: v.tries, done: v.done } : null;
 }
 
 export function summarize(record: SayRecord): { clear: number; total: number; verdicts: (Verdict | null)[] } {
 	const verdicts = record.tries.map(t => (t ? verdictOf(t.feedback) : null));
-	return { clear: verdicts.filter(v => v === 'clear').length, total: ITEMS.length, verdicts };
+	return { clear: verdicts.filter(v => v === 'clear').length, total: record.tries.length, verdicts };
 }
 
 /** The natural version split into their part and the [added] parts, for highlighting. */

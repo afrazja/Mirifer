@@ -1,5 +1,5 @@
 /**
- * "Persian-speaker traps" lab: transcribes one spoken sentence (OpenAI). It is never given the
+ * "Persian-speaker traps" (daily lesson and Module lab): transcribes one spoken sentence (OpenAI). It is never given the
  * sentence or its words (it would write the correct version back), and it's asked to keep any
  * grammar mistakes; the check is done on the device. The audio is not stored. Refused once the
  * day's AI allowance is used up, but it doesn't spend it.
@@ -10,7 +10,6 @@ import { checkAllowance, englishLearner } from '$lib/server/english-ai';
 import { transcribe, transcriptionConfigured } from '$lib/server/transcribe';
 import { createLimiter, tooMany } from '$lib/server/rate-limit';
 import { SAY_MAX_SECONDS } from '$lib/practice/traps';
-import { canUseLab } from '$lib/server/lab-access';
 
 const MAX_AUDIO_BYTES = 300_000;
 const perMinute = createLimiter(20, 60_000);
@@ -18,8 +17,7 @@ const perMinute = createLimiter(20, 60_000);
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const user = await englishLearner(request, locals);
 	if (user instanceof Response) return user;
-	// A Module lab route: the owner only.
-	if (!canUseLab(user)) return json({ error: 'Not found' }, { status: 404 });
+	// A daily-lesson module (Day 2 on) as well as a lab one: every English learner, within the allowance.
 	if (!perMinute(user.id)) return tooMany();
 	if (!transcriptionConfigured()) return json({ error: 'Transcription unavailable' }, { status: 503 });
 	if (Number(request.headers.get('content-length') ?? 0) > MAX_AUDIO_BYTES + 10_000) return json({ error: 'Recording too large' }, { status: 413 });
