@@ -41,7 +41,7 @@ export const PHRASES: Phrase[] = [
 		sentence: "It turned out they'd put it on the wrong flight.",
 		shown: "**It turned‿out** they'd put it on the wrong flight.",
 		chunk: 'it turned out',
-		situation: { en: 'The airline calls you back.', fa: 'شرکت هواپیمایی دوباره به تو زنگ می‌زند.' },
+		situation: { en: 'At the baggage desk.', fa: 'در بخش بار گمشدهٔ فرودگاه.' },
 		tip: { en: '`turned out`: the d moves to “out”, `turn-DOUT`. Not `turn-ed`.', fa: '`turned out` را پیوسته بگو: `d` به `out` می‌چسبد، یعنی `turn-DOUT`. `-ed` را جدا «اِد» نخوان.' },
 		found: said => /\b(turned|turns) out\b(?! the lights?\b)/.test(said) && !/\b(was|were)( it)? turned out\b/.test(said)
 	},
@@ -54,16 +54,16 @@ export const PHRASES: Phrase[] = [
 		found: said => /\bto make (things|it|matters|everything|the situation) (even )?worse\b/.test(said)
 	},
 	{
-		sentence: 'So I ended up buying some clothes at the airport.',
-		shown: 'So I **ended‿up buying** some clothes at the airport.',
+		sentence: 'So I ended up buying my medicine at the airport.',
+		shown: 'So I **ended‿up buying** my medicine at the airport.',
 		chunk: 'ended up buying',
-		situation: { en: 'You needed clothes for the next day.', fa: 'برای روز بعد لباس لازم داشتی.' },
+		situation: { en: 'Your medicine was in the missing bag.', fa: 'داروهایت در کوله‌پشتیِ گمشده بود.' },
 		tip: { en: '`ended up`: say it as one, `en-di-DUP`. The next verb ends in `-ing`.', fa: '`ended up` را یک‌نفس بگو: `en-di-DUP`. فعل بعدش با `-ing` می‌آید.' },
 		found: said => /\b(end|ends|ended|ending) up (?!to\b)(\w+ing|in|at|with|on)\b/.test(said)
 	},
 	{
-		sentence: 'In the end, it arrived two days later.',
-		shown: '**In the end,** it arrived two days later.',
+		sentence: 'In the end, they brought it to my hotel the next morning.',
+		shown: '**In the end,** they brought it to my hotel the next morning.',
 		chunk: 'in the end',
 		situation: { en: 'How it finished.', fa: 'و آخرش…' },
 		tip: { en: 'Say `in the end` as one group; stress `END`.', fa: '`in the end` را یک‌نفس بگو و روی `END` تأکید کن.' },

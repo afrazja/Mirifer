@@ -70,7 +70,8 @@ function progressAfter(meta: Record<string, unknown> | undefined, next: DaySessi
 		const score = next.scores?.[module.id];
 		return score && next.done.includes(module.id) ? [{ skill: module.skill, ...score }] : [];
 	});
-	// A day with skipped steps comes back next time (the recap promises it), so it doesn't count as passed.
+	// A day counts as passed once any step was done; skipping a step doesn't keep the learner on the same
+	// day (that kept those who found a step hard on Day 1). A day with every step skipped comes back.
 	const progress = readEnglishProgress(meta);
-	return recordSession(progress, next.skipped.length ? progress.lastThemeId : next.day, modules);
+	return recordSession(progress, next.done.length ? next.day : progress.lastThemeId, modules);
 }

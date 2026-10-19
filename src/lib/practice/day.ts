@@ -94,7 +94,7 @@ export const DAY_ONE: DayPack = {
 	id: 'day-1',
 	number: 1,
 	ready: true,
-	theme: { en: 'Handle a problem while travelling', fa: 'حل یک مشکل در سفر' } satisfies DisplayText,
+	theme: { en: 'Handle a problem while traveling', fa: 'حل یک مشکل در سفر' } satisfies DisplayText,
 	/** How the coach names today's theme in a sentence ("Today is about …"). */
 	themePhrase: 'travel problems',
 	/** The coach's theme-linked warm-up question for this day (Day 2+ greeting). */
@@ -106,13 +106,11 @@ export const DAY_ONE: DayPack = {
 	checkInMinutes: 2,
 	recapMinutes: 2,
 	modules: [
-		{ id: 'listen-act', title: { en: 'Listen and connect', fa: 'گوش بده و وصل کن' }, short: { en: 'Listen', fa: 'گوش دادن' }, does: { en: 'Hear a real conversation, then show how its facts connect.', fa: 'یک گفت‌وگوی واقعی بشنو و نشان بده اتفاق‌هایش چطور به هم ربط دارند.' }, skill: 'listening', minutes: { 15: 3, 20: 4 }, built: true,
+		{ id: 'listen-act', title: { en: 'Listen and connect', fa: 'گوش بده و وصل کن' }, short: { en: 'Listen', fa: 'گوش دادن' }, does: { en: 'Hear a real conversation, then show how its facts connect.', fa: 'یک گفت‌وگوی واقعی بشنو و نشان بده اتفاق‌هایش چطور به هم ربط دارند.' }, skill: 'listening', minutes: { 15: 3, 20: 5 }, built: true,
 			intro: { en: 'Sara has a problem at the airport. Listen for what went wrong, and what the airline will do about it.', fa: 'سارا در فرودگاه به مشکل خورده. گوش بده ببین چه مشکلی پیش آمده و شرکت هواپیمایی قرار است برایش چه کار کند.' } },
-		{ id: 'scenario', title: { en: 'Scene with a twist', fa: 'صحنه با یک غافلگیری' }, short: { en: 'Scene', fa: 'صحنه' }, does: { en: 'Solve a problem at the hotel desk when something unexpected happens.', fa: 'در پذیرش هتل مشکلی را حل کن، وقتی اتفاق غیرمنتظره‌ای می‌افتد.' }, skill: 'speaking', minutes: { 20: 4 }, built: false,
-			intro: { en: 'You’re at a hotel desk with a problem. Talk to the receptionist and sort it out. Something unexpected will happen, so take your time.', fa: 'در پذیرش هتل هستی و مشکلی داری. با مسئول پذیرش حرف بزن و حلش کن. یک اتفاق غیرمنتظره هم می‌افتد، پس عجله نکن.' } },
-		{ id: 'phrases', title: { en: 'Natural phrases', fa: 'عبارت‌های طبیعی' }, short: { en: 'Phrases', fa: 'عبارت‌ها' }, does: { en: 'Hear five sentences that tell a short travel story, and say each one after Mira.', fa: 'پنج جمله بشنو که با هم داستان کوتاهی از یک سفر را تعریف می‌کنند و هر کدام را بعد از میرا تکرار کن.' }, skill: 'speaking', minutes: { 15: 4, 20: 4 }, built: true,
+		{ id: 'phrases', title: { en: 'Natural phrases', fa: 'عبارت‌های طبیعی' }, short: { en: 'Phrases', fa: 'عبارت‌ها' }, does: { en: 'Hear five sentences that tell a short travel story, and say each one after Mira.', fa: 'پنج جمله بشنو که با هم داستان کوتاهی از یک سفر را تعریف می‌کنند و هر کدام را بعد از میرا تکرار کن.' }, skill: 'speaking', minutes: { 15: 4, 20: 5 }, built: true,
 			intro: { en: 'In this part, you’ll hear five short sentences. Together they tell a travel story. Listen, then say each one after me. Notice the phrases in bold.', fa: 'در این بخش پنج جملهٔ کوتاه می‌شنوی که با هم داستان یک سفر را تعریف می‌کنند. گوش بده و هر جمله را بعد از من تکرار کن. به عبارت‌های پررنگ دقت کن.' } },
-		{ id: 'say-it-better', title: { en: 'Tell your story', fa: 'داستانت را بگو' }, short: { en: 'Story', fa: 'داستان' }, does: { en: 'Tell a short story about a problem you had, then tell it a second time, clearer.', fa: 'ماجرای کوتاه یک مشکل را بگو، بعد دوباره و روشن‌تر بگو.' }, skill: 'speaking', minutes: { 15: 4, 20: 4 }, built: true,
+		{ id: 'say-it-better', title: { en: 'Tell your story', fa: 'داستانت را بگو' }, short: { en: 'Story', fa: 'داستان' }, does: { en: 'Tell a short story about a problem you had, then tell it a second time, clearer.', fa: 'ماجرای کوتاه یک مشکل را بگو، بعد دوباره و روشن‌تر بگو.' }, skill: 'speaking', minutes: { 15: 4, 20: 6 }, built: true,
 			intro: { en: 'Now it’s your turn to talk. Tell me about a problem you had on a trip. You have one minute. Then you’ll see how to say it better, and you can try again.', fa: 'حالا نوبت توست که حرف بزنی. از مشکلی که در یک سفر داشتی برایم بگو. یک دقیقه وقت داری. بعد می‌بینی چطور بهترش بگویی و می‌توانی دوباره امتحان کنی.' } }
 	]
 };
@@ -359,14 +357,18 @@ export function recommend(session: DaySession, upcoming?: DayPack | null): Recom
 	const skipped = modules.find(module => session.skipped.includes(module.id));
 	const weak = modules.find(module => { const score = session.scores?.[module.id]; return score && score.correct / score.total < 0.6; });
 	if (weak && !session.skipped.includes(weak.id)) return { title: { en: `Next time: ${weak.title.en} again`, fa: `دفعهٔ بعد: دوباره ${weak.title.fa}` }, why: { en: 'It was the hardest part today, so you get another go with new details.', fa: 'امروز سخت‌ترین بخش بود، پس با جزئیات تازه دوباره امتحانش می‌کنی.' } };
-	if (skipped) return { title: { en: `Next time: ${skipped.title.en}`, fa: `دفعهٔ بعد: ${skipped.title.fa}` }, why: { en: 'You skipped it today, so it comes back first.', fa: 'امروز ردش کردی، پس اول از همه برمی‌گردد.' } };
+	// Every step skipped: the same day comes back. Some steps skipped: the learner still moves on.
+	if (skipped && !session.done.length) return { title: { en: `Next time: ${skipped.title.en}`, fa: `دفعهٔ بعد: ${skipped.title.fa}` }, why: { en: 'You skipped it today, so it comes back first.', fa: 'امروز ردش کردی، پس اول از همه برمی‌گردد.' } };
+	const skippedNote = skipped ? { en: ` You skipped ${skipped.title.en} today, and that’s fine.`, fa: ` امروز «${skipped.title.fa}» را رد کردی و اشکالی ندارد.` } : { en: '', fa: '' };
 	if (upcoming && upcoming.id === session.day) {
 		// No new day is open yet: say so, never promise a new theme.
 		const day = dayOf(session);
-		return { title: { en: `Next time: Day ${day.number} again`, fa: `دفعهٔ بعد: دوباره روز ${day.number.toLocaleString('fa-IR')}` }, why: { en: 'New days are on the way. Until then, practising this one again helps it stick.', fa: 'روزهای تازه در راه است. تا آن موقع، تمرین دوبارهٔ همین روز کمک می‌کند بهتر یادت بماند.' } };
+		return { title: { en: `Next time: Day ${day.number} again`, fa: `دفعهٔ بعد: دوباره روز ${day.number.toLocaleString('fa-IR')}` }, why: { en: 'New days are on the way. Until then, practicing this one again helps it stick.', fa: 'روزهای تازه در راه است. تا آن موقع، تمرین دوبارهٔ همین روز کمک می‌کند بهتر یادت بماند.' } };
 	}
 	const title = upcoming
 		? { en: `Next time: Day ${upcoming.number}, ${upcoming.theme.en}`, fa: `دفعهٔ بعد: روز ${upcoming.number.toLocaleString('fa-IR')}، ${upcoming.theme.fa}` }
 		: { en: 'Next time: a new theme', fa: 'دفعهٔ بعد: یک موضوع تازه' };
-	return { title, why: { en: 'You finished every step today, so you move on.', fa: 'امروز همهٔ مرحله‌ها را تمام کردی، پس جلو می‌روی.' } };
+	return { title, why: skipped
+		? { en: `You did the rest of today’s steps, so you move on.${skippedNote.en}`, fa: `بقیهٔ مرحله‌های امروز را انجام دادی، پس جلو می‌روی.${skippedNote.fa}` }
+		: { en: 'You finished every step today, so you move on.', fa: 'امروز همهٔ مرحله‌ها را تمام کردی، پس جلو می‌روی.' } };
 }

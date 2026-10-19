@@ -88,7 +88,7 @@ export const TRAPS: Trap[] = [
 		id: 'bored', kind: { en: 'bored / boring', fa: 'bored / boring' },
 		words: ["I'm", 'so', 'boring', 'today.', "Let's", 'go', 'out.'], wrong: 2, alsoOk: [{ index: 0, sentence: "It's so boring today. Let's go out." }],
 		right: "I'm so bored today. Let's go out.",
-		why: { en: '“Bored” is how you feel. “Boring” is what makes you feel it: “This film is boring, so I’m bored.”', fa: '«bored» یعنی «حوصله‌ام سر رفته». «boring» یعنی «حوصله‌سربر» یا «خسته‌کننده». پس بگو «I’m bored»؛ «I’m boring» یعنی «من آدم حوصله‌سربری هستم».' },
+		why: { en: '“Bored” is how you feel. “Boring” is what makes you feel it: “This movie is boring, so I’m bored.”', fa: '«bored» یعنی «حوصله‌ام سر رفته». «boring» یعنی «حوصله‌سربر» یا «خسته‌کننده». پس بگو «I’m bored»؛ «I’m boring» یعنی «من آدم حوصله‌سربری هستم».' },
 		accept: [/\b(?:i'm|i am|im) (?:so |really |very )?bored\b/], reject: [/\b(?:i'm|i am|im) (?:so |really |very )?boring\b/]
 	}
 ];

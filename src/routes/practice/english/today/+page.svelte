@@ -78,7 +78,7 @@
 	/** Role-play with a twist: this day's scene. */
 	const dayScene = $derived(roleSceneFor(day.id));
 	/** The day after today's (for the recap and the done screen); a day with skipped steps comes back. */
-	const following = $derived(session?.skipped.length ? day : nextDay(day.id, data.labAccess));
+	const following = $derived(session && !session.done.length && session.skipped.length ? day : nextDay(day.id, data.labAccess));
 	/** The owner can always try the day after this one (ready or not, skipped steps or not). */
 	const ownerNext = $derived(data.labAccess ? DAYS[DAYS.findIndex(item => item.id === day.id) + 1] ?? null : null);
 	/** "Start Day N again" or "Try Day N now" is kept for the rest of the day on this device, so a reload keeps it. */
