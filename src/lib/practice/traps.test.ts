@@ -92,7 +92,9 @@ describe('Persian-speaker traps, Day 2', () => {
 		expect(trapsFor('day-2').map(t => t.id)).toEqual(LESSON_TRAP_IDS);
 		expect(trapsFor('day-2')).toHaveLength(5);
 		expect(trapsFor('day-2', true)).toBe(DAY_TWO_TRAPS);
-		expect(trapsFor('day-1')).toBe(TRAPS);
+		expect(trapsFor('day-1').map(t => t.id)).toEqual(['my-bags', 'by-tomorrow', 'call-me']);
+		expect(trapsFor('day-1', true)).toHaveLength(4);
+		expect(TRAPS.length).toBeGreaterThan(0);
 		const r = emptyTrapsRecord(trapsFor('day-2'));
 		expect(summarize(r).total).toBe(5);
 		expect(asTrapsRecord(r, trapsFor('day-2'))).not.toBeNull();

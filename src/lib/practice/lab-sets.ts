@@ -3,11 +3,12 @@
  * is remembered per module in this browser.
  */
 import type { DisplayText } from './hotel';
-import { DAY_ONE, dayById, modulesFor, type DayModule, type ModuleId, type Track } from './day';
+import { DAY_ONE, allModules, dayById, modulesFor, type DayModule, type ModuleId, type Track } from './day';
 
 export interface LabSet { id: string; day: string; track: Track; name: DisplayText }
 export const LAB_SETS: LabSet[] = [
-	{ id: 'day-1', day: 'day-1', track: 'intermediate', name: { en: 'Day 1', fa: 'روز ۱' } },
+	{ id: 'day-1', day: 'day-1', track: 'intermediate', name: { en: 'Day 1 · Intermediate', fa: 'روز ۱، متوسط' } },
+	{ id: 'day-1-professional', day: 'day-1', track: 'professional', name: { en: 'Day 1 · Professional', fa: 'روز ۱، حرفه‌ای' } },
 	{ id: 'day-2-intermediate', day: 'day-2', track: 'intermediate', name: { en: 'Day 2 · Intermediate', fa: 'روز ۲، متوسط' } },
 	{ id: 'day-2-professional', day: 'day-2', track: 'professional', name: { en: 'Day 2 · Professional', fa: 'روز ۲، حرفه‌ای' } },
 	{ id: 'day-3-intermediate', day: 'day-3', track: 'intermediate', name: { en: 'Day 3 · Intermediate', fa: 'روز ۳، متوسط' } },
@@ -28,5 +29,5 @@ export function labModule(set: LabSet, id: ModuleId): DayModule | null {
 	const day = dayById(set.day) ?? DAY_ONE;
 	const lists = day.tracks ? [day.tracks[set.track], ...Object.values(day.tracks)] : [modulesFor(15, day)];
 	for (const list of lists) { const found = list.find(module => module.id === id); if (found) return found; }
-	return DAY_ONE.modules.find(module => module.id === id) ?? null;
+	return allModules(DAY_ONE).find(module => module.id === id) ?? null;
 }

@@ -78,7 +78,10 @@ describe('Say it in English, Day 2', () => {
 		expect(sayItemsFor('day-2', 'professional').map(i => i.id)).toEqual(['d2-pay-tip', 'd2-hotel-bags', 'd2-tom-dinner']);
 		expect(sayItemsFor('day-2', 'professional', true)).toHaveLength(4);
 		expect(sayItemsFor('day-2', 'intermediate')).toHaveLength(4);
-		expect(sayItemsFor('day-1')).toBe(ITEMS);
+		expect(sayItemsFor('day-1')).toHaveLength(3);
+		expect(sayItemsFor('day-1', 'professional').every(item => item.level === 'B1')).toBe(true);
+		// The Module lab's built set is still found by id (older saved lab runs).
+		expect(sayItemById(ITEMS[0].id)).toBe(ITEMS[0]);
 		expect(summarize(emptySayRecord(sayItemsFor('day-2', 'professional'))).total).toBe(3);
 	});
 	it('coaches a B1 message at B1, with room for a longer natural version', () => {

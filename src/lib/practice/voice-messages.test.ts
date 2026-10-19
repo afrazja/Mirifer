@@ -66,9 +66,11 @@ describe('Voice messages, Day 2', () => {
 	it('the Intermediate lesson uses Tom and the hotel; the lab gets all four with Day 2’s intro', () => {
 		expect(voiceMessagesFor('day-2').map(m => m.id)).toEqual(LESSON_MESSAGE_IDS);
 		expect(voiceMessagesFor('day-2', true)).toBe(DAY_TWO_MESSAGES);
-		expect(voiceMessagesFor('day-1')).toBe(DAY_ONE_MESSAGES);
+		expect(voiceMessagesFor('day-1').map(m => m.id)).toEqual(['d1-desk', 'd1-ben']);
+		expect(DAY_ONE_MESSAGES.length).toBeGreaterThan(0);
 		expect(voiceMessagesIntro('day-2')?.en).toContain('you’re Sara');
-		expect(voiceMessagesIntro('day-1')).toBeNull();
+		expect(voiceMessagesIntro('day-1')?.en).toContain('Ben');
+		expect(voiceMessagesIntro('day-9')).toBeNull();
 		const r = emptyRecord(voiceMessagesFor('day-2'));
 		expect(summary(r).total).toBe(2);
 		expect(asRecord(r, voiceMessagesFor('day-2'))).not.toBeNull();
