@@ -49,9 +49,11 @@ const ALLOWED = new Set<string>([GREETING, ...Object.values(FALLBACK_LINES)]);
 
 const CACHE = 'public, max-age=31536000, s-maxage=31536000, immutable';
 
-export const GET: RequestHandler = async ({ url }) => {
+export const GET: RequestHandler = async ({ url, locals }) => {
 	const piece = url.searchParams.has('piece') ? getPiece(url.searchParams.get('piece') ?? '') : null;
 	if (url.searchParams.has('piece') && !piece) return new Response('Unknown piece', { status: 400 });
+	// A story is about a thousand characters of narration: only for signed-in learners.
+	if (piece && !locals.user) return new Response('Sign in', { status: 401 });
 	const text = piece?.text ?? url.searchParams.get('text') ?? '';
 	const voice = VOICES[url.searchParams.get('voice') ?? 'a'];
 	const known = !!piece || ALLOWED.has(text) || (text.length <= 400 && verifyJamieLine(text, url.searchParams.get('sig')));

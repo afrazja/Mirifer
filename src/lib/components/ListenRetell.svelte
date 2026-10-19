@@ -7,6 +7,7 @@
 	 */
 	import { onDestroy, onMount } from 'svelte';
 	import ActionBar from '$lib/components/ActionBar.svelte';
+	import MixedText from '$lib/components/MixedText.svelte';
 	import { RECORDED_ENGLISH_RATE } from '$lib/practice/english-voice';
 	import {
 		MAX_LISTENS, PLAYBACK_RATE, emptyRetellRun, formatDuration, listenSeconds, pieceImage, speakLimit,
@@ -50,8 +51,10 @@
 	let playing = $state(false), loadingAudio = $state(false), progress = $state(0), audioFailed = $state(false);
 	// Speaking
 	let recorder: MediaRecorder | null = null, stream: MediaStream | null = null, chunks: Blob[] = [];
-	let recording = $state(false), checking = $state(false), elapsed = $state(0), recordingUrl = $state(''), recordingBlob: Blob | null = null;
+	let recording = $state(false), stopping = $state(false), checking = $state(false), elapsed = $state(0), recordingUrl = $state(''), recordingBlob: Blob | null = null;
 	let tick: ReturnType<typeof setInterval> | undefined, startedAt = 0, generation = 0, alive = true;
+	/** A play was asked for; it counts once the sound really starts (a cold story can take a while to arrive). */
+	let pendingPlay = false;
 	let micMessage = $state<DisplayText | null>(null), error = $state<DisplayText | null>(null);
 
 	const limit = $derived(speakLimit(piece));
@@ -62,6 +65,16 @@
 	const heard = $derived((run.listens > 0 && !playing && !midway && !loadingAudio) || run.textShown || audioFailed);
 	const canListenAgain = $derived(listensLeft > 0 && !audioFailed);
 	const result = $derived(run.result);
+	/** The feedback, one screen at a time: the key points (-1), then each thing to fix. */
+	let page = $state(-1);
+	type Fix = { kind: 'fact'; said: string; fact: string } | { kind: 'better'; said: string; better: string; why: DisplayText; sig?: string };
+	const fixes = $derived<Fix[]>(result ? [
+		...result.inaccuracies.map(item => ({ kind: 'fact' as const, said: item.said, fact: item.fact })),
+		...result.upgrades.map(item => ({ kind: 'better' as const, said: item.original, better: item.better, why: item.why, sig: item.voiceSig }))
+	] : []);
+	const fix = $derived(page >= 0 ? fixes[page] ?? null : null);
+	/** The read-along link waits until the story has been heard once (or can't play). */
+	const canRead = $derived(audioFailed || (run.listens > 0 && !playing && !midway && !loadingAudio));
 
 	onMount(() => { if (stage !== 'start') onFocus?.('hidden'); });
 	onDestroy(() => { alive = false; generation++; cleanUpAudio(); stopRecording(true); discardRecording(); });
@@ -73,8 +86,8 @@
 	function start() { stopAllAudio(); onFocus?.('hidden'); go('listen'); togglePlay(); }
 
 	function cleanUpAudio() {
-		if (audio) { audio.onplay = audio.onpause = audio.onended = audio.ontimeupdate = audio.onerror = null; audio.pause(); audio.src = ''; audio = null; }
-		playing = false; loadingAudio = false;
+		if (audio) { audio.onplaying = audio.onwaiting = audio.onpause = audio.onended = audio.ontimeupdate = audio.onerror = null; audio.pause(); audio.src = ''; audio = null; }
+		playing = false; loadingAudio = false; pendingPlay = false;
 	}
 	/** Pausing never costs a play; starting from the beginning does. */
 	function togglePlay() {
@@ -84,7 +97,11 @@
 		stopAllAudio();
 		if (!audio) {
 			audio = new Audio(`/api/english/voice?v=1&voice=${voice}&piece=${piece.id}`);
-			audio.onplay = () => { playing = true; loadingAudio = false; };
+			audio.onplaying = () => {
+				playing = true; loadingAudio = false;
+				if (pendingPlay) { pendingPlay = false; run = { ...run, listens: run.listens + 1 }; persist(); }
+			};
+			audio.onwaiting = () => { if (!playing) loadingAudio = true; };
 			audio.onpause = () => { playing = false; };
 			audio.onended = () => { playing = false; progress = 1; };
 			audio.ontimeupdate = () => { if (audio?.duration) progress = audio.currentTime / audio.duration; };
@@ -92,9 +109,8 @@
 			loadingAudio = true;
 		} else audio.currentTime = 0;
 		audio.defaultPlaybackRate = audio.playbackRate = PLAYBACK_RATE[piece.level];
-		progress = 0;
-		run = { ...run, listens: run.listens + 1 }; persist();
-		audio.play().catch(() => { loadingAudio = false; audioFailed = true; });
+		progress = 0; loadingAudio = true; pendingPlay = true;
+		audio.play().catch(() => { loadingAudio = false; pendingPlay = false; audioFailed = true; });
 	}
 	function showText() { run = { ...run, textShown: true }; persist(); }
 	function toSpeak() { cleanUpAudio(); error = null; go('speak'); }
@@ -105,7 +121,8 @@
 		recordingUrl = ''; recordingBlob = null; elapsed = 0;
 	}
 	async function startRecording() {
-		micMessage = null; error = null; discardRecording(); stopAllAudio();
+		if (recording || stopping) return;
+		micMessage = null; error = null; stopAllAudio();
 		if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
 			micMessage = { en: 'This browser can’t record audio. Try Chrome, Edge or Safari.', fa: 'این مرورگر نمی‌تواند صدا ضبط کند. کروم، اج یا سافاری را امتحان کن.' }; return;
 		}
@@ -113,6 +130,8 @@
 		try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
 		catch { micMessage = { en: 'Microphone access was blocked. Allow the microphone for this site and try again.', fa: 'دسترسی به میکروفون مسدود شد. اجازهٔ میکروفون را برای این سایت بده و دوباره امتحان کن.' }; return; }
 		if (current !== generation || stage !== 'speak' || !alive) { stream.getTracks().forEach(track => track.stop()); stream = null; return; }
+		// Only now is the earlier take replaced (a refused microphone keeps it).
+		discardRecording();
 		const mimeType = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm', 'audio/ogg;codecs=opus'].find(type => MediaRecorder.isTypeSupported(type));
 		const own = new MediaRecorder(stream, { ...(mimeType ? { mimeType } : {}), audioBitsPerSecond: 32_000 });
 		recorder = own;
@@ -120,8 +139,12 @@
 		own.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
 		own.onstop = () => {
 			const blob = new Blob(chunks, { type: (own.mimeType || mimeType || 'audio/webm').split(';')[0] });
-			if (blob.size && alive) { recordingBlob = blob; recordingUrl = URL.createObjectURL(blob); }
 			if (recorder === own) recorder = null;
+			stopping = false;
+			if (!alive) return;
+			if (!blob.size) { micMessage = { en: 'We didn’t get any sound. Check your microphone and try again.', fa: 'صدایی ضبط نشد. میکروفون را بررسی کن و دوباره امتحان کن.' }; return; }
+			if (recordingUrl) URL.revokeObjectURL(recordingUrl);
+			recordingBlob = blob; recordingUrl = URL.createObjectURL(blob);
 		};
 		own.start(1000);
 		recording = true; startedAt = Date.now(); elapsed = 0;
@@ -134,8 +157,8 @@
 		clearInterval(tick);
 		if (recording) elapsed = Math.min(limit, (Date.now() - startedAt) / 1000);
 		if (discard && recorder) recorder.onstop = null;
-		if (recorder && recorder.state !== 'inactive') recorder.stop();
-		if (discard) recorder = null;
+		if (recorder && recorder.state !== 'inactive') { recorder.stop(); if (!discard) stopping = true; }
+		if (discard) { recorder = null; stopping = false; }
 		stream?.getTracks().forEach(track => track.stop()); stream = null;
 		recording = false;
 	}
@@ -164,6 +187,7 @@
 			run = { ...run, result: value }; persist();
 			onResult?.(value, run.textShown);
 			discardRecording();
+			page = -1;
 			go('result');
 		} catch {
 			if (current !== generation || !alive) return;
@@ -180,9 +204,10 @@
 	function again() {
 		generation++; stopAllAudio(); cleanUpAudio(); stopRecording(true); discardRecording();
 		checking = false; error = null; micMessage = null; progress = 0; audioFailed = false;
-		run = emptyRetellRun(); persist();
+		run = emptyRetellRun(); persist(); page = -1;
 		go('listen');
 	}
+	function nextPage() { page += 1; focusHeading(); }
 	function finish() {
 		stopAllAudio();
 		onDone({ correct: result?.covered.length ?? 0, total: result?.total ?? piece.keyPoints.length }, $state.snapshot(run));
@@ -210,8 +235,11 @@
 		{#if audioFailed}<p class="note" role="alert">{T('The story can’t play right now. Read it instead, then retell it.', 'داستان الان پخش نمی‌شود. به جایش بخوانش و بعد بازگو کن.')}</p>{/if}
 		{#if run.textShown}
 			<div class="words" lang="en" dir="ltr">{piece.text}</div>
-		{:else}
-			<button class="quiet" type="button" onclick={showText}>{T('Show the words (your result is marked “with the text”)', 'نمایش متن (نتیجه‌ات «با متن» ثبت می‌شود)')}</button>
+		{:else if canRead}
+			<div class="read">
+				<button class="quiet" type="button" onclick={showText}>{T('Read the story', 'خواندن متن داستان')}</button>
+				<p class="small">{T('Your result will say “with the text”.', 'کنار نتیجه‌ات «با متن» نوشته می‌شود.')}</p>
+			</div>
 		{/if}
 		{#if playing}
 			<ActionBar label={T('Pause', 'مکث')} icon="pause" onclick={togglePlay} />
@@ -226,13 +254,13 @@
 	{:else if stage === 'speak'}
 		<p class="label" aria-hidden="true">{T('2 of 2 · Retell', '۲ از ۲ — بازگو کن')}</p>
 		<h2 class="title" tabindex="-1" bind:this={heading}>{T('Now tell the story in your own words.', 'حالا داستان را با کلمات خودت تعریف کن.')}</h2>
-		<p class="meta">{T(`Say everything you remember. There’s no minimum; recording stops on its own at ${D(limit)}.`, `هر چه یادت مانده بگو. حداقلی ندارد؛ ضبط در ${D(limit)} خودش متوقف می‌شود.`)}</p>
-		<div class="card player">
+		<p class="meta">{T(`Say everything you remember. Aim for 30 to 60 seconds; recording stops at ${D(limit)}.`, `هر چه یادت مانده بگو. سعی کن ۳۰ تا ۶۰ ثانیه صحبت کنی؛ ضبط در ${D(limit)} متوقف می‌شود.`)}</p>
+		{#if recording || !recordingUrl}<div class="card player">
 			<div class="clock" aria-live="off"><strong>{D(elapsed)}</strong> / {D(limit)}</div>
 			<div class="bar" aria-hidden="true"><span style:width={`${Math.min(1, elapsed / limit) * 100}%`}></span></div>
-		</div>
+		</div>{/if}
 		{#if recordingUrl && !recording}
-			<p class="meta">{T('Your recording:', 'ضبط تو:')}</p>
+			<p class="meta">{T(`Your recording (${D(elapsed)}):`, `ضبط تو (${D(elapsed)}):`)}</p>
 			<!-- svelte-ignore a11y_media_has_caption -->
 			<audio controls src={recordingUrl}></audio>
 		{/if}
@@ -241,12 +269,37 @@
 		<p class="small">{T('Your recording is sent to OpenAI to turn it into text. It isn’t stored.', 'ضبط تو برای تبدیل به متن به OpenAI فرستاده می‌شود و ذخیره نمی‌شود.')}</p>
 		{#if recording}
 			<ActionBar label={T('Stop', 'پایان')} icon="stop" recording onclick={() => stopRecording()} />
+		{:else if stopping}
+			<ActionBar label={T('Saving…', 'در حال ذخیره…')} disabled onclick={() => {}} />
 		{:else if checking}
 			<ActionBar label={T('Listening to your retelling…', 'در حال گوش دادن به تو…')} disabled onclick={() => {}} />
 		{:else if recordingUrl}
-			<ActionBar label={T('Get feedback', 'دریافت بازخورد')} icon="send" onclick={submit} secondary={{ label: T('Record again', 'دوباره ضبط کن'), onclick: startRecording }} />
+			<ActionBar label={T('Get feedback', 'دریافت بازخورد')} icon="send" onclick={submit} secondary={error && onSkip ? { label: T('Skip this step', 'این مرحله را رد کن'), onclick: () => { stopAllAudio(); onSkip?.(); } } : { label: T('Record again', 'دوباره ضبط کن'), onclick: startRecording }} />
 		{:else}
-			<ActionBar label={T('Start speaking', 'شروع صحبت')} icon="mic" onclick={startRecording} secondary={canListenAgain ? { label: T('Listen again first', 'اول دوباره گوش بده'), onclick: backToListen } : null} />
+			<ActionBar label={T('Start speaking', 'شروع صحبت')} icon="mic" onclick={startRecording} secondary={(micMessage || error) && onSkip ? { label: T('Skip this step', 'این مرحله را رد کن'), onclick: () => { stopAllAudio(); onSkip?.(); } } : canListenAgain ? { label: T('Listen again first', 'اول دوباره گوش بده'), onclick: backToListen } : null} />
+		{/if}
+
+	{:else if result && fix}
+		<p class="label" aria-hidden="true">{T(`To work on · ${page + 1} of ${fixes.length}`, `برای تمرین — ${N(page + 1)} از ${N(fixes.length)}`)}</p>
+		{#if fix.kind === 'fact'}
+			<h2 class="title" tabindex="-1" bind:this={heading}>{T('Not quite what the story said', 'با داستان فرق داشت')}</h2>
+			<div class="pair">
+				<p class="tag">{T('You said', 'تو گفتی')}</p><p class="said" lang="en" dir="ltr">{fix.said}</p>
+				<p class="tag">{T('In the story', 'در داستان')}</p><p class="right" lang="en" dir="ltr">{fix.fact}</p>
+			</div>
+		{:else}
+			<h2 class="title" tabindex="-1" bind:this={heading}>{T('Say it more naturally', 'طبیعی‌تر بگو')}</h2>
+			<div class="pair">
+				<p class="tag">{T('You said', 'تو گفتی')}</p><p class="said" lang="en" dir="ltr">{fix.said}</p>
+				<p class="tag">{T('Better', 'بهتر')}</p><p class="right" lang="en" dir="ltr">{fix.better}</p>
+			</div>
+			<p class="why">{#if isFa}<MixedText text={fix.why.fa} />{:else}{fix.why.en}{/if}</p>
+			<button type="button" class="quiet" onclick={() => fix.kind === 'better' && listenTo(fix.better, fix.sig)}>{T('Listen', 'شنیدن')}</button>
+		{/if}
+		{#if page + 1 < fixes.length}
+			<ActionBar label={T('Next', 'بعدی')} onclick={nextPage} />
+		{:else}
+			<ActionBar label={doneLabel ? text(doneLabel) : T('Continue', 'ادامه')} onclick={finish} secondary={{ label: T('Try this story again', 'این داستان را دوباره امتحان کن'), onclick: again }} />
 		{/if}
 
 	{:else if result}
@@ -254,28 +307,20 @@
 		<h2 class="title" tabindex="-1" bind:this={heading}>{T(`You got across ${result.covered.length} of ${result.total} key points.`, `${N(result.covered.length)} نکتهٔ کلیدی از ${N(result.total)} را گفتی.`)}</h2>
 		<p class="meta">{T(`${D(result.seconds)} speaking · ${result.words} words`, `${D(result.seconds)} صحبت، ${N(result.words)} کلمه`)}{run.textShown ? T(' · with the text', '، با متن') : ''}</p>
 		{#if result.words < 3}<p class="note">{T('We could hardly hear anything. Check your microphone and try again.', 'تقریباً چیزی نشنیدیم. میکروفون را بررسی کن و دوباره امتحان کن.')}</p>{/if}
-		{#if result.feedback}<p class="feedback">{text(result.feedback)}</p>{:else if result.feedbackError}<p class="note">{T('Your words are below, but feedback isn’t available right now.', 'حرف‌هایت پایین هست، اما بازخورد الان در دسترس نیست.')}</p>{/if}
-
-		<h3>{T('Key points', 'نکته‌های کلیدی')}</h3>
-		<ul class="points">{#each piece.keyPoints as point, index}{@const hit = result.covered.includes(index + 1)}<li class:hit lang="en" dir="ltr">{point}<span class="sr-only">{hit ? ' (covered)' : ' (missed)'}</span></li>{/each}</ul>
-
-		{#if result.inaccuracies.length}
-			<h3>{T('Not quite what the story said', 'با داستان فرق داشت')}</h3>
-			{#each result.inaccuracies as item}<div class="item" lang="en" dir="ltr"><p class="said">{item.said}</p><p>{item.fact}</p></div>{/each}
-		{/if}
-		{#if result.upgrades.length}
-			<h3>{T('Say it more naturally', 'طبیعی‌تر بگو')}</h3>
-			{#each result.upgrades as upgrade}
-				<div class="item">
-					<p lang="en" dir="ltr"><span class="said">{upgrade.original}</span> <span aria-hidden="true">→</span> <strong>{upgrade.better}</strong></p>
-					<p class="why">{text(upgrade.why)}</p>
-					<button type="button" class="quiet" onclick={() => listenTo(upgrade.better, upgrade.voiceSig)}>{T('Listen', 'شنیدن')}</button>
-				</div>
+		{#if result.feedback}<p class="feedback">{#if isFa}<MixedText text={result.feedback.fa} />{:else}{result.feedback.en}{/if}</p>{:else if result.feedbackError}<p class="note">{T('We heard you, but feedback isn’t available right now.', 'صدایت را شنیدیم، اما بازخورد الان در دسترس نیست.')}</p>{/if}
+		<ul class="points">
+			{#each piece.keyPoints as point, index}
+				{@const hit = result.covered.includes(index + 1)}
+				<li class:hit><span class="mark" aria-hidden="true">{hit ? '✓' : '○'}</span><span><span class="state">{hit ? T('You said it', 'گفتی') : T('Missed', 'جا افتاد')}</span><span class="point" lang="en" dir="ltr">{point}</span></span></li>
 			{/each}
-		{/if}
+		</ul>
 		<details><summary>{T('What you said', 'آنچه گفتی')}</summary><p lang="en" dir="ltr">{result.transcript || '—'}</p></details>
 		<details><summary>{T('The story', 'متن داستان')}</summary><p lang="en" dir="ltr">{piece.text}</p></details>
-		<ActionBar label={doneLabel ? text(doneLabel) : T('Continue', 'ادامه')} onclick={finish} secondary={{ label: T('Try this story again', 'این داستان را دوباره امتحان کن'), onclick: again }} />
+		{#if fixes.length}
+			<ActionBar label={T('Next', 'بعدی')} onclick={nextPage} />
+		{:else}
+			<ActionBar label={doneLabel ? text(doneLabel) : T('Continue', 'ادامه')} onclick={finish} secondary={{ label: T('Try this story again', 'این داستان را دوباره امتحان کن'), onclick: again }} />
+		{/if}
 	{/if}
 </section>
 
@@ -299,15 +344,21 @@
 	.small { margin: 0; font-size: .8rem; color: var(--ink-soft); }
 	audio { inline-size: 100%; }
 	.feedback { margin: 0; padding: 14px 16px; border-radius: 12px; background: var(--accent-wash); line-height: 1.6; }
-	h3 { margin: 10px 0 0; font-family: var(--font-display); font-size: 1.1rem; }
 	.points { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
-	.points li { display: flex; gap: 10px; color: var(--ink-soft); line-height: 1.5; }
-	.points li::before { content: '○'; flex: none; }
-	.points li.hit { color: var(--ink); }
-	.points li.hit::before { content: '✓'; color: var(--accent-deep); font-weight: 700; }
-	.item { display: grid; gap: 4px; padding: 10px 0; border-top: 1px solid var(--line); }
-	.item p { margin: 0; line-height: 1.55; }
-	.said { color: var(--ink-soft); }
+	.points li { display: flex; gap: 10px; line-height: 1.5; color: var(--ink); }
+	.points li > span:last-child { display: grid; gap: 2px; }
+	.mark { flex: none; inline-size: 1.2em; color: var(--attention); font-weight: 700; }
+	.hit .mark { color: var(--accent-deep); }
+	.state { font-size: .78rem; font-weight: 700; color: var(--attention); }
+	.hit .state { color: var(--accent-deep); }
+	.point { text-align: start; }
+	.read { display: grid; gap: 0; }
+	.pair { display: grid; gap: 4px; }
+	.pair p { margin: 0; line-height: 1.55; }
+	.tag { font-size: .78rem; font-weight: 700; color: var(--ink-soft); }
+	.tag + p { margin-block-end: 10px; }
+	.said { color: var(--ink-soft); font-size: 1.05rem; }
+	.right { font-family: var(--font-display); font-size: 1.25rem; color: var(--accent-deep); }
 	.why { color: var(--ink-soft); font-size: .9rem; }
 	details { border-top: 1px solid var(--line); padding-top: 10px; }
 	summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; }
