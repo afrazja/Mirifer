@@ -154,7 +154,7 @@ describe('/api/english/converse', () => {
 			fetchMock.mockResolvedValueOnce(openAi({ reply: 'Good news, Mike found it! When did you ride?' })).mockResolvedValueOnce(openAi({ reply: good }));
 			const body = await (await POST(call([{ speaker: 'reception', text: KEVIN }, { speaker: 'learner', text: 'I lost my phone in a taxi.' }]).event)).json();
 			expect(body.reply).toBe(good);
-			expect(JSON.stringify(fetchMock.mock.calls[1][1].body)).toContain('gave away news');
+			expect(JSON.stringify(fetchMock.mock.calls[1][1].body)).toContain('gave away the surprise');
 		});
 
 		it('after the twist, the plan counts, and the call can finish', async () => {

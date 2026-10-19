@@ -93,7 +93,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const twistBefore = twistSaid(scene, variant, turns);
 	const problemOf = (line: unknown) => sceneLineProblem(scene, line, variant, previous)
 		?? (scene.twist && !twistBefore && typeof line === 'string' && scene.twist.leak.test(line)
-			? `it gave away news about the phone, which ${character} doesn't know yet` : null);
+			? `it gave away the surprise too early: ${character} says nothing about it until that news is in the conversation` : null);
 	const system = scene.prompt(variant, met);
 	let result = await converse(scene, system, transcript);
 	if (!result) return json({ error: 'AI temporarily unavailable' }, { status: 502 });
