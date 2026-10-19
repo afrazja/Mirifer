@@ -32,3 +32,33 @@ describe('Choose and persuade: content and objection picking', () => {
 		expect(asPersuadeRecord(null)).toBeNull();
 	});
 });
+
+import { APARTMENTS } from './persuade';
+import { persuadeSetById, persuadeSetFor } from './day-content';
+
+describe('Choose and persuade: each day brings its own choice', () => {
+	const ride = persuadeSetFor('day-2');
+	it('Day 1 keeps the apartments; Day 2 is the train or a taxi; the server finds both by id', () => {
+		expect(persuadeSetFor('day-1')).toBe(APARTMENTS);
+		expect(ride.id).toBe('d2-ride');
+		expect(persuadeSetById('d2-ride')).toBe(ride);
+		expect(persuadeSetById(undefined)).toBe(APARTMENTS);
+		expect(persuadeSetById('nope')).toBeNull();
+	});
+	it('every set has one fact per row, objections that end in a question, and phrases in both languages', () => {
+		for (const set of [APARTMENTS, ride]) {
+			for (const option of Object.values(set.options)) expect(option.facts).toHaveLength(set.rows.length);
+			for (const o of [...set.objections.a, ...set.objections.b]) { expect(o.line.trim().endsWith('?')).toBe(true); expect(o.again.trim().endsWith('?')).toBe(true); }
+			for (const phrase of [...set.reasonPhrases, ...set.answerPhrases]) expect(phrase.fa.length).toBeGreaterThan(0);
+			expect(set.factIds.at(-1)).toBe('personal');
+			expect(set.ai.better).toHaveLength(4);
+		}
+	});
+	it('Day 2: Mira objects to what the learner left out, and hears number words', () => {
+		expect(pickObjection('a', 'The train is only nine dollars and she is paying herself.', ride).point).toBe('wait');
+		expect(pickObjection('a', 'A train comes every fifteen minutes, and she can use the elevators with her suitcase.', ride).point).toBe('find');
+		expect(pickObjection('b', 'It is door to door, so she will not carry her suitcase.', ride).point).toBe('price');
+		expect(pickObjection('b', 'It costs fifty-five dollars but it is door to door.', ride).point).toBe('time');
+		expect(normaliseSaid('twenty-five minutes', ride.numbers)).toContain(' 25 ');
+	});
+});
