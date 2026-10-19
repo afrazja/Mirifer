@@ -35,7 +35,7 @@ describe('English day shell', () => {
 		expect(moduleBefore(15, 'phrases')?.id).toBe('listen-act');
 		expect(moduleBefore(15, 'say-it-better')?.id).toBe('phrases');
 		expect(moduleBefore(15, null)?.id).toBe('say-it-better');
-		expect(moduleBefore(20, 'phrases')?.id).toBe('scenario');
+		expect(moduleBefore(20, 'phrases')?.id).toBe('listen-act');
 		expect(moduleBefore(20, 'say-it-better')?.id).toBe('phrases');
 		expect(moduleBefore(20, null)?.id).toBe('say-it-better');
 	});
@@ -117,5 +117,17 @@ describe('more than one day', () => {
 	it('names the next day in the recap suggestion', () => {
 		expect(recommend(startSession(15), DAY_TWO).title.en).toBe('Next time: Day 2, Taking a taxi');
 		expect(recommend(startSession(15), DAY_ONE).title.en).toBe('Next time: Day 1 again');
+	});
+});
+
+describe('skipping a step', () => {
+	it('moves on to the next day when some steps were done; the same day comes back only when every step was skipped', async () => {
+		const { completeSession: complete, recommend: rec, startSession: start, DAY_TWO: two } = await import('./day');
+		const some = complete({ ...start(15), stage: 'recap', done: ['listen-act', 'phrases'], skipped: ['say-it-better'] } as never);
+		const next = rec(some, two);
+		expect(next.title.en).toBe('Next time: Day 2, Taking a taxi');
+		expect(next.why.en).toContain('You skipped Tell your story today');
+		const all = complete({ ...start(15), stage: 'recap', done: [], skipped: ['listen-act', 'phrases', 'say-it-better'] } as never);
+		expect(rec(all, two).title.en).toBe('Next time: Listen and connect');
 	});
 });

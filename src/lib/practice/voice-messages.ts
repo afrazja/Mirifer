@@ -61,19 +61,19 @@ export const MESSAGES: VoiceMessage[] = [
 	},
 	{
 		id: 'landlord',
-		from: { name: 'Mr Brown', who: { en: 'your landlord', fa: 'صاحب‌خانه‌ات' }, voice: 'a' },
+		from: { name: 'Mr. Brown', who: { en: 'your landlord', fa: 'صاحب‌خانه‌ات' }, voice: 'a' },
 		sentences: [
-			'Hello, this is Mr Brown, your landlord.',
-			'The plumber can come and fix the kitchen tap on Thursday, between nine and twelve.',
+			'Hello, this is Mr. Brown, your landlord.',
+			'The plumber can come and fix the kitchen faucet on Thursday, between nine and twelve.',
 			'Will someone be at home then?',
-			'And could you send me a photo of the tap today, please?',
+			'And could you send me a photo of the faucet today, please?',
 			'Then he knows what to bring. Thanks.'
 		],
 		asks: [
 			{ ask: { en: 'Will someone be at home on Thursday morning?', fa: 'پنج‌شنبه صبح کسی خانه هست؟' }, missed: { en: "You didn't say if someone will be at home on Thursday.", fa: 'نگفتی پنج‌شنبه کسی خانه هست یا نه.' } },
-			{ ask: { en: 'Can you send a photo of the tap today?', fa: 'امروز عکس شیر آب را می‌فرستی؟' }, missed: { en: "You didn't say if you can send the photo today.", fa: 'نگفتی امروز عکس شیر آب را می‌فرستی یا نه.' } }
+			{ ask: { en: 'Can you send a photo of the faucet today?', fa: 'امروز عکس شیر آب را می‌فرستی؟' }, missed: { en: "You didn't say if you can send the photo today.", fa: 'نگفتی امروز عکس شیر آب را می‌فرستی یا نه.' } }
 		],
-		model: "Hello Mr Brown, thank you. Yes, I'll be at home on Thursday morning. I'll send you a photo of the tap today."
+		model: "Hello Mr. Brown, thank you. Yes, I'll be at home on Thursday morning. I'll send you a photo of the faucet today."
 	},
 	{
 		id: 'clinic',
@@ -92,7 +92,7 @@ export const MESSAGES: VoiceMessage[] = [
 ];
 
 /** Names that may come up, to help speech-to-text spell them. */
-export const NAMES = 'Sara, Ali, Tom, Mr Brown, Green Street Clinic.';
+export const NAMES = 'Sara, Ali, Tom, Mr. Brown, Green Street Clinic.';
 
 export type ReplyVerdict = 'answered' | 'almost' | 'notYet' | 'notEnglish';
 export interface ReplyFeedback {

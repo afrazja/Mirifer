@@ -10,8 +10,8 @@ import { z } from 'zod';
 import type { EnglishProfile } from '$lib/practice/english-profile';
 import { strongerSkill, type EnglishProgress } from '$lib/practice/english-progress';
 
-/** How a past day's theme is named in "practised … yesterday". */
-const THEME_NAMES: Record<string, string> = { 'day-1': 'handling a problem while travelling', 'day-2': 'taking a taxi', 'day-3': 'checking in at a hotel' };
+/** How a past day's theme is named in "practiced … yesterday". */
+const THEME_NAMES: Record<string, string> = { 'day-1': 'handling a problem while traveling', 'day-2': 'taking a taxi', 'day-3': 'checking in at a hotel' };
 const REASON_PHRASES: Record<NonNullable<EnglishProfile['reason']>, string> = {
 	travel: 'is learning English for travel', work: 'is learning English for work', exam: 'is preparing for an English exam',
 	abroad: 'is learning English to live abroad', everyday: 'wants to feel more confident speaking English'
@@ -48,8 +48,8 @@ export function coachFacts(name: string, profile: EnglishProfile | null, progres
 	if (clean) facts.name = clean;
 	if (profile?.reason) facts.reason = REASON_PHRASES[profile.reason];
 	const theme = progress.lastThemeId ? THEME_NAMES[progress.lastThemeId] : undefined;
-	if (theme && days === 1) facts.recent = `practised ${theme} yesterday`;
-	else if (theme && days !== null && days >= 2 && days <= 6) facts.recent = `practised ${theme} a few days ago`;
+	if (theme && days === 1) facts.recent = `practiced ${theme} yesterday`;
+	else if (theme && days !== null && days >= 2 && days <= 6) facts.recent = `practiced ${theme} a few days ago`;
 	if (progress.lastResult === 'strong' && days !== null && days <= 6) facts.result = 'did well in their last session';
 	const skill = strongerSkill(progress);
 	if (skill) facts.skill = `their ${skill} is getting stronger`;

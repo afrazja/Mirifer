@@ -120,7 +120,7 @@
 			<ul class="summary">
 				{#if summary}<li>{text(summary)}</li>{/if}
 				<li>{isFa ? 'ما تمام تلاشمان را می‌کنیم که هر درس با سطح تو جور باشد: هر جا برایت سخت است آسان‌تر، و هر جا قوی‌تری سخت‌تر.' : 'We do our best to match every lesson to you: easier where you struggle, harder where you’re strong.'}</li>
-				<li>{isFa ? `هر جلسه حدود ${num(minutes)} دقیقه است.` : `Each session takes about ${minutes} minutes.`}</li>
+				<li>{isFa ? `هر جلسه حدود ${num(15)} تا ${num(25)} دقیقه است.` : 'Each session takes about 15 to 25 minutes.'}</li>
 			</ul>
 			<button class="text-link" type="button" onclick={() => { step = 1; }} disabled={saving}>{isFa ? 'تغییر پاسخ‌ها' : 'Change my answers'}</button>
 		</section>

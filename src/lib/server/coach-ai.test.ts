@@ -18,10 +18,10 @@ describe('Mira AI greeting', () => {
 	});
 	it('only gives the model true, positive phrases', () => {
 		let progress = recordSession(EMPTY_PROGRESS, 'day-1', [{ skill: 'listening', correct: 9, total: 10 }]);
-		expect(coachFacts('Sam', profile, progress, 1)).toEqual({ name: 'Sam', reason: 'is learning English for work', recent: 'practised handling a problem while travelling yesterday', result: 'did well in their last session' });
+		expect(coachFacts('Sam', profile, progress, 1)).toEqual({ name: 'Sam', reason: 'is learning English for work', recent: 'practiced handling a problem while traveling yesterday', result: 'did well in their last session' });
 		expect(coachFacts('Sam', profile, progress, 9)).toEqual({ name: 'Sam', reason: 'is learning English for work' });
 		progress = recordSession(EMPTY_PROGRESS, 'day-1', [{ skill: 'listening', correct: 2, total: 10 }]);
-		expect(coachFacts('', null, progress, 3)).toEqual({ recent: 'practised handling a problem while travelling a few days ago' });
+		expect(coachFacts('', null, progress, 3)).toEqual({ recent: 'practiced handling a problem while traveling a few days ago' });
 		expect(JSON.stringify(coachFacts('Sam', profile, progress, 3))).not.toMatch(/\d/);
 	});
 	it('sets the level from comfort, never higher than B1', () => {

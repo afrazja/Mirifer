@@ -19,15 +19,15 @@ export interface Line { who: string; text: string }
 
 export const CONVERSATION: Line[] = [
 	{ who: 'agent', text: 'Hello, how can I help?' },
-	{ who: 'sara', text: "Hi. I've just landed from Istanbul, but only one of my bags has come out." },
+	{ who: 'sara', text: "Hi. I just landed from Istanbul, but only one of my bags came out." },
 	{ who: 'agent', text: "Oh, I'm sorry. What does the missing one look like?" },
 	{ who: 'sara', text: "It's a small green backpack. My big gray suitcase is here, that one's fine." },
-	{ who: 'agent', text: 'Let me check... Right. It was supposed to be on your flight, but it went to Frankfurt, because the tag had the wrong flight number.' },
+	{ who: 'agent', text: 'Let me check... OK. It was supposed to be on your flight, but it went to Frankfurt, because the tag had the wrong flight number.' },
 	{ who: 'sara', text: 'Oh no. So when can I get it?' },
 	{ who: 'agent', text: "It'll be on the evening flight, so we can bring it to your hotel tomorrow morning." },
 	{ who: 'sara', text: "The thing is, my medicine's in that backpack, and I need it tonight." },
 	{ who: 'agent', text: "In that case, just buy what you need at the pharmacy here. We'll pay you back, as long as you keep the receipt." },
-	{ who: 'sara', text: "OK. And my phone charger's in there too. Should I buy one of those as well?" },
+	{ who: 'sara', text: "OK. And my phone charger's in there too. Should I buy one of those too?" },
 	{ who: 'agent', text: 'No need. You can borrow one at the information desk instead.' }
 ];
 
@@ -36,7 +36,7 @@ export const LINK_PHRASES = ['in that case', 'as long as', 'instead'];
 
 /** English inside `backticks` is kept left-to-right (and read as English) in the Persian line. */
 export const MIRA_LINE: DisplayText = {
-	en: 'The agent’s plan hung on three small phrases: `in that case` (so here’s what to do), `as long as` (only if), `instead` (not that, this). They go by fast, so listen out for them.',
+	en: 'The agent used three small phrases: `in that case` (so here’s what to do), `as long as` (only if), `instead` (not that, this). They go by fast, so listen for them.',
 	fa: 'راه‌حل کارمند فرودگاه به سه عبارت کوتاه بستگی داشت: `in that case` (در این صورت)، `as long as` (به شرطی که)، `instead` (به‌جایش). این‌ها تند گفته می‌شوند، پس حواست بهشان باشد.'
 };
 /** Mira's line as she says it (no marks). */
