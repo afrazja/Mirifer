@@ -154,7 +154,7 @@ export const DAY_TWO: DayPack = {
 	// docs/english-day-2/README.md: the owner's two versions, five modules each.
 	tracks: {
 		intermediate: [
-			{ id: 'listen-act', title: { en: 'Listen and connect', fa: 'گوش بده و وصل کن' }, short: { en: 'Listen', fa: 'گوش دادن' }, does: { en: 'Hear Sara and a taxi driver, then show how the facts connect.', fa: 'گفت‌وگوی سارا و رانندهٔ تاکسی را بشنو و نشان بده اتفاق‌هایش چطور به هم ربط دارند.' }, skill: 'listening', minutes: { 15: 4, 20: 4 }, built: false,
+			{ id: 'listen-act', title: { en: 'Listen and connect', fa: 'گوش بده و وصل کن' }, short: { en: 'Listen', fa: 'گوش دادن' }, does: { en: 'Hear Sara and a taxi driver, then show how the facts connect.', fa: 'گفت‌وگوی سارا و رانندهٔ تاکسی را بشنو و نشان بده اتفاق‌هایش چطور به هم ربط دارند.' }, skill: 'listening', minutes: { 15: 4, 20: 4 }, built: true,
 				intro: { en: 'Sara is taking a taxi from the airport to her hotel. Listen for where she’s going, what changes on the way, and how she pays.', fa: 'سارا با تاکسی از فرودگاه به هتلش می‌رود. گوش بده ببین کجا می‌رود، سر راه چه چیزی عوض می‌شود و کرایه را چطور می‌دهد.' } },
 			{ id: 'phrases', title: { en: 'Natural phrases', fa: 'عبارت‌های طبیعی' }, short: { en: 'Phrases', fa: 'عبارت‌ها' }, does: { en: 'Hear five sentences from the taxi ride, and say each one after Mira.', fa: 'پنج جمله از همین سفر با تاکسی بشنو و هر کدام را بعد از میرا تکرار کن.' }, skill: 'speaking', minutes: { 15: 4, 20: 4 }, built: true,
 				intro: { en: 'Here are five sentences from Sara’s ride, in order. Listen, then say each one after me. Notice the phrases in bold.', fa: 'این پنج جمله از سفر سارا است، به همان ترتیب. گوش بده و هر جمله را بعد از من تکرار کن. به عبارت‌های پررنگ دقت کن.' } },

@@ -4,6 +4,7 @@
  * docs/english-day-2/. Content only: the modules that show it are built once.
  */
 import type { Phrase } from '../phrases';
+import type { ConnectSet, Line, Part, Speaker } from '../listen-connect';
 import type { Track } from '../day';
 
 /** Natural phrases: the five steps of the ride (get in → explain where → ask the time → pay → get out). */
@@ -92,4 +93,83 @@ export const PHRASES: Record<Track, Phrase[]> = {
 			found: said => /\bhave a (good|nice|great) (one|day|night|evening|trip)\b/.test(said)
 		}
 	]
+};
+
+/**
+ * Listen and connect: the taxi ride (docs/english-day-2/listening.md). One conversation and three
+ * parts for both versions; each version has its own questions and Mira's closing line.
+ */
+const RIDE_SPEAKERS: Record<string, Speaker> = {
+	driver: { name: 'Driver', voice: 'a' }, // Andrew: Mike in the world; never Day 1's agent (Brian) or Mira (Ava)
+	sara: { name: 'Sara', voice: 'd' } // Emma, as on Day 1
+};
+const RIDE: Line[] = [
+	{ who: 'driver', text: 'Hi there. Where to?' },
+	{ who: 'sara', text: "Hi. Could you take me to the Park Hotel, please? It's on Main Street." },
+	{ who: 'driver', text: "Main Street's pretty long. Is the hotel near anything?" },
+	{ who: 'sara', text: "It's right across from Central Station." },
+	{ who: 'driver', text: 'Oh, OK, I know where that is.' },
+	{ who: 'driver', text: "I was going to take the highway, but it's closed because of an accident. So we'll go through downtown." },
+	{ who: 'sara', text: 'OK. How long does it take to get there?' },
+	{ who: 'driver', text: 'About forty minutes, unless the traffic near the station is bad.' },
+	{ who: 'sara', text: 'Do you take cards, or is it cash only?' },
+	{ who: 'driver', text: 'Cards are fine. But my card machine is a little slow today, so maybe have some cash ready, just in case.' },
+	{ who: 'driver', text: 'Here we are, the Park Hotel.' },
+	{ who: 'sara', text: 'Thanks. Could you drop me off at the entrance? My suitcase is really heavy.' },
+	{ who: 'driver', text: "Sure, no problem. That's fifty-five dollars." }
+];
+const RIDE_PARTS: Part[] = [
+	{ from: 0, to: 4, title: { en: 'Where to', fa: 'مقصد' } },
+	{ from: 5, to: 7, title: { en: 'The way', fa: 'مسیر' } },
+	{ from: 8, to: 12, title: { en: 'Paying and arriving', fa: 'کرایه و رسیدن' } }
+];
+const RIDE_LINKS = ['because of', 'unless', 'just in case'];
+
+export const CONNECT: Record<Track, ConnectSet> = {
+	intermediate: {
+		speakers: RIDE_SPEAKERS, conversation: RIDE, parts: RIDE_PARTS, linkPhrases: RIDE_LINKS,
+		connect: {
+			causes: ["The driver doesn't know the Park Hotel.", 'The highway is closed.', 'The card machine is slow.'],
+			results: ['The driver stops at the entrance.', 'They go through downtown.', "Sara says it's across from Central Station.", 'Sara should have some cash ready.'],
+			answers: [2, 1, 3],
+			evidence: [3, 5, 9]
+		},
+		choices: [
+			{ kind: { en: 'Because of', fa: 'دلیل' }, question: 'Why is the highway closed?', options: ['Because of the traffic.', 'Because of an accident.', 'Because of bad weather.'], answer: 1, evidence: 5 },
+			{ kind: { en: 'How long', fa: 'چقدر طول می‌کشد' }, question: 'How long does the ride take?', options: ['About fourteen minutes.', 'About fifty-five minutes.', 'About forty minutes.'], answer: 2, evidence: 7 },
+			{ kind: { en: 'Why', fa: 'چرا' }, question: 'Why does Sara ask the driver to stop at the entrance?', options: ['Her suitcase is very heavy.', 'The hotel is hard to find.', 'She wants to pay in cash.'], answer: 0, evidence: 11 }
+		],
+		questions: [
+			{ part: 0, kind: 'connect', index: 0 },
+			{ part: 1, kind: 'choice', index: 0 }, { part: 1, kind: 'connect', index: 1 }, { part: 1, kind: 'choice', index: 1 },
+			{ part: 2, kind: 'connect', index: 2 }, { part: 2, kind: 'choice', index: 2 }
+		],
+		miraLine: {
+			en: 'The driver used three small phrases: `because of` (why), `unless` (except if), `just in case` (to be ready). Tap a line and listen for them again.',
+			fa: 'راننده سه عبارت کوتاه به کار برد: `because of` (به خاطرِ)، `unless` (مگر اینکه)، `just in case` (محض احتیاط). روی یک خط بزن و دوباره به این‌ها گوش بده.'
+		}
+	},
+	professional: {
+		speakers: RIDE_SPEAKERS, conversation: RIDE, parts: RIDE_PARTS, linkPhrases: RIDE_LINKS,
+		connect: {
+			causes: ["The driver doesn't know where the Park Hotel is.", 'There was an accident on the highway.', "Sara's suitcase is really heavy."],
+			results: ['They go through downtown.', 'The ride costs fifty-five dollars.', 'The driver stops at the entrance.', "Sara tells him it's across from Central Station."],
+			answers: [3, 0, 2],
+			evidence: [3, 5, 11]
+		},
+		choices: [
+			{ kind: { en: 'Plan and reality', fa: 'برنامه و واقعیت' }, question: 'What was the driver going to do?', options: ['Go through downtown.', 'Take the highway.', 'Wait until the highway opens.'], answer: 1, evidence: 5 },
+			{ kind: { en: 'Condition', fa: 'شرط' }, question: 'When will the ride take more than forty minutes?', options: ['If the traffic near the station is bad.', 'If the card machine is slow.', 'If the highway is open.'], answer: 0, evidence: 7 },
+			{ kind: { en: 'Just in case', fa: 'محض احتیاط' }, question: 'Can Sara pay by card?', options: ["No, it's cash only.", 'Yes, but she should have cash ready.', 'No, his card machine is broken.'], answer: 1, evidence: 9 }
+		],
+		questions: [
+			{ part: 0, kind: 'connect', index: 0 },
+			{ part: 1, kind: 'choice', index: 0 }, { part: 1, kind: 'connect', index: 1 }, { part: 1, kind: 'choice', index: 1 },
+			{ part: 2, kind: 'choice', index: 2 }, { part: 2, kind: 'connect', index: 2 }
+		],
+		miraLine: {
+			en: 'The driver used three small phrases: `because of` (the reason), `unless` (except if), `just in case` (to be ready if something goes wrong). They go by fast, so listen out for them.',
+			fa: 'حرف‌های راننده به سه عبارت کوتاه بند بود: `because of` (به خاطرِ)، `unless` (مگر اینکه)، `just in case` (محض احتیاط). این‌ها تند گفته می‌شوند، پس حواست به آن‌ها باشد.'
+		}
+	}
 };

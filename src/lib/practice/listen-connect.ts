@@ -15,7 +15,7 @@ export const SPEAKERS: Record<'agent' | 'sara', Speaker> = {
 	sara: { name: 'Sara', voice: 'd' } // Emma; Mira is Ava, so Sara never sounds like Mira
 };
 
-export interface Line { who: keyof typeof SPEAKERS; text: string }
+export interface Line { who: string; text: string }
 
 export const CONVERSATION: Line[] = [
 	{ who: 'agent', text: 'Hello, how can I help?' },
@@ -82,10 +82,38 @@ export const QUESTIONS: Question[] = [
 ];
 export type Step = { kind: 'listen'; part: number } | { kind: 'question'; q: number } | { kind: 'end' };
 /** Listen to part 1, its questions, listen to part 2, its questions, …, then how it all connects. */
-export const STEPS: Step[] = [
-	...PARTS.flatMap((_, part) => [{ kind: 'listen' as const, part }, ...QUESTIONS.map((q, i) => ({ q, i })).filter(x => x.q.part === part).map(x => ({ kind: 'question' as const, q: x.i }))]),
-	{ kind: 'end' }
-];
+export function stepsOf(set: ConnectSet): Step[] {
+	return [
+		...set.parts.flatMap((_, part) => [{ kind: 'listen' as const, part }, ...set.questions.map((q, i) => ({ q, i })).filter(x => x.q.part === part).map(x => ({ kind: 'question' as const, q: x.i }))]),
+		{ kind: 'end' }
+	];
+}
+
+/**
+ * Everything one day (and version) brings to the module: the conversation and its speakers, the
+ * parts, the questions and Mira's closing line. Day 1's is below; later days' are in `days/`.
+ */
+export interface ConnectSet {
+	speakers: Record<string, Speaker>;
+	conversation: Line[];
+	/** The day's link phrases, highlighted in the conversation at the end. */
+	linkPhrases: string[];
+	/** Mira's line at the end; English inside `backticks` stays left-to-right. */
+	miraLine: DisplayText;
+	connect: { causes: string[]; results: string[]; answers: number[]; evidence: number[] };
+	choices: ChoiceQuestion[];
+	parts: Part[];
+	questions: Question[];
+}
+export const DAY_ONE_SET: ConnectSet = {
+	speakers: SPEAKERS, conversation: CONVERSATION, linkPhrases: LINK_PHRASES, miraLine: MIRA_LINE,
+	connect: CONNECT, choices: CHOICES, parts: PARTS, questions: QUESTIONS
+};
+export const STEPS: Step[] = stepsOf(DAY_ONE_SET);
+export const totalPoints = (set: ConnectSet) => set.connect.causes.length + set.choices.length;
+export const partLinesOf = (set: ConnectSet, part: number) => set.conversation.slice(set.parts[part].from, set.parts[part].to + 1);
+/** Mira's line as she says it (no marks). */
+export const miraSpoken = (set: ConnectSet) => set.miraLine.en.replace(/`/g, '');
 
 /** What the module keeps in this browser for the day (reload, Back). */
 export interface ConnectRecord {
@@ -106,34 +134,35 @@ export interface ConnectRecord {
 	done: boolean;
 }
 
-export const emptyConnectRecord = (): ConnectRecord => ({
-	plays: PARTS.map(() => 0), heard: PARTS.map(() => false), readInstead: false, connect: CONNECT.causes.map(() => null), connectChecked: CONNECT.causes.map(() => false),
-	choices: CHOICES.map(() => null), checked: CHOICES.map(() => false), step: 0, done: false
+export const emptyConnectRecord = (set: ConnectSet = DAY_ONE_SET): ConnectRecord => ({
+	plays: set.parts.map(() => 0), heard: set.parts.map(() => false), readInstead: false, connect: set.connect.causes.map(() => null), connectChecked: set.connect.causes.map(() => false),
+	choices: set.choices.map(() => null), checked: set.choices.map(() => false), step: 0, done: false
 });
 
-export function scoreConnect(record: ConnectRecord): { correct: number; total: number } {
-	const connect = record.connect.filter((chosen, i) => chosen === CONNECT.answers[i]).length;
-	const choices = record.choices.filter((chosen, i) => chosen === CHOICES[i].answer).length;
-	return { correct: connect + choices, total: TOTAL_POINTS };
+export function scoreConnect(record: ConnectRecord, set: ConnectSet = DAY_ONE_SET): { correct: number; total: number } {
+	const connect = record.connect.filter((chosen, i) => chosen === set.connect.answers[i]).length;
+	const choices = record.choices.filter((chosen, i) => chosen === set.choices[i].answer).length;
+	return { correct: connect + choices, total: totalPoints(set) };
 }
 
 const isChoice = (value: unknown, count: number) => value === null || (Number.isInteger(value) && (value as number) >= 0 && (value as number) < count);
 
 /** Checks a saved record before using it (it comes back from browser storage). A record from before the parts is dropped. */
-export function asConnectRecord(value: unknown): ConnectRecord | null {
+export function asConnectRecord(value: unknown, set: ConnectSet = DAY_ONE_SET): ConnectRecord | null {
 	const r = value as ConnectRecord | null;
 	if (!r || typeof r !== 'object' || typeof r.done !== 'boolean') return null;
 	const flags = (v: unknown, n: number) => Array.isArray(v) && v.length === n && v.every(x => typeof x === 'boolean');
-	if (!Array.isArray(r.plays) || r.plays.length !== PARTS.length || !r.plays.every(n => Number.isInteger(n) && n >= 0 && n <= MAX_PLAYS)) return null;
-	if (!flags(r.heard, PARTS.length) || !flags(r.connectChecked, CONNECT.causes.length) || !flags(r.checked, CHOICES.length)) return null;
-	if (!Number.isInteger(r.step) || r.step < 0 || r.step >= STEPS.length) return null;
-	if (!Array.isArray(r.connect) || r.connect.length !== CONNECT.causes.length || !r.connect.every(v => isChoice(v, CONNECT.results.length))) return null;
-	if (!Array.isArray(r.choices) || r.choices.length !== CHOICES.length || !r.choices.every((v, i) => isChoice(v, CHOICES[i].options.length))) return null;
+	const { parts, connect, choices } = set;
+	if (!Array.isArray(r.plays) || r.plays.length !== parts.length || !r.plays.every(n => Number.isInteger(n) && n >= 0 && n <= MAX_PLAYS)) return null;
+	if (!flags(r.heard, parts.length) || !flags(r.connectChecked, connect.causes.length) || !flags(r.checked, choices.length)) return null;
+	if (!Number.isInteger(r.step) || r.step < 0 || r.step >= stepsOf(set).length) return null;
+	if (!Array.isArray(r.connect) || r.connect.length !== connect.causes.length || !r.connect.every(v => isChoice(v, connect.results.length))) return null;
+	if (!Array.isArray(r.choices) || r.choices.length !== choices.length || !r.choices.every((v, i) => isChoice(v, choices[i].options.length))) return null;
 	return { ...r, readInstead: r.readInstead === true };
 }
 
 /** Splits a line into plain parts and the day's link phrases, for highlighting. */
-export function linkParts(text: string): { text: string; link: boolean }[] {
-	const pattern = new RegExp(`(${LINK_PHRASES.map(p => p.replace(/ /g, '\\s+')).join('|')})`, 'gi');
-	return text.split(pattern).filter(Boolean).map(part => ({ text: part, link: LINK_PHRASES.includes(part.toLowerCase().replace(/\s+/g, ' ')) }));
+export function linkParts(text: string, phrases: string[] = LINK_PHRASES): { text: string; link: boolean }[] {
+	const pattern = new RegExp(`(${phrases.map(p => p.replace(/ /g, '\\s+')).join('|')})`, 'gi');
+	return text.split(pattern).filter(Boolean).map(part => ({ text: part, link: phrases.includes(part.toLowerCase().replace(/\s+/g, ' ')) }));
 }

@@ -53,3 +53,15 @@ describe('Daily lessons list', () => {
 		expect(await daysLoad({ locals: locals(moved), parent: async () => ({ labAccess: true }) } as any)).toEqual({ nextDayId: 'day-2', openDayId: 'day-2' });
 	});
 });
+
+import { LAB_SETS, labModule, labSet } from '$lib/practice/lab-sets';
+describe('Module lab day sets', () => {
+	it('runs a module with any day’s content; Mira’s intro comes from that day', () => {
+		expect(labSet('nope')).toBe(LAB_SETS[0]);
+		const pro = labSet('day-2-professional');
+		// Day 2 Professional has no Listen and connect: its intro comes from Day 2's other version, never Day 1.
+		expect(labModule(pro, 'listen-act')?.intro.en).toContain('taxi');
+		expect(labModule(labSet('day-1'), 'listen-act')?.intro.en).toContain('airport');
+		expect(labModule(pro, 'phrases')?.intro.en).toContain('natural in a taxi');
+	});
+});

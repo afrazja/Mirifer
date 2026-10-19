@@ -16,7 +16,7 @@
 	import PhrasePractice from '$lib/components/PhrasePractice.svelte';
 	import PhrasePracticeReview from '$lib/components/PhrasePracticeReview.svelte';
 	import { asPhraseRecord } from '$lib/practice/phrases';
-	import { phrasesFor } from '$lib/practice/day-content';
+	import { connectSetFor, phrasesFor } from '$lib/practice/day-content';
 	import { COACH_RATE, COACH_VOICE, loadGreeting, localDate, planLine, type GreetingRecord } from '$lib/practice/coach';
 	import { playAudioPromise, stopAllAudio } from '$services/tts';
 	import { getLanguage } from '$services/data-layer';
@@ -51,6 +51,8 @@
 	const track = $derived<Track>(session?.track ?? data.track);
 	/** Natural phrases: this day's sentences, for this version. */
 	const dayPhrases = $derived(phrasesFor(day.id, track));
+	/** Listen and connect: this day's conversation and questions, for this version. */
+	const dayConnect = $derived(connectSetFor(day.id, track));
 	/** The day after today's (for the recap and the done screen); a day with skipped steps comes back. */
 	const following = $derived(session?.skipped.length ? day : nextDay(day.id, data.labAccess));
 	/** The owner can always try the day after this one (ready or not, skipped steps or not). */
@@ -195,8 +197,8 @@
 {/snippet}
 
 {#snippet moduleBody(mod: DayModule, onDone: (score?: { correct: number; total: number }, record?: unknown) => void, onSkip?: () => void)}
-	{#if mod.id === 'listen-act' && mod.built && day.id === 'day-1' && session}
-		{#key mod.id}<ListenConnect {isFa} {onSkip} initial={asConnectRecord(loadRecord(session.startedAt, mod.id))} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} {onDone} />{/key}
+	{#if mod.id === 'listen-act' && mod.built && session}
+		{#key mod.id}<ListenConnect {isFa} {onSkip} set={dayConnect} initial={asConnectRecord(loadRecord(session.startedAt, mod.id), dayConnect)} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} {onDone} />{/key}
 	{:else if mod.id === 'phrases' && mod.built && session}
 		{#key mod.id}<PhrasePractice {isFa} {onSkip} phrases={dayPhrases} initial={asPhraseRecord(loadRecord(session.startedAt, mod.id), dayPhrases)} afterIntro={introPlay} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} onStep={index => (phraseStep = index)} {onDone} />{/key}
 	{:else if mod.id === 'say-it-better' && mod.built && day.id === 'day-1' && session}
@@ -211,11 +213,11 @@
 {/snippet}
 
 {#snippet reviewBody(mod: DayModule)}
-	{@const actRecord = mod.id === 'listen-act' ? asConnectRecord(reviewedRecord) : null}
+	{@const actRecord = mod.id === 'listen-act' ? asConnectRecord(reviewedRecord, dayConnect) : null}
 	{@const sayRecord = mod.id === 'say-it-better' ? asSayRecord(reviewedRecord) : null}
 	{@const phraseRecord = mod.id === 'phrases' ? asPhraseRecord(reviewedRecord, dayPhrases) : null}
 	{#if actRecord}
-		<ListenConnectReview {isFa} record={actRecord} />
+		<ListenConnectReview {isFa} set={dayConnect} record={actRecord} />
 	{:else if sayRecord}
 		<SayItBetterReview {isFa} record={sayRecord} />
 	{:else if phraseRecord}

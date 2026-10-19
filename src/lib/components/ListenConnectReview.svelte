@@ -1,7 +1,11 @@
 <script lang="ts">
 	/** Read-only look back at "Listen and connect": one line per question, then the conversation on request. */
-	import { CHOICES, CONNECT, CONVERSATION, SPEAKERS, linkParts, type ConnectRecord } from '$lib/practice/listen-connect';
-	let { isFa = false, record }: { isFa?: boolean; record: ConnectRecord } = $props();
+	import { DAY_ONE_SET, linkParts as linkPartsOf, type ConnectRecord, type ConnectSet } from '$lib/practice/listen-connect';
+	let { isFa = false, set = DAY_ONE_SET, record }: { isFa?: boolean; set?: ConnectSet; record: ConnectRecord } = $props();
+	// svelte-ignore state_referenced_locally
+	const { speakers: SPEAKERS, conversation: CONVERSATION, connect: CONNECT, choices: CHOICES } = set;
+	// svelte-ignore state_referenced_locally
+	const linkParts = (text: string) => linkPartsOf(text, set.linkPhrases);
 	const T = (en: string, fa: string) => (isFa ? fa : en);
 	let showText = $state(false);
 	const rows = $derived([
