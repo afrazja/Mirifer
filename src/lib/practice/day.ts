@@ -12,7 +12,7 @@ import { z } from 'zod';
 import type { DisplayText } from './hotel';
 
 /** Every day's id, in order. */
-export const DAY_IDS = ['day-1', 'day-2'] as const;
+export const DAY_IDS = ['day-1', 'day-2', 'day-3'] as const;
 export type DayId = (typeof DAY_IDS)[number];
 /** Day 1's id (kept for older callers). */
 export const DAY_ID: DayId = 'day-1';
@@ -181,7 +181,69 @@ export const DAY_TWO: DayPack = {
 };
 
 /** Every day, in course order. */
-export const DAYS: DayPack[] = [DAY_ONE, DAY_TWO];
+/**
+ * Day 3 (docs/english-themes-plan.md, sub-theme 1.9): Sara checks in at the Park Hotel.
+ * docs/english-day-3/: the world, the two lessons (the same five modules per version as Day 2,
+ * the owner's choice) and their reviewed content. Only the owner gets it until it is ready.
+ */
+export const DAY_THREE: DayPack = {
+	id: 'day-3',
+	number: 3,
+	ready: false,
+	theme: { en: 'Checking in at the hotel', fa: 'تحویل گرفتن اتاق در هتل' },
+	themePhrase: 'checking in at a hotel',
+	question: 'And you? When you get to a hotel, what’s the first thing you ask about?',
+	goal: {
+		en: 'By the end, you can give your booking name, check your dates, and ask about the Wi-Fi and breakfast.',
+		fa: 'در پایان می‌توانی بگویی اتاق به چه اسمی رزرو شده، تاریخ‌ها را چک کنی و دربارهٔ وای‌فای و صبحانه بپرسی.'
+	},
+	checkIn: {
+		// Day 2: the taxi got Sara to the Park Hotel; her room was ready from 3 p.m.
+		story: {
+			en: 'Sara’s taxi got her to the Park Hotel. Her room is ready now, so she goes to the front desk to check in.',
+			fa: 'تاکسی سارا را به Park Hotel رساند. حالا اتاقش آماده است و به پذیرش می‌رود تا اتاق را تحویل بگیرد.'
+		},
+		question: {
+			en: 'And you? When you get to a hotel, what’s the first thing you ask about?',
+			fa: 'و تو؟ وقتی به هتل می‌رسی، اولین چیزی که می‌پرسی چیست؟'
+		},
+		reply: {
+			en: 'Thanks for telling me. Today you’ll practice checking in, step by step.',
+			fa: 'ممنون که گفتی. امروز قدم‌به‌قدم تحویل گرفتن اتاق را تمرین می‌کنی.'
+		}
+	},
+	checkInMinutes: 2,
+	recapMinutes: 2,
+	modules: [],
+	tracks: {
+		intermediate: [
+			{ id: 'listen-act', title: { en: 'Listen and connect', fa: 'گوش بده و وصل کن' }, short: { en: 'Listen', fa: 'گوش دادن' }, does: { en: 'Hear Sara check in with Daniel at the front desk, then show how the facts connect.', fa: 'گفت‌وگوی سارا و دنیل را در پذیرش هتل بشنو و نشان بده اتفاق‌هایش چطور به هم ربط دارند.' }, skill: 'listening', minutes: { 15: 4, 20: 4 }, built: true,
+				intro: { en: 'Sara is checking in at the Park Hotel. Listen for her room number, the Wi-Fi password, the breakfast time, and how Daniel helps her.', fa: 'سارا در پذیرش Park Hotel است و می‌خواهد اتاقش را تحویل بگیرد. گوش بده ببین شمارهٔ اتاقش چند است، رمز وای‌فای چیست، صبحانه چه ساعتی است و دنیل چطور کمکش می‌کند.' } },
+			{ id: 'phrases', title: { en: 'Natural phrases', fa: 'عبارت‌های طبیعی' }, short: { en: 'Phrases', fa: 'عبارت‌ها' }, does: { en: 'Hear five sentences from Sara’s check-in, and say each one after Mira.', fa: 'پنج جمله از پذیرش سارا در هتل بشنو و هر کدام را بعد از میرا تکرار کن.' }, skill: 'speaking', minutes: { 15: 4, 20: 4 }, built: true,
+				intro: { en: 'Here are five sentences from Sara’s check-in at the Park Hotel, in order. Listen, then say each one after me. Notice the phrases in bold.', fa: 'این پنج جمله از پذیرش سارا در هتل پارک است، به همان ترتیب. گوش بده و هر جمله را بعد از من تکرار کن. به عبارت‌های پررنگ دقت کن.' } },
+			{ id: 'traps', title: { en: 'Persian-speaker traps', fa: 'اشتباه‌های آشنا' }, short: { en: 'Traps', fa: 'اشتباه‌ها' }, does: { en: 'Find the mistake Persian speakers often make at a hotel desk, then say the sentence right.', fa: 'اشتباهی را که فارسی‌زبان‌ها در پذیرش هتل زیاد می‌کنند پیدا کن، بعد جمله را درست بگو.' }, skill: 'speaking', minutes: { 15: 3, 20: 3 }, built: true,
+				intro: { en: 'Each sentence has one mistake that Persian speakers often make when they check in. Tap the wrong word, then say the sentence the right way.', fa: 'هر جمله یک اشتباه دارد که فارسی‌زبان‌ها موقع ورود به هتل زیاد می‌کنند. روی کلمهٔ اشتباه بزن، بعد جمله را درست بگو.' } },
+			{ id: 'say-in-english', title: { en: 'Say it in English', fa: 'به انگلیسی بگو' }, short: { en: 'Say it', fa: 'بگو' }, does: { en: 'Read what you want to tell the front desk in Persian, and say it in English.', fa: 'چیزی را که می‌خواهی به پذیرش هتل بگویی به فارسی می‌خوانی و به انگلیسی می‌گویی.' }, skill: 'speaking', minutes: { 15: 4, 20: 4 }, built: true,
+				intro: { en: 'Now it’s your turn to check in. Your booking is under Karimi. I’ll show you what you want to say, in Persian. Say it in English, the way you’d really say it at the desk.', fa: 'حالا نوبت خودت است که اتاقت را تحویل بگیری. رزروت به اسم کریمی است. چیزی را که می‌خواهی بگویی به فارسی نشانت می‌دهم. همان را به انگلیسی بگو، همان‌طور که واقعاً در پذیرش می‌گفتی.' } },
+			{ id: 'voice-messages', title: { en: 'Voice messages', fa: 'پیام صوتی' }, short: { en: 'Messages', fa: 'پیام‌ها' }, does: { en: 'Hear two voice messages, from Tom and from the airline, and reply to each one.', fa: 'دو پیام صوتی بشنو، از تام و از شرکت هواپیمایی، و به هر کدام جواب بده.' }, skill: 'speaking', minutes: { 15: 3, 20: 3 }, built: true,
+				intro: { en: 'Today, you’re Sara, in room 714. Your phone is charging, and two voice messages come in. Listen, then reply with a short voice message of your own. Make sure you answer their questions.', fa: 'امروز جای سارا هستی، در اتاق ۷۱۴. گوشی‌ات را زده‌ای به شارژ و دو پیام صوتی برایت آمده. گوش بده و با یک پیام صوتی کوتاه جواب بده. حواست باشد به سؤال‌هایشان جواب بدهی.' } }
+		],
+		professional: [
+			{ id: 'listen-retell', title: { en: 'Listen and retell', fa: 'گوش بده و بازگو کن' }, short: { en: 'Retell', fa: 'بازگویی' }, does: { en: 'Hear Daniel’s favorite check-in story, then tell it in your own words.', fa: 'ماجرای موردعلاقهٔ دنیل در پذیرش هتل را بشنو و بعد با کلمات خودت تعریفش کن.' }, skill: 'speaking', minutes: { 15: 4, 20: 4 }, built: true,
+				intro: { en: 'Daniel at the front desk has a favorite story about a guest. Listen, then tell it in your own words.', fa: 'دنیل، مسئول پذیرش هتل، ماجرایی دربارهٔ یکی از مهمان‌هایش دارد که عاشق تعریف کردنش است. گوش بده و بعد با کلمات خودت تعریفش کن.' } },
+			{ id: 'phrases', title: { en: 'Natural phrases', fa: 'عبارت‌های طبیعی' }, short: { en: 'Phrases', fa: 'عبارت‌ها' }, does: { en: 'Hear five natural phrases for checking in, and say each one after Mira.', fa: 'پنج عبارت طبیعی برای ورود به هتل بشنو و هر کدام را بعد از میرا تکرار کن.' }, skill: 'speaking', minutes: { 15: 4, 20: 4 }, built: true,
+				intro: { en: 'Here are five phrases from Sara’s check-in at the Park Hotel. You’ll need them later today, too. Listen, then say each one after me.', fa: 'این پنج عبارت از پذیرش سارا در هتل پارک است. امروز بعداً خودت هم به کارشان می‌بری. گوش بده و هر کدام را بعد از من تکرار کن.' } },
+			{ id: 'say-in-english', title: { en: 'Say it in English', fa: 'به انگلیسی بگو' }, short: { en: 'Say it', fa: 'بگو' }, does: { en: 'Read three things Sara wants to ask the front desk, in Persian, and say each one in English.', fa: 'سه چیزی را که سارا می‌خواهد از پذیرش هتل بپرسد به فارسی می‌خوانی و هر کدام را به انگلیسی می‌گویی.' }, skill: 'speaking', minutes: { 15: 4, 20: 4 }, built: true,
+				intro: { en: 'Today, you’re Sara again. I’ll show you three things she wants to ask Daniel at the front desk, in Persian. Say each one in English, the way you’d really say it.', fa: 'امروز هم جای سارا هستی. سه چیزی را که می‌خواهد از دنیل در پذیرش هتل بپرسد به فارسی نشانت می‌دهم. هر کدام را به انگلیسی بگو، همان‌طور که واقعاً می‌گفتی.' } },
+			{ id: 'choose-persuade', title: { en: 'Choose and persuade', fa: 'انتخاب کن و قانع کن' }, short: { en: 'Persuade', fa: 'قانع کردن' }, does: { en: 'Choose a hotel for a friend’s trip, and stand by your choice.', fa: 'برای سفر دوستت یک هتل انتخاب کن و از انتخابت دفاع کن.' }, skill: 'speaking', minutes: { 15: 4, 20: 4 }, built: true,
+				intro: { en: 'Your friend is staying in Riverton for three nights next month, for a two-day conference near the Park Hotel. He’s paying for the hotel himself, and his flight home is at 6:30 in the morning. Pick the better hotel for him, tell me why, and I’ll try to change your mind.', fa: 'دوستت ماه آینده برای یک کنفرانس دوروزه به Riverton می‌آید و سه شب می‌ماند. کنفرانس نزدیک Park Hotel است. پول هتل را خودش می‌دهد و پرواز برگشتش ساعت ۶:۳۰ صبح است. هتل بهتر را برایش انتخاب کن، بگو چرا، و من سعی می‌کنم نظرت را عوض کنم.' } },
+			{ id: 'scenario', title: { en: 'A check-in with a twist', fa: 'تحویل گرفتن اتاق با یک غافلگیری' }, short: { en: 'Check-in', fa: 'پذیرش' }, does: { en: 'Check in at the Park Hotel with your own booking, and handle a surprise.', fa: 'در Park Hotel با رزرو خودت اتاق تحویل بگیر؛ وسط کار هم یک اتفاق غیرمنتظره می‌افتد.' }, skill: 'speaking', minutes: { 15: 5, 20: 5 }, built: true,
+				intro: { en: 'You’ve just arrived at the Park Hotel, with your own booking. Check in with Daniel at the front desk. Something unexpected will happen, so take your time.', fa: 'تازه به Park Hotel رسیده‌ای و اتاقت را از قبل رزرو کرده‌ای. در پذیرش با دنیل حرف بزن و اتاقت را تحویل بگیر. یک اتفاق غیرمنتظره هم می‌افتد، پس عجله نکن.' } }
+		]
+	}
+};
+
+export const DAYS: DayPack[] = [DAY_ONE, DAY_TWO, DAY_THREE];
 export function dayById(id: string | null | undefined): DayPack | null {
 	return DAYS.find(day => day.id === id) ?? null;
 }
