@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { DaySessionSchema, dayById, dayOf, nextDay, type DaySession } from '$lib/practice/day';
+import { DaySessionSchema, TRACKS, dayById, dayOf, nextDay, sessionModules, trackFor, type DaySession, type Track } from '$lib/practice/day';
 import { readEnglishProgress, recordSession, type EnglishProgress } from '$lib/practice/english-progress';
 import { readEnglishProfile } from '$lib/practice/english-profile';
 import { canUseLab } from '$lib/server/lab-access';
@@ -18,11 +18,16 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 	// The owner can open any day with ?day=day-2, to try a day that isn't ready for learners yet.
 	const { labAccess } = await parent();
 	const requested = labAccess ? dayById(url.searchParams.get('day')) : null;
+	// …and either version of a day (?track=professional); learners get theirs from onboarding.
+	const askedTrack = url.searchParams.get('track');
+	const requestedTrack = labAccess && TRACKS.includes(askedTrack as Track) ? (askedTrack as Track) : null;
 	let session = saved.success ? saved.data : null;
 	if (requested && session && session.day !== requested.id) session = null;
+	if (requestedTrack && session?.track && session.track !== requestedTrack) session = null;
 	// The day a new session starts on: the one after the last finished day.
 	const upcoming = requested ?? nextDay(progress.lastThemeId, labAccess);
-	return { name, profile, progress, session, nextDayId: upcoming.id, requestedDay: requested?.id ?? null };
+	const track = requestedTrack ?? trackFor(profile);
+	return { name, profile, progress, session, nextDayId: upcoming.id, requestedDay: requested?.id ?? null, track };
 };
 
 export const actions: Actions = {
@@ -61,7 +66,7 @@ function progressAfter(meta: Record<string, unknown> | undefined, next: DaySessi
 	if (next?.stage !== 'done') return null;
 	const stored = DaySessionSchema.safeParse(meta?.english_day_v1);
 	if (stored.success && stored.data.stage === 'done' && stored.data.startedAt === next.startedAt) return null;
-	const modules = dayOf(next).modules.flatMap(module => {
+	const modules = sessionModules(next).flatMap(module => {
 		const score = next.scores?.[module.id];
 		return score && next.done.includes(module.id) ? [{ skill: module.skill, ...score }] : [];
 	});

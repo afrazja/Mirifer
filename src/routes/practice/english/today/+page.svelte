@@ -20,8 +20,8 @@
 	import { playAudioPromise, stopAllAudio } from '$services/tts';
 	import { getLanguage } from '$services/data-layer';
 	import {
-		DAY_ONE, RECAP_INTRO, RECAP_SHORT, DEFAULT_LENGTH, agendaFor, agendaMinutes, completeSession, currentModule, dayById, nextDay,
-		completeLater, finishModule, moduleBefore, modulesFor, recommend, startSession, type DaySession, type Length, type ModuleId
+		DAY_ONE, RECAP_INTRO, RECAP_SHORT, DEFAULT_LENGTH, TRACK_NAMES, agendaFor, agendaMinutes, completeSession, currentModule, dayById, nextDay,
+		completeLater, finishModule, minutesOf, moduleBefore, modulesFor, recommend, startSession, type DaySession, type Length, type ModuleId, type Track
 	} from '$lib/practice/day';
 	import type { DisplayText } from '$lib/practice/hotel';
 	import { DAYS } from '$lib/practice/day';
@@ -46,6 +46,8 @@
 	let upcomingId = $state(data.nextDayId);
 	/** Today's day: the session's own, or the one a new session starts on. */
 	const day = $derived(dayById(session?.day ?? upcomingId) ?? DAY_ONE);
+	/** The day's version (a day with two): the session's, or the learner's (the owner may pick one). */
+	const track = $derived<Track>(session?.track ?? data.track);
 	/** The day after today's (for the recap and the done screen); a day with skipped steps comes back. */
 	const following = $derived(session?.skipped.length ? day : nextDay(day.id, data.labAccess));
 	/** The owner can always try the day after this one (ready or not, skipped steps or not). */
@@ -91,9 +93,9 @@
 	/** Natural phrases: the sentence on screen (0-based), shown in the eyebrow instead of a second counter. */
 	let phraseStep = $state<number | null>(null);
 	/** Today's parts after the greeting, in order, and Mira's line that reads them. */
-	const parts = $derived([...modulesFor(length, day).map(module => module.title), { en: 'A short recap', fa: 'یک مرور کوتاه' }]);
+	const parts = $derived([...modulesFor(length, day, track).map(module => module.title), { en: 'A short recap', fa: 'یک مرور کوتاه' }]);
 	/** The same parts with their estimated minutes, for the plan screen. */
-	const partMinutes = $derived([...modulesFor(length, day).map(module => module.minutes[length] as number), day.recapMinutes]);
+	const partMinutes = $derived([...modulesFor(length, day, track).map(module => minutesOf(module, length)), day.recapMinutes]);
 	const plan = $derived(planLine(parts));
 	function speakPlan() { stopAllAudio(); void playAudioPromise(plan.en, COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {}); }
 	/** From Mira's greeting to the plan: the tap on Next lets her read it aloud. */
@@ -103,14 +105,14 @@
 	$effect(() => { if (session?.stage === 'recap') chat = loadGreeting(localDate(new Date()), session.day); });
 	/** Doing a skipped module now, from the look-back view. */
 	let doingNow = $state(false);
-	const reviewed = $derived(reviewing && session ? modulesFor(session.length, day).find(m => m.id === reviewing) ?? null : null);
+	const reviewed = $derived(reviewing && session ? modulesFor(session.length, day, track).find(m => m.id === reviewing) ?? null : null);
 
-	const agenda = $derived(agendaFor(length, day));
+	const agenda = $derived(agendaFor(length, day, track));
 	const step = $derived(session?.stage === 'modules' ? currentModule(session) : null);
 	/** The module before the one on screen: before the current step, before the recap, or before the one being reviewed. */
 	/** What the learner did in the module being looked back at (this browser only). */
 	const reviewedRecord = $derived(reviewed && session ? loadRecord(session.startedAt, reviewed.id) : null);
-	const previous = $derived(session && session.stage !== 'done' ? moduleBefore(session.length, reviewed ? reviewed.id : step ? step.id : null, day) : null);
+	const previous = $derived(session && session.stage !== 'done' ? moduleBefore(session.length, reviewed ? reviewed.id : step ? step.id : null, day, track) : null);
 	const stepNumber = $derived(session && step ? (session.done.length + session.skipped.length + 1) : 0);
 	const stepCount = $derived(agenda.length - 2);
 
@@ -139,7 +141,7 @@
 			if (!response.ok) saveFailed = true;
 		} catch { saveFailed = true; }
 	}
-	const begin = () => { clearRecords(); spokenFor = null; const next = startSession(length, new Date(), day); brief(currentModule(next)); return save(next); };
+	const begin = () => { clearRecords(); spokenFor = null; const next = startSession(length, new Date(), day, track); brief(currentModule(next)); return save(next); };
 	const skipStep = () => { stopAllAudio(); finish('skipped'); };
 	const finish = (outcome: 'done' | 'skipped', score?: { correct: number; total: number }, record?: unknown) => {
 		if (!session || !step) return;
@@ -170,7 +172,7 @@
 {#snippet strip()}
 	{#if session}
 		<ol class="strip" aria-label={isFa ? 'پیشرفت جلسه' : 'Session progress'}>
-			{#each modulesFor(session.length, day) as mod}
+			{#each modulesFor(session.length, day, track) as mod}
 				{@const state = session.done.includes(mod.id as ModuleId) ? 'done' : session.skipped.includes(mod.id as ModuleId) ? 'skipped' : session.stage === 'modules' && step?.id === mod.id ? 'now' : 'later'}
 				<li class={state} aria-current={state === 'now' ? 'step' : undefined}>
 					<span class="seg" aria-hidden="true"></span>
@@ -252,7 +254,7 @@
 			{#if session}
 				<CoachGreeting {isFa} name={data.name} profile={data.profile} progress={data.progress} question={day.question} dayId={day.id} checkIn={day.checkIn} readOnly />
 			{/if}
-			<p class="eyebrow day-label">{isFa ? `روز ${day.number.toLocaleString('fa-IR')}: ${day.theme.fa}` : `DAY ${day.number} · ${day.theme.en.toUpperCase()}`}</p>
+			<p class="eyebrow day-label">{isFa ? `روز ${day.number.toLocaleString('fa-IR')}: ${day.theme.fa}` : `DAY ${day.number} · ${day.theme.en.toUpperCase()}`}{#if day.tracks && data.labAccess}{isFa ? ` (${TRACK_NAMES[track].fa})` : ` · ${TRACK_NAMES[track].en.toUpperCase()}`}{/if}</p>
 			<div class="plan-head">
 				<span class="avatar" aria-hidden="true">M</span>
 				<p class="mira-name">{isFa ? 'میرا' : 'Mira'}</p>
@@ -272,7 +274,7 @@
 				{#if session}
 					<button class="primary wide" type="button" onclick={() => (showCheckIn = false)}>{isFa ? 'ادامه' : 'Continue'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
 				{:else}
-					<button class="primary wide" type="button" onclick={begin}>{isFa ? `شروع (${agendaMinutes(length, day).toLocaleString('fa-IR')} دقیقه)` : `Start · ${agendaMinutes(length, day)} min`} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
+					<button class="primary wide" type="button" onclick={begin}>{isFa ? `شروع (${agendaMinutes(length, day, track).toLocaleString('fa-IR')} دقیقه)` : `Start · ${agendaMinutes(length, day, track)} min`} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
 				{/if}
 			</div>
 		</section>
@@ -318,7 +320,7 @@
 			<h1 id="recap-title">{isFa ? 'کار امروز' : 'What you did today'}</h1>
 			<MiraSays line={RECAP_INTRO} {isFa} />
 			<ul class="done-list">
-				{#each modulesFor(session.length, day) as item}
+				{#each modulesFor(session.length, day, track) as item}
 					<li>{text(item.title)}
 						{#if session.done.includes(item.id)}<span class="min">{session.scores?.[item.id] ? `${session.scores[item.id]?.correct}/${session.scores[item.id]?.total}` : (isFa ? 'انجام شد' : 'done')}</span>
 						{:else}<button class="text-button inline" type="button" onclick={() => { doingNow = true; reviewing = item.id; }}>{isFa ? 'رد شد · همین حالا انجامش بده' : 'Skipped · do it now'}</button>{/if}</li>
