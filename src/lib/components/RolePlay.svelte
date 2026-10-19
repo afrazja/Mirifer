@@ -186,7 +186,7 @@
 		<h2 class="title" tabindex="-1" bind:this={heading}>{text(scene.screen.missionHeading)}</h2>
 		{@render goalList()}
 		<p class="small">{text(scene.screen.instructions)}</p>
-		<ActionBar label={T('Start the call', 'شروع تماس')} onclick={() => start(record.variant)} secondary={{ label: T('Back to your card', 'برگشت به کارتت'), onclick: () => { onFocus?.('full'); go('mission'); } }} />
+		<ActionBar label={scene.screen.start ? text(scene.screen.start) : T('Start the call', 'شروع تماس')} onclick={() => start(record.variant)} secondary={{ label: T('Back to your card', 'برگشت به کارتت'), onclick: () => { onFocus?.('full'); go('mission'); } }} />
 
 	{:else if stage === 'call'}
 		<div class="who">
@@ -215,12 +215,13 @@
 		{#if record.done}
 			<p class="note good" role="status">{T('You reached every goal.', 'به همهٔ هدف‌ها رسیدی.')}</p>
 		{:else if outOfTurns}
-			<p class="note" role="status">{T('This call has reached its turn limit.', 'این تماس به سقف نوبت‌ها رسیده است.')}</p>
+			<p class="note" role="status">{scene.screen.limit ? text(scene.screen.limit) : T('This call has reached its turn limit.', 'این تماس به سقف نوبت‌ها رسیده است.')}</p>
 		{:else}
 			<label class="sr-only" for="roleplay-reply">{T('Your reply in English', 'پاسخ تو به انگلیسی')}</label>
 			<textarea id="roleplay-reply" bind:this={input} bind:value={draft} lang="en" dir="ltr" rows="2" maxlength={MAX_REPLY} disabled={checking}
 				placeholder={T('Say or type your reply…', 'پاسخت را بگو یا بنویس…')}
 				onkeydown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); void send(); } }}></textarea>
+			{#if scene.screen.hint}<p class="small">{#if isFa}<MixedText text={scene.screen.hint.fa} />{:else}{scene.screen.hint.en}{/if}</p>{/if}
 			{#key replies.length}<EnglishSpeechInput {isFa} disabled={checking} onTranscript={value => { draft = value; void tick().then(() => input?.focus()); }} />{/key}
 			<p class="small">{T(`${NAME} is played by AI: each reply goes to an AI provider with the conversation so far.`, 'این نقش را هوش مصنوعی بازی می‌کند: هر پاسخت همراه با گفت‌وگوی قبلی به ارائه‌دهندهٔ هوش مصنوعی فرستاده می‌شود.')}</p>
 		{/if}

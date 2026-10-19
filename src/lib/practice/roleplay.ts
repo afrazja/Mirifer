@@ -58,6 +58,12 @@ export interface RoleScene {
 		/** The learner's card (the hotel's room key). */
 		card: { label: DisplayText; value: DisplayText }[];
 		resultLead: DisplayText;
+		/** The button that starts it ("Start the call" by default; a face-to-face scene says so). */
+		start?: DisplayText;
+		/** Shown when the turns run out ("This call has reached its turn limit." by default). */
+		limit?: DisplayText;
+		/** A quiet line under the reply box (e.g. how to spell a name if it isn't heard). */
+		hint?: DisplayText;
 	};
 }
 

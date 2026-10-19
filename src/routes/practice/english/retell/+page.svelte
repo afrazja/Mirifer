@@ -11,6 +11,7 @@
 	import { MAX_LISTENS, formatDuration, listenSeconds, pieceImage, speakLimit, type RetellPiece, type RetellResult } from '$lib/practice/retell';
 	import type { DisplayText } from '$lib/practice/hotel';
 	import type { RetellRecord } from '$lib/practice/progress';
+	import { DAYS } from '$lib/practice/day';
 	import { getLanguage } from '$services/data-layer';
 	import { ENGLISH_VOICES, stopAllAudio } from '$services/tts';
 
@@ -25,7 +26,10 @@
 	let voice = $state<'a' | 'b' | 'c' | 'd'>('a');
 	let run = $state(0);
 	/** Which daily lesson a story comes from (none for the lab's own). */
-	const fromDay = (item: RetellPiece) => (retellPieceFor('day-2')?.id === item.id ? { en: 'Day 2 · Professional', fa: 'روز ۲ (حرفه‌ای)' } : null);
+	const fromDay = (item: RetellPiece) => {
+		const day = DAYS.find(d => retellPieceFor(d.id)?.id === item.id);
+		return day ? { en: `Day ${day.number} · Professional`, fa: `روز ${day.number.toLocaleString('fa-IR')} (حرفه‌ای)` } : null;
+	};
 
 	onMount(() => {
 		void getLanguage().then(value => { if (value === 'fa' || value === 'en') language = value; });

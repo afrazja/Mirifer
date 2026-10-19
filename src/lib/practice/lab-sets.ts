@@ -9,7 +9,9 @@ export interface LabSet { id: string; day: string; track: Track; name: DisplayTe
 export const LAB_SETS: LabSet[] = [
 	{ id: 'day-1', day: 'day-1', track: 'intermediate', name: { en: 'Day 1', fa: 'روز ۱' } },
 	{ id: 'day-2-intermediate', day: 'day-2', track: 'intermediate', name: { en: 'Day 2 · Intermediate', fa: 'روز ۲، متوسط' } },
-	{ id: 'day-2-professional', day: 'day-2', track: 'professional', name: { en: 'Day 2 · Professional', fa: 'روز ۲، حرفه‌ای' } }
+	{ id: 'day-2-professional', day: 'day-2', track: 'professional', name: { en: 'Day 2 · Professional', fa: 'روز ۲، حرفه‌ای' } },
+	{ id: 'day-3-intermediate', day: 'day-3', track: 'intermediate', name: { en: 'Day 3 · Intermediate', fa: 'روز ۳، متوسط' } },
+	{ id: 'day-3-professional', day: 'day-3', track: 'professional', name: { en: 'Day 3 · Professional', fa: 'روز ۳، حرفه‌ای' } }
 ];
 export const labSet = (id: string | null | undefined) => LAB_SETS.find(set => set.id === id) ?? LAB_SETS[0];
 
