@@ -8,7 +8,7 @@
 	import type { PageProps } from './$types';
 	import AppHeader from '$lib/components/AppHeader.svelte';
 	import EnglishModuleTabs from '$lib/components/EnglishModuleTabs.svelte';
-	import { DAYS, TRACKS, TRACK_NAMES, themeOf, type DayModule, type DayPack } from '$lib/practice/day';
+	import { DAYS, TRACKS, TRACK_NAMES, type DayModule, type DayPack } from '$lib/practice/day';
 	import { getLanguage } from '$services/data-layer';
 
 	let { data }: PageProps = $props();
@@ -45,6 +45,7 @@
 				{#if day.tracks}
 					<div class="day versions">
 						<span class="number">{isFa ? `روز ${num(day.number)}` : `Day ${day.number}`}</span>
+						<span class="theme">{isFa ? day.theme.fa : day.theme.en}</span>
 						<span class="meta">
 							<span class="status" class:live={day.ready}>{status(day)}</span>
 							{#if data.openDayId === day.id}<span class="tag">{isFa ? 'نیمه‌کاره' : 'In progress'}</span>
@@ -53,8 +54,8 @@
 						<span class="links">
 							{#each TRACKS as track}
 								<a class="version" href={`/practice/english/today?day=${day.id}&track=${track}`}>
-									<span class="version-name">{isFa ? themeOf(day, track).fa : themeOf(day, track).en}</span>
-									<span class="version-meta">{isFa ? TRACK_NAMES[track].fa : TRACK_NAMES[track].en}{isFa ? '، ' : ' · '}{built(day.tracks[track])}</span>
+									<span class="version-name">{isFa ? TRACK_NAMES[track].fa : TRACK_NAMES[track].en}</span>
+									<span class="version-meta">{built(day.tracks[track])}</span>
 									<span class="arrow" aria-hidden="true">{isFa ? '←' : '→'}</span>
 								</a>
 							{/each}
@@ -84,7 +85,7 @@
 	.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 	.day { display: grid; grid-template-columns: 1fr auto; grid-template-areas: 'number arrow' 'theme arrow' 'meta arrow'; align-items: center; gap: 4px 12px; padding: 16px 20px; border: 1px solid var(--line); border-radius: 18px; background: var(--paper-raised); color: var(--ink); text-decoration: none; }
 	a.day:hover { border-color: var(--accent); }
-	.day.versions { grid-template-columns: 1fr; grid-template-areas: 'number' 'meta' 'links'; }
+	.day.versions { grid-template-columns: 1fr; grid-template-areas: 'number' 'theme' 'meta' 'links'; }
 	.links { grid-area: links; display: grid; gap: 8px; margin-top: 10px; }
 	.version { display: grid; grid-template-columns: 1fr auto; grid-template-areas: 'name arrow' 'vmeta arrow'; align-items: center; gap: 2px 12px; min-height: 56px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); color: var(--ink); text-decoration: none; }
 	.version:hover { border-color: var(--accent); }
