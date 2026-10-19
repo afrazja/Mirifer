@@ -1,8 +1,9 @@
-# English Day 2: "Your talk" modules (content draft v1)
+# English Day 2: "Your talk" modules (content draft v2)
 
-Status: **draft, for review and owner approval.** All four modules are on the **Confident (B1+)**
-track. Every fact comes from `world.md`; anything new is listed in "Notes for the editor" at the
-end. US English. In the code, apostrophes are curly (’); they're straight here for easy reading.
+Status: **draft, for review and owner approval.** All four modules are on the **Professional (B1+)**
+track (formerly "Confident"). Every fact comes from `world.md`; anything new is listed in "Notes for
+the editor" at the end. US English. In the code, apostrophes are curly (’); they're straight here
+for easy reading.
 
 | # | Module | Built in | Spec |
 |---|---|---|---|
@@ -32,8 +33,8 @@ at 40+ words, "Tell me a bit more" under 15 words (daily version); 45 s, up to 2
 | `id` | `say-it-better` | – |
 | `title` | Tell your story (as Day 1) | داستانت را بگو (as Day 1) |
 | `short` | Story (as Day 1) | داستان (as Day 1) |
-| `does` | Tell a short story about a taxi ride you remember, then tell it a second time, clearer. | ماجرای کوتاهِ یک سفر با تاکسی را که یادت مانده بگو، بعد دوباره و روشن‌تر بگو. |
-| `intro` (Mira, spoken) | Sara's ride didn't go quite as planned. Now it's your turn. Tell me about a taxi ride that went wrong, or one that went surprisingly well. A ride you booked on an app counts too. You have one minute. Then you'll see how to say it better, and you can try again. | سفر سارا با تاکسی دقیقاً طبق برنامه پیش نرفت. حالا نوبت توست. از یک سفر با تاکسی برایم بگو که بد پیش رفت، یا برعکس، خیلی بهتر از انتظارت پیش رفت. تاکسی اینترنتی هم قبول است. یک دقیقه وقت داری. بعد می‌بینی چطور بهترش بگویی و می‌توانی دوباره امتحان کنی. |
+| `does` | Tell a short story about a taxi ride you remember, then tell it a second time, clearer. | ماجرای کوتاهی از یک سفر با تاکسی که یادت مانده تعریف کن، بعد یک بار دیگر روشن‌تر بگو. |
+| `intro` (Mira, spoken) | In today's story, Sara's taxi ride didn't go quite as planned. Now it's your turn. Tell me about a taxi ride that went wrong, or one that went surprisingly well. A ride you booked on an app counts too. You have one minute. Then you'll see how to say it better, and you can try again. | در داستان امروز، سفر سارا با تاکسی دقیقاً طبق برنامه پیش نرفت. حالا نوبت توست. از یک سفر با تاکسی برایم بگو که بد پیش رفت، یا برعکس، خیلی بهتر از انتظارت بود. سفر با تاکسی اینترنتی هم قبول است. یک دقیقه وقت داری. بعد می‌بینی چطور بهترش بگویی و می‌توانی دوباره امتحان کنی. |
 | `skill` / `minutes` / `built` | speaking / as Day 1 (`{15: 4, 20: 4}`) / owner's call | – |
 
 **`QUESTION`** (server, English only; also the speech-to-text context `They are answering: "…"`):
@@ -51,13 +52,15 @@ two day-specific parts:
 
 - The question it quotes: `The learner answered: "Tell me about a taxi ride that went wrong, or one that went surprisingly well."`
 - The on-topic line:
-  > "onTopic": true only if the answer, in English, tells about a ride they took in a taxi or in a car booked on an app (or a similar ride), whether it went wrong or went surprisingly well.
+  > "onTopic": true only if the answer, in English, tells about a ride in a taxi, a car booked on an app, or another ride where someone else drove (a shuttle, a bus, a friend's car), whether it went wrong or went surprisingly well.
 
 The built mistake order ("past tense kept steady through the story" first) already suits a story.
 
 What this prompt tends to bring out (for the English-coach reviewer): past tense held through the
-story; "get out of the taxi" (not "get down", from «پیاده شدن»); "the driver didn't know the way";
-"take a taxi" (not "catch/ride a taxi" from «تاکسی گرفتن»); "on the way".
+story; "get out of the taxi" (not "get off/down the taxi", from «پیاده شدن»); "I told him" or "I
+said to him" (not "I said him"); "I left my phone in the taxi" (not "my phone remained in the
+taxi", from «جا ماندن»); "the driver didn't know the way"; "on the way". "Take a taxi", "catch a
+taxi/cab" and "ride in a taxi" are all correct English: the AI never marks them as mistakes.
 
 ### 1b. Module lab version (`LabQuestion` in `say-better-lab.ts`)
 
@@ -65,7 +68,7 @@ story; "get out of the taxi" (not "get down", from «پیاده شدن»); "the 
 |---|---|
 | `id` | next free id (7), or 1 in a Day 2 list |
 | `text` | Tell me about a taxi ride that went wrong, or one that went surprisingly well. |
-| `topic` (on-topic check) | a taxi or ride-app ride that went wrong or went surprisingly well |
+| `topic` (on-topic check) | a ride in a taxi, a car booked on an app, or another ride where someone else drove, that went wrong or went surprisingly well |
 | `tense` ("it usually needs the …") | past simple |
 
 The lab's own instruction ("I'll ask you a question. Answer in about thirty seconds…") is fixed in
@@ -84,9 +87,9 @@ the past-only phrases "The hardest part was…" and "Looking back,…" aren't of
 |---|---|---|
 | `id` | next free id (7), or 1 in a Day 2 list | – |
 | `past` | `false` | – |
-| `title` | Describe how you like to get around a city: taxis, ride apps, or buses and trains. | تعریف کن دوست داری در شهر چطور رفت‌وآمد کنی: با تاکسی، تاکسی اینترنتی یا اتوبوس و قطار. |
+| `title` | Describe how you usually get around your city: taxis, ride apps, or buses and trains. | تعریف کن معمولاً در شهرت چطور رفت‌وآمد می‌کنی: با تاکسی، تاکسی اینترنتی یا اتوبوس و مترو. |
 | `points[0]` | which one you use most | از کدام بیشتر استفاده می‌کنی |
-| `points[1]` | how you pay for it | پولش را چطور می‌دهی |
+| `points[1]` | what a usual trip is like | یک رفت‌وآمد معمولی‌ات چطور است |
 | `points[2]` | when you choose something else (for example, late at night or with heavy bags) | کی سراغ یک گزینهٔ دیگر می‌روی (مثلاً آخر شب یا وقتی چمدان سنگین داری) |
 | `points[3]` | and explain why it's the best choice for you | و توضیح بده چرا برای تو بهترین انتخاب است |
 
@@ -94,14 +97,12 @@ the past-only phrases "The hardest part was…" and "Looking back,…" aren't of
 70% or more of its content words come from the point). The options (taxi, app, bus, train) are in
 the title, not the points, so a natural answer still counts:
 - "I use the metro most" → 2 of 3 words from point 1 (67%): counts.
-- "I pay by card in the app" → 1 of 3 (33%): counts.
+- "A usual trip takes twenty minutes" → 2 of 5 (40%): counts.
 - "Late at night I take a taxi" → 2 of 4 (50%): counts. (Point 3 says "choose", not "take", on purpose: with "take" this answer would be 75% and rejected.)
 - "Because it's cheap and fast" → 0%: counts.
 
 No AI text is card-specific: the coverage and feedback prompts build themselves from the card, and
 speech-to-text gets the title. Mira's instruction is fixed in the built screen.
-
-"How you pay" asks about the way (card, cash, app), never an amount.
 
 ---
 
@@ -114,26 +115,32 @@ are three. **Topic 1 is the main one** (from the world's personal topics); 2 and
 
 | # | `en` | `fa` | From the world |
 |---|---|---|---|
-| 1 | Tipping where you live | رسمِ انعام دادن جایی که زندگی می‌کنی | "Tipping: what's normal where you live?" |
+| 1 | When people tip where you live | جایی که زندگی می‌کنی، مردم کی انعام می‌دهند | "Tipping: what's normal where you live?" |
 | 2 | Getting home from the airport | برگشتن از فرودگاه به خانه | "How you usually get from the airport to your hotel or home" |
-| 3 | What makes a good taxi driver | رانندهٔ تاکسیِ خوب از نظر تو | New (see the notes): Mike is kind and talkative, but doesn't know the new hotel |
+| 3 | What makes a good taxi driver | رانندهٔ تاکسیِ خوب از نظر تو | "What makes a good taxi driver" (Mike is kind and talkative, but doesn't know the new hotel) |
 
-All three are light and need no preparation at B1. Tipping is about the custom (who you tip, and
-whether it's expected), and the topic never asks for an amount. No AI judging: the only text the
-server uses is the topic, as speech-to-text context (`They are talking for a minute about: "…"`).
+All three are light and need no preparation at B1. Topic 1 asks when people tip (in a taxi, at a
+restaurant, and so on), so it stays on the custom and never goes to money amounts. No AI judging:
+the only text the server uses is the topic, as speech-to-text context (`They are talking for a
+minute about: "…"`).
 
 ---
 
 ## 4. Read, rate, respond
 
 The built module runs as a round of **three texts** (the result screen counts "out of three"), so
-Day 2 has three short real-life texts from the world: **the RideNow reviews (timeline step 7, the
+Day 2 has three short real-life texts from the world: **the RideNow reviews (timeline step 8, the
 main one)**, the airport's travel update (step 2), and the Park Hotel's "Getting here" page. Each
 has a different task, so the three replies don't all say "train or taxi".
 
 Built shape per text: `id`, `kind` (en/fa), `title` (English), `body` (paragraphs, English only),
 `glosses` (2–3 harder words, each exactly as written in the body, with Persian), `rate` (stars, or
-two choices with en/fa), `task` (en/fa).
+two choices with en/fa), `task` (en/fa). New for Day 2: `fixStart` (English only), the opening
+words of the AI's fix for that text (see "AI brief" below).
+
+**English inside Persian:** the read-rate components don't parse backticks (they would show on
+screen), so English in a Persian line is written bare (names: RideNow, Park Hotel) or in «»
+(a word being explained: «way»), as Day 1's read-rate does with «pretty».
 
 ### Text 1: RideNow reviews (Sara reads these before dinner)
 
@@ -142,6 +149,7 @@ two choices with en/fa), `task` (en/fa).
 | `id` | `ridenow-reviews` |
 | `kind` | en: App reviews · fa: نظر مسافرها دربارهٔ یک اپ تاکسی اینترنتی |
 | `title` | RideNow in Riverton · Reviews |
+| `fixStart` | The reviews say |
 
 `body` (three paragraphs, about 105 words):
 
@@ -153,14 +161,14 @@ two choices with en/fa), `task` (en/fa).
 
 | `word` | `fa` |
 |---|---|
-| way cheaper | خیلی ارزان‌تر (اینجا `way` یعنی «خیلی») |
-| surge pricing | گران شدن کرایه در ساعت‌های شلوغ |
+| way cheaper | خیلی ارزان‌تر (اینجا «way» یعنی «خیلی») |
+| surge pricing | گران شدن کرایه در ساعت‌های شلوغ (همان «ضریب») |
 | canceled on me | سفرم را لغو کرد |
 
 | Field | en | fa |
 |---|---|---|
-| `rate` | kind: `stars` · ask: How good is RideNow? | `RideNow` چقدر خوب است؟ |
-| `task` | You need a ride to dinner tonight at 7. Would you use RideNow? Tell a friend why or why not. Use two details from the reviews. | امشب ساعت ۷ باید برای شام جایی بروی. با `RideNow` می‌روی یا نه؟ به یک دوست بگو چرا. از دو نکتهٔ همین نظرها استفاده کن. |
+| `rate` | kind: `stars` · ask: How good is RideNow? | به نظرت RideNow چقدر خوب است؟ |
+| `task` | It's Saturday, and you need a ride to a restaurant downtown at 7 tonight. Would you use RideNow? Tell a friend why or why not. Use two details from the reviews. | امروز شنبه است و امشب ساعت ۷ باید به رستورانی در مرکز شهر بروی. با RideNow می‌روی یا نه؟ به یک دوست بگو چرا. از دو نکتهٔ همین نظرها استفاده کن. |
 
 Details a reply can use: the pickup zone on level 2; a driver in five minutes; $38, cheaper than a
 taxi; nearly double at 7 p.m. on weekend nights (surge); pay in the app only; you need data;
@@ -173,6 +181,7 @@ friendly drivers, clean cars; a driver may cancel; book early at busy times.
 | `id` | `airport-notice` |
 | `kind` | en: A notice at the airport · fa: اطلاعیهٔ فرودگاه |
 | `title` | Riverton Airport · Travel update |
+| `fixStart` | The notice says |
 
 `body` (three paragraphs, about 60 words):
 
@@ -185,14 +194,14 @@ friendly drivers, clean cars; a driver may cancel; book early at busy times.
 | `word` | `fa` |
 |---|---|
 | instead | به‌جایش |
-| Expect delays | ممکن است دیرتر از همیشه برسید |
-| running normally | مثل همیشه کار می‌کند |
+| Expect delays | احتمال تأخیر هست |
+| running normally | طبق روال عادی حرکت می‌کند |
 
 | Field | en | fa |
 |---|---|---|
-| `rate` | kind: `choice` · ask: What should your friend take today? | دوستت امروز با چه برود؟ |
+| `rate` | kind: `choice` · ask: What should your friend take today? | دوستت امروز با کدام برود؟ |
 | `rate.options` | The train · A taxi | با قطار · با تاکسی |
-| `task` | A friend has just landed in Riverton and is going downtown. Leave them a voice message: should they take the train or a taxi today? Give at least one reason from the notice. | یکی از دوستانت تازه در `Riverton` فرود آمده و می‌خواهد به مرکز شهر برود. برایش یک پیام صوتی بفرست: امروز با قطار برود یا با تاکسی؟ دست‌کم یک دلیل از همین اطلاعیه بیاور. |
+| `task` | A friend has just landed in Riverton and is going downtown. Leave them a voice message: should they take the train or a taxi today? Tell them why, and mention one thing from the notice. | یکی از دوستانت تازه به فرودگاه ریورتون رسیده و می‌خواهد به مرکز شهر برود. برایش یک پیام صوتی بفرست: امروز با قطار برود یا با تاکسی؟ بگو چرا، و به یک نکته از همین اطلاعیه هم اشاره کن. |
 
 Both answers can be argued: the train is on time today, but a taxi is door to door (the learner's
 own reason, which the AI never marks wrong).
@@ -204,6 +213,7 @@ own reason, which the AI never marks wrong).
 | `id` | `hotel-getting-here` |
 | `kind` | en: A hotel web page · fa: صفحهٔ سایت یک هتل |
 | `title` | The Park Hotel · Getting here |
+| `fixStart` | The page says |
 
 `body` (three paragraphs, about 100 words):
 
@@ -222,14 +232,15 @@ own reason, which the AI never marks wrong).
 | Field | en | fa |
 |---|---|---|
 | `rate` | kind: `stars` · ask: How helpful is this page? | این صفحه چقدر مفید است؟ |
-| `task` | A friend is going to stay at the Park Hotel. Would this page help them get there from the airport? Tell them what you think, and why. Use two details from the page. | یکی از دوستانت قرار است در `Park Hotel` بماند. به نظرت این صفحه کمکش می‌کند از فرودگاه به هتل برسد؟ نظرت را به او بگو و دلیلش را هم بگو. از دو نکتهٔ همین صفحه استفاده کن. |
+| `task` | A friend is staying at the Park Hotel. Send them this page with a short voice message: say what's useful in it, and one thing it doesn't tell them. | یکی از دوستانت در Park Hotel می‌ماند. این صفحه را با یک پیام صوتی کوتاه برایش بفرست: بگو چه چیزی در آن به دردش می‌خورد، و یک چیز را که این صفحه به او نمی‌گوید. |
 
 ### AI brief and speech-to-text for these texts
 
-The built `readRatePrompt()` is shared by every text and stays as it is, with **one line changed**
-(the fix's first words name the kind of text; the built list only has the review, Leila and the ad):
+The built `readRatePrompt()` is shared by every text and stays as it is, with **one line changed**:
+the fix's first words come from the text's own `fixStart` field (the built line hard-codes the lab
+texts' "The review says", "Leila says" and "The ad says"):
 
-> "fix": if false, one short sentence starting "The reviews say", "The notice says" or "The page says" (e.g. "The reviews say you can only pay in the app.", "The notice doesn't mention the bus."); otherwise "".
+> "fix": if false, one short sentence starting "{fixStart}" (e.g. "The reviews say you can only pay in the app.", "The page says the taxi takes 30 to 40 minutes."); otherwise "".
 
 The user message (`readRateUser`) builds itself from the text, task and rating: no change.
 
@@ -248,18 +259,32 @@ just read: a review, a notice or a web page.` Names that may come up (`NAMES` in
 
 **(a) New facts, to add to `world.md`:**
 
-1. **RideNow reviews (step 7):** three reviewers, Jen K. (5 stars), Omar R. (2 stars), Lisa M. (4 stars). Jen: a driver came in five minutes at the airport pickup zone; $38 to downtown. Omar: on Friday and Saturday nights at 7 p.m. downtown, surge made the price almost double. Lisa: friendly drivers, clean cars; a driver can cancel, but another comes in a few minutes; book early at busy times. (These agree with the table: $35–45, a 5–10 minute wait, surge, app-only payment, data needed.)
-2. **The airport's travel update (step 2):** Route 9 closed because of an accident; cars **and buses** go through downtown streets (the world only says "cars"); delays of 10 minutes or more (fits 30 → 40); heavy traffic near Central Station; the Airport Express is running normally.
-3. **The Park Hotel's "Getting here" page:** gives the train route, the last train, and the taxi's normal time and price (30 minutes, $55 plus a tip); it doesn't mention Bus 7 or RideNow. It also says "some taxi drivers don't know us yet" (the world's fact, now in the hotel's own words).
-4. **A new personal topic:** "What makes a good taxi driver" (free talk, topic 3).
+1. **RideNow reviewers:** Jen K. (5 stars), Omar R. (2 stars), Lisa M. (4 stars). The world has
+   their main facts ($38, a driver in 5 minutes, almost double at 7 p.m. on weekend nights, some
+   cancellations); not yet Lisa's "friendly drivers, clean cars; another driver comes in a few
+   minutes; book early at busy times".
+2. **The Park Hotel's "Getting here" page** doesn't mention Bus 7 or RideNow (a reply to Text 3 can
+   name either as "one thing it doesn't tell them").
+3. **Track name:** `world.md` still calls the B1+ track "Confident"; `README.md` and this file say
+   "Professional".
 
-**(b) What I couldn't fit, or am unsure about:**
+**(b) Still open:**
 
-1. **How many items per module.** I matched each item's shape and counts (4 card points, 2–3 glosses, 2 rate options, 3 ideas, and so on). But the lab sets hold 6 questions, 6 cards and 12 topics, while Day 2 gives 1, 1 and 3, as asked. If "Day 2 chosen" in the lab must replace a whole set, "Another question" and "Another card" will have nothing new to show. Read, rate, respond does have its full three texts.
-2. **Read, rate, respond needs small code changes:** the prompt's fix starts ("The review says / Leila says / The ad says"), the speech-to-text line ("a review, a message or an ad") and `NAMES` are hard-coded for the lab texts. That spec rule can't be met for new texts until those lines take the Day 2 wording above.
-3. **The page says the taxi takes 30 minutes; today it takes 40.** A learner who says "40 minutes" (from the ride) will see the fix "The page says about 30 minutes". That's correct for the text, but it may feel unfair; the travel update covers today.
-4. **Overlap.** The speaking card overlaps the lab's free-talk topic "How you get around your city" and, a little, the check-in question. Free-talk topic 2 is close to the check-in question (airport → home, not → hotel). Tell your story may bring back the learner's Day 1 story if it was a taxi problem. Other files (Choose and persuade, Quick-fire) may also use the world's personal topics.
-5. **Tell your story isn't in either Day 2 daily lesson** (`README.md`): Day 2 has no free speaking. I wrote the daily-lesson fields (`does`, `intro`) anyway, in case the owner's suggestion (week 1 alternates free speaking) changes that.
-6. **Tipping** is a custom, not an amount, but some learners may still talk about money. If the owner wants to avoid that completely, use topic 2 or 3 as the main one.
-7. **Persian word for "ride app":** I used «تاکسی اینترنتی» (what Iranians call Snapp and Tapsi). The Persian reviewer should confirm.
-8. **Card point 3** is longer than the built cards' points, because of the example in brackets. It's there to set up the comparison without repeating the words of the title.
+1. **How many items per module.** Each item matches its built shape and counts (4 card points, 2–3
+   glosses, 2 rate options, 3 ideas, and so on). But the lab sets hold 6 questions, 6 cards and 12
+   topics, while Day 2 gives 1, 1 and 3. If "Day 2 chosen" in the lab must replace a whole set,
+   "Another question" and "Another card" will have nothing new to show. Read, rate, respond has its
+   full three texts.
+2. **Read, rate, respond needs small code changes:** a `fixStart` field per text (the prompt's fix
+   starts are hard-coded for the lab texts), and the speech-to-text line ("a review, a message or
+   an ad") and `NAMES` are hard-coded too. The Day 2 texts can't run as specified until those take
+   the wording above.
+3. **Overlap.** The speaking card overlaps the lab's free-talk topic "How you get around your city"
+   and, a little, the check-in question. Free-talk topic 2 is close to the check-in question
+   (airport → home, not → hotel). Tell your story may bring back the learner's Day 1 story if it
+   was a taxi problem. Other files (Choose and persuade, Quick-fire) may also use the world's
+   personal topics.
+4. **Tell your story isn't in the Professional daily lesson** (`README.md`). The daily-lesson
+   fields (`does`, `intro`) are written anyway, in case the owner adds it.
+5. **Card point 3** is longer than the built cards' points, because of the example in brackets.
+   It's there to set up the comparison without repeating the words of the title.
