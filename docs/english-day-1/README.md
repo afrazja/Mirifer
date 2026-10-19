@@ -16,12 +16,25 @@ in **two versions, five modules each**, keeping what works, and to keep it the s
 |---|---|---|---|---|
 | Check-in | Mira's first-session welcome (built) | 2 | The same | 2 |
 | 1 | Listen and connect: Sara at the baggage desk, **new A2 questions** | 3 | Listen and connect: the same conversation, today's B1 questions (built) | 3 |
-| 2 | Natural phrases: **new A2 set** | 3 | Natural phrases: today's B1 set (built, story fixed) | 4 |
-| 3 | Persian-speaker traps: **3, at the airport** | 2 | Say it in English: **3 B1 items** | 3 |
-| 4 | Say it in English: **3 A2 items** | 3 | Tell your story (built) | 4 |
-| 5 | Voice messages: **2** | 3 | Role-play with a twist: **your own lost bag** | 4 |
+| 2 | Natural phrases: **new A2 set, you at the baggage desk** | 3 | Natural phrases: today's B1 set (built, story fixed) | 4 |
+| 3 | Persian-speaker traps: **3, at the airport** | 2 | Tell your story (built) | 4 |
+| 4 | Say it in English: **3 A2 items** | 3 | Say it in English: **3 B1 items** | 3 |
+| 5 | Voice messages: **2, to you** (a friend, the airline) | 3 | Role-play with a twist: **your own lost suitcase, 3 goals** | 5 |
 | Recap | Built | 2 | Built | 2 |
-| | **About 18 minutes** | | **About 22 minutes** | |
+| | **About 18 minutes** | | **About 23 minutes** | |
 
 Both start with the same conversation (Day 2 opens with "Remember Sara?"). Learners who started Day 1
 before the change finish it on the old list.
+
+## Review v1 (English, Persian, learning UX): the lead's decisions
+
+- **One identity per version after the opening conversation:** Intermediate is "you" (Karimi) from
+  Natural phrases on; the voice messages are to you, from a friend (Ben) and the airline; the
+  pharmacy message is dropped.
+- **Professional order:** Listen → Phrases → Tell your story → Say it in English → Role-play, so the
+  desk phrases feed the role-play.
+- **A lighter role-play for a first day:** three goals (describe the bag, name and hotel, how to get
+  it back), the twist after the description, a shorter twist line, five minutes.
+- **The day's goal:** "By the end, you can describe your bag and ask when you'll get it back."
+- Day 1 Professional's Karimi has a charged phone; Day 3 Intermediate's Karimi borrows a charger
+  (harmless across versions).
