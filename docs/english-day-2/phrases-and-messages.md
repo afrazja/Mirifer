@@ -6,17 +6,21 @@ its built format: the field names below are the ones in its `.ts` file.
 
 | Module | Set | Track | Code | Spec |
 |---|---|---|---|---|
-| Natural phrases | A2 (copied from `ride-v2.md`) | Starter | `src/lib/practice/phrases.ts` | `docs/english-shadowing-spec.md` |
-| Natural phrases | B1 (new) | Confident | the same | the same |
-| Say it in English | Starter (copied from `ride-v2.md`) | Starter | `src/lib/practice/say-in-english.ts` | `docs/english-say-in-english-spec.md` |
-| Say it in English | Confident (new) | Confident | the same | the same |
+| Natural phrases | A2 (copied from `ride-v2.md`) | Intermediate (A2) | `src/lib/practice/phrases.ts` | `docs/english-shadowing-spec.md` |
+| Natural phrases | B1 (new) | Professional (B1+) | the same | the same |
+| Say it in English | Intermediate (copied from `ride-v2.md`) | Intermediate | `src/lib/practice/say-in-english.ts` | `docs/english-say-in-english-spec.md` |
+| Say it in English | Professional (new) | Professional | the same | the same |
 | Voice messages | one set (A2+) | Both | `src/lib/practice/voice-messages.ts` | `docs/english-voice-messages-spec.md` |
-| Persian-speaker traps | one set | Starter | `src/lib/practice/traps.ts` | `docs/english-traps-spec.md` |
+| Persian-speaker traps | one set | Intermediate | `src/lib/practice/traps.ts` | `docs/english-traps-spec.md` |
 
-**Who "you" are.** In Say it in English (Confident) and Voice messages, the learner stands in Sara's
-place: Tom is "your friend", the backpack is "your" backpack. Sara is never named in these items, so
-the learner simply answers as themselves. (In the Starter Say-it set and the traps, "you" is just a
-passenger, as in `ride-v2.md`.)
+**Daily lesson subsets.** Some sets are longer than their daily-lesson slot; the rest stays as Module
+lab practice. Say it in English (Professional): 3 of 4 items. Voice messages (Intermediate): 2 of 4.
+Traps (Intermediate): 5 of 8. Each section says which.
+
+**Who "you" are.** In Say it in English (Professional) and Voice messages, the learner is Sara (the
+Voice messages intro says so): Tom is "your friend", the backpack is "your" backpack. Sara isn't
+named inside the items. (In the Intermediate Say-it set and the traps, "you" is just a passenger, as
+in `ride-v2.md`.)
 
 ---
 
@@ -28,7 +32,7 @@ removing the marks gives `sentence`), `chunk`, `situation {en, fa}`, `tip {en, f
 case, contractions spelled out, so "it'll" is "it will" and "don't" is "do not"). The habit each
 chunk replaces is a content note, not a code field. Five sentences per set; the voice is Mira's.
 
-### 1a. A2 set (Starter): copied from `ride-v2.md` (reviewed)
+### 1a. A2 set (Intermediate): copied from `ride-v2.md` (reviewed)
 
 Order of the ride: **get in → explain where → ask the time → check how to pay → get out.**
 
@@ -51,33 +55,34 @@ Order of the ride: **get in → explain where → ask the time → check how to 
 | 5 | You can drop me off here, thanks. | drop me off |
 
 **Word check** (copied from `ride-v2.md`; only the chunk, never the accent), with the `found` regex
-text I propose for it (new, not yet reviewed; tested against `normalise()`: each finds its own
-sentence, ignores the other four, and rejects its habit):
+text for it (tested against `normalise()`: each finds its own sentence, ignores the other nine
+sentences of both sets, and rejects its habit):
 
 | # | What it listens for (reviewed) | `found` (proposed) |
 |---|---|---|
 | 1 | could / can / would you (please) take me to | `/\b(could\|can\|would) you (please )?take (me\|us) to\b/` |
 | 2 | across from (with or without "right"); "in front of" doesn't count | `/\bacross from\b/` |
-| 3 | how long does / will / would / is it (going to) take; "how much does it take" doesn't count | `/\bhow long (does\|will\|would\|is) it (usually \|normally \|going to )?take\b/` |
+| 3 | how long does / will / would / is / 's it (or the ride) (going to) take; "how much does it take" doesn't count | `/\bhow long('s\| does\| will\| would\| is) (it\|the ride) (usually \|normally \|going to )?take\b/` |
 | 4 | do you take (credit / debit) card(s); "accept" doesn't count | `/\bdo you take (credit \|debit )?cards?\b/` |
 | 5 | drop me / us off; "drop off me" doesn't count | `/\bdrop (me\|us) off\b/` |
 
-### 1b. B1 set (Confident): new
+### 1b. B1 set (Professional): new
 
 The same five steps of the ride, one B1 chunk each, so the set still tells one short story. Each
-chunk fixes a habit that comes from Persian, and each tip has one sound feature only.
+chunk replaces a habit learners have (most come from Persian; #1 and #3 are English
+overgeneralisations), and each tip has one sound feature only.
 
 | # | `situation` (en / fa) | `shown` (chunk in bold) | Habit it replaces | `tip` (en / fa) |
 |---|---|---|---|---|
-| 1 | You get into a taxi at the airport. / در فرودگاه سوار تاکسی می‌شوی. | **Would you mind taking me to** the Park Hotel? | "Do you mind to take me to…?" (from «ممکنه منو ببرید…؟») | In `mind taking`, the `d` almost disappears: `mine-TAY-king`. / در `mind taking` صدای `d` تقریباً گفته نمی‌شود: `mine-TAY-king`. |
-| 2 | The driver doesn't seem to know your hotel. / راننده انگار هتلت را نمی‌شناسد. | It's pretty new. **Have you heard‿of‿it**? | "Did you hear its name?" / "Do you know it?" (from «اسمش رو شنیدید؟» / «می‌شناسیدش؟») | `heard of it` runs together like one word: `HER-duh-vit`. / `heard of it` را پیوسته و مثل یک کلمه بگو: `HER-duh-vit`. |
-| 3 | The highway is closed, so you go through downtown. / بزرگراه بسته است و از مرکز شهر می‌روید. | With all this traffic, **how long do you think it'll take**? | "How long do you think will it take?" (from «فکر می‌کنید چقدر طول می‌کشه؟») | `it'll` is one quick beat, `ID-ul`, not `it will`. / `it'll` را سریع و یک‌نفس بگو، تقریباً `ID-ul`، نه `it will`. |
-| 4 | The driver says to have some cash ready. / راننده می‌گوید کمی پول نقد آماده داشته باش. | I **don't have much cash‿on me**, so I'll pay by card. | "I don't have cash with me now." (from «الان پول نقد همراهم نیست») | `cash on me`: link them, `CA-shon-mee`. / `cash on me` را پیوسته بگو: `sh` به `on` می‌چسبد، یعنی `CA-shon-mee`. |
+| 1 | You get into a taxi with a heavy suitcase. / با یک چمدانِ سنگین در فرودگاه سوار تاکسی می‌شوی. | **Would you mind helping** me with my suitcase? | "Do you mind to help me…?" (an English overgeneralisation from "want to" / "like to", not from Persian) | In `mind helping`, the `d` almost disappears: `mine-HEL-ping`. / در `mind helping` صدای `d` تقریباً گفته نمی‌شود: `mine-HEL-ping`. |
+| 2 | The driver doesn't seem to know your hotel. / راننده انگار هتلت را نمی‌شناسد. | It's pretty new. **Have you heard‿of‿it**? | "Have you heard it?" / "Did you hear its name?" (from «اسمش رو شنیدید؟») | `heard of it` runs together like one word: `HER-duh-vit`. / `heard of it` را پیوسته و مثل یک کلمه بگو: `HER-duh-vit`. |
+| 3 | The highway is closed, so you go through downtown. / بزرگراه بسته است و از مرکز شهر می‌روید. | With all this traffic, **how long do you think it'll take**? | "Do you think how long it takes?" (from «فکر می‌کنید چقدر طول می‌کشه؟») / "How long do you think will it take?" (an English overgeneralisation of question order, not from Persian) | `it'll` is quick: `ID-ul`, not `it will`. / `it'll` را سریع بگو: `ID-ul`، نه `it will`. |
+| 4 | The driver says to have some cash ready. / راننده می‌گوید بهتر است کمی پول نقد آماده داشته باشی. | I **don't have much cash‿on me**, so I'll pay by card. | "I don't have cash with me." (from «پول نقد همراهم نیست»): fine, but "on me" is the more natural spoken chunk | `cash on me`: link them, `CA-shon-mee`. / `cash on me` را پیوسته بگو: `sh` به `on` می‌چسبد، یعنی `CA-shon-mee`. |
 | 5 | You've paid, and you're getting out. / کرایه را داده‌ای و داری پیاده می‌شوی. | Thanks for the ride. **Have a good one!** | "Good luck!" / "Don't be tired!" (from «موفق باشید» / «خسته نباشید») | `one` starts with a `w` sound, not `v`: `GOOD-wun`. / `one` با صدای `w` شروع می‌شود، نه `v`: لب‌هایت را گرد کن و بگو `GOOD-wun`. |
 
 | # | `sentence` | `chunk` |
 |---|---|---|
-| 1 | Would you mind taking me to the Park Hotel? | would you mind taking me to |
+| 1 | Would you mind helping me with my suitcase? | would you mind helping |
 | 2 | It's pretty new. Have you heard of it? | have you heard of it |
 | 3 | With all this traffic, how long do you think it'll take? | how long do you think it'll take |
 | 4 | I don't have much cash on me, so I'll pay by card. | don't have much cash on me |
@@ -87,25 +92,14 @@ chunk fixes a habit that comes from Persian, and each tip has one sound feature 
 
 | # | What it listens for | `found` |
 |---|---|---|
-| 1 | would / do you mind + an -ing verb ("would you mind taking", "do you mind driving"); "mind to take" doesn't count | `/\b(would\|do) you mind (please )?\w+ing\b/` |
-| 2 | heard of / heard about ("have you heard of it", "you might not have heard of it"); "did you hear it" doesn't count | `/\bheard (of\|about)\b/` |
-| 3 | how long do you think it'll / it would / it's going to take; "do you think will it take" doesn't count | `/\bhow long do you think (it\|the ride\|this\|that) (will\|would\|is going to\|is gonna) take\b\|\bhow long do you think it's going to take\b/` |
-| 4 | cash / money on me; "with me" doesn't count | `/\b(cash\|money) on me\b/` |
+| 1 | would / do you mind + an -ing verb ("would you mind helping", "do you mind taking"); "mind to help" doesn't count | `/\b(would\|do) you mind (please )?\w+ing\b/` |
+| 2 | heard of / heard about ("have you heard of it", "you might not have heard of it"); "have you heard it" and "did you hear it" don't count | `/\bheard (of\|about)\b/` |
+| 3 | how long do you think it / the ride / this / that (will / would / 's going to) take(s); "do you think will it take" and "do you think how long it takes" don't count | `/\bhow long do you think (?:it\|the ride\|this\|that)(?: will\| would\|'s going to\|'s gonna\| is going to\| is gonna)? takes?\b/` |
+| 4 | cash / money on me; "with me" is fine English but isn't the chunk, so it doesn't count | `/\b(cash\|money) on me\b/` |
 | 5 | have a good / nice / great one / day / night; "good luck" doesn't count | `/\bhave a (good\|nice\|great) (one\|day\|night\|evening\|trip)\b/` |
 
-**Where each B1 chunk is heard.** None of the five is in the reviewed conversation yet. The smallest
-changes to `ride-v2.md` (the A2 chunks all stay; listed again in the notes):
-
-| B1 chunk | Line | Now | Proposed |
-|---|---|---|---|
-| 2 heard of it | 2 (Driver) | Main Street's pretty long. Is the hotel near anything? | The Park Hotel? I haven't heard of it. Main Street's pretty long. Is it near anything? |
-| 3 think it'll take | 7 (Driver) | About forty minutes, unless the traffic near the station is bad. | It's usually thirty minutes. Today I think it'll take about forty, unless the traffic near the station is bad. |
-| 4 cash on me | 8 (Sara) | Do you take cards, or is it cash only? | Do you take cards, or is it cash only? I don't have much cash on me. |
-| 1 would you mind + -ing | 11 (Sara) | Thanks. Could you drop me off at the entrance? My suitcase is really heavy. | Thanks. Would you mind dropping me off at the entrance? My suitcase is really heavy. |
-| 5 have a good one | new 13 (Driver), after she pays | – | All set. Thanks, and have a good one! |
-
-Also heard that day: Daniel's voice message (below) asks "What time do you think you'll get here?",
-the same word order as chunk 3.
+**Where the B1 chunks are heard:** in the module itself, which plays each sentence before the
+learner says it (the ride conversation in `ride-v2.md` stays as reviewed).
 
 ---
 
@@ -117,7 +111,7 @@ limit), `hints` (2, each `{en, fa}`). Plus one `NAMES` string per set (to help s
 Four items per set. `fa`, points and hints are shown as plain text (no backticks are rendered there),
 so they hold no English except names.
 
-### 2a. Starter set: copied from `ride-v2.md` (reviewed)
+### 2a. Intermediate set: copied from `ride-v2.md` (reviewed)
 
 All four `to`: **To the taxi driver / به رانندهٔ تاکسی.** (The `id`s are new; the rest is copied.)
 
@@ -132,12 +126,15 @@ All four `to`: **To the taxi driver / به رانندهٔ تاکسی.** (The `id
   "in front of"; #3 is where the learner says a link phrase (`just in case`) themselves.
 - `NAMES`: "Park Hotel, Main Street, Central Station, City Museum, Central Park."
 
-### 2b. Confident set: new
+### 2b. Professional set: new
 
 Four longer messages to people in Sara's day, in timeline order: paying the taxi, arriving at the
 hotel, Tom about dinner, the RideNow driver that evening. Each needs a B1 move: a reason ("because,
-so"), a condition ("if"), or a request about something that hasn't happened yet. Item 1 reuses two
-B1 natural phrases (`cash on me`, and paying by card) for transfer.
+so"), a condition ("if"), or a request about something that hasn't happened yet. Item 1 reuses B1
+natural phrase #4 (`cash on me`, paying by card) for transfer.
+
+**Daily lesson:** the Professional daily lesson uses 3 items: `pay-tip`, `hotel-bags`, `tom-dinner`.
+`ridenow-pickup` (it overlaps Voice message 4) stays as lab practice.
 
 **1. `id`: `pay-tip`**
 - `to`: To the taxi driver / به رانندهٔ تاکسی
