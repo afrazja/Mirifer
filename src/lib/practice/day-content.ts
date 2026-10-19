@@ -9,6 +9,7 @@ import { ITEMS as DAY_ONE_SAY, type SayItem } from './say-in-english';
 import { MESSAGES as DAY_ONE_MESSAGES, type VoiceMessage } from './voice-messages';
 import { RETELL_PIECES, type RetellPiece } from './retell';
 import { APARTMENTS, type PersuadeSet } from './persuade';
+import { HOTEL_SCENE, type RoleScene } from './roleplay';
 import type { DisplayText } from './hotel';
 import * as dayTwo from './days/day-2';
 import type { Track } from './day';
@@ -72,4 +73,14 @@ export function persuadeSetFor(dayId: string): PersuadeSet {
 /** Any day's choice, by its id: what the server objects with and checks against. */
 export function persuadeSetById(id: string | null | undefined): PersuadeSet | null {
 	return [APARTMENTS, dayTwo.PERSUADE].find(set => set.id === (id ?? APARTMENTS.id)) ?? null;
+}
+
+/** Role-play with a twist: the day's scene (Day 1 and the pilot: the hotel). */
+export function roleSceneFor(dayId: string): RoleScene {
+	return dayId === 'day-2' ? dayTwo.CALL : HOTEL_SCENE;
+}
+/** Any scene, by its id (the hotel when none is given): what the routes play, voice and review. */
+export const ALL_ROLE_SCENES: RoleScene[] = [HOTEL_SCENE, dayTwo.CALL];
+export function roleSceneById(id: string | null | undefined): RoleScene | null {
+	return ALL_ROLE_SCENES.find(scene => scene.id === (id ?? HOTEL_SCENE.id)) ?? null;
 }

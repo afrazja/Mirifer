@@ -24,7 +24,8 @@ import { RawPersuadeSchema, asTranscripts, checkPersuade, persuadePrompt, persua
 import { persuadeSetById } from '$lib/practice/day-content';
 
 export const config = { maxDuration: 60 };
-const MAX_AUDIO_BYTES = 1_500_000;
+/** A minute at the recorder's 64 kbps is under 500 KB. */
+const MAX_AUDIO_BYTES = 600_000;
 const perMinute = createLimiter(12, 60_000);
 const FeedbackRequest = z.object({
 	kind: z.literal('feedback'), set: z.string().max(40).optional(), flat: z.enum(['a', 'b']),

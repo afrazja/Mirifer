@@ -14,9 +14,11 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { env } from '$env/dynamic/private';
 import { GOAL_IDS, hotelFacts, type GoalId, type Variant } from '$lib/practice/hotel';
+import type { RoleScene } from '$lib/practice/roleplay';
 
 export const MAX_JAMIE_WORDS = 60;
-const MAX_JAMIE_CHARS = 420;
+/** The same as the longest character turn the conversation route accepts back. */
+const MAX_JAMIE_CHARS = 400;
 
 const plain = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 
@@ -25,13 +27,22 @@ const plain = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, ' ').t
  * the fact sheet; small numbers (floors, times, minutes) are allowed.
  */
 export function jamieLineProblem(value: unknown, variant: Variant, previous?: string): string | null {
+	return characterLineProblem(value, hotelFacts(variant), previous, 'tonight there is no charge at all');
+}
+
+/** The same checks for any scene's character: the numbers must come from that scene's fact sheet. */
+export function sceneLineProblem(scene: RoleScene, value: unknown, variant: string, previous?: string): string | null {
+	return characterLineProblem(value, scene.facts(variant), previous, scene.priceReason);
+}
+
+function characterLineProblem(value: unknown, facts: string, previous: string | undefined, priceReason: string): string | null {
 	if (typeof value !== 'string') return 'it was not text';
 	const line = value.replace(/\s+/g, ' ').trim();
 	if (line.length < 2) return 'it was empty';
 	if (line.length > MAX_JAMIE_CHARS || line.split(' ').length > MAX_JAMIE_WORDS) return `it was too long (keep it under ${MAX_JAMIE_WORDS - 20} words)`;
 	if (/[*#<>{}[\]_`|\\]/.test(line)) return 'it used formatting characters';
-	if (/[$€£¥%]|\b(?:dollars?|euros?|pounds?|cents?)\b/i.test(line)) return 'it mentioned a price; tonight there is no charge at all';
-	const known = new Set(hotelFacts(variant).match(/\d+/g));
+	if (/[$€£¥%]|\b(?:dollars?|euros?|pounds?|cents?)\b/i.test(line)) return `it mentioned a price; ${priceReason}`;
+	const known = new Set(facts.match(/\d+/g));
 	for (const number of line.match(/\d+/g) ?? []) {
 		if (!known.has(number) && Number(number) > 24) return `it mentioned ${number}, which is not on the fact sheet`;
 	}
@@ -56,14 +67,27 @@ function verify(purpose: string, data: string, signature: unknown): boolean {
 }
 
 export const signJamieLine = (line: string) => sign('voice', line);
+/**
+ * A model-written "better" sentence (the reviews): signed for the voice only if it looks like one
+ * short spoken sentence, so a learner can't steer the model into signing anything else.
+ */
+export function signBetter(line: string): string | null {
+	const text = line.replace(/\s+/g, ' ').trim();
+	if (!text || text.length > 200 || text.split(' ').length > 30 || /[*#<>{}[\]_`|\\@]|https?:|www\./i.test(text)) return null;
+	return signJamieLine(text);
+}
 export const verifyJamieLine = (line: string, signature: unknown) => verify('voice', line, signature);
 
-const goalData = (userId: string, variant: Variant, goals: readonly string[]) =>
-	`${userId}|${variant}|${GOAL_IDS.filter(id => goals.includes(id)).join(',')}`;
-export const signGoals = (userId: string, variant: Variant, goals: readonly GoalId[]) => sign('goals', goalData(userId, variant, goals));
+/** Goal proofs. Each scene has its own variant names, so a proof for one scene never vouches for another. */
+const goalData = (userId: string, variant: string, goals: readonly string[], ids: readonly string[], scope: string) =>
+	`${scope ? `${scope}|` : ''}${userId}|${variant}|${ids.filter(id => goals.includes(id)).join(',')}`;
+/** `scope`: the scene id (none for the hotel, whose proofs came first). */
+export const signGoals = (userId: string, variant: string, goals: readonly string[], ids: readonly string[] = GOAL_IDS, scope = '') => sign('goals', goalData(userId, variant, goals, ids, scope));
 /** The goals a proof vouches for, or none if it doesn't verify. */
-export function provenGoals(userId: string, variant: Variant, goals: unknown, proof: unknown): GoalId[] {
+export function provenGoals(userId: string, variant: Variant, goals: unknown, proof: unknown): GoalId[];
+export function provenGoals(userId: string, variant: string, goals: unknown, proof: unknown, ids: readonly string[], scope?: string): string[];
+export function provenGoals(userId: string, variant: string, goals: unknown, proof: unknown, ids: readonly string[] = GOAL_IDS, scope = ''): string[] {
 	if (!Array.isArray(goals)) return [];
-	const claimed = GOAL_IDS.filter(id => goals.includes(id));
-	return claimed.length && verify('goals', goalData(userId, variant, claimed), proof) ? claimed : [];
+	const claimed = ids.filter(id => goals.includes(id));
+	return claimed.length && verify('goals', goalData(userId, variant, claimed, ids, scope), proof) ? claimed : [];
 }
