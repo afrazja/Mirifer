@@ -1,4 +1,4 @@
-# English Day 1: Listen and connect, two versions (draft v1)
+# English Day 1: Listen and connect, two versions (draft v2, review v1 applied)
 
 Status: **draft, for review and owner approval.** Day 1 keeps its one built conversation (Sara at
 the baggage desk, `CONVERSATION` in `src/lib/practice/listen-connect.ts`) for both versions. Both
@@ -85,7 +85,7 @@ that `evidence` uses.
 
 | Part | `from` | `to` | `title.en` | `title.fa` | Words |
 |---|---|---|---|---|---|
-| 0 | 0 | 3 | The missing bag | بارِ گم‌شده | 43 |
+| 0 | 0 | 3 | The missing bag | بارِ گمشده | 43 |
 | 1 | 4 | 6 | Where it went, when it comes | کجا رفته، کِی می‌رسد | 53 |
 | 2 | 7 | 10 | The medicine and the charger | دارو و شارژر | 62 |
 
@@ -105,7 +105,7 @@ carry (buy the medicine; borrow the charger), not the phrases.
 The same text as in section 3.
 
 - en: Sara is at the airport, and one of her bags is missing. Listen for what it looks like, where it went, when it comes, and what’s inside.
-- fa: سارا در فرودگاه است و یکی از کیف‌هایش نیامده. گوش بده ببین چه شکلی است، کجا رفته، کِی می‌رسد و داخلش چه چیزهایی هست.
+- fa: سارا در فرودگاه است و یکی از بارهایش نیامده. گوش بده ببین چه شکلی است، کجا رفته، کِی می‌رسد و داخلش چه چیزهایی هست.
 
 It names the four things the questions ask, in the order they come.
 
@@ -123,7 +123,7 @@ It names the four things the questions ask, in the order they come.
 
 | # | Result | Words |
 |---|---|---|
-| 0 | She can borrow one at the airport. | 7 |
+| 0 | She can borrow one at the information desk. | 8 |
 | 1 | The backpack went to Frankfurt. | 5 |
 | 2 | Her gray suitcase is fine. *(the fourth result: true (line 3), but its cause isn't listed)* | 5 |
 | 3 | She buys some at the pharmacy. | 6 |
@@ -142,9 +142,10 @@ remember which thing she **buys** and which she **borrows**, the one contrast A2
   too, since it's inside the backpack) and "The airline pays her back" (a chain from the medicine).
   "Her gray suitcase is fine" is caused by none of the three.
 
-The right answers use other words than the audio: "She buys some" for "just buy what you need",
-"She can borrow one at the airport" for "You can borrow one at the information desk". "Went to
-Frankfurt" is said almost word for word, as in the B1 set.
+The right answers use other words than the audio where it helps: "She buys some" for "just buy
+what you need". "She can borrow one at the information desk" keeps the place the agent names (line
+10), and "went to Frankfurt" is said almost word for word, as in the B1 set: what these two test is
+matching the cause, not decoding a paraphrase.
 
 ### 2.6 `choices`
 
@@ -198,7 +199,9 @@ so the two versions teach the phrases the same way.
   9 and 10 in part 2. Each part has at least one question.
 - `answers` has three different results (1, 3, 0); four results, the fourth true but unmatched.
   Choice answers fall at positions 0, 2 and 1.
-- Results and options have 2–7 words (the test allows 8, the spec 7); questions have 6–8 words.
+- Results and options have 2–8 words; questions have 6–8 words. Only result 0 has 8 (the test
+  allows 8; the spec's 7 is passed by one word, as by the built B1 option "Don't buy one. Borrow
+  one at the desk.").
 - No result is about a time or the bags' looks, so no Connect screen gives away a choice answer.
   The results shown in part 1 ("She can borrow one…", "She buys some…") don't name the medicine or
   the charger, so they don't give away Question 2. No choice option gives away a Connect answer.
@@ -215,8 +218,8 @@ so the two versions teach the phrases the same way.
 
 | Track | Module | `title` / `short` | `does` (en / fa) | `intro` (en / fa) |
 |---|---|---|---|---|
-| Intermediate | `listen-act` | As built: Listen and connect / گوش بده و وصل کن · Listen / گوش دادن | Hear Sara at the airport baggage desk, then show what you caught about her missing bag. / گفت‌وگوی سارا و کارمند فرودگاه را دربارهٔ بارِ گم‌شده‌اش بشنو و نشان بده چه چیزهایی را گرفتی. | Sara is at the airport, and one of her bags is missing. Listen for what it looks like, where it went, when it comes, and what’s inside. / سارا در فرودگاه است و یکی از کیف‌هایش نیامده. گوش بده ببین چه شکلی است، کجا رفته، کِی می‌رسد و داخلش چه چیزهایی هست. |
-| Professional | `listen-act` | As built | Hear Sara at the airport baggage desk, then show how the facts connect. / گفت‌وگوی سارا و کارمند فرودگاه را دربارهٔ بارِ گم‌شده‌اش بشنو و نشان بده اتفاق‌هایش چطور به هم ربط دارند. | Kept as built: Sara has a problem at the airport. Listen for what went wrong, and what the airline will do about it. / سارا در فرودگاه به مشکل خورده. گوش بده ببین چه مشکلی پیش آمده و شرکت هواپیمایی قرار است برایش چه کار کند. |
+| Intermediate | `listen-act` | As built: Listen and connect / گوش بده و وصل کن · Listen / گوش دادن | Hear Sara at the airport baggage desk, then show what you caught about her missing bag. / گفت‌وگوی سارا با کارمند باجهٔ بار گمشده را بشنو و نشان بده دربارهٔ بارش چه چیزهایی را فهمیدی. | Sara is at the airport, and one of her bags is missing. Listen for what it looks like, where it went, when it comes, and what’s inside. / سارا در فرودگاه است و یکی از بارهایش نیامده. گوش بده ببین چه شکلی است، کجا رفته، کِی می‌رسد و داخلش چه چیزهایی هست. |
+| Professional | `listen-act` | As built | Hear Sara at the airport baggage desk, then show how the facts connect. / گفت‌وگوی سارا با کارمند باجهٔ بار گمشده را بشنو و نشان بده اتفاق‌هایش چطور به هم ربط دارند. | Kept as built: Sara has a problem at the airport. Listen for what went wrong, and what the airline will do about it. / سارا در فرودگاه به مشکل خورده. گوش بده ببین چه مشکلی پیش آمده و شرکت هواپیمایی قرار است برایش چه کار کند. |
 
 - The built `does` ("Hear a real conversation, then show how its facts connect.") is generic. Days
   2–3 name the scene, so I propose the Professional line above; the built one is still acceptable.
@@ -231,6 +234,33 @@ so the two versions teach the phrases the same way.
 
 ## Notes for the editor
 
+### Review v1 applied
+
+Changes:
+- **Connect 2 result 0** (English review 8): "She can borrow one at the airport." → "She can borrow
+  one at the information desk." (8 words; the test allows 8). Sections 2.5 and 2.9, notes 2 and (b)
+  updated.
+- **Intro, Persian** (Persian review 2), in 2.4 and section 3: «یکی از کیف‌هایش نیامده» → «یکی از
+  بارهایش نیامده».
+- **Intermediate `does`, Persian** (Persian review 3, 1): «…چه چیزهایی را گرفتی» → «…چه چیزهایی را
+  فهمیدی»; the desk is now named «باجهٔ بار گمشده», the one name for it in every Day 1 file, in both
+  versions' `does` («گفت‌وگوی سارا با کارمند باجهٔ بار گمشده را بشنو…»). «بارِ گم‌شده‌اش» there became
+  «بارش», so "lost bag" isn't said twice in one line.
+- **Spelling** (Persian review 1): «گمشده» without the half-space, in the part title too («بارِ
+  گمشده»). `miraLine`'s «کارمند فرودگاه» stays: it names the person, not the desk.
+- Line 6 ("between eight and ten") stays, as the English review confirms (item 14).
+
+Declined:
+- **Cause 1 → "She needs her medicine tonight."** (English review 8, "consider"). Kept "Her medicine
+  is in the backpack." for two reasons: Question 2 ("What **else** is in the backpack?") follows it
+  and needs the medicine placed in the backpack; and causes 1 and 2 are written alike on purpose, so
+  the learner has to separate buy from borrow (2.5). "Tonight" is still said in line 7, the answer's
+  evidence is unchanged, and the second-match check still holds.
+
+Not applicable to this file: Persian review 9 (Mira's lines here name no place); the learning-UX
+review's Intermediate identity decision (the learner's own suitcase) starts **after** Listen and
+connect, so this conversation and its questions stay about Sara.
+
 ### (a) Open questions
 
 1. **Guessing without listening.** Connect 1 (medicine → pharmacy) is easy to guess from world
@@ -238,11 +268,10 @@ so the two versions teach the phrases the same way.
    is guessable too once the medicine is placed. The real listening load is in the three choice
    questions (green/gray, eight and ten, "phone charger"). The spec's no-listening test isn't done
    yet.
-2. **"At the airport" in Connect 2.** I wrote "She can borrow one at the airport." (7 words) to stay
-   within the spec's 7 and to avoid "the desk" (she's already at the baggage desk). "She can borrow
-   one at the information desk." is 8 words: the test allows it, and the built B1 option "Don't buy
-   one. Borrow one at the desk." is 8 too. Owner's choice. Either way it says "can", not "borrows":
-   in `world.md` the desk had no charger that fit (Day 2).
+2. **Connect 2's wording (settled in review v1).** It is now "She can borrow one at the
+   information desk." (8 words, as the English review asked): it names the place the agent names,
+   and "information desk" can't be confused with the baggage desk she is at. It says "can", not
+   "borrows": in `world.md` the desk had no charger that fit (Day 2).
 3. **If the line 6 change is declined,** only Question 1 changes: options "Tonight, on the evening
    flight." / "Tomorrow evening." / **"Tomorrow morning."** (answer 2), evidence 6. Everything else
    holds, but Day 2's call then gives the time for the first time.
@@ -259,8 +288,8 @@ so the two versions teach the phrases the same way.
    The test's evidence check for line 6 (`'hotel tomorrow'`) still passes with the new line.
 7. **Audio.** Regenerate line 6 only; listen that "between eight and ten" isn't swallowed at the end
    of a 20-word line, and that the whole conversation stays under 60 s.
-8. **Persian review.** Check «بارِ گم‌شده» (part title, and in `does`), «کیف‌هایش» in the intro
-   (Sara's bags: a suitcase and a backpack), and «داخلش چیست» as a question kind.
+8. **Persian review (done in review v1).** «بارِ گمشده» kept, spelled without the half-space;
+   «کیف‌هایش» became «بارهایش» (a suitcase and a backpack); «داخلش چیست» was not flagged and stays.
 
 ### (b) Checks done
 
@@ -273,7 +302,7 @@ so the two versions teach the phrases the same way.
   - Connect 2: lines 9–10, "You can borrow one at the information desk instead."
   - The fourth result: line 3, "My big gray suitcase is here, that one's fine."
 - **Word counts** (a script, `split(/\s+/)` as in the tests): conversation 158 (test 120–160); A2
-  parts 43, 53, 62; results 5–7; options 2–6; causes 6–7; questions 6–8; intro (en) 27.
+  parts 43, 53, 62; results 5–8; options 2–6; causes 6–7; questions 6–8; intro (en) 27.
 - **Link phrases:** `in that case`, `as long as` and `instead` each occur once in the new
   conversation.
 - **Voices:** unchanged (agent `c`, Sara `d`; neither is Ava `b`).
