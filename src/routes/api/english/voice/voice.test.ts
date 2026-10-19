@@ -82,4 +82,15 @@ describe('/api/english/voice', () => {
 		expect((await GET({ url: new URL('http://localhost/api/english/voice?piece=wedding-cake&voice=a'), locals: { user: null } } as any)).status).toBe(401);
 		expect(fetchMock).toHaveBeenCalledTimes(2);
 	});
+
+	it('voices Kevin’s prepared lines, the twist included, with the dispatcher direction', async () => {
+		const { CALL } = await import('$lib/practice/days/day-2');
+		env.OPENAI_API_KEY = 'k';
+		fetchMock.mockImplementation(() => Promise.resolve(new Response(new Uint8Array([1]), { status: 200 })));
+		expect((await call({ text: CALL.greeting, voice: 'c', scene: CALL.id })).status).toBe(200);
+		expect(JSON.parse(fetchMock.mock.calls[0][1].body).instructions).toContain('taxi dispatcher');
+		expect((await call({ text: CALL.twist!.lines['off-duty'], voice: 'c', scene: CALL.id })).status).toBe(200);
+		expect((await call({ text: GREETING, voice: 'b' })).status).toBe(200);
+		expect(JSON.parse(fetchMock.mock.calls[2][1].body).instructions).toContain('receptionist');
+	});
 });

@@ -61,4 +61,18 @@ describe('/api/english/review', () => {
 		fetchMock.mockResolvedValue(new Response('{}', { status: 500 }));
 		expect((await POST(fixture().event)).status).toBe(502);
 	});
+
+	it('reviews Day 2’s call as the caller, with that scene’s proof', async () => {
+		const { CALL } = await import('$lib/practice/days/day-2');
+		const ids = CALL.goals.map(goal => goal.id);
+		fetchMock.mockResolvedValue(openAi([]));
+		const turns = [{ speaker: 'reception', text: CALL.greeting }, { speaker: 'learner', text: 'I forget my phone in taxi.' }];
+		const ok = await POST(fixture({ scene: CALL.id, variant: 'busy', turns, goals: ids, proof: signGoals('u1', 'busy', ids, ids) }).event);
+		expect(ok.status).toBe(200);
+		const system = JSON.stringify(fetchMock.mock.calls[0][1].body);
+		expect(system).toContain('a phone call to a taxi company');
+		expect(system).toContain('Caller: I forget my phone');
+		expect((await POST(fixture({ scene: CALL.id, variant: 'busy', turns, goals: ids, proof: 'forged' }).event)).status).toBe(409);
+		expect((await POST(fixture({ scene: CALL.id, variant: 'lift', turns }).event)).status).toBe(400);
+	});
 });

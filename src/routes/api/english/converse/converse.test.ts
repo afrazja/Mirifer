@@ -127,4 +127,48 @@ describe('/api/english/converse', () => {
 		expect((await POST(fixture().event)).status).toBe(502);
 		expect(fetchMock).toHaveBeenCalledTimes(2);
 	});
+
+	describe('Day 2: the call to Riverton Taxi, with a twist', () => {
+		const KEVIN = 'Riverton Taxi, this is Kevin. How can I help you?';
+		const call = (turns: { speaker: string; text: string }[], extra: Body & { scene?: string } = {}) =>
+			fixture({ scene: 'taxi-lost-phone-v1', variant: 'busy', turns, ...extra } as Body);
+		const first = [{ speaker: 'reception', text: KEVIN }, { speaker: 'learner', text: 'Hi, I left my black phone with a red case in a taxi from the airport to the Park Hotel at 1:30.' }];
+
+		it('says the authored twist once the ride and the phone are described, and plan waits for it', async () => {
+			const { CALL } = await import('$lib/practice/days/day-2');
+			env.OPENAI_API_KEY = 'o';
+			fetchMock.mockResolvedValueOnce(openAi({ reply: 'Thank you. Let me check with my drivers. Could I have your name?', goalsMet: ['ride', 'phone', 'plan'] }));
+			const body = await (await POST(call(first).event)).json();
+			expect(body.reply).toBe(CALL.twist!.lines.busy);
+			expect(body.goals).toEqual(['ride', 'phone']);
+			expect(body.done).toBe(false);
+			const system = JSON.stringify(fetchMock.mock.calls[0][1].body);
+			expect(system).toContain('You play Kevin');
+			expect(system).toContain('Caller: Hi, I left my black phone');
+			expect(system).toContain('Central Station');
+		});
+
+		it('rewrites a line that gives the twist away before it is said', async () => {
+			env.OPENAI_API_KEY = 'o';
+			const good = 'I’m sorry to hear that. What time did you take the taxi?';
+			fetchMock.mockResolvedValueOnce(openAi({ reply: 'Good news, Mike found it! When did you ride?' })).mockResolvedValueOnce(openAi({ reply: good }));
+			const body = await (await POST(call([{ speaker: 'reception', text: KEVIN }, { speaker: 'learner', text: 'I lost my phone in a taxi.' }]).event)).json();
+			expect(body.reply).toBe(good);
+			expect(JSON.stringify(fetchMock.mock.calls[1][1].body)).toContain('gave away news');
+		});
+
+		it('after the twist, the plan counts, and the call can finish', async () => {
+			const { CALL } = await import('$lib/practice/days/day-2');
+			env.OPENAI_API_KEY = 'o';
+			const turns = [...first, { speaker: 'reception', text: CALL.twist!.lines.busy }, { speaker: 'learner', text: 'I will meet Mike at the taxi stand at 5. My name is Sara, call the Park Hotel front desk.' }];
+			fetchMock.mockResolvedValueOnce(openAi({ reply: 'Great, you’re all set, Sara. Mike will see you at 5.', goalsMet: ['plan', 'contact'], done: true }));
+			const body = await (await POST(call(turns, { goals: ['ride', 'phone'], proof: signGoals('u1', 'busy', ['ride', 'phone'], ['ride', 'phone', 'plan', 'contact']) }).event)).json();
+			expect(body).toMatchObject({ goals: ['ride', 'phone', 'plan', 'contact'], done: true });
+			expect(provenGoals('u1', 'busy', body.goals, body.proof, ['ride', 'phone', 'plan', 'contact'])).toHaveLength(4);
+			// A hotel proof never vouches for the call, and the call's variants are its own.
+			expect(provenGoals('u1', 'lift', body.goals, body.proof)).toEqual([]);
+			expect((await POST(call(first, { variant: 'lift' }).event)).status).toBe(400);
+			expect((await POST(call(first, { scene: 'nope' }).event)).status).toBe(400);
+		});
+	});
 });
