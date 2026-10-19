@@ -37,7 +37,7 @@
 		completeLater, finishModule, minutesOf, moduleBefore, modulesFor, recommend, startSession, type DaySession, type Length, type ModuleId, type Track
 	} from '$lib/practice/day';
 	import type { DisplayText } from '$lib/practice/hotel';
-	import { DAYS, themeOf } from '$lib/practice/day';
+	import { DAYS } from '$lib/practice/day';
 	import type { DayId, DayModule, DayPack } from '$lib/practice/day';
 	import ActionBar from '$lib/components/ActionBar.svelte';
 
@@ -295,7 +295,7 @@
 			{#if session}
 				<CoachGreeting {isFa} name={data.name} profile={data.profile} progress={data.progress} question={day.question} dayId={day.id} checkIn={day.checkIn} readOnly />
 			{/if}
-			<p class="eyebrow day-label">{isFa ? `روز ${day.number.toLocaleString('fa-IR')}: ${themeOf(day, track).fa}` : `DAY ${day.number} · ${themeOf(day, track).en.toUpperCase()}`}{#if day.tracks && data.labAccess}{isFa ? ` (${TRACK_NAMES[track].fa})` : ` · ${TRACK_NAMES[track].en.toUpperCase()}`}{/if}</p>
+			<p class="eyebrow day-label">{isFa ? `روز ${day.number.toLocaleString('fa-IR')}: ${day.theme.fa}` : `DAY ${day.number} · ${day.theme.en.toUpperCase()}`}{#if day.tracks && data.labAccess}{isFa ? ` (${TRACK_NAMES[track].fa})` : ` · ${TRACK_NAMES[track].en.toUpperCase()}`}{/if}</p>
 			<div class="plan-head">
 				<span class="avatar" aria-hidden="true">M</span>
 				<p class="mira-name">{isFa ? 'میرا' : 'Mira'}</p>
@@ -353,7 +353,7 @@
 		</section>
 
 	{:else if session.stage === 'recap'}
-		{@const next = recommend(session, following, track)}
+		{@const next = recommend(session, following)}
 		<section aria-labelledby="recap-title">
 			{@render backButton()}
 			{@render strip()}
@@ -390,7 +390,7 @@
 			<p class="eyebrow">{isFa ? `روز ${day.number.toLocaleString('fa-IR')}` : `DAY ${day.number}`}</p>
 			<h1 id="done-title">{isFa ? 'جلسهٔ امروز تمام شد.' : 'Today’s session is done.'}</h1>
 			{#if following.id !== day.id}
-				<p>{isFa ? `فردا برگرد برای روز ${following.number.toLocaleString('fa-IR')}: ${themeOf(following, track).fa}.` : `Come back tomorrow for Day ${following.number}: ${themeOf(following, track).en}.`}</p>
+				<p>{isFa ? `فردا برگرد برای روز ${following.number.toLocaleString('fa-IR')}: ${following.theme.fa}.` : `Come back tomorrow for Day ${following.number}: ${following.theme.en}.`}</p>
 			{:else}
 				<p>{isFa ? 'فردا برگرد؛ پیشنهاد بعدی آماده است.' : 'Come back tomorrow; your next suggestion is ready.'}</p>
 			{/if}

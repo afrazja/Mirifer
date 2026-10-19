@@ -118,14 +118,3 @@ describe('more than one day', () => {
 		expect(recommend(startSession(15), DAY_ONE).title.en).toBe('Next time: Day 1 again');
 	});
 });
-
-import { themeOf } from './day';
-describe('Each version of a day can have its own title', () => {
-	it('Day 2: Intermediate is "Taking a taxi", Professional "When a taxi ride goes wrong"; Day 1 has one', () => {
-		expect(themeOf(DAY_TWO, 'intermediate').en).toBe('Taking a taxi');
-		expect(themeOf(DAY_TWO, 'professional').en).toBe('When a taxi ride goes wrong');
-		expect(themeOf(DAY_TWO).en).toBe('Taking a taxi');
-		expect(themeOf(DAY_ONE, 'professional')).toBe(DAY_ONE.theme);
-		expect(recommend(startSession(15), DAY_TWO, 'professional').title.en).toBe('Next time: Day 2, When a taxi ride goes wrong');
-	});
-});
