@@ -3,11 +3,6 @@ import { defineConfig } from 'vite';
 import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 
 export default defineConfig({
-	resolve: {
-		// The on-device pronunciation check (Module lab) needs only the plain WebAssembly engine
-		// (11 MB), not the WebGPU one (22 MB): keeps the one-time download under 100 MB.
-		alias: [{ find: /^onnxruntime-web$/, replacement: 'onnxruntime-web/wasm' }]
-	},
 	plugins: [
 		sveltekit(),
 		SvelteKitPWA({
