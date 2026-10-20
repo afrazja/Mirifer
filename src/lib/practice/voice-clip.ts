@@ -11,3 +11,9 @@ export type ClipUse = (typeof CLIP_USES)[number];
 export const CLIP_SECONDS: Record<ClipUse, number> = { greeting: 20, 'role-play': 30, 'say-again': 12 };
 
 export const isClipUse = (value: unknown): value is ClipUse => typeof value === 'string' && (CLIP_USES as readonly string[]).includes(value);
+
+/**
+ * The largest clip the server takes for a use: its time limit at 128 kbps (twice what the page
+ * asks the recorder for, as some phones ignore it), plus room for the file header.
+ */
+export const maxClipBytes = (use: ClipUse) => CLIP_SECONDS[use] * 16_000 + 20_000;

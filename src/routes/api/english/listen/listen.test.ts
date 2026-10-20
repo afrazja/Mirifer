@@ -3,12 +3,14 @@ const { env, transcribeMock } = vi.hoisted(() => ({ env: {} as Record<string, st
 vi.mock('$env/dynamic/private', () => ({ env }));
 vi.mock('$lib/server/transcribe', () => ({ transcribe: transcribeMock, transcriptionConfigured: () => !!env.OPENAI_API_KEY }));
 import { POST } from './+server';
-import { CLIP_SECONDS, isClipUse } from '$lib/practice/voice-clip';
+import { CLIP_SECONDS, isClipUse, maxClipBytes } from '$lib/practice/voice-clip';
+import { MAX_DAILY_CLIPS } from '$lib/server/english-ai';
 
-function fixture(form: FormData, count = 0, user: Record<string, unknown> | null = { id: 'u1', email: 'a@b.c', user_metadata: { target_language: 'en' } }, origin = 'https://m.test') {
+/** `count`: AI requests today; `clips`: clips today. */
+function fixture(form: FormData, count = 0, user: Record<string, unknown> | null = { id: 'u1', email: 'a@b.c', user_metadata: { target_language: 'en' } }, origin = 'https://m.test', clips = 0) {
 	const inserted: unknown[] = [];
 	const from = vi.fn().mockImplementation(() => ({
-		select: () => ({ eq: () => ({ eq: () => ({ gte: () => Promise.resolve({ count, error: null }) }), maybeSingle: () => Promise.resolve({ data: null }) }) }),
+		select: () => ({ eq: () => ({ eq: (_: string, name: string) => ({ gte: () => Promise.resolve({ count: name === 'english_clip_transcribed' ? clips : count, error: null }) }), maybeSingle: () => Promise.resolve({ data: null }) }) }),
 		insert: (row: unknown) => { inserted.push(row); return Promise.resolve({ error: null }); }
 	}));
 	// jsdom's FormData can't travel through Node's Request, so the form is handed over directly.
@@ -25,12 +27,12 @@ const clip = (use: string | null = 'greeting', seconds = 4, size = 2000, type = 
 beforeEach(() => { for (const k of Object.keys(env)) delete env[k]; env.OPENAI_API_KEY = 'k'; env.GEMINI_API_KEY = 'g'; transcribeMock.mockReset(); });
 
 describe('/api/english/listen', () => {
-	it('turns a clip into text for each use, without spending allowance', async () => {
+	it('turns a clip into text for each use, counting a clip but not an AI request', async () => {
 		transcribeMock.mockResolvedValue('I usually have coffee in the morning.');
 		for (const use of ['greeting', 'role-play', 'say-again']) {
 			const f = fixture(clip(use));
 			expect(await (await POST(f.event)).json()).toEqual({ transcript: 'I usually have coffee in the morning.' });
-			expect(f.inserted).toHaveLength(0);
+			expect(f.inserted).toEqual([expect.objectContaining({ event_name: 'english_clip_transcribed', metadata: { course: 'en', route: use } })]);
 		}
 		expect(transcribeMock.mock.calls.map(call => call[1])).toEqual(['English greeting', 'English role-play', 'English say-again']);
 	});
@@ -38,7 +40,7 @@ describe('/api/english/listen', () => {
 		expect((await POST(fixture(clip('hotel')).event)).status).toBe(400);
 		expect((await POST(fixture(clip(null)).event)).status).toBe(400);
 		expect((await POST(fixture(clip('say-again', CLIP_SECONDS['say-again'] + 4)).event)).status).toBe(400);
-		expect((await POST(fixture(clip('greeting', 4, 500_000)).event)).status).toBe(400);
+		expect((await POST(fixture(clip('greeting', 4, maxClipBytes('greeting') + 1)).event)).status).toBe(400);
 		expect((await POST(fixture(clip('greeting', 4, 2000, 'text/plain')).event)).status).toBe(400);
 		expect((await POST(fixture(clip(), 40).event)).status).toBe(429);
 		expect(transcribeMock).not.toHaveBeenCalled();
@@ -49,6 +51,21 @@ describe('/api/english/listen', () => {
 		delete env.OPENAI_API_KEY;
 		expect((await POST(fixture(clip()).event)).status).toBe(503);
 		expect(transcribeMock).not.toHaveBeenCalled();
+	});
+	it('stops at the day’s clip budget, without sending the clip', async () => {
+		const f = fixture(clip(), 0, undefined, undefined, MAX_DAILY_CLIPS);
+		const response = await POST(f.event);
+		expect(response.status).toBe(429);
+		expect(await response.json()).toEqual({ error: 'Daily voice limit reached' });
+		expect(f.inserted).toHaveLength(0);
+		expect(transcribeMock).not.toHaveBeenCalled();
+	});
+	it('takes a longer clip for a role-play than for "say it again"', async () => {
+		transcribeMock.mockResolvedValue('ok');
+		const big = maxClipBytes('say-again') + 1000;
+		expect(big).toBeLessThan(maxClipBytes('role-play'));
+		expect((await POST(fixture(clip('say-again', 4, big)).event)).status).toBe(400);
+		expect((await POST(fixture(clip('role-play', 4, big)).event)).status).toBe(200);
 	});
 	it('reports a failed transcription', async () => {
 		transcribeMock.mockResolvedValue(null);

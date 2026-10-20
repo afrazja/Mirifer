@@ -19,8 +19,13 @@ describe('voice clips', () => {
 		expect(body.get('use')).toBe('role-play'); expect(body.get('seconds')).toBe('3'); expect(body.get('audio')).toBeInstanceOf(Blob);
 	});
 	it('tells a used-up day apart from a failure', async () => {
-		vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{}', { status: 429 })));
+		vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{"error":"Daily voice limit reached"}', { status: 429 })));
 		expect(await transcribeClip(clip, 'greeting')).toEqual({ error: 'limit' });
+		vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{"error":"Daily AI limit reached"}', { status: 429 })));
+		expect(await transcribeClip(clip, 'greeting')).toEqual({ error: 'limit' });
+		// Only too many in a minute: try again, not "used up".
+		vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{"error":"Too many requests"}', { status: 429 })));
+		expect(await transcribeClip(clip, 'greeting')).toEqual({ error: 'failed' });
 		vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{}', { status: 502 })));
 		expect(await transcribeClip(clip, 'greeting')).toEqual({ error: 'failed' });
 		vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));

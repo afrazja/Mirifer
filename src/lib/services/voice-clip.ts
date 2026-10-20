@@ -66,18 +66,20 @@ export async function startRecording(use: ClipUse): Promise<Recording | 'unsuppo
 	return { stop, cancel: () => { discard = true; stop(); }, done };
 }
 
-/** The text of a clip, or why there is none: 'limit' (too many today) or 'failed'. */
+/** The text of a clip, or why there is none: 'limit' (used up for today) or 'failed' (try again). */
 export async function transcribeClip(clip: Clip, use: ClipUse, signal?: AbortSignal): Promise<{ transcript: string } | { error: 'limit' | 'failed' }> {
 	const body = new FormData();
 	body.set('audio', clip.blob, 'clip'); body.set('seconds', String(clip.seconds)); body.set('use', use);
 	const controller = new AbortController();
 	const onAbort = () => controller.abort();
 	signal?.addEventListener('abort', onAbort);
-	const wait = setTimeout(() => controller.abort(), 20_000);
+	const wait = setTimeout(() => controller.abort(), 30_000);
 	try {
 		const response = await fetch('/api/english/listen', { method: 'POST', body, signal: controller.signal });
-		if (response.status === 429) return { error: 'limit' };
-		const data = response.ok ? await response.json() : null;
+		const data = await response.json().catch(() => null);
+		// Used up for today, or only too many in a minute (then trying again soon works).
+		if (response.status === 429) return { error: typeof data?.error === 'string' && data.error.startsWith('Daily') ? 'limit' : 'failed' };
+		if (!response.ok) return { error: 'failed' };
 		return typeof data?.transcript === 'string' ? { transcript: data.transcript } : { error: 'failed' };
 	} catch {
 		return { error: 'failed' };

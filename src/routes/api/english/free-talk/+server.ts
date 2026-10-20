@@ -5,7 +5,7 @@
  */
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { checkAllowance, englishLearner } from '$lib/server/english-ai';
+import { checkAllowance, englishLearner, spendClip } from '$lib/server/english-ai';
 import { transcribe, transcriptionConfigured } from '$lib/server/transcribe';
 import { createLimiter, tooMany } from '$lib/server/rate-limit';
 import { TALK_SECONDS, TOPICS } from '$lib/practice/free-talk';
@@ -30,6 +30,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!topic || !Number.isFinite(seconds) || seconds < 0 || seconds > TALK_SECONDS + 10) return json({ error: 'Invalid recording' }, { status: 400 });
 	const refused = await checkAllowance(locals, user);
 	if (refused) return refused;
+	const overBudget = await spendClip(locals, user, 'free-talk');
+	if (overBudget) return overBudget;
 	const transcript = await transcribe(audio, 'English free talk', `They are talking for a minute about: "${topic.en}". They say several sentences: write every sentence.`, { splitAtPauses: true });
 	if (transcript === null) return json({ error: 'Transcription unavailable' }, { status: 502 });
 	return json({ transcript });

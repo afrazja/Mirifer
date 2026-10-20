@@ -25,7 +25,8 @@ describe('/api/english/phrases', () => {
 		const f = fixture(clip());
 		expect(await (await POST(f.event)).json()).toEqual({ transcript: 'It turned out they had put it on the wrong flight.' });
 		expect(transcribeMock.mock.calls[0][2]).not.toMatch(/turned|flight/i);
-		expect(f.inserted).toHaveLength(0);
+		// It counts one clip against the day's clip budget, not an AI request.
+		expect(f.inserted).toEqual([expect.objectContaining({ event_name: 'english_clip_transcribed', metadata: { course: 'en', route: 'phrases' } })]);
 	});
 	it('refuses long, large or non-audio clips, and when the day’s allowance is used up', async () => {
 		expect((await POST(fixture(clip(20)).event)).status).toBe(400);
