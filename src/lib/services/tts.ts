@@ -10,6 +10,7 @@
  */
 
 import { trackEvent, trackObstacle } from './analytics';
+import { stopActiveRecording } from './voice-clip';
 import { isMobile } from '$utils/device';
 import { get, writable } from 'svelte/store';
 import { preferencesStore } from '$stores/preferences';
@@ -366,6 +367,7 @@ function playWebAudio(
  * is generous: the first play of a line may be generated on demand.
  */
 export function playAudioUrl(url: string, loadTimeoutMs = 12_000, playbackRate = 1, onStart?: () => void): Promise<boolean> {
+	stopActiveRecording(); // a voice must never end up in the learner's recording
 	const myGen = ttsGeneration;
 	releasePlayer();
 	return new Promise((resolve) => {
@@ -433,6 +435,7 @@ export function playAudioPromise(
 	onTime?: (currentTime: number, duration: number) => void,
 	voice: TTSVoice = 'a'
 ): Promise<void> {
+	stopActiveRecording(); // a voice must never end up in the learner's recording
 	ttsIsPlaying.set(true);
 	const _p = new Promise<void>((resolve) => {
 		// Don't call stopAllAudio here — callers manage stop/cancel themselves

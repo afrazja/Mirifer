@@ -53,13 +53,13 @@
 	let opening = $state<DisplayText>({ en: '', fa: '' });
 	let answer = $state(''), typed = $state(false), tooShort = $state(false), nudged = $state(false);
 	let typing = $state(false), draft = $state('');
-	let listening = $state(false), checking = $state(false), micProblem = $state<'blocked' | 'unsupported' | 'none' | 'failed' | 'limit' | null>(null);
+	let listening = $state(false), micOpening = $state(false), checking = $state(false), micProblem = $state<'blocked' | 'unsupported' | 'none' | 'failed' | 'limit' | 'unavailable' | null>(null);
 	/** Check-in days: Mira's reply to the answer (null while she is "typing"), and one small fix for the recap. */
 	let reply = $state<DisplayText | null>(null);
 	let feedback = { improved: null as string | null, noteEn: null as string | null, noteFa: null as string | null };
 	let recording: Recording | null = null;
 	let hearing: AbortController | null = null;
-	let destroyed = false;
+	let destroyed = false, attempt = 0;
 	let replying: AbortController | null = null;
 	let heading: HTMLElement | undefined = $state();
 	/** Mira's lines show in the interface language only; her voice is always English. */
@@ -105,7 +105,7 @@
 	function go(next: Step) { stopAllAudio(); step = next; queueMicrotask(() => heading?.focus()); }
 	/** Next on Mira's hello: the tap lets her speak the mic check, or ask her question. */
 	function toMic() { go('mic'); say(checkIn ? checkIn.question.en : `${MIRA_LINES.ask.en} ${target}`); }
-	function finish() { recording?.cancel(); hearing?.abort(); hearing = null; replying?.abort(); replying = null; stopAllAudio(); save(true); onDone?.(); }
+	function finish() { dropListening(); replying?.abort(); replying = null; stopAllAudio(); save(true); onDone?.(); }
 	function skip() { answer = ''; reply = null; finish(); }
 
 	/** Takes what the learner said or typed. */
@@ -144,33 +144,41 @@
 		replying = null; reply = line; save(false); say(line.en);
 	}
 
-	/** Records the learner (tap again to stop; it also stops after a quiet moment), then our server turns it into text. */
+	/**
+	 * Records the learner (tap again to stop; it also stops after a quiet moment), then our server
+	 * turns it into text. `attempt` changes when the learner moves on (Type instead, Skip, Next), so
+	 * a microphone that opens late, after the permission prompt, is closed at once.
+	 */
 	async function listen() {
 		if (listening) { recording?.stop(); return; }
-		if (checking) return;
+		if (checking || micOpening) return;
 		if (!canRecord()) { micProblem = 'unsupported'; typing = true; return; }
 		stopAllAudio(); // Mira's voice must never end up in the recording
-		micProblem = null; tooShort = false; listening = true;
+		const mine = ++attempt;
+		micProblem = null; tooShort = false; micOpening = true;
 		const started = await startRecording('greeting');
-		if (destroyed) { if (typeof started === 'object') started.cancel(); return; }
-		if (typeof started !== 'object') { listening = false; micProblem = started; typing = true; return; }
-		recording = started;
+		if (destroyed || mine !== attempt) { if (typeof started === 'object') started.cancel(); return; }
+		micOpening = false;
+		if (typeof started !== 'object') { micProblem = started; typing = true; return; }
+		recording = started; listening = true;
 		const clip = await started.done;
 		recording = null; listening = false;
-		if (destroyed || clip === null) return;
+		if (destroyed || mine !== attempt || clip === null) return;
 		if (clip === 'silent') { micProblem = 'none'; return; }
 		checking = true;
 		const controller = new AbortController(); hearing = controller;
 		const result = await transcribeClip(clip, 'greeting', controller.signal);
 		if (destroyed || hearing !== controller) return;
 		hearing = null; checking = false;
-		if ('error' in result) { micProblem = result.error === 'limit' ? 'limit' : 'failed'; if (result.error === 'limit') typing = true; return; }
+		if ('error' in result) { micProblem = result.error; if (result.error !== 'failed') typing = true; return; }
 		const words = result.transcript.trim();
 		if (!words) { micProblem = 'none'; return; }
 		take(words, false);
 	}
-	/** Type instead: drop any recording or check under way. */
-	function typeInstead() { stopAllAudio(); recording?.cancel(); hearing?.abort(); hearing = null; checking = false; listening = false; typing = true; }
+	/** Drops any recording or check under way, including a microphone still waiting for permission. */
+	function dropListening() { attempt++; recording?.cancel(); recording = null; hearing?.abort(); hearing = null; micOpening = false; checking = false; listening = false; }
+	/** Type instead. */
+	function typeInstead() { stopAllAudio(); dropListening(); typing = true; }
 	function sendTyped() { take(draft, true); draft = ''; }
 </script>
 
@@ -180,10 +188,10 @@
 
 {#snippet speakArea()}
 	{#if !typing}
-		<button class="mic" class:on={listening} type="button" onclick={listen} disabled={checking} aria-pressed={listening} aria-label={listening ? (isFa ? 'توقف' : 'Stop') : checking ? (isFa ? 'یک لحظه' : 'One moment') : (isFa ? 'بزن و صحبت کن' : 'Tap and speak')}>
+		<button class="mic" class:on={listening} type="button" onclick={listen} disabled={checking || micOpening} aria-pressed={listening} aria-label={listening ? (isFa ? 'توقف' : 'Stop') : micOpening ? (isFa ? 'در انتظار میکروفون' : 'Opening microphone') : checking ? (isFa ? 'یک لحظه' : 'One moment') : (isFa ? 'بزن و صحبت کن' : 'Tap and speak')}>
 			<svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0M12 17v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
 		</button>
-		<p class="mic-label" aria-hidden="true">{listening ? (isFa ? 'گوش می‌دهم… بزن تا تمام شود' : 'Listening… tap to stop') : checking ? (isFa ? 'یک لحظه…' : 'One moment…') : (isFa ? 'بزن و صحبت کن' : 'Tap and speak')}</p>
+		<p class="mic-label" aria-hidden="true">{listening ? (isFa ? 'گوش می‌دهم… بزن تا تمام شود' : 'Listening… tap to stop') : micOpening ? (isFa ? 'در انتظار میکروفون…' : 'Opening microphone…') : checking ? (isFa ? 'یک لحظه…' : 'One moment…') : (isFa ? 'بزن و صحبت کن' : 'Tap and speak')}</p>
 	{:else}
 		<form class="type" onsubmit={event => { event.preventDefault(); sendTyped(); }}>
 			<label class="sr-only" for="coach-input">{isFa ? 'به انگلیسی بنویس' : 'Type in English'}</label>
@@ -196,6 +204,7 @@
 	{:else if micProblem === 'unsupported'}<p class="note" role="status">{isFa ? 'این مرورگر نمی‌تواند گوش بدهد. بنویس.' : 'This browser can’t listen. Type instead.'}</p>
 	{:else if micProblem === 'none'}<p class="note" role="status">{isFa ? 'صدایی نشنیدم. دوباره امتحان کن.' : 'I didn’t hear anything. Try again.'}</p>
 	{:else if micProblem === 'failed'}<p class="note" role="status">{isFa ? 'متوجه نشدم. دوباره امتحان کن، یا بنویس.' : 'I couldn’t catch that. Try again, or type instead.'}</p>
+	{:else if micProblem === 'unavailable'}<p class="note" role="status">{isFa ? 'گفتن الان در دسترس نیست. بنویس.' : 'Speaking isn’t available right now. Type instead.'}</p>
 	{:else if micProblem === 'limit'}<p class="note" role="status">{isFa ? 'تمرین صوتی امروز تمام شد. بنویس.' : 'You’ve used today’s voice practice. Type instead.'}</p>{/if}
 {/snippet}
 

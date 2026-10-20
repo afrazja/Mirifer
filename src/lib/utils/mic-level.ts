@@ -40,7 +40,9 @@ export function measureLevel(stream: MediaStream): MicLevel {
 	const STEP = 0.05;
 	let peak = 0, voiced = 0, quiet = 0, pauses = 0, measured = false, paused = false;
 	const timer = setInterval(() => {
-		if (paused) return;
+		// A context the browser left suspended (iPhone, when it wasn't created inside a tap) reads
+		// silence: don't measure it, so a recording is never wrongly judged silent.
+		if (paused || context.state !== 'running') return;
 		analyser.getFloatTimeDomainData(data);
 		let sum = 0;
 		for (const v of data) sum += v * v;

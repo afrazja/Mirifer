@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { canRecord, startRecording, transcribeClip } from './voice-clip';
+import { canRecord, startRecording, stopActiveRecording, transcribeClip, type Recording } from './voice-clip';
 
 const clip = { blob: new Blob([new Uint8Array(10)], { type: 'audio/webm' }), seconds: 3 };
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
@@ -30,5 +30,71 @@ describe('voice clips', () => {
 		expect(await transcribeClip(clip, 'greeting')).toEqual({ error: 'failed' });
 		vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
 		expect(await transcribeClip(clip, 'greeting')).toEqual({ error: 'failed' });
+	});
+});
+
+/** A fake microphone and recorder (the test browser has neither). */
+function fakeMic(options: { deny?: boolean } = {}) {
+	const tracks = [{ stop: vi.fn(), onmute: null as null | (() => void), onended: null as null | (() => void) }];
+	const stream = { getTracks: () => tracks, getAudioTracks: () => tracks };
+	class FakeRecorder {
+		static isTypeSupported = (type: string) => type === 'audio/webm;codecs=opus';
+		state = 'inactive'; mimeType = 'audio/webm;codecs=opus';
+		ondataavailable: ((e: { data: Blob }) => void) | null = null; onstop: (() => void) | null = null; onerror: (() => void) | null = null;
+		start() { this.state = 'recording'; }
+		stop() { this.state = 'inactive'; this.ondataavailable?.({ data: new Blob([new Uint8Array(500)], { type: this.mimeType }) }); this.onstop?.(); }
+	}
+	vi.stubGlobal('MediaRecorder', FakeRecorder);
+	Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { getUserMedia: options.deny ? vi.fn().mockRejectedValue(new Error('denied')) : vi.fn().mockResolvedValue(stream) } });
+	return { tracks };
+}
+
+describe('recording a clip', () => {
+	afterEach(() => { Reflect.deleteProperty(navigator, 'mediaDevices'); });
+	const start = async () => (await startRecording('role-play')) as Recording;
+
+	it('records until Stop, then gives the clip and closes the microphone', async () => {
+		const { tracks } = fakeMic();
+		expect(canRecord()).toBe(true);
+		const recording = await start();
+		recording.stop();
+		const clip = await recording.done;
+		expect(clip).toMatchObject({ seconds: 0 });
+		expect((clip as { blob: Blob }).blob.size).toBe(500);
+		expect(tracks[0].stop).toHaveBeenCalled();
+	});
+	it('gives nothing when cancelled', async () => {
+		fakeMic();
+		const recording = await start();
+		recording.cancel();
+		expect(await recording.done).toBeNull();
+	});
+	it('says the microphone is blocked when permission is refused', async () => {
+		fakeMic({ deny: true });
+		expect(await startRecording('greeting')).toBe('blocked');
+	});
+	it('stops, keeping what was said, when the app plays a voice, the phone locks or the page is hidden', async () => {
+		const { tracks } = fakeMic();
+		let recording = await start();
+		stopActiveRecording();
+		expect(await recording.done).not.toBeNull();
+
+		recording = await start();
+		tracks[0].onmute?.();
+		expect(await recording.done).not.toBeNull();
+
+		recording = await start();
+		const hidden = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+		document.dispatchEvent(new Event('visibilitychange'));
+		expect(await recording.done).not.toBeNull();
+		hidden.mockRestore();
+	});
+	it('a new recording cancels one still running (one microphone)', async () => {
+		fakeMic();
+		const first = await start();
+		const second = await start();
+		expect(await first.done).toBeNull();
+		second.stop();
+		expect(await second.done).not.toBeNull();
 	});
 });

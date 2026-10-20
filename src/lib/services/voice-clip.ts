@@ -3,8 +3,10 @@
  * (/api/english/listen). Works in every browser with a microphone (Chrome, Safari on iPhone,
  * Firefox), unlike the browser's own speech recognition.
  *
- * Recording stops when the learner taps Stop, after a quiet moment once they have spoken, or at
- * the use's time limit. A near-silent clip is never sent (the transcriber would invent words).
+ * Recording stops when the learner taps Stop, after a quiet moment once they have spoken, when
+ * nothing is said for a while, at the use's time limit, when the phone locks or the page is hidden,
+ * and when the app starts playing a voice (so it never ends up in the clip). A near-silent clip is
+ * never sent (the transcriber would invent words).
  */
 import { measureLevel, SILENT_BELOW, type MicLevel } from '$utils/mic-level';
 import { CLIP_SECONDS, type ClipUse } from '$lib/practice/voice-clip';
@@ -23,6 +25,13 @@ export interface Recording {
 export const QUIET_STOP_SECONDS = 2;
 /** Less speech than this is "nothing heard". */
 const MIN_VOICED_SECONDS = 0.3;
+/** Nothing said for this long from the start: stop (nothing heard). */
+export const NO_SPEECH_STOP_SECONDS = 8;
+
+/** The recording under way, if any (there is only ever one microphone). */
+let active: Recording | null = null;
+/** Stops the recording under way, keeping what was said. The app calls it before it plays a voice. */
+export function stopActiveRecording(): void { active?.stop(); }
 
 export function canRecord(): boolean {
 	return typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== 'undefined';
@@ -47,9 +56,18 @@ export async function startRecording(use: ClipUse): Promise<Recording | 'unsuppo
 	const done = new Promise<RecordingResult>(r => (resolve = r));
 	const timer = setInterval(() => {
 		const elapsed = (performance.now() - startedAt) / 1000;
-		if (elapsed >= limit || (level.voiced() >= MIN_VOICED_SECONDS && level.quietFor() >= QUIET_STOP_SECONDS)) stop();
+		const spoke = level.voiced() >= MIN_VOICED_SECONDS;
+		if (elapsed >= limit || (spoke && level.quietFor() >= QUIET_STOP_SECONDS) || (!spoke && elapsed >= NO_SPEECH_STOP_SECONDS)) stop();
 	}, 200);
-	function release() { clearInterval(timer); level.stop(); stream.getTracks().forEach(track => track.stop()); }
+	// The phone locked, a call came in, or the learner left the tab: stop and keep what was said.
+	const onHidden = () => { if (document.visibilityState === 'hidden') stop(); };
+	document.addEventListener('visibilitychange', onHidden);
+	for (const track of stream.getAudioTracks()) { track.onmute = () => stop(); track.onended = () => stop(); }
+	function release() {
+		clearInterval(timer); level.stop(); document.removeEventListener('visibilitychange', onHidden);
+		stream.getTracks().forEach(track => { track.onmute = null; track.onended = null; track.stop(); });
+		if (active === recording) active = null;
+	}
 	function stop() { if (recorder.state !== 'inactive') recorder.stop(); else release(); }
 	recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
 	recorder.onstop = () => {
@@ -61,24 +79,33 @@ export async function startRecording(use: ClipUse): Promise<Recording | 'unsuppo
 		else resolve({ blob: new Blob(chunks, { type: recorder.mimeType || chunks[0].type || 'audio/webm' }), seconds });
 	};
 	recorder.onerror = () => { discard = true; stop(); };
+	const recording: Recording = { stop, cancel: () => { discard = true; stop(); }, done };
 	try { recorder.start(); }
 	catch { release(); return 'unsupported'; }
-	return { stop, cancel: () => { discard = true; stop(); }, done };
+	active?.cancel();
+	active = recording;
+	return recording;
 }
 
-/** The text of a clip, or why there is none: 'limit' (used up for today) or 'failed' (try again). */
-export async function transcribeClip(clip: Clip, use: ClipUse, signal?: AbortSignal): Promise<{ transcript: string } | { error: 'limit' | 'failed' }> {
+/**
+ * The text of a clip, or why there is none: 'limit' (used up for today), 'unavailable' (signed out,
+ * or voice is off on our side: trying again won't help) or 'failed' (try again).
+ */
+export type ClipError = 'limit' | 'unavailable' | 'failed';
+export async function transcribeClip(clip: Clip, use: ClipUse, signal?: AbortSignal): Promise<{ transcript: string } | { error: ClipError }> {
 	const body = new FormData();
 	body.set('audio', clip.blob, 'clip'); body.set('seconds', String(clip.seconds)); body.set('use', use);
 	const controller = new AbortController();
 	const onAbort = () => controller.abort();
 	signal?.addEventListener('abort', onAbort);
-	const wait = setTimeout(() => controller.abort(), 30_000);
+	// Longer than the server's own wait for the transcriber, so an answer it paid for isn't dropped.
+	const wait = setTimeout(() => controller.abort(), 45_000);
 	try {
 		const response = await fetch('/api/english/listen', { method: 'POST', body, signal: controller.signal });
 		const data = await response.json().catch(() => null);
 		// Used up for today, or only too many in a minute (then trying again soon works).
 		if (response.status === 429) return { error: typeof data?.error === 'string' && data.error.startsWith('Daily') ? 'limit' : 'failed' };
+		if ([401, 403, 409, 503].includes(response.status)) return { error: 'unavailable' };
 		if (!response.ok) return { error: 'failed' };
 		return typeof data?.transcript === 'string' ? { transcript: data.transcript } : { error: 'failed' };
 	} catch {

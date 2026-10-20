@@ -28,7 +28,8 @@
 		heard = ''; note = ''; stage = 'opening';
 		const started = await startRecording('say-again');
 		if (destroyed) { if (typeof started === 'object') started.cancel(); return; }
-		if (typeof started !== 'object') { stage = 'idle'; unavailable = true; return; }
+		if (started === 'unsupported') { stage = 'idle'; unavailable = true; return; }
+		if (started === 'blocked') { stage = 'idle'; note = T('Your microphone is blocked. Allow it in site settings to say it.', 'میکروفون بسته است. برای گفتن، در تنظیمات سایت اجازه بده.'); return; }
 		recording = started; stage = 'recording';
 		const clip = await started.done;
 		recording = null;
@@ -39,13 +40,14 @@
 		const result = await transcribeClip(clip, 'say-again', controller.signal);
 		if (destroyed || checking !== controller) return;
 		checking = null; stage = 'idle';
+		if ('error' in result && result.error !== 'failed') { note = result.error === 'limit' ? T('You’ve used today’s voice practice.', 'تمرین صوتی امروز تمام شد.') : T('Speaking isn’t available right now.', 'گفتن الان در دسترس نیست.'); return; }
 		if ('error' in result || !result.transcript.trim()) { note = T('I couldn’t catch that. Try again.', 'متوجه نشدم. دوباره امتحان کن.'); return; }
 		heard = result.transcript.trim();
 	}
 </script>
 
 <div class="say">
-	<button type="button" class="hear" onclick={() => void playAudioPromise(sentence, COACH_RATE, 'en-US', undefined, COACH_VOICE)}><span aria-hidden="true">▶</span> {isFa ? 'بشنو' : 'Hear it'}</button>
+	<button type="button" class="hear" disabled={stage !== 'idle'} onclick={() => void playAudioPromise(sentence, COACH_RATE, 'en-US', undefined, COACH_VOICE)}><span aria-hidden="true">▶</span> {isFa ? 'بشنو' : 'Hear it'}</button>
 	{#if !unavailable}<button type="button" class="mic" class:on={stage === 'recording'} aria-pressed={stage === 'recording'} disabled={stage === 'opening' || stage === 'checking'} onclick={listen}>{stage === 'recording' ? T('Listening… tap to stop', 'گوش می‌دهم… بزن تا تمام شود') : stage === 'checking' ? T('One moment…', 'یک لحظه…') : T('Say it', 'بلند بگو')}</button>{/if}
 </div>
 {#if note}<p class="heard" role="status">{note}</p>{/if}
@@ -57,7 +59,7 @@
 	.hear { border: 1px solid var(--accent); background: var(--paper-raised); color: var(--accent-deep); }
 	.mic { border: 0; background: var(--accent); color: var(--on-accent); }
 	.mic.on { background: var(--attention); }
-	.mic:disabled { opacity: .7; cursor: default; }
+	button:disabled { opacity: .7; cursor: default; }
 	button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 	.heard { margin: 8px 0 0; color: var(--ink-soft); }
 </style>
