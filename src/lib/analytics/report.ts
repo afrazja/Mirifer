@@ -1,5 +1,6 @@
 import { DAY_MS, EVENT_NAMES, OBSTACLES, SCHEMA_VERSION, UUID, safeMetadata, type StoredEvent } from './contract';
 import { buildLessonReport } from './lesson-report';
+import { buildEnglishLessonReport, englishLessonEvent } from './english-lessons-report';
 import { buildReturnReport } from './return-report';
 import type { LessonContent } from './lesson-content';
 import { buildPhaseThreeReport } from './phase-three-report';
@@ -115,11 +116,13 @@ export function buildReport(input: ReportInput) {
 		days, since: new Date(since).toISOString(), snapshot: new Date(now).toISOString(), includeTests,
 		newUsers: newUsers.length, visitors: actorIds.size,
 		activeLearners: unique(period.filter(e => learningNames.has(e.event_name)).map(e => e.user_id)),
-		visits: unique(period.map(e => `${e.user_id}:${e.session_id}`)),
+		// English lesson events carry the lesson's id, not the browser visit's: not visits.
+		visits: unique(period.filter(e => !englishLessonEvent(e)).map(e => `${e.user_id}:${e.session_id}`)),
 		affectedUsers: unique(period.filter(e => e.event_name === 'obstacle').map(e => e.user_id)),
 		funnel, eventual, eligible, returned, learners, obstacles,
 		lessonAnalysis: buildLessonReport(all, input.catalog ?? [], since, now, input.catalogError ?? null),
 		returnVisits: buildReturnReport(all, includedUsers, coverageStart, since, now),
+		englishLessons: buildEnglishLessonReport(all, includedUsers, since, now),
 		phaseThree: buildPhaseThreeReport(input.phaseThree ?? unavailablePhaseThree(), includedUsers, all.filter(e => time(e) <= now), coverageStart, since, now),
 		audioFallbacks: unique(period.filter(e => e.event_name === 'audio_fallback').map(e => e.user_id)),
 		incorrectAnswers: period.filter(e => e.event_name === 'answer_submitted' && e.metadata.correct === false).length,
@@ -128,7 +131,7 @@ export function buildReport(input: ReportInput) {
 			latestReceived: clean.length ? clean.reduce((latest, e) => e.created_at > latest ? e.created_at : latest, clean[0].created_at) : null,
 			legacyCount: input.legacyCount, versionedEvents: clean.length, periodEvents: period.length,
 			excludedUsers: users.filter(u => excluded.has(u.id)).length, invalid, duplicates,
-			missingVisitStart: unique(period.filter(e => !starts.has(`${e.user_id}:${e.session_id}`)).map(e => `${e.user_id}:${e.session_id}`)),
+			missingVisitStart: unique(period.filter(e => !englishLessonEvent(e) && !starts.has(`${e.user_id}:${e.session_id}`)).map(e => `${e.user_id}:${e.session_id}`)),
 			untrackedNewUsers: newUsers.filter(u => !userEvents.has(u.id)).length,
 			lateEvents: clean.filter(e => Date.parse(e.created_at) - time(e) > 5 * 60_000).length,
 			unknownUsers: clean.filter(e => !userIds.has(e.user_id)).length

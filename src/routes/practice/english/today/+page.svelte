@@ -166,6 +166,7 @@
 		try {
 			const body = new FormData();
 			body.set('session', next ? JSON.stringify(next) : '');
+			body.set('utcOffset', String(-new Date().getTimezoneOffset()));
 			const response = await fetch('?/save', { method: 'POST', body, headers: { 'x-sveltekit-action': 'true' } });
 			if (!response.ok) saveFailed = true;
 		} catch { saveFailed = true; }

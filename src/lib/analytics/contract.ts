@@ -37,7 +37,7 @@ export interface StoredEvent extends AnalyticsRecord {
 	created_at: string;
 }
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const numericKeys = new Set(['sequence', 'index', 'total', 'sentenceCount', 'estimateMinutes', 'actualSeconds', 'secondsOnOverlay', 'score', 'percentage', 'week', 'count']);
+const numericKeys = new Set(['sequence', 'index', 'total', 'sentenceCount', 'estimateMinutes', 'actualSeconds', 'secondsOnOverlay', 'score', 'percentage', 'week', 'count', 'length', 'done', 'skipped']);
 const choices: Record<string, readonly string[]> = {
 	page: ['home', 'languages', 'onboarding', 'practice', 'lesson', 'review', 'basics', 'vocabulary', 'progress', 'profile', 'settings', 'exam', 'sprechen', 'hoeren', 'lesen', 'schreiben', 'other'],
 	device: ['mobile', 'tablet', 'desktop'],
@@ -47,7 +47,11 @@ const choices: Record<string, readonly string[]> = {
 	code: Object.keys(OBSTACLES),
 	entry: ['overlay', 'warmup', 'next_day', 'day_picker'],
 	engine: ['web_speech', 'recorder', 'proxy', 'browser'],
-	course: ['en', 'de', 'fr'], scenario: ['hotel-quiet-room-v1']
+	course: ['en', 'de', 'fr'], scenario: ['hotel-quiet-room-v1'],
+	// The English daily lessons (src/lib/server/lesson-events.ts); a test keeps these in step with day.ts.
+	track: ['intermediate', 'professional'],
+	module: ['listen-act', 'scenario', 'phrases', 'say-it-better', 'say-in-english', 'traps', 'voice-messages', 'listen-retell', 'choose-persuade'],
+	outcome: ['done', 'skipped']
 };
 export function safeMetadata(input: unknown): AnalyticsRecord['metadata'] {
 	const output: AnalyticsRecord['metadata'] = {};
@@ -55,6 +59,8 @@ export function safeMetadata(input: unknown): AnalyticsRecord['metadata'] {
 	for (const [key, value] of Object.entries(input)) {
 		if (key === 'lesson_version' && typeof value === 'string' && /^d1-[a-f0-9]{16}$/.test(value)) output[key] = value;
 		else if (key === 'insights_version' && value === 3) output[key] = value;
+		// The learner's UTC offset in minutes (Iran: 210), so "the next day" is their own calendar day.
+		else if (key === 'utc_offset_min' && typeof value === 'number' && Number.isInteger(value) && Math.abs(value) <= 840) output[key] = value;
 		else if (key === 'active_ms' && typeof value === 'number' && Number.isFinite(value) && value > 0 && value <= 15_000) output[key] = Math.round(value);
 		else if (numericKeys.has(key) && typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1_000_000) output[key] = value;
 		else if ((key === 'correct' || key === 'resumed' || key === 'replay' || key === 'ai_rescued') && typeof value === 'boolean') output[key] = value;

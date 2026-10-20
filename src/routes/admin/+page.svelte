@@ -4,6 +4,7 @@
 	import type { StoredEvent } from '$lib/analytics/contract';
 	import LessonAnalysis from '$components/LessonAnalysis.svelte';
 	import ReturnVisits from '$components/ReturnVisits.svelte';
+	import EnglishLessons from '$components/EnglishLessons.svelte';
 	import LearningChecks from '$components/LearningChecks.svelte';
 	import AcquisitionSources from '$components/AcquisitionSources.svelte';
 	import ChangesResults from '$components/ChangesResults.svelte';
@@ -16,7 +17,7 @@
 	const report = $derived(data.insights?.report ?? null);
 	const learners = $derived(report?.learners.filter(u => `${u.label} ${u.id}`.toLowerCase().includes(search.toLowerCase())) ?? []);
 	const selected = $derived(learners.find(u => u.id === selectedId) ?? learners[0]);
-	const tabs = [{ id: 'overview', name: 'Overview' }, { id: 'journeys', name: 'Learner Journeys' }, { id: 'lessons', name: 'Lesson Analysis' }, { id: 'returns', name: 'Return Visits' }, { id: 'assessments', name: 'Learning Checks' }, { id: 'sources', name: 'Acquisition Sources' }, { id: 'changes', name: 'Changes & Results' }, { id: 'obstacles', name: 'Obstacles' }, { id: 'quality', name: 'Data Quality' }];
+	const tabs = [{ id: 'overview', name: 'Overview' }, { id: 'journeys', name: 'Learner Journeys' }, { id: 'lessons', name: 'Lesson Analysis' }, { id: 'returns', name: 'Return Visits' }, { id: 'english', name: 'English Lessons' }, { id: 'assessments', name: 'Learning Checks' }, { id: 'sources', name: 'Acquisition Sources' }, { id: 'changes', name: 'Changes & Results' }, { id: 'obstacles', name: 'Obstacles' }, { id: 'quality', name: 'Data Quality' }];
 	const percent = (n: number, d: number) => d ? `${Math.round(n / d * 100)}%` : 'Not available';
 	const date = (value: string | null | undefined) => value ? new Date(value).toLocaleString('en-GB', { timeZone: 'UTC', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + ' UTC' : 'Not available';
 	const labels: Record<string, string> = { visit_started: 'Visit started', page_viewed: 'Viewed page', page_hidden: 'Page hidden', page_returned: 'Returned to page', lesson_started: 'Opened lesson', lesson_begun: 'Pressed Start', lesson_resumed: 'Resumed lesson', lesson_progress: 'Saw sentence', answer_submitted: 'Submitted answer', step_skipped: 'Skipped sentence', lesson_attempt_completed: 'Finished lesson attempt', lesson_completed: 'First completion of this lesson', mic_requested: 'Requested microphone', mic_ready: 'Microphone ready', obstacle: 'Technical obstacle', audio_fallback: 'Switched to backup audio' };
@@ -116,6 +117,8 @@
 			<LessonAnalysis report={report.lessonAnalysis} inspect={inspect} />
 		{:else if tab === 'returns'}
 			<ReturnVisits report={report.returnVisits} inspect={inspect} />
+		{:else if tab === 'english'}
+			<EnglishLessons report={report.englishLessons} />
 		{:else if ['assessments', 'sources', 'changes'].includes(tab)}
 			{#if report.phaseThree.error}<p class="notice error">{report.phaseThree.error}</p>
 			{:else if tab === 'assessments'}<LearningChecks report={report.phaseThree.assessments} {inspect} />

@@ -99,3 +99,23 @@ describe('English today page', () => {
 		expect(none.supabase.auth.updateUser).toHaveBeenCalledWith({ data: expect.objectContaining({ english_progress_v1: expect.objectContaining({ lastThemeId: null }) }) });
 	});
 });
+
+describe('lesson analytics', () => {
+	it('records a started lesson after the save, and a failed analytics write never fails the save', async () => {
+		const f = fixture('en', {}, startSession(15, new Date(), DAY_TWO, 'intermediate'), true);
+		const insert = vi.fn().mockResolvedValue({ error: null });
+		(f.supabase as any).from = vi.fn(() => ({ insert }));
+		expect(await actions.save(f.event())).toEqual({ saved: true });
+		expect(insert).toHaveBeenCalledWith([expect.objectContaining({ user_id: 'u1', event_name: 'lesson_started', day: 2, metadata: expect.objectContaining({ course: 'en', track: 'intermediate' }) })]);
+		const broken = fixture('en', {}, startSession(15));
+		(broken.supabase as any).from = vi.fn(() => { throw new Error('down'); });
+		expect(await actions.save(broken.event())).toEqual({ saved: true });
+		// A save that fails writes no events.
+		const failed = fixture('en', {}, startSession(15));
+		failed.supabase.auth.updateUser.mockResolvedValue({ error: { message: 'x' } });
+		const none = vi.fn(); (failed.supabase as any).from = vi.fn(() => ({ insert: none }));
+		expect(await actions.save(failed.event())).toMatchObject({ status: 503 });
+		expect(none).not.toHaveBeenCalled();
+	});
+});
+
