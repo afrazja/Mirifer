@@ -1,83 +1,95 @@
-# Making the daily lessons less predictable (plan v1)
+# Making the daily lessons less predictable (plan v2)
 
-Status: **draft for review, then owner approval.** The owner's concern: when every day has the same
-five steps, learners know what's coming, get bored and stop coming back. Adding the remaining
-module types alone won't fix it, and building many new module types is too costly.
+Status: **v2, after review (product growth, learning UX, system design); waiting for the owner's
+decisions (end of file).** The owner's concern: when every day has the same five steps, learners
+know what's coming, get bored and stop coming back. Building many new module types is too costly.
 
-## The principle
+## The principle (all three reviewers agree)
 
-**Predictable controls, unpredictable content.** The buttons, the screens and how each module
-works stay the same (the owner's rule: one focused thing per screen, nothing to relearn). What
-changes is what happens: the story, the people, the situations and the order of the day.
+**Predictable controls, unpredictable content.** The buttons, screens and how each module works stay
+the same: a fixed routine costs an A2 learner no effort. What changes is what happens: the story,
+the people, their mood, and (later) some steps of the day. Never a surprise about **what to do,
+how it's scored, or how hard it is.**
 
-## The five ideas, cheapest first
+## What the reviews added
 
-### 1. A story that continues, with a hook at the end of each day
-- Each week is one story ("Your first trip"), and every day ends on a hook for the next day,
-  said by Mira on the recap screen in one line. For example, at the end of Day 3: *"Sara's phone
-  rings at 6 a.m. It's not the airline."*
-- The next day's check-in opens on that hook (the check-in already links back to the story).
-- **Cost:** content only, in each day's world.md. One new field per day (the hook line, in
-  English and Persian). No new screens.
+Predictability is a real risk, but mostly from **week 2–3**. The code shows bigger reasons to quit
+**today**:
+1. **Learners can only do Day 1.** Days 2–3 aren't released, so the next day is Day 1 again: the
+   most predictable thing in the app.
+2. **Sessions run longer than the learner chose.** Onboarding offers 15 or 20 minutes; Day 1 takes
+   18–23 and Days 2–3 about 22–25 (the length choice is ignored on two-version days).
+3. **Nothing brings learners back** (no reminder) and **nothing shows progress** (no week view).
+4. **We can't see where learners stop**: the daily lessons send no lesson or step events.
+5. **No review of earlier days**: yesterday's phrases never come back.
 
-### 2. Surprises inside the modules
-- **Role-play:** each scene gets **three** possible twists (now two, one per run), one picked at
-  random for each run. Characters have a mood picked at random (rushed, friendly, a little
-  annoyed), which the AI acts out within limits.
-- **Voice messages:** now and then, an unexpected sender (a neighbor, a wrong number), still about
-  the day's situation.
-- **Listening:** the story sometimes has a small twist the questions ask about.
-- **Cost:** more versions of content we already write; a random pick in code. No new screens.
+## The plan, in order
 
-### 3. A day plan that changes shape (from Day 4 on)
-- Two fixed points: **listening first, the role-play (or the day's main speaking) last.**
-- The **three middle steps change** from day to day, chosen from the 17 module types we already
-  have (for example, Day 4 "Asking the way" could use Find the missing information; another day,
-  Quick-fire questions or Dictation sprint).
-- Rules, so it doesn't feel random: the same middle module never three days in a row; at least
-  one module the learner hasn't done for a while each day; each new module type is introduced
-  with one sentence from Mira the first time.
-- **Cost:** the day pack already lists its own modules, so this is mostly content: each day still
-  needs its own content for the modules it uses. The modules not in any lesson yet need a
-  "reads from the day" step, as the first nine had.
+### Step 1: groundwork (before any variety)
+- **Release Days 2–3** after the owner's phone test.
+- **Measure:** the server records `lesson_started`, one `lesson_progress` per step (done or
+  skipped) and `lesson_completed`, with day, version and length. Next-day and day-7 return are
+  worked out from these in a report. Collect 1–2 weeks of data as a baseline.
+- **Keep sessions to the chosen length** (owner's decision below).
 
-### 4. Lessons built around the learner's own life
-- Mira's check-in, Quick-fire questions and Free talk use what the learner has told us: their
-  reason for learning, their job or trip, and what they said yesterday.
-- **Cost:** mostly AI instructions. It needs a small, private learner memory (a few short facts,
-  kept in the learner's account, visible and deletable), and the privacy page must say so.
+### Step 2: the story hook (small)
+- Every day ends on one line from Mira about tomorrow ("Sara's phone rings at 6 a.m. It's not the
+  airline."). It goes on the **done screen**, in place of "Come back tomorrow", with tap-to-hear:
+  one thing on the screen. The next day's check-in opens on it.
+- Shown only when the next day is open for this learner (no promises about days that don't exist).
+- Later, the same line is the text of a reminder.
 
-### 5. A weekly rhythm with one special day
-- Days 1–4: normal days. **Day 5: a "mission"**: one longer role-play (about 8 minutes) that
-  brings back the week's people, facts and phrases, with a surprise ending.
-- Now and then, after a lesson, a **bonus challenge** from Mira (one minute, optional, never
-  blocking): "Can you say that in a different way?"
-- **Cost:** the mission reuses the role-play module with a bigger scene; the bonus reuses Say it
-  again, better.
+### Step 3: surprises inside the modules
+- **Mira's question uses what the learner already told us** (their reason for learning: travel,
+  work, exam, moving abroad). No new storage.
+- **Role-play (Professional):** a third twist per scene, never the same twist twice in a row; the
+  easiest one on the first run. A **mood** for the character (friendly, busy, mildly impatient),
+  named on the scene card ("Ryan is very busy today"). Mood changes only tone: never speed,
+  vocabulary or sentence length, never aimed at the learner, and never "impatient" on Day 1.
+- **Voice messages (Intermediate, where most learners are):** a pool per day, so the senders and
+  messages change between learners and replays; Mira's intro always names who is calling.
+- **Earlier days come back:** one item from an earlier day inside Say it in English or Traps
+  ("From Day 1"). This is real learning and less predictable.
+- Dropped for now: twists in the listening story (a whole second listening set per day).
 
-## What we won't do
+### Step 4: a week strip and visible progress
+- The plan screen shows "Your first trip · Day 2 of 7" and the week's can-do goals, ticked as they
+  are reached.
 
-- No new module types for now.
-- No changes to how the screens and buttons work.
-- No randomness that makes a day harder than its level, or that hides what the learner is
-  practicing (the day's goal stays on the plan screen).
+### Step 5: changing middle steps (from Day 4, only if the data shows week-2 boredom)
+- **Written into each day, per version, not picked by code at random**, so every day is reviewed
+  and saved sessions stay valid. A test checks the rules.
+- Rotate **within a slot**: the listening step and Natural phrases never rotate. Slots: notice
+  and fix (Traps, Spot the lie, Connected speech, Dictation sprint); guided use (Say it in
+  English, Find the missing information, Quick-fire questions).
+- At most **one** module the learner hasn't met per day; it comes back within 2–3 days; its first
+  time has a short demo and an unscored first item, and the plan screen marks it "New".
+- Each newly used module needs code work to read from the day (about as much as the first nine
+  had), so the cheap ones come first.
 
-## Order of work
+### Step 6: the week's mission (with the first full week)
+- On the **last day of each theme's week** (merged with the themes plan's "big day").
+- **Three short scenes of 2–3 minutes**, each saved, with the week's people and phrases, and a
+  surprise ending to listen to. Intermediate gets guided tasks, not a free role-play.
 
-1. **Ideas 1 and 2** on Days 1–3 (hooks, a third twist per role-play, moods), before Days 2–3
-   are released.
-2. **Idea 3** from Day 4, "Asking the way".
-3. **Idea 5** with the first full week (Day 5).
-4. **Idea 4** when the learner memory and its privacy text are designed.
+### Later: Mira remembers (needs an owner decision on privacy)
+- A few short facts the learner **confirms** ("Mira will remember: you're a nurse. Keep / Don't"),
+  in their account, visible and deletable, at most 5. No stored chats or audio.
+- This changes today's rule that nothing typed or said is kept; job and moving-abroad plans are
+  sensitive for learners in Iran, and the facts would reach the AI providers.
 
 ## How we'll know it works
 
-Count, per learner: whether they come back the next day, and on day 7. Today the daily lessons
-send no analytics events (only the learner's last finished day is kept), so step 1 also adds
-three events: lesson started, lesson finished, next-day return.
+Next-day and day-7 return per learner, step-by-step completion, and skip rate by step. With few
+learners these numbers are signals, not proof: read them with what learners tell us.
 
-## Open questions for the owner
+## Decisions for the owner
 
-- Mira's hook line: on the recap screen only, or also as a phone notification later?
-- Character moods: is "a little annoyed" OK, or only friendly and rushed?
-- The weekly mission: Day 5, or the last day of each theme's story?
+1. **Order:** groundwork and the hook first, variety after (the reviewers' order), or the v1 order?
+2. **Session length:** keep each day within the chosen 15 or 20 minutes (a 15-minute day drops one
+   middle step), or keep five steps and say "about 25 minutes" at onboarding?
+3. **Intermediate role-play:** none until the week's mission, a short one in the daily lesson, or
+   never?
+4. **Mira remembers:** plan it later with a privacy design, or never store what learners say?
+5. Conflicts with the themes plan (v3.2): it merges the lab into six modules and puts the big day
+   on Day 7. This plan uses the existing module types and the last day of each week.
