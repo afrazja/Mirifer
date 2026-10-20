@@ -1,93 +1,89 @@
 <script lang="ts">
+	/**
+	 * The microphone button under a role-play's reply box: records the reply, our server turns it
+	 * into text (/api/english/listen), and the text goes into the box to check before sending.
+	 */
 	import { onMount } from 'svelte';
 	import { stopAllAudio } from '$services/tts';
+	import { canRecord, startRecording, transcribeClip, type Recording } from '$services/voice-clip';
+	import { MAX_REPLY } from '$lib/practice/hotel';
 
-	type SpeechResultItem = ArrayLike<{ transcript: string }> & { isFinal: boolean };
-	type SpeechResult = { results: ArrayLike<SpeechResultItem> };
-	type SpeechError = { error: string };
-	type Recognition = {
-		lang: string; continuous: boolean; interimResults: boolean; maxAlternatives: number;
-		onresult: ((event: SpeechResult) => void) | null;
-		onerror: ((event: SpeechError) => void) | null;
-		onend: (() => void) | null;
-		start(): void; stop(): void; abort(): void;
-	};
-	type RecognitionConstructor = new () => Recognition;
 	let { isFa = false, disabled = false, onTranscript }: {
 		isFa?: boolean; disabled?: boolean; onTranscript: (value: string) => void;
 	} = $props();
-	let supported = $state(false), listening = $state(false), message = $state('');
-	let Constructor: RecognitionConstructor | null = null;
-	let recognition: Recognition | null = null;
-	let disposed = false;
-	let pauseTimer: ReturnType<typeof setTimeout> | undefined;
-	let maxTimer: ReturnType<typeof setTimeout> | undefined;
-	function clearTimers() { clearTimeout(pauseTimer); clearTimeout(maxTimer); }
+	let supported = $state(false), stage = $state<'idle' | 'opening' | 'recording' | 'checking'>('idle'), message = $state('');
+	let recording: Recording | null = null;
+	let checking: AbortController | null = null;
+	let disposed = false, attempt = 0;
+	const T = (en: string, fa: string) => (isFa ? fa : en);
 
 	onMount(() => {
-		const browser = window as Window & { SpeechRecognition?: RecognitionConstructor; webkitSpeechRecognition?: RecognitionConstructor };
-		Constructor = browser.SpeechRecognition ?? browser.webkitSpeechRecognition ?? null;
-		supported = !!Constructor;
-		return () => { disposed = true; clearTimers(); recognition?.abort(); recognition = null; };
+		supported = canRecord();
+		return () => { disposed = true; drop(); };
 	});
+	// A reply is being sent: what is still being recorded or checked must not land in the box afterwards.
+	$effect(() => { if (disabled) drop(); });
 
-	function recordAnswer() {
-		if (listening) { recognition?.stop(); return; }
-		if (!Constructor || disabled) return;
-		stopAllAudio(); // don't record Jamie's voice
-		message = '';
-		const current = new Constructor();
-		let heardText = '', failed = false;
-		current.lang = 'en-US'; current.continuous = true; current.interimResults = true; current.maxAlternatives = 1;
-		current.onresult = event => {
-			if (disposed || recognition !== current) return;
-			const final: string[] = [];
-			let interim = '';
-			for (let index = 0; index < event.results.length; index++) {
-				const item = event.results[index];
-				const words = item?.[0]?.transcript?.trim();
-				if (!words) continue;
-				if (item.isFinal) final.push(words); else interim = words;
-			}
-			heardText = [...final, interim].filter(Boolean).join(' ');
-			clearTimeout(pauseTimer);
-			pauseTimer = setTimeout(() => current.stop(), 2_000);
-		};
-		current.onerror = event => {
-			if (disposed || recognition !== current) return;
-			failed = true;
-			message = event.error === 'not-allowed' || event.error === 'service-not-allowed'
-				? (isFa ? 'اجازهٔ میکروفون داده نشد. می‌توانی پاسخ را بنویسی.' : 'Microphone permission was declined. You can type your reply.')
-				: (isFa ? 'صدا تشخیص داده نشد. دوباره تلاش کن یا پاسخ را بنویس.' : 'We could not hear a reply. Try again or type it.');
-		};
-		current.onend = () => {
-			if (recognition !== current) return;
-			clearTimers();
-			recognition = null; listening = false;
-			if (failed) return;
-			const answer = heardText.trim();
-			if (answer.length > 300) message = isFa ? 'پاسخ خیلی بلند بود. پاسخ کوتاه‌تری بگو یا بنویس.' : 'That reply was too long. Say or type a shorter answer.';
-			else if (answer) { onTranscript(answer); message = isFa ? 'متن شنیده‌شده را بررسی کن و بعد ارسال کن.' : 'Check the words we heard, then send your reply.'; }
-			else message = isFa ? 'پاسخی شنیده نشد. دوباره تلاش کن یا آن را بنویس.' : 'No reply was heard. Try again or type it.';
-		};
-		recognition = current;
-		try {
-			current.start(); listening = true;
-			pauseTimer = setTimeout(() => current.stop(), 8_000);
-			maxTimer = setTimeout(() => current.stop(), 30_000);
-		} catch { clearTimers(); recognition = null; message = isFa ? 'میکروفون در دسترس نیست. می‌توانی پاسخ را بنویسی.' : 'The microphone is unavailable. You can type your reply.'; }
+	/** Drops any recording or check under way, including a microphone still waiting for permission. */
+	function drop() {
+		if (stage === 'idle' && !recording && !checking) return;
+		attempt++; recording?.cancel(); recording = null; checking?.abort(); checking = null;
+		if (!disposed) stage = 'idle';
+	}
+
+	/** Cuts a long reply at a word, to fit the reply box. */
+	function fit(answer: string): string {
+		if (answer.length <= MAX_REPLY) return answer;
+		const cut = answer.slice(0, MAX_REPLY), space = cut.lastIndexOf(' ');
+		return (space > MAX_REPLY * 0.6 ? cut.slice(0, space) : cut).trim();
+	}
+
+	async function recordAnswer() {
+		if (stage === 'recording') { recording?.stop(); return; }
+		if (stage !== 'idle' || disabled) return;
+		stopAllAudio(); // don't record the other speaker's voice
+		const mine = ++attempt;
+		message = ''; stage = 'opening';
+		const started = await startRecording('role-play');
+		if (disposed || mine !== attempt) { if (typeof started === 'object') started.cancel(); return; }
+		if (started === 'unsupported') { stage = 'idle'; supported = false; return; }
+		if (started === 'blocked') { stage = 'idle'; message = T('Microphone permission was declined. You can type your reply.', 'اجازهٔ میکروفون داده نشد. می‌توانی پاسخ را بنویسی.'); return; }
+		recording = started; stage = 'recording';
+		const clip = await started.done;
+		if (disposed || mine !== attempt) return;
+		recording = null;
+		if (clip === null) { stage = 'idle'; return; }
+		if (clip === 'silent') { stage = 'idle'; message = T('No reply was heard. Try again or type it.', 'پاسخی شنیده نشد. دوباره تلاش کن یا آن را بنویس.'); return; }
+		stage = 'checking';
+		const controller = new AbortController(); checking = controller;
+		const result = await transcribeClip(clip, 'role-play', controller.signal);
+		if (disposed || mine !== attempt) return;
+		checking = null; stage = 'idle';
+		if ('error' in result) {
+			message = result.error === 'limit' ? T('You’ve used today’s voice practice. You can type your reply.', 'تمرین صوتی امروز تمام شد. می‌توانی پاسخ را بنویسی.')
+				: result.error === 'unavailable' ? T('Speaking isn’t available right now. You can type your reply.', 'گفتن الان در دسترس نیست. می‌توانی پاسخ را بنویسی.')
+				: T('We could not turn that into text. Try again or type it.', 'نتوانستیم صدا را به متن تبدیل کنیم. دوباره تلاش کن یا آن را بنویس.');
+			return;
+		}
+		const answer = result.transcript.trim();
+		if (!answer) { message = T('No reply was heard. Try again or type it.', 'پاسخی شنیده نشد. دوباره تلاش کن یا آن را بنویس.'); return; }
+		const fitted = fit(answer);
+		onTranscript(fitted);
+		message = fitted.length < answer.length
+			? T('That was long, so we kept the first part. Check it, then send your reply.', 'پاسخ بلند بود و بخش اولش را نگه داشتیم. آن را بررسی کن و بعد ارسال کن.')
+			: T('Check the words we heard, then send your reply.', 'متن شنیده‌شده را بررسی کن و بعد ارسال کن.');
 	}
 </script>
 
 <div class="speech-input">
 	{#if supported}
-		<button type="button" class:active={listening} onclick={recordAnswer} disabled={disabled} aria-pressed={listening}>
-			<span aria-hidden="true">{listening ? '■' : '●'}</span>
-			{listening ? (isFa ? 'توقف ضبط' : 'Stop recording') : (isFa ? 'ضبط پاسخ' : 'Record answer')}
+		<button type="button" class:active={stage === 'recording'} onclick={recordAnswer} disabled={disabled || stage === 'opening' || stage === 'checking'} aria-pressed={stage === 'recording'}>
+			<span aria-hidden="true">{stage === 'recording' ? '■' : '●'}</span>
+			{stage === 'recording' ? T('Stop recording', 'توقف ضبط') : stage === 'checking' ? T('Turning it into text…', 'در حال تبدیل به متن…') : stage === 'opening' ? T('Opening microphone…', 'در انتظار میکروفون…') : T('Record answer', 'ضبط پاسخ')}
 		</button>
-		<span class="hint">{isFa ? 'گفتارت به متن تبدیل می‌شود؛ پیش از ارسال آن را بررسی کن.' : 'Your browser turns speech into text. Review it before sending.'}</span>
+		<span class="hint">{T('Your voice is turned into text. Review it before sending.', 'صدایت به متن تبدیل می‌شود؛ پیش از ارسال آن را بررسی کن.')}</span>
 	{:else}
-		<span class="hint">{isFa ? 'پاسخ صوتی در این مرورگر در دسترس نیست؛ پاسخ را بنویس.' : 'Voice answers are unavailable in this browser; type your reply.'}</span>
+		<span class="hint">{T('Voice answers are unavailable in this browser; type your reply.', 'پاسخ صوتی در این مرورگر در دسترس نیست؛ پاسخ را بنویس.')}</span>
 	{/if}
 	{#if message}<span class="message" role="status">{message}</span>{/if}
 </div>

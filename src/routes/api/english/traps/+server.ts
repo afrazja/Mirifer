@@ -6,7 +6,7 @@
  */
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { checkAllowance, englishLearner } from '$lib/server/english-ai';
+import { checkAllowance, englishLearner, spendClip } from '$lib/server/english-ai';
 import { transcribe, transcriptionConfigured } from '$lib/server/transcribe';
 import { createLimiter, tooMany } from '$lib/server/rate-limit';
 import { SAY_MAX_SECONDS } from '$lib/practice/traps';
@@ -30,6 +30,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 	const refused = await checkAllowance(locals, user);
 	if (refused) return refused;
+	const overBudget = await spendClip(locals, user, 'traps');
+	if (overBudget) return overBudget;
 	// A neutral hint without the sentence's words; asks to keep mistakes (the check needs them).
 	const transcript = await transcribe(audio, 'English traps lab', 'A learner of English is saying one short everyday sentence. Write exactly what they say, word for word, keeping any grammar mistakes; do not correct anything. Example of the style: "Yesterday I go to the market and buy apple."');
 	if (transcript === null) return json({ error: 'Transcription unavailable' }, { status: 502 });
