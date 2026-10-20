@@ -11,8 +11,10 @@ describe('Day 3: checking in at the hotel', () => {
 	it('both versions have their five parts, all built; only the owner gets it until it is ready', () => {
 		expect(dayById('day-3')).toBe(DAY_THREE);
 		expect(DAY_THREE.ready).toBe(false);
-		expect(modulesFor(15, DAY_THREE, 'intermediate').map(m => m.id)).toEqual(['listen-act', 'phrases', 'traps', 'say-in-english', 'voice-messages']);
-		expect(modulesFor(15, DAY_THREE, 'professional').map(m => m.id)).toEqual(['listen-retell', 'phrases', 'say-in-english', 'choose-persuade', 'scenario']);
+		expect(modulesFor(20, DAY_THREE, 'intermediate').map(m => m.id)).toEqual(['listen-act', 'phrases', 'traps', 'say-in-english', 'voice-messages']);
+		expect(modulesFor(20, DAY_THREE, 'professional').map(m => m.id)).toEqual(['listen-retell', 'phrases', 'say-in-english', 'choose-persuade', 'scenario']);
+		expect(modulesFor(15, DAY_THREE, 'intermediate').map(m => m.id)).toEqual(['listen-act', 'phrases', 'say-in-english', 'voice-messages']);
+		expect(modulesFor(15, DAY_THREE, 'professional').map(m => m.id)).toEqual(['listen-retell', 'phrases', 'choose-persuade', 'scenario']);
 		expect(allModules(DAY_THREE).every(m => m.built)).toBe(true);
 	});
 	it('every module reads Day 3’s own content', () => {

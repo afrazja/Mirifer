@@ -2,8 +2,13 @@ import { describe, it, expect } from 'vitest';
 import { completeLater, moduleBefore, LENGTHS, agendaFor, agendaMinutes, completeSession, currentModule, finishModule, modulesFor, recommend, sessionProgress, startSession, DaySessionSchema, DAYS, DAY_ONE, DAY_TWO, dayById, nextDay, TRACKS, trackFor } from './day';
 
 describe('English day shell', () => {
-	// Day 1 has two versions now (no fixed length): Intermediate is the lightest lesson, Professional a little longer.
-	it('Day 1 stays the lightest day', () => { for (const length of LENGTHS) { expect(agendaMinutes(length)).toBe(18); expect(agendaMinutes(length, DAY_ONE, 'professional')).toBe(23); } });
+	// Day 1 has two versions: Intermediate is the lightest lesson, Professional a little longer. Every lesson
+	// is 15 minutes (owner's decision), which leaves out one middle step; 20 keeps all five.
+	it('Day 1 stays the lightest day', () => {
+		expect(agendaMinutes(15)).toBe(16); expect(agendaMinutes(15, DAY_ONE, 'professional')).toBe(20);
+		expect(agendaMinutes(20)).toBe(18); expect(agendaMinutes(20, DAY_ONE, 'professional')).toBe(23);
+		for (const day of DAYS) for (const track of TRACKS) expect(agendaMinutes(15, day, track), `${day.id} ${track}`).toBeLessThanOrEqual(21);
+	});
 	it('puts check-in first and recap last', () => {
 		const ids = agendaFor(15).map(item => item.id);
 		expect(ids[0]).toBe('check-in'); expect(ids.at(-1)).toBe('recap');
@@ -34,10 +39,12 @@ describe('English day shell', () => {
 	it('finds the module before another, or before the recap', () => {
 		expect(moduleBefore(15, 'listen-act')).toBeNull();
 		expect(moduleBefore(15, 'phrases')?.id).toBe('listen-act');
-		expect(moduleBefore(15, 'traps')?.id).toBe('phrases');
+		expect(moduleBefore(15, 'say-in-english')?.id).toBe('phrases');
+		expect(moduleBefore(20, 'traps')?.id).toBe('phrases');
 		expect(moduleBefore(15, null)?.id).toBe('voice-messages');
 		expect(moduleBefore(15, 'say-it-better', DAY_ONE, 'professional')?.id).toBe('phrases');
-		expect(moduleBefore(15, 'say-in-english', DAY_ONE, 'professional')?.id).toBe('say-it-better');
+		expect(moduleBefore(20, 'say-in-english', DAY_ONE, 'professional')?.id).toBe('say-it-better');
+		expect(moduleBefore(15, 'scenario', DAY_ONE, 'professional')?.id).toBe('say-it-better');
 		expect(moduleBefore(20, null, DAY_ONE, 'professional')?.id).toBe('scenario');
 	});
 	it('lets a skipped module be done later, keeping the score', () => {
@@ -57,10 +64,10 @@ describe('more than one day', () => {
 			const ids = agendaFor(length, day).map(item => item.id);
 			expect(ids[0]).toBe('check-in'); expect(ids.at(-1)).toBe('recap');
 		}
-		// A day with two versions has no time limit (owner's decision): five modules, check-in first and recap last.
-		for (const day of DAYS.filter(d => d.tracks)) for (const track of TRACKS) {
-			const ids = agendaFor(15, day, track).map(item => item.id);
-			expect(ids, `${day.id} ${track}`).toHaveLength(7);
+		// A day with two versions: five modules at 20 minutes, four at 15 (one middle step left out); check-in first and recap last.
+		for (const day of DAYS.filter(d => d.tracks)) for (const track of TRACKS) for (const [length, count] of [[15, 6], [20, 7]] as const) {
+			const ids = agendaFor(length, day, track).map(item => item.id);
+			expect(ids, `${day.id} ${track} ${length}`).toHaveLength(count);
 			expect(ids[0]).toBe('check-in'); expect(ids.at(-1)).toBe('recap');
 			expect(new Set(ids).size).toBe(ids.length);
 		}
@@ -78,11 +85,13 @@ describe('more than one day', () => {
 			expect(moduleBefore(15, null, DAY_TWO, track)?.id).toBe(ids.at(-1));
 			expect(sessionProgress(completeSession(s))).toBe(1);
 		}
-		expect(modulesFor(15, DAY_TWO, 'intermediate').map(m => m.id)).toEqual(['listen-act', 'phrases', 'traps', 'say-in-english', 'voice-messages']);
-		expect(modulesFor(15, DAY_TWO, 'professional').map(m => m.id)).toEqual(['listen-retell', 'phrases', 'say-in-english', 'choose-persuade', 'scenario']);
+		expect(modulesFor(20, DAY_TWO, 'intermediate').map(m => m.id)).toEqual(['listen-act', 'phrases', 'traps', 'say-in-english', 'voice-messages']);
+		expect(modulesFor(20, DAY_TWO, 'professional').map(m => m.id)).toEqual(['listen-retell', 'phrases', 'say-in-english', 'choose-persuade', 'scenario']);
+		expect(modulesFor(15, DAY_TWO, 'intermediate').map(m => m.id)).toEqual(['listen-act', 'phrases', 'say-in-english', 'voice-messages']);
+		expect(modulesFor(15, DAY_TWO, 'professional').map(m => m.id)).toEqual(['listen-retell', 'phrases', 'choose-persuade', 'scenario']);
 		// Day 1 has two versions too (rebuilt): its session keeps its version.
 		expect(startSession(15, new Date(), DAY_ONE, 'professional').track).toBe('professional');
-		expect(modulesFor(15, DAY_ONE, 'professional').map(m => m.id)).toEqual(['listen-act', 'phrases', 'say-it-better', 'say-in-english', 'scenario']);
+		expect(modulesFor(15, DAY_ONE, 'professional').map(m => m.id)).toEqual(['listen-act', 'phrases', 'say-it-better', 'scenario']);
 		expect(DaySessionSchema.safeParse({ ...startSession(15, new Date(), DAY_TWO), day: 'day-9' }).success).toBe(false);
 		expect(DaySessionSchema.safeParse({ ...startSession(15, new Date(), DAY_TWO), track: 'expert' }).success).toBe(false);
 	});

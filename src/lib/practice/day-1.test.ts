@@ -9,8 +9,11 @@ import { LAB_SETS, labModule } from './lab-sets';
 describe('Day 1, rebuilt in two versions', () => {
 	it('stays live, opens with Sara at the baggage desk in both versions, and is the lightest day', () => {
 		expect(DAY_ONE.ready).toBe(true);
-		expect(modulesFor(15, DAY_ONE, 'intermediate').map(m => m.id)).toEqual(['listen-act', 'phrases', 'traps', 'say-in-english', 'voice-messages']);
-		expect(modulesFor(15, DAY_ONE, 'professional').map(m => m.id)).toEqual(['listen-act', 'phrases', 'say-it-better', 'say-in-english', 'scenario']);
+		expect(modulesFor(20, DAY_ONE, 'intermediate').map(m => m.id)).toEqual(['listen-act', 'phrases', 'traps', 'say-in-english', 'voice-messages']);
+		expect(modulesFor(20, DAY_ONE, 'professional').map(m => m.id)).toEqual(['listen-act', 'phrases', 'say-it-better', 'say-in-english', 'scenario']);
+		// Every lesson is 15 minutes (owner's decision): one middle step is left out.
+		expect(modulesFor(15, DAY_ONE, 'intermediate').map(m => m.id)).toEqual(['listen-act', 'phrases', 'say-in-english', 'voice-messages']);
+		expect(modulesFor(15, DAY_ONE, 'professional').map(m => m.id)).toEqual(['listen-act', 'phrases', 'say-it-better', 'scenario']);
 		expect(allModules(DAY_ONE).every(m => m.built)).toBe(true);
 		expect(agendaMinutes(15, DAY_ONE, 'intermediate')).toBeLessThan(agendaMinutes(15, DAY_ONE, 'professional'));
 		expect(DAY_ONE.goal.en).toContain('describe your bag');

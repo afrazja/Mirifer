@@ -17,8 +17,8 @@ Predictability is a real risk, but mostly from **week 2–3**. The code shows bi
 **today**:
 1. **Learners can only do Day 1.** Days 2–3 aren't released, so the next day is Day 1 again: the
    most predictable thing in the app.
-2. **Sessions run longer than the learner chose.** Onboarding offers 15 or 20 minutes; Day 1 takes
-   18–23 and Days 2–3 about 22–25 (the length choice is ignored on two-version days).
+2. **Sessions run longer than promised.** Every lesson is meant to be 15 minutes; Day 1 took
+   18–23 and Days 2–3 about 22–25.
 3. **Nothing brings learners back** (no reminder) and **nothing shows progress** (no week view).
 4. **We can't see where learners stop**: the daily lessons send no lesson or step events.
 5. **No review of earlier days**: yesterday's phrases never come back.
@@ -30,7 +30,7 @@ Predictability is a real risk, but mostly from **week 2–3**. The code shows bi
 - **Measure:** the server records `lesson_started`, one `lesson_progress` per step (done or
   skipped) and `lesson_completed`, with day, version and length. Next-day and day-7 return are
   worked out from these in a report. Collect 1–2 weeks of data as a baseline.
-- **Keep sessions to the chosen length** (owner's decision below).
+- **Shorter lessons:** one middle step fewer (owner's decision below; done).
 
 ### Step 2: the story hook (small)
 - Every day ends on one line from Mira about tomorrow ("Sara's phone rings at 6 a.m. It's not the
@@ -87,8 +87,10 @@ learners these numbers are signals, not proof: read them with what learners tell
 
 1. **Order:** groundwork first (release Days 2–3, measure, keep to the chosen length), then the
    hook and the surprises; changing middle steps only if the data shows week-2 boredom.
-2. **Session length:** each day keeps to the chosen 15 or 20 minutes; a 15-minute day drops one
-   middle step.
+2. **Session length:** learners don't choose a length (onboarding stopped asking; every lesson is
+   15 minutes). So **every lesson drops one middle step**: Intermediate leaves out Persian-speaker
+   traps, Professional leaves out Say it in English. Lessons now take about 16–21 minutes, and
+   onboarding says "about 15 to 20 minutes". (Done.)
 3. **Intermediate role-play:** only in the week's mission (guided and short); daily Intermediate
    lessons stay without one.
 4. **Mira remembers:** later, with a privacy design. For now Mira uses only what onboarding asks
