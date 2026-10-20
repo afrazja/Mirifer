@@ -1,5 +1,7 @@
 # On-device pronunciation check (Module lab experiment)
 
+**Removed from the app on 2026-10-20 (owner's decision):** few learners would use it on its own, and it was the only module using the on-device speech model. The idea may come back inside another module. The full code (module, on-device check, tests) is in git history: restore it from commit `f09ebba` (paths `src/lib/practice/minimal-pairs.ts`, `pronounce-local.ts`, `src/lib/services/local-pronounce.ts`, `src/lib/components/MinimalPairs.svelte`, `PronounceCheck.svelte`, `src/routes/practice/english/lab/minimal-pairs/`), plus the `@huggingface/transformers` dependency and the `onnxruntime-web` alias in `vite.config.js`.
+
 Status: **experiment, owner-approved in chat** ("lets try number 2, but I dont want the size get bigger than 100 mg"). Only in the Module lab (owner-only), reached from the Minimal pairs result.
 
 ## Why

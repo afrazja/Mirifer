@@ -12,9 +12,9 @@ const learner = { id: 'u1', email: 'a@b.c', email_confirmed_at: '2026-01-01T00:0
 const owner = { ...learner, id: 'u0', email: 'Owner@M.test' };
 
 describe('Module lab', () => {
-	it('lists the 18 module types once each', () => {
-		expect(LAB_MODULES).toHaveLength(18);
-		expect(new Set(LAB_MODULES.map(m => m.id)).size).toBe(18);
+	it('lists the 17 module types once each', () => {
+		expect(LAB_MODULES).toHaveLength(17);
+		expect(new Set(LAB_MODULES.map(m => m.id)).size).toBe(17);
 	});
 	it('opens a built module from every card', () => {
 		expect(LAB_MODULES.filter(m => !m.href).map(m => m.id)).toEqual([]);
