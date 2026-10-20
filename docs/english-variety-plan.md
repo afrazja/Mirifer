@@ -1,7 +1,7 @@
 # Making the daily lessons less predictable (plan v2)
 
-Status: **v2, after review (product growth, learning UX, system design); waiting for the owner's
-decisions (end of file).** The owner's concern: when every day has the same five steps, learners
+Status: **v2, approved by the owner (decisions at the end of the file).** Reviewed by product
+growth, learning UX and system design. The owner's concern: when every day has the same five steps, learners
 know what's coming, get bored and stop coming back. Building many new module types is too costly.
 
 ## The principle (all three reviewers agree)
@@ -83,13 +83,15 @@ Predictability is a real risk, but mostly from **week 2–3**. The code shows bi
 Next-day and day-7 return per learner, step-by-step completion, and skip rate by step. With few
 learners these numbers are signals, not proof: read them with what learners tell us.
 
-## Decisions for the owner
+## The owner's decisions
 
-1. **Order:** groundwork and the hook first, variety after (the reviewers' order), or the v1 order?
-2. **Session length:** keep each day within the chosen 15 or 20 minutes (a 15-minute day drops one
-   middle step), or keep five steps and say "about 25 minutes" at onboarding?
-3. **Intermediate role-play:** none until the week's mission, a short one in the daily lesson, or
-   never?
-4. **Mira remembers:** plan it later with a privacy design, or never store what learners say?
-5. Conflicts with the themes plan (v3.2): it merges the lab into six modules and puts the big day
-   on Day 7. This plan uses the existing module types and the last day of each week.
+1. **Order:** groundwork first (release Days 2–3, measure, keep to the chosen length), then the
+   hook and the surprises; changing middle steps only if the data shows week-2 boredom.
+2. **Session length:** each day keeps to the chosen 15 or 20 minutes; a 15-minute day drops one
+   middle step.
+3. **Intermediate role-play:** only in the week's mission (guided and short); daily Intermediate
+   lessons stay without one.
+4. **Mira remembers:** later, with a privacy design. For now Mira uses only what onboarding asks
+   (the learner's reason for learning).
+5. Still open: the conflicts with the themes plan (v3.2: six merged modules; the big day on Day 7).
+   This plan uses the existing module types and the last day of each week.
