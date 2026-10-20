@@ -4,6 +4,7 @@ import { DaySessionSchema, TRACKS, dayById, dayOf, nextDay, sessionModules, trac
 import { readEnglishProgress, recordSession, type EnglishProgress } from '$lib/practice/english-progress';
 import { readEnglishProfile } from '$lib/practice/english-profile';
 import { canUseLab } from '$lib/server/lab-access';
+import { lessonEvents } from '$lib/server/lesson-events';
 
 export const load: PageServerLoad = async ({ locals, url, parent }) => {
 	const { data: { user }, error } = await locals.supabase.auth.getUser();
@@ -39,7 +40,11 @@ export const actions: Actions = {
 		const { data: { user }, error } = await locals.supabase.auth.getUser();
 		if (error || !user) return fail(401, { error: 'sign_in' });
 		if (user.user_metadata?.target_language !== 'en') return fail(409, { error: 'course_changed' });
-		const raw = (await request.formData()).get('session');
+		const form = await request.formData();
+		const raw = form.get('session');
+		// The learner's UTC offset in minutes, so the report counts their own calendar days.
+		const offset = Number(form.get('utcOffset'));
+		const utcOffsetMin = Number.isInteger(offset) && Math.abs(offset) <= 840 ? offset : null;
 		if (typeof raw !== 'string' || raw.length > 1000) return fail(400, { error: 'invalid' });
 		let value: unknown = null;
 		if (raw !== '') {
@@ -50,6 +55,8 @@ export const actions: Actions = {
 			if (!dayOf(parsed.data).ready && !canUseLab(user)) return fail(400, { error: 'invalid' });
 			value = parsed.data;
 		}
+		const storedParse = DaySessionSchema.safeParse(user.user_metadata?.english_day_v1);
+		const stored = storedParse.success ? storedParse.data : null;
 		const data: Record<string, unknown> = { english_day_v1: value };
 		const progress = progressAfter(user.user_metadata, value as DaySession | null);
 		if (progress) data.english_progress_v1 = progress;
@@ -57,6 +64,11 @@ export const actions: Actions = {
 			const { error: saveError } = await locals.supabase.auth.updateUser({ data });
 			if (saveError) return fail(503, { error: 'save_failed' });
 		} catch { return fail(503, { error: 'save_failed' }); }
+		// Lesson analytics: never fails the save.
+		try {
+			const rows = lessonEvents(user.id, stored, value as DaySession | null, new Date(), utcOffsetMin);
+			if (rows.length) await locals.supabase.from('events').insert(rows.map(row => ({ ...row, user_id: user.id })));
+		} catch { /* analytics are best effort */ }
 		return { saved: true };
 	}
 };
