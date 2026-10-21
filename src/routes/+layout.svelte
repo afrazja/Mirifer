@@ -21,7 +21,7 @@
 	import { inject } from '@vercel/analytics';
 	import { injectSpeedInsights } from '@vercel/speed-insights/sveltekit';
 	import { initTheme, refreshTheme } from '$services/theme';
-	import { getLanguage, applyDocumentLanguage } from '$services/data-layer';
+	import { getLanguage, applyDocumentLanguage, urlLanguage } from '$services/data-layer';
 	import { env } from '$env/dynamic/public';
 	import { captureAcquisition } from '$services/acquisition';
 
@@ -70,6 +70,8 @@
 	});
 
 	let { children, data } = $props();
+	// Moving between public pages (/ and /fa) in the browser: the address sets the page language.
+	$effect(() => { if (urlLanguage(page.url.pathname)) applyDocumentLanguage(null); });
 
 	// ── Always show the current release ──
 	// A new service worker takes over the open tab (it calls skipWaiting and
@@ -103,7 +105,7 @@
 	// SvelteKit polls for a new release (see svelte.config.js). On the public
 	// pages nothing is in progress, so reload straight away; in the app the
 	// next link click does a full load instead of interrupting a lesson.
-	const PUBLIC_PAGES = ['/', '/fa', '/try', '/login'];
+	const PUBLIC_PAGES = ['/', '/fa', '/try', '/fa/try', '/login'];
 	$effect(() => {
 		if (updated.current && PUBLIC_PAGES.includes(page.url.pathname)) location.reload();
 	});
@@ -121,6 +123,9 @@
 				/* stays English */
 			});
 	});
+
+	// On public pages the address sets the language, so the link matches the page.
+	const skipFa = $derived((urlLanguage(page.url.pathname) ?? skipLang) === 'fa');
 
 	afterNavigate(() => {
 		refreshTheme();
@@ -182,7 +187,7 @@
 </svelte:head>
 
 <a href="#main-content" class="skip-link">
-	{skipLang === 'fa' ? 'رفتن به محتوا' : 'Skip to content'}
+	{skipFa ? 'رفتن به محتوا' : 'Skip to content'}
 </a>
 
 {@render children()}

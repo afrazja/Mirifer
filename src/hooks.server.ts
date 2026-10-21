@@ -20,7 +20,12 @@ export const handle: Handle = async ({ event, resolve }) => {
 		if (destination) redirect(303, destination);
 	}
 
+	// The public pages take their language from the address, not the learner's saved setting:
+	// /fa and its pages are Persian, the rest of the public pages English (screen readers and search).
+	const path = event.url.pathname;
+	const persian = path === '/fa' || path.startsWith('/fa/');
 	return resolve(event, {
+		transformPageChunk: ({ html }) => (persian ? html.replace('<html lang="en">', '<html lang="fa" dir="rtl">') : html),
 		filterSerializedResponseHeaders(name) {
 			return name === 'content-range' || name === 'x-supabase-api-version';
 		}

@@ -8,7 +8,7 @@
  */
 import type { DisplayText } from './hotel';
 
-export const PRACTICE_IDS = ['speaking-card', 'quick-fire', 'say-better', 'read-rate', 'free-talk', 'retell', 'dictation'] as const;
+export const PRACTICE_IDS = ['speaking-card', 'quick-fire', 'say-better', 'traps', 'read-rate', 'free-talk', 'retell', 'dictation'] as const;
 export type PracticeId = (typeof PRACTICE_IDS)[number];
 export const isPracticeId = (value: unknown): value is PracticeId => typeof value === 'string' && (PRACTICE_IDS as readonly string[]).includes(value);
 
@@ -26,26 +26,29 @@ const href = (id: PracticeId) => (id === 'retell' ? '/practice/english/retell' :
 const module = (id: PracticeId, title: DisplayText, does: DisplayText, minutes: number): PracticeModule => ({ id, title, does, minutes, href: href(id) });
 
 export const PRACTICE_MODULES: Record<PracticeId, PracticeModule> = {
-	'speaking-card': module('speaking-card', { en: 'Speaking card', fa: 'کارت صحبت' },
+	'speaking-card': module('speaking-card', { en: 'Speaking card', fa: 'کیوکارت' },
 		{ en: 'Get a topic, prepare for a minute, then talk about it for up to two minutes.', fa: 'یک موضوع می‌گیری، یک دقیقه آماده می‌شوی و بعد تا دو دقیقه درباره‌اش صحبت می‌کنی.' }, 6),
 	'quick-fire': module('quick-fire', { en: 'Quick-fire questions', fa: 'سؤال‌های سریع' },
 		{ en: 'Answer six short questions about yourself, one after another.', fa: 'به شش سؤال کوتاه دربارهٔ خودت، یکی پس از دیگری، جواب بده.' }, 4),
 	'say-better': module('say-better', { en: 'Say it again, better', fa: 'دوباره بگو، بهتر' },
 		{ en: 'Answer a question, get one tip from Mira, then answer it again.', fa: 'به یک سؤال جواب بده، از میرا یک نکته بگیر و دوباره جواب بده.' }, 5),
+	traps: module('traps', { en: 'Persian-speaker traps', fa: 'اشتباه‌های آشنا' },
+		{ en: 'Find the mistake Persian speakers often make, then say the sentence right.', fa: 'اشتباهی را که فارسی‌زبان‌ها زیاد می‌کنند پیدا کن و بعد جمله را درست بگو.' }, 4),
 	'read-rate': module('read-rate', { en: 'Read, rate, respond', fa: 'بخوان، امتیاز بده، پاسخ بده' },
 		{ en: 'Read a short review, message or ad, rate it, and say what you think.', fa: 'یک نقد، پیام یا آگهی کوتاه بخوان، به آن امتیاز بده و نظرت را بگو.' }, 6),
 	'free-talk': module('free-talk', { en: '60-second free talk', fa: 'صحبت آزاد ۶۰ ثانیه‌ای' },
 		{ en: 'Talk for one minute about an easy topic, without stopping.', fa: 'یک دقیقه، بدون توقف، دربارهٔ یک موضوع ساده صحبت کن.' }, 3),
 	retell: module('retell', { en: 'Listen and retell', fa: 'گوش بده و بازگو کن' },
-		{ en: 'Hear a short story, then tell it in your own words.', fa: 'یک ماجرای کوتاه بشنو و بعد با کلمات خودت تعریفش کن.' }, 5),
+		{ en: 'Hear a short story, then tell it in your own words.', fa: 'یک ماجرای کوتاه بشنو و بعد به زبان خودت تعریفش کن.' }, 5),
 	dictation: module('dictation', { en: 'Dictation sprint', fa: 'دیکتهٔ سریع' },
 		{ en: 'Hear short sentences and type exactly what you hear.', fa: 'جمله‌های کوتاه را بشنو و دقیقاً همان را که می‌شنوی بنویس.' }, 4)
 };
 
 export const PRACTICE_GROUPS: { id: string; title: DisplayText; ids: PracticeId[] }[] = [
-	{ id: 'test', title: { en: 'Speaking test practice', fa: 'تمرین آزمون صحبت' }, ids: ['speaking-card', 'quick-fire', 'say-better'] },
+	{ id: 'test', title: { en: 'Speaking test practice', fa: 'تمرین آزمون اسپیکینگ' }, ids: ['speaking-card', 'quick-fire', 'say-better'] },
+	{ id: 'mistakes', title: { en: 'Common mistakes', fa: 'اشتباه‌های رایج' }, ids: ['traps'] },
 	{ id: 'opinion', title: { en: 'Speak your mind', fa: 'نظرت را بگو' }, ids: ['read-rate', 'free-talk'] },
-	{ id: 'listening', title: { en: 'Listening', fa: 'شنیدن' }, ids: ['retell', 'dictation'] }
+	{ id: 'listening', title: { en: 'Listening', fa: 'شنیداری' }, ids: ['retell', 'dictation'] }
 ];
 
 /**
@@ -54,8 +57,8 @@ export const PRACTICE_GROUPS: { id: string; title: DisplayText; ids: PracticeId[
  */
 export function suggestPractice(tried: readonly string[], track: 'intermediate' | 'professional' = 'intermediate'): PracticeId {
 	const order: PracticeId[] = track === 'intermediate'
-		? ['quick-fire', 'dictation', 'free-talk', 'retell', 'say-better', 'read-rate', 'speaking-card']
-		: ['speaking-card', 'quick-fire', 'say-better', 'read-rate', 'retell', 'free-talk', 'dictation'];
+		? ['quick-fire', 'traps', 'dictation', 'free-talk', 'retell', 'say-better', 'read-rate', 'speaking-card']
+		: ['speaking-card', 'quick-fire', 'say-better', 'traps', 'read-rate', 'retell', 'free-talk', 'dictation'];
 	return order.find(id => !tried.includes(id)) ?? order.find(id => id === tried[0]) ?? order[0];
 }
 

@@ -14,6 +14,10 @@
 	import ReadRate from '$lib/components/ReadRate.svelte';
 	import FreeTalk from '$lib/components/FreeTalk.svelte';
 	import DictationSprint from '$lib/components/DictationSprint.svelte';
+	import Traps from '$lib/components/Traps.svelte';
+	import { trapsFor } from '$lib/practice/day-content';
+	import { DAY_IDS } from '$lib/practice/day';
+	import { asTrapsRecord, type TrapsRecord } from '$lib/practice/traps';
 	import { getLanguage } from '$services/data-layer';
 	import { stopAllAudio } from '$services/tts';
 	import { dailyLimit } from '$services/practice-fetch';
@@ -40,10 +44,28 @@
 
 	/** Whether this learner has done this module here before (the module's own first-time intro). */
 	const seenBefore = load() !== null;
+	/**
+	 * Traps: each round is one day's sentences (the airport, the taxi, the hotel), kept as
+	 * { day, record }; "Try another one" goes on to the next day's.
+	 */
+	type TrapsRun = { day: string; record: TrapsRecord | null };
+	function trapsRun(): TrapsRun {
+		const value = load() as { day?: unknown; record?: unknown } | null;
+		const day = typeof value?.day === 'string' && (DAY_IDS as readonly string[]).includes(value.day) ? value.day : DAY_IDS[0];
+		return { day, record: asTrapsRecord(value?.record, trapsFor(day, true)) };
+	}
+	function nextTrapsRun(): TrapsRun {
+		const run = trapsRun();
+		if (!run.record?.done) return run;
+		const day = DAY_IDS[(DAY_IDS.indexOf(run.day as never) + 1) % DAY_IDS.length];
+		return { day, record: null };
+	}
+	let trapsDay = $state(DAY_IDS[0] as string);
+
 	/** A finished run in storage: show its end screen, not a silent restart. */
 	function savedDone(): boolean {
 		const value = load();
-		const done = (value as { done?: unknown } | null)?.done;
+		const done = id === 'traps' ? trapsRun().record?.done : (value as { done?: unknown } | null)?.done;
 		return id !== 'free-talk' && done === true;
 	}
 	/** What a run starts with: the unfinished run, or after a finished one, the next item. */
@@ -56,6 +78,7 @@
 			case 'read-rate': { const r = asReadRate(value); return r && !r.done ? r : null; }
 			case 'free-talk': return asFreeTalk(value);
 			case 'dictation': { const r = asDictation(value); return r && !r.done ? r : null; }
+			case 'traps': { const next = nextTrapsRun(); trapsDay = next.day; return next.record; }
 			default: return null;
 		}
 	}
@@ -77,7 +100,7 @@
 		? T('You’ve used today’s speaking time. Come back tomorrow to keep practicing.', 'وقت صحبت امروزت تمام شد. فردا برگرد و تمرین را ادامه بده.')
 		: $dailyLimit === 'practice'
 			? T('You’ve done all the practice for today. Come back tomorrow; your daily lesson is still open.', 'تمرین امروزت کامل شد. فردا برگرد؛ درس روزانه‌ات هنوز باز است.')
-			: T('Today’s coaching is used up. Come back tomorrow.', 'مربی‌گری امروز تمام شد. فردا برگرد.'));
+			: T('Today’s coaching is used up. Come back tomorrow.', 'سهم امروزت از بازخورد میرا تمام شد. فردا برگرد.'));
 </script>
 
 <svelte:head>
@@ -107,6 +130,7 @@
 			{:else if id === 'say-better'}<SayBetterLab {isFa} initial={initial as never} first={run === 0 && !seenBefore} onSave={save} {onDone} />
 			{:else if id === 'read-rate'}<ReadRate {isFa} initial={initial as never} first={run === 0 && !seenBefore} onSave={save} {onDone} />
 			{:else if id === 'free-talk'}<FreeTalk {isFa} initial={initial as never} first={run === 0 && !seenBefore} onSave={save} {onDone} />
+			{:else if id === 'traps'}<Traps {isFa} traps={trapsFor(trapsDay, true)} initial={initial as never} onSave={record => save({ day: trapsDay, record })} onDone={onDone} />
 			{:else if id === 'dictation'}<DictationSprint {isFa} initial={initial as never} first={run === 0 && !seenBefore} onSave={save} {onDone} onLater={() => (finished = 'later')} />{/if}
 		{/key}
 	{/if}

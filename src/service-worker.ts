@@ -38,7 +38,7 @@ const ASSETS = [...build, ...PRECACHE_FILES];
 const ASSET_SET = new Set(ASSETS);
 
 /** Pages for anyone who is not signed in yet: always fresh, never saved. */
-const PUBLIC_PAGES = new Set(['/', '/fa', '/try', '/login', '/privacy', '/terms']);
+const PUBLIC_PAGES = new Set(['/', '/fa', '/try', '/fa/try', '/login', '/privacy', '/terms']);
 
 sw.addEventListener('install', (event) => {
 	event.waitUntil(

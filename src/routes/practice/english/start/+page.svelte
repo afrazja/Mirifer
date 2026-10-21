@@ -16,10 +16,10 @@
 	type Reason = NonNullable<EnglishProfileAnswers['reason']>;
 	type Comfort = NonNullable<EnglishProfileAnswers['comfort']>;
 	const REASON_OPTIONS: { id: Reason; icon: string; label: DisplayText; summary: DisplayText }[] = [
-		{ id: 'travel', icon: '✈️', label: { en: 'Travel', fa: 'سفر' }, summary: { en: 'We’ll start with situations you meet when you travel.', fa: 'با موقعیت‌هایی شروع می‌کنیم که در سفر پیش می‌آید.' } },
-		{ id: 'work', icon: '💼', label: { en: 'Work and interviews', fa: 'کار و مصاحبهٔ کاری' }, summary: { en: 'We’ll start with situations from work and job interviews.', fa: 'با موقعیت‌های کاری و مصاحبهٔ شغلی شروع می‌کنیم.' } },
-		{ id: 'exam', icon: '🎓', label: { en: 'IELTS and other exams', fa: 'آیلتس و آزمون‌های دیگر' }, summary: { en: 'We’ll practise the kind of speaking and listening exams like IELTS ask for.', fa: 'همان نوع صحبت کردن و شنیدنی را تمرین می‌کنیم که آزمون‌هایی مثل آیلتس می‌خواهند.' } },
-		{ id: 'abroad', icon: '🏠', label: { en: 'Living abroad', fa: 'زندگی در خارج از کشور' }, summary: { en: 'We’ll start with everyday situations from life abroad.', fa: 'با موقعیت‌های روزمرهٔ زندگی در خارج از کشور شروع می‌کنیم.' } },
+		{ id: 'travel', icon: '✈️', label: { en: 'Travel', fa: 'سفر' }, summary: { en: 'We’ll start with situations you meet when you travel.', fa: 'با موقعیت‌هایی شروع می‌کنیم که در سفر پیش می‌آیند.' } },
+		{ id: 'work', icon: '💼', label: { en: 'Work and interviews', fa: 'کار و مصاحبهٔ کاری' }, summary: { en: 'Your first days are a travel story. Work situations and job interviews are coming soon.', fa: 'درس‌های اول ماجرای یک سفر است. موقعیت‌های کاری و مصاحبهٔ کاری به‌زودی اضافه می‌شوند.' } },
+		{ id: 'exam', icon: '🎓', label: { en: 'IELTS and other exams', fa: 'آیلتس و آزمون‌های دیگر' }, summary: { en: 'Your daily lessons build everyday speaking, and Practice has IELTS-style speaking: a topic card, quick questions and more.', fa: 'درس‌های روزانه حرف زدن روزمره را تقویت می‌کنند و در بخش تمرین، اسپیکینگ به سبک آیلتس هست: کیوکارت، سؤال‌های سریع و تمرین‌های دیگر.' } },
+		{ id: 'abroad', icon: '🏠', label: { en: 'Living abroad', fa: 'زندگی در خارج از کشور' }, summary: { en: 'We’ll start with arriving in a new city: the airport, a taxi, a hotel.', fa: 'با رسیدن به یک شهر تازه شروع می‌کنیم: فرودگاه، تاکسی، هتل.' } },
 		{ id: 'everyday', icon: '💬', label: { en: 'Everyday confidence', fa: 'اعتمادبه‌نفس در گفت‌وگوهای روزمره' }, summary: { en: 'We’ll start with everyday conversations, so speaking feels easier.', fa: 'با گفت‌وگوهای روزمره شروع می‌کنیم تا حرف زدن راحت‌تر شود.' } }
 	];
 	const COMFORT_OPTIONS: { id: Comfort; label: DisplayText }[] = [

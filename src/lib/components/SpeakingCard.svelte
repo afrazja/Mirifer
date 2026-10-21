@@ -275,7 +275,7 @@
 {/snippet}
 
 <section class="sc">
-	<h2 class="sr-only" tabindex="-1" bind:this={heading}>{stage === 'talk' && paused ? T('Paused', 'مکث') : T('Speaking card', 'کارت صحبت')}</h2>
+	<h2 class="sr-only" tabindex="-1" bind:this={heading}>{stage === 'talk' && paused ? T('Paused', 'مکث') : T('Speaking card', 'کیوکارت')}</h2>
 	<p class="sr-only" role="status" aria-live="polite">{announce}</p>
 
 	{#if stage === 'card'}

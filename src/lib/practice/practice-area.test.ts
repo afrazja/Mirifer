@@ -19,7 +19,8 @@ describe('the Practice area', () => {
 	it('suggests the next module not tried yet, starting easy for Intermediate', () => {
 		expect(suggestPractice([], 'intermediate')).toBe('quick-fire');
 		expect(suggestPractice([], 'professional')).toBe('speaking-card');
-		expect(suggestPractice(['quick-fire'], 'intermediate')).toBe('dictation');
+		expect(suggestPractice(['quick-fire'], 'intermediate')).toBe('traps');
+		expect(suggestPractice(['quick-fire', 'traps'], 'intermediate')).toBe('dictation');
 		// All tried: the one used longest ago.
 		expect(suggestPractice(['read-rate', ...PRACTICE_IDS.filter(id => id !== 'read-rate')], 'intermediate')).toBe('read-rate');
 	});
