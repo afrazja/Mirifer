@@ -13,6 +13,8 @@ export interface LandingCopy {
 	description: string;
 	eyebrow: string;
 	h1: string;
+	/** The word in the headline that gets the speech-bubble highlight; it must appear in h1. */
+	h1Mark: string;
 	line: string;
 	cta: string;
 	sample: string;
@@ -20,8 +22,6 @@ export interface LandingCopy {
 	signIn: string;
 	switchLabel: string;
 	figure: { caption: string; mira: string; you: string; promptFa: string; promptEn: string | null; said: string; fixLabel: string; fix: string; tipLabel: string; tip: Rich };
-	/** Short facts that float around the phone in the first screen. */
-	badges: string[];
 	day: { h: string; steps: { title: string; text: string }[]; dayOne: string; need: string; row: string };
 	practice: { h: string; cards: { title: string; text: string }[]; soon: { title: string; text: string } };
 	/** Heading for the privacy-and-questions section (read by screen readers only). */
@@ -39,13 +39,13 @@ export const LANDING: Record<LandingLang, LandingCopy> = {
 		description: 'Practice speaking English out loud with Mira, your AI coach: short daily lessons for travel, everyday life and IELTS-style speaking, with feedback. Free for now.',
 		eyebrow: 'English speaking practice with an AI coach',
 		h1: 'You know English. Now speak it.',
+		h1Mark: 'speak',
 		line: 'Short daily speaking lessons with Mira, your AI coach. For travel, everyday life, and IELTS-style speaking practice.',
 		cta: 'Start free',
 		sample: 'Try a 2-minute sample (no sign-up)',
 		small: 'Free for now · No payment details · Nothing to install',
 		signIn: 'Sign in',
 		switchLabel: 'فارسی',
-		badges: ['15 min a day', 'IELTS-style speaking', 'Free for now'],
 		figure: {
 			caption: 'Example from Day 1: Mira gives you something to say, you say it, and she shows a natural way to say it.',
 			mira: 'Mira:', you: 'You:',
@@ -100,13 +100,13 @@ export const LANDING: Record<LandingLang, LandingCopy> = {
 		description: 'با میرا، مربی هوش مصنوعی‌ات، انگلیسی را بلند تمرین کن: درس‌های کوتاه روزانه برای سفر، زندگی روزمره و تمرین اسپیکینگ به سبک آیلتس، با بازخورد. فعلاً رایگان.',
 		eyebrow: 'تمرین مکالمهٔ انگلیسی با مربی هوش مصنوعی',
 		h1: 'انگلیسی بلدی. حالا وقت حرف زدن است',
+		h1Mark: 'حرف زدن',
 		line: 'درس‌های کوتاه روزانهٔ مکالمه با میرا، مربی هوش مصنوعی‌ات؛ برای سفر، زندگی روزمره و تمرین اسپیکینگ به سبک آیلتس.',
 		cta: 'رایگان شروع کن',
 		sample: 'یک نمونهٔ دودقیقه‌ای امتحان کن (بدون ثبت‌نام)',
 		small: 'فعلاً رایگان، بدون پرداخت، بدون نصب',
 		signIn: 'ورود',
 		switchLabel: 'English',
-		badges: ['روزی ۱۵ دقیقه', 'اسپیکینگ به سبک آیلتس', 'فعلاً رایگان'],
 		figure: {
 			caption: 'نمونه‌ای از روز اول: میرا می‌گوید چه بگویی، تو می‌گویی و او شکل طبیعی‌ترش را نشانت می‌دهد.',
 			mira: 'میرا:', you: 'تو:',

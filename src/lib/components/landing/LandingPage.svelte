@@ -66,6 +66,8 @@
 	}
 	const started = () => visitorEvent('signup_clicked', lang, 'landing');
 	const bars = Array.from({ length: 14 }, (_, i) => i);
+	/** The headline around its highlighted word ("speak"), which sits in a speech-bubble shape. */
+	const h1Parts = $derived.by(() => { const at = c.h1.indexOf(c.h1Mark); return at < 0 ? [c.h1, ''] : [c.h1.slice(0, at), c.h1.slice(at + c.h1Mark.length)]; });
 </script>
 
 {#snippet rich(parts: Rich)}{#each parts as part}{#if typeof part === 'string'}{part}{:else}<bdi lang="en">{part.en}</bdi>{/if}{/each}{/snippet}
@@ -88,20 +90,22 @@
 	{#if suggestFa}
 		<p class="suggest" lang="fa" dir="rtl"><a href="/fa">این صفحه به فارسی هم هست</a> <button type="button" onclick={dismissFa} aria-label="نه، ممنون">✕</button></p>
 	{/if}
-	<header class="top">
-		<a href={home} class="brand" aria-label={isFa ? 'میریفر، صفحهٔ اصلی' : 'Mirifer home'}><BrandLogo /></a>
-		<nav class="links" aria-label={c.footer.site}>
-			<a href={other} lang={isFa ? 'en' : 'fa'} hreflang={isFa ? 'en' : 'fa'}>{c.switchLabel}</a>
-			<a href="/login" class="signin">{c.signIn}</a>
-		</nav>
-	</header>
+	<!-- The first screen is its own green band, like the opening of a story; the rest of the page is yellow. -->
+	<div class="heroband">
+		<span class="blob" aria-hidden="true"></span>
+		<header class="top">
+			<a href={home} class="brand" aria-label={isFa ? 'میریفر، صفحهٔ اصلی' : 'Mirifer home'}><BrandLogo tone="light" /></a>
+			<nav class="links" aria-label={c.footer.site}>
+				<a href={other} lang={isFa ? 'en' : 'fa'} hreflang={isFa ? 'en' : 'fa'}>{c.switchLabel}</a>
+				<a href="/login" class="signin">{c.signIn}</a>
+			</nav>
+		</header>
 
-	<main id="main-content">
 		<!-- 1. First screen -->
 		<section class="hero">
 			<div class="copy">
 				<p class="eyebrow">{c.eyebrow}</p>
-				<h1>{c.h1}</h1>
+				<h1>{h1Parts[0]}<span class="hl">{c.h1Mark}</span>{h1Parts[1]}</h1>
 				<p class="line">{c.line}</p>
 				<a class="primary" href={signupHref} bind:this={heroCta} onclick={started}>{c.cta} <span aria-hidden="true">{arrow}</span></a>
 				<a class="quiet" href={sampleHref}>{c.sample}</a>
@@ -109,9 +113,22 @@
 			</div>
 
 			<div class="stage reveal">
-				{@render photo(LANDING_PHOTOS.hero, 'hero-photo', true)}
+				<!-- Behind the lesson: the days as a path, and a card for a real photo. -->
+				<div class="side path" aria-hidden="true">
+					<span class="bar-top"></span>
+					{#each [1, 2, 3] as n}
+						<span class="node" class:done={n === 1}><b>{n === 1 ? '✓' : c.digits(n)}</b><i></i><i class="short"></i></span>
+					{/each}
+				</div>
+				<div class="side pic">
+					{@render photo(LANDING_PHOTOS.hero, 'hero-photo', true)}
+					<span class="pic-bar" aria-hidden="true"><span class="play">▶</span><i></i></span>
+				</div>
+				<span class="spark s-a" aria-hidden="true"></span>
+				<span class="spark s-b" aria-hidden="true"></span>
 				<figure class="phone">
 					<figcaption class="sr-only">{c.figure.caption}</figcaption>
+					<span class="notch" aria-hidden="true"></span>
 					<div class="msg mira">
 						<span class="av" aria-hidden="true">M</span>
 						<div class="bubble">
@@ -132,12 +149,11 @@
 						<p class="tip"><b>{c.figure.tipLabel}:</b> {@render rich(c.figure.tip)}</p>
 					</div>
 				</figure>
-				<ul class="badges">
-					{#each c.badges as badge, i}<li class="badge b{i}">{badge}</li>{/each}
-				</ul>
 			</div>
 		</section>
+	</div>
 
+	<main id="main-content">
 		<!-- 2. A day -->
 		<section class="block" aria-labelledby="day-h">
 			<div class="head reveal">
@@ -301,12 +317,15 @@
 	.suggest { display: flex; justify-content: center; align-items: center; gap: 8px; margin: 0; padding: 4px 16px; background: var(--y-soft); font-size: .92rem; }
 	.suggest a { color: var(--ink); font-weight: 600; min-height: 44px; display: inline-flex; align-items: center; }
 	.suggest button { min-width: 44px; min-height: 44px; border: 0; background: none; color: var(--ink-2); font: inherit; cursor: pointer; }
+	/* ── The green band of the first screen (header + hero) ── */
+	.heroband { --focus: #ffd65a; position: relative; isolation: isolate; overflow: hidden; background: #0e5c45; color: #fff; border-end-start-radius: 32px; border-end-end-radius: 32px; }
+	.blob { position: absolute; z-index: -1; inline-size: 150vw; max-inline-size: 980px; aspect-ratio: 1; inset-block-end: -55vw; inset-inline-end: -60vw; border-radius: 42% 58% 63% 37% / 41% 44% 56% 59%; background: #187a5c; }
 	.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; max-width: 1120px; margin: 0 auto; padding: 8px 16px; }
-	.brand { display: inline-flex; align-items: center; min-height: 44px; color: var(--ink); text-decoration: none; }
+	.brand { display: inline-flex; align-items: center; min-height: 44px; color: #fff; text-decoration: none; }
 	.links { display: flex; align-items: center; gap: 10px; }
-	.links a { min-height: 44px; min-inline-size: 44px; padding: 0 10px; justify-content: center; display: inline-flex; align-items: center; color: var(--ink); font-weight: 600; text-decoration: none; border-radius: 999px; }
+	.links a { min-height: 44px; min-inline-size: 44px; padding: 0 10px; justify-content: center; display: inline-flex; align-items: center; color: #fff; font-weight: 600; text-decoration: none; border-radius: 999px; }
 	.links a:hover { text-decoration: underline; }
-	.links .signin { background: var(--card); box-shadow: var(--shadow); padding: 0 18px; }
+	.links .signin { background: #fff; color: #0e5c45; padding: 0 18px; }
 
 	main { display: block; }
 	h1, h2, h3 { margin: 0; overflow-wrap: break-word; }
@@ -326,21 +345,44 @@
 	.quiet.inline { display: inline; min-height: 0; }
 
 	/* ── 1. First screen ── */
-	.hero { max-width: 1120px; margin: 0 auto; padding: 12px 16px 40px; display: grid; gap: 28px; }
+	.hero { max-width: 1120px; margin: 0 auto; padding: 10px 16px 44px; display: grid; gap: 30px; }
 	.copy { display: grid; justify-items: start; }
-	.eyebrow { display: inline-block; margin: 0 0 14px; padding: 6px 12px; border-radius: 999px; background: var(--card); font-size: .74rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+	.eyebrow { display: inline-block; margin: 0 0 14px; padding: 6px 12px; border-radius: 999px; background: rgba(255, 255, 255, .14); color: #fff; font-size: .74rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 	[dir='rtl'] .eyebrow { letter-spacing: normal; font-size: .86rem; }
-	.line { font-size: 1.12rem; color: var(--ink-2); margin-bottom: 22px; max-width: 34em; }
-	.copy .primary { justify-self: stretch; }
-	.copy .quiet { justify-self: center; margin-top: 6px; }
-	.small { justify-self: center; color: var(--ink-2); font-size: .86rem; }
+	.hero h1 { color: #fff; }
+	/* The key word sits in a yellow speech bubble, its tail at the start of the line. */
+	.hl { display: inline-block; padding: 0 .18em .06em; margin-inline: .02em; border-radius: .3em .3em .3em .06em; background: #ffd65a; color: #14201b; transform: rotate(-2deg); }
+	[dir='rtl'] .hl { border-radius: .3em .3em .06em .3em; transform: rotate(2deg); }
+	.line { font-size: 1.12rem; color: rgba(255, 255, 255, .88); margin-bottom: 22px; max-width: 34em; }
+	.copy .primary { justify-self: stretch; background: #ffd65a; color: #14201b; }
+	.copy .primary:hover { background: #ffe285; }
+	.copy .quiet { justify-self: center; margin-top: 6px; color: #fff; }
+	.small { justify-self: center; color: rgba(255, 255, 255, .78); font-size: .86rem; }
 
-	.stage { position: relative; padding-bottom: 8px; }
+	/* The lesson phone in front, two tilted cards behind it, and two sparkles. */
+	.stage { position: relative; padding: 22px 11% 6px; }
+	.side { --rot: -7deg; position: absolute; z-index: 0; inset-block-start: 6%; inline-size: 42%; block-size: 74%; border-radius: 24px; background: #fff; box-shadow: 0 22px 44px -18px rgba(0, 0, 0, .5); transform: rotate(var(--rot)); }
+	.path { inset-inline-start: 0; display: grid; align-content: start; gap: 16px; padding: 18px 12px; }
+	.pic { --rot: 6deg; inset-inline-end: 0; padding: 6px; }
+	[dir='rtl'] .path { --rot: 7deg; }
+	[dir='rtl'] .pic { --rot: -6deg; }
+	.bar-top { display: block; block-size: 8px; inline-size: 55%; border-radius: 4px; background: #dcefe4; }
+	.node { display: grid; grid-template-columns: 30px 1fr; column-gap: 8px; row-gap: 6px; align-items: center; }
+	.node b { grid-row: span 2; display: grid; place-items: center; inline-size: 30px; block-size: 30px; border-radius: 50%; border: 2px solid #0e5c45; color: #0e5c45; font-size: .8rem; }
+	.node.done b { background: #ffd65a; border-color: #ffd65a; color: #14201b; }
+	.node i { display: block; block-size: 6px; inline-size: 92%; border-radius: 3px; background: #d5ddd8; }
+	.node i.short { inline-size: 55%; }
 	.photo { display: block; width: 100%; border-radius: 28px; object-fit: cover; }
 	.photo.empty { display: grid; place-items: center; color: rgba(255, 255, 255, .5); background-color: var(--g); background-image: radial-gradient(rgba(255, 255, 255, .14) 1.4px, transparent 1.6px); background-size: 18px 18px; }
-	.hero-photo { aspect-ratio: 4 / 3; }
-	.hero-photo.empty { place-items: start end; padding: 22px; }
-	.phone { position: relative; z-index: 1; margin: -38% 14px 0; display: grid; gap: 9px; padding: 14px; border-radius: 26px; background: var(--card); box-shadow: 0 30px 60px -20px rgba(20, 32, 27, .45); }
+	.hero-photo { block-size: 100%; border-radius: 19px; }
+	.hero-photo.empty { background-color: #187a5c; }
+	.pic-bar { position: absolute; inset-inline: 14px; inset-block-end: 14px; display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 999px; background: #ffd65a; color: #14201b; direction: ltr; }
+	.pic-bar i { flex: 1; block-size: 4px; border-radius: 2px; background: rgba(20, 32, 27, .35); }
+	.spark { position: absolute; z-index: 2; inline-size: 30px; aspect-ratio: 1; background: #ffd65a; clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%); }
+	.s-a { inset-block-start: 0; inset-inline-end: 24%; }
+	.s-b { inline-size: 16px; inset-block-start: 30px; inset-inline-end: 17%; }
+	.phone { position: relative; z-index: 1; margin: 0; display: grid; gap: 9px; padding: 22px 12px 14px; border-radius: 32px; background: var(--card); color: var(--ink); border: 6px solid #0a4433; box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .55); }
+	.notch { position: absolute; inset-block-start: 8px; left: 50%; transform: translateX(-50%); inline-size: 54px; block-size: 6px; border-radius: 3px; background: #0a4433; }
 	.phone p { margin: 0; }
 	.msg.mira { display: flex; gap: 8px; align-items: flex-start; }
 	.av { flex: none; display: grid; place-items: center; inline-size: 30px; block-size: 30px; border-radius: 50%; background: var(--g); color: #fff; font-weight: 700; font-size: .85rem; }
@@ -356,9 +398,6 @@
 	.msg.fix > b { display: block; color: var(--g-text); font-size: .78rem; }
 	.better { font-weight: 700; color: var(--g-text); }
 	.tip { color: var(--ink-2); font-size: .86rem; }
-
-	.badges { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
-	.badge { position: relative; z-index: 2; padding: 7px 12px; border-radius: 999px; background: var(--card); box-shadow: var(--shadow); font-size: .8rem; font-weight: 700; white-space: nowrap; }
 
 	/* The wave: little bars that rise and fall like a voice. */
 	.wave { display: inline-flex; align-items: center; gap: 2px; block-size: 18px; }
@@ -477,20 +516,16 @@
 		.two { grid-template-columns: 1fr 1.25fr; align-items: start; }
 	}
 	@media (min-width: 960px) {
-		.hero { grid-template-columns: 1fr 1.05fr; align-items: center; column-gap: 56px; padding-top: 36px; padding-bottom: 56px; }
+		.heroband { border-end-start-radius: 56px; border-end-end-radius: 56px; }
+		.blob { inline-size: 940px; inset-block-end: -470px; inset-inline-end: -160px; }
+		.hero { grid-template-columns: 1fr 1fr; align-items: center; column-gap: 48px; padding-top: 30px; padding-bottom: 76px; }
 		.copy .primary { justify-self: start; }
 		.copy .quiet, .small { justify-self: start; }
-		.stage { padding: 0 0 30px; }
-		.phone { position: absolute; inset-block-end: 0; inset-inline-start: -36px; inline-size: 340px; margin: 0; }
-		.hero-photo { aspect-ratio: 5 / 4; inline-size: 88%; margin-inline-start: auto; }
-		.badges { margin: 0; display: block; }
-		.badge { position: absolute; }
-		.b0 { inset-block-start: 22px; inset-inline-start: 18%; }
-		.b1 { inset-block-start: 40%; inset-inline-end: -10px; }
-		.b2 { inset-block-end: 6px; inset-inline-end: 6%; }
+		.stage { padding: 34px 16% 10px; }
 		.block { padding: 48px 24px; }
 		.bento { grid-template-columns: repeat(3, 1fr); grid-template-rows: auto auto; }
 		.tile { flex-direction: column; align-items: stretch; padding: 14px; }
+		.tile .words { flex: 0 0 auto; }
 		.tile .art { inline-size: auto; block-size: 110px; }
 		.t0 { grid-row: span 2; }
 		.t0 .art { block-size: auto; flex: 1; min-block-size: 220px; flex-direction: column; gap: 16px; }
@@ -533,10 +568,11 @@
 		.landing:global([data-anim='on']) .reveal:global(.in) .dot { animation: blink 1s steps(2, start) 4; }
 		@keyframes blink { to { visibility: hidden; } }
 
-		.landing:global([data-anim='on']) .reveal:global(.in) .badge { animation: bob 2.4s ease-in-out 2; }
-		.landing:global([data-anim='on']) .reveal:global(.in) .b1 { animation-delay: .4s; }
-		.landing:global([data-anim='on']) .reveal:global(.in) .b2 { animation-delay: .8s; }
-		@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+		.landing:global([data-anim='on']) .reveal:global(.in) .side { animation: fan .9s cubic-bezier(.2, .7, .2, 1) .25s 1 both; }
+		@keyframes fan { from { opacity: 0; transform: rotate(0deg) scale(.9); } to { opacity: 1; transform: rotate(var(--rot)); } }
+		.landing:global([data-anim='on']) .reveal:global(.in) .spark { animation: twinkle 1.6s ease-in-out 3; }
+		.landing:global([data-anim='on']) .reveal:global(.in) .s-b { animation-delay: .5s; }
+		@keyframes twinkle { 0%, 100% { transform: scale(1) rotate(0deg); } 50% { transform: scale(.6) rotate(20deg); } }
 
 		.landing:global([data-anim='on']) .reveal:global(.in) .ring { animation: pulse 2.2s ease-out 2; }
 		.landing:global([data-anim='on']) .reveal:global(.in) .r2 { animation-delay: 1.1s; }
