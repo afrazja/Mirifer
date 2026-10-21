@@ -60,7 +60,9 @@
 	</section>
 
 	{#if unavailableChoice}
-		<p class="notice" role="status">{isFa ? `قبلاً ${unavailableChoice.name.fa} را انتخاب کرده‌ای، اما درس‌های آن هنوز آماده نیستند.` : `You previously chose ${unavailableChoice.name.en}, but its lessons are not ready yet.`}</p>
+		<p class="notice" role="status">{unavailableChoice.code === 'de'
+			? (isFa ? 'آلمانی را موقتاً متوقف کرده‌ایم تا آن را مثل انگلیسی از نو بسازیم. پیشرفتت ذخیره شده است.' : 'German is paused while we rebuild it the way the English course works. Your progress is saved.')
+			: (isFa ? `قبلاً ${unavailableChoice.name.fa} را انتخاب کرده‌ای، اما درس‌های آن هنوز آماده نیستند.` : `You previously chose ${unavailableChoice.name.en}, but its lessons are not ready yet.`)}</p>
 	{/if}
 	{#if form?.error}
 		<p class="error" role="alert">{form.error === 'unavailable'
@@ -105,7 +107,7 @@
 						<article class="course" class:upcoming={!course.available} aria-labelledby={`course-${course.code}`}>
 							<div class="card-top">
 								<span class={`flag flag-${course.code}`} aria-hidden="true" dir="ltr">{course.code === 'en' ? 'EN' : ''}</span>
-								<span class="status" class:available={course.available}>{course.code === 'en' ? (isFa ? 'آزمایشی' : 'Pilot') : course.available ? (isFa ? 'آمادهٔ شروع' : 'Available now') : (isFa ? 'به‌زودی' : 'Coming soon')}</span>
+								<span class="status" class:available={course.available}>{course.available ? (isFa ? 'آمادهٔ شروع' : 'Available now') : (isFa ? 'به‌زودی' : 'Coming soon')}</span>
 							</div>
 							<h3 id={`course-${course.code}`}>{course.name[language]}</h3>
 							{#if course.nativeName !== course.name[language]}<p class="native-name" lang={course.code} dir="ltr">{course.nativeName}</p>{/if}

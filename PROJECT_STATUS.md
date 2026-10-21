@@ -1,6 +1,17 @@
 # Mirifer handoff
 
-Updated: 2026-09-25.
+Updated: 2026-10-21.
+
+## 2026-10-21: German paused; English is the course
+
+- **German is paused** (owner's decision) while it is rebuilt with the English course's
+  daily-lesson method: `available: false` in `src/lib/courses.ts`. The language list shows it as
+  "Coming soon"; German learners are sent to the list with a note that their progress is saved.
+  All German content, code and progress stay; set `available` back to `true` to reopen it.
+- The landing page (`/`, `/fa`), the guest demo (`/try`) and the grammar pages (`/basics`) are
+  still the German ones until the landing page is redone for English (owner: later).
+- English: daily lessons in two versions (`src/lib/practice/day.ts`); the plan to make them less
+  predictable is `docs/english-variety-plan.md`. Days 2–3 are owner-only until the owner's phone test.
 
 ## Latest release (2026-09-25): English AI quota efficiency
 

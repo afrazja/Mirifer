@@ -1,4 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+// German is paused (src/lib/courses.ts). These tests cover its flows for when it comes back, so they
+// run with German switched on; src/lib/courses.test.ts covers the paused state.
+vi.mock('$lib/courses', async importOriginal => {
+	const real = await importOriginal<typeof import('$lib/courses')>();
+	(real.COURSES.find(course => course.code === 'de') as { available: boolean }).available = true;
+	return real;
+});
 import { actions, load } from './+page.server';
 import { load as onboarding } from '../onboarding/+page.server';
 import { load as home } from '../home/+page.server';

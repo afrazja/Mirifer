@@ -2,10 +2,12 @@
  * New courses stay unavailable until their content, audio and progress storage are ready.
  */
 export const COURSES = [
-	{ code: 'de', nativeName: 'Deutsch', name: { en: 'German', fa: 'آلمانی' }, available: true,
-		description: { en: 'Build everyday conversation skills with listening, speaking and daily lessons.', fa: 'با شنیدن، صحبت کردن و درس‌های روزانه، مکالمه‌های روزمره را تمرین کن.' } },
+	// German is paused (owner's decision) while it is rebuilt with the English course's daily-lesson
+	// method. Its content and every learner's progress are kept; set `available` back to true to reopen it.
+	{ code: 'de', nativeName: 'Deutsch', name: { en: 'German', fa: 'آلمانی' }, available: false,
+		description: { en: 'German is coming back soon, with the same daily speaking lessons as English.', fa: 'آلمانی به‌زودی برمی‌گردد، با همان درس‌های روزانهٔ صحبت کردن که انگلیسی دارد.' } },
 	{ code: 'en', nativeName: 'English', name: { en: 'English', fa: 'انگلیسی' }, available: true,
-		description: { en: 'Try our first guided conversation: arrange a quieter hotel room. One experimental lesson is available.', fa: 'اولین گفت‌وگوی هدایت‌شده را امتحان کن: یک اتاق آرام‌تر در هتل بگیر. فعلاً یک درس آزمایشی آماده است.' } },
+		description: { en: 'Short daily speaking lessons for real situations: travel, work and everyday life.', fa: 'درس‌های کوتاه روزانه برای صحبت کردن در موقعیت‌های واقعی: سفر، کار و زندگی روزمره.' } },
 	{ code: 'fr', nativeName: 'Français', name: { en: 'French', fa: 'فرانسوی' }, available: false,
 		description: { en: 'French is coming to Mirifer. Lessons are not available yet.', fa: 'فرانسوی به میریفر اضافه خواهد شد. درس‌های آن هنوز آماده نیستند.' } }
 ] as const;
