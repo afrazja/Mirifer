@@ -3,15 +3,15 @@
  *
  * - multipart {audio, seconds}: transcribes one spoken reply (OpenAI); the audio is not stored.
  * - JSON {kind: 'feedback', text, rating, reply}: checks the reply against the text the learner read
- *   (facts used, any wrong, a reason) and writes a better reply. Spends one unit of allowance.
+ *   (facts used, any wrong, a reason) and writes a better reply. One unit of the Practice budget.
  *
- * Refused once the day's AI allowance is used up. Nothing the learner said is stored on our server.
+ * A recording counts against the day's voice budget. Nothing the learner said is stored on our server.
  */
 import { json } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { RequestHandler } from './$types';
-import { askChain, checkAllowance, englishLearner, recordAllowance } from '$lib/server/english-ai';
-import { transcribe, transcriptionConfigured } from '$lib/server/transcribe';
+import { askChain, englishLearner, meteredTranscribe, chargePractice } from '$lib/server/english-ai';
+import { transcriptionConfigured } from '$lib/server/transcribe';
 import { createLimiter, tooMany } from '$lib/server/rate-limit';
 import { RESPOND_MAX_SECONDS, TEXTS, validRating } from '$lib/practice/read-rate';
 import { RawFeedbackSchema, checkFeedback, feedbackSchemas, readRatePrompt, readRateUser, type RawFeedback } from '$lib/server/read-rate-ai';
@@ -43,13 +43,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const audio = form.get('audio'), seconds = Number(form.get('seconds'));
 		if (!(audio instanceof File) || !audio.size || audio.size > MAX_AUDIO_BYTES || !audio.type.startsWith('audio/')) return json({ error: 'Invalid recording' }, { status: 400 });
 		if (!Number.isFinite(seconds) || seconds < 0 || seconds > RESPOND_MAX_SECONDS + 5) return json({ error: 'Invalid recording' }, { status: 400 });
-		const refused = await checkAllowance(locals, user);
-		if (refused) return refused;
 		// Names from the text they read help the speech-to-text get them right.
 		const read = TEXTS.find(t => t.id === form.get('text'));
 		const names = read ? ` Names that may come up: ${NAMES[read.id] ?? ''}` : '';
-		const transcript = await transcribe(audio, 'English read-rate', `They are giving their opinion about a short text they just read: a review, a message or an ad.${names}`);
-		if (transcript === null) return json({ error: 'Transcription unavailable' }, { status: 502 });
+		const transcript = await meteredTranscribe(locals, user, 'read-rate', audio, seconds, 'English read-rate', `They are giving their opinion about a short text they just read: a review, a message or an ad.${names}`);
+		if (transcript instanceof Response) return transcript;
 		return json({ transcript });
 	}
 
@@ -59,13 +57,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!parsed.success) return json({ error: 'Invalid request' }, { status: 400 });
 	const text = TEXTS.find(t => t.id === parsed.data.text);
 	if (!text || !validRating(text, parsed.data.rating)) return json({ error: 'Invalid request' }, { status: 400 });
-	const refused = await checkAllowance(locals, user);
+	const refused = await chargePractice(locals, user, 'read-rate');
 	if (refused) return refused;
 	const raw = await askChain<RawFeedback>({
 		label: 'English read-rate', system: readRatePrompt(), user: readRateUser(text, parsed.data.rating, parsed.data.reply),
 		schema: RawFeedbackSchema, ...feedbackSchemas, temperature: 0.3, maxTokens: 500
 	});
 	if (!raw) return json({ error: 'AI unavailable' }, { status: 502 });
-	await recordAllowance(locals, user, 0, 'read-rate-v1');
 	return json(checkFeedback(raw, text, parsed.data.reply));
 };

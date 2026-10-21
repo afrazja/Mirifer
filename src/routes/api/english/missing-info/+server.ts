@@ -2,19 +2,19 @@
  * "Find the missing information" (docs/english-missing-info-spec.md).
  *
  * - multipart {audio, seconds}: transcribes one question (OpenAI); the audio is not stored.
- *   Refused once the day's AI allowance is used up, but it doesn't spend it.
+ *   Counts against the day's voice budget.
  * - JSON {kind: 'turn', turns}: Tom's reply to the latest question. The card's state is worked
  *   out again here from the conversation; every number Tom says is checked.
  * - JSON {kind: 'feedback', turns}: Mira's feedback on the questions. Spends one unit of
- *   allowance, only when it succeeds (the turns themselves are short and don't spend it).
+ *   Practice budget per request, turns included, counted before it is made.
  *
  * Nothing the learner said is stored on our server.
  */
 import { json } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { RequestHandler } from './$types';
-import { askChain, checkAllowance, englishLearner, recordAllowance } from '$lib/server/english-ai';
-import { transcribe, transcriptionConfigured } from '$lib/server/transcribe';
+import { askChain, englishLearner, meteredTranscribe, chargePractice } from '$lib/server/english-ai';
+import { transcriptionConfigured } from '$lib/server/transcribe';
 import { createLimiter, tooMany } from '$lib/server/rate-limit';
 import { readEnglishProfile } from '$lib/practice/english-profile';
 import { levelFor } from '$lib/server/coach-ai';
@@ -49,10 +49,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const audio = form.get('audio'), seconds = Number(form.get('seconds'));
 		if (!(audio instanceof File) || !audio.size || audio.size > MAX_AUDIO_BYTES || !audio.type.startsWith('audio/')) return json({ error: 'Invalid recording' }, { status: 400 });
 		if (!Number.isFinite(seconds) || seconds < 0 || seconds > QUESTION_MAX_SECONDS + 5) return json({ error: 'Invalid recording' }, { status: 400 });
-		const refused = await checkAllowance(locals, user);
-		if (refused) return refused;
-		const transcript = await transcribe(audio, 'English missing-info', 'Someone talking to the ticket seller at a train station. They may say several sentences: write every sentence.', { splitAtPauses: true });
-		if (transcript === null) return json({ error: 'Transcription unavailable' }, { status: 502 });
+		const transcript = await meteredTranscribe(locals, user, 'missing-info', audio, seconds, 'English missing-info', 'Someone talking to the ticket seller at a train station. They may say several sentences: write every sentence.', { splitAtPauses: true });
+		if (transcript instanceof Response) return transcript;
 		return json({ transcript });
 	}
 
@@ -60,7 +58,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	try { input = await request.json(); } catch { return json({ error: 'Invalid request' }, { status: 400 }); }
 	const parsed = Request.safeParse(input);
 	if (!parsed.success) return json({ error: 'Invalid request' }, { status: 400 });
-	const refused = await checkAllowance(locals, user);
+	// Practice-type module: every AI request (turns included) counts against the Practice budget, before it is made.
+	const refused = await chargePractice(locals, user, 'missing-info');
 	if (refused) return refused;
 	const turns = parsed.data.turns as Turn[];
 
@@ -90,6 +89,5 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		checked = raw ? checkQuestions(raw, turns) : { problem: 'no reply' };
 	}
 	if ('problem' in checked) return json({ error: 'Feedback unavailable' }, { status: 502 });
-	await recordAllowance(locals, user, 0, 'missing-info-v1');
 	return json(checked.feedback);
 };

@@ -5,15 +5,15 @@
  * - JSON {kind: 'turn', turns, asked, last}: whether the last answer fits its question, the next
  *   question (following on from it), and the last answer corrected and said better. One small call, kept short for speed; a question that fails its
  *   checks comes back as null and the browser asks a ready-made follow-up instead. Spends one unit
- *   of allowance per round (on the last answer).
+ *   of the Practice budget per turn, before it is made.
  *
- * Refused once the day's AI allowance is used up. Nothing the learner said is stored on our server.
+ * A recording counts against the day's voice budget. Nothing the learner said is stored on our server.
  */
 import { json } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { RequestHandler } from './$types';
-import { askChain, checkAllowance, englishLearner, recordAllowance } from '$lib/server/english-ai';
-import { transcribe, transcriptionConfigured } from '$lib/server/transcribe';
+import { askChain, englishLearner, meteredTranscribe, chargePractice } from '$lib/server/english-ai';
+import { transcriptionConfigured } from '$lib/server/transcribe';
 import { createLimiter, tooMany } from '$lib/server/rate-limit';
 import { ANSWER_MAX_SECONDS, QUESTIONS_PER_ROUND } from '$lib/practice/quick-fire';
 import { RawTurnSchema, asChat, checkTurn, quickFirePrompt, turnSchemas, type RawTurn } from '$lib/server/quick-fire-ai';
@@ -44,10 +44,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const audio = form.get('audio'), seconds = Number(form.get('seconds'));
 		if (!(audio instanceof File) || !audio.size || audio.size > MAX_AUDIO_BYTES || !audio.type.startsWith('audio/')) return json({ error: 'Invalid recording' }, { status: 400 });
 		if (!Number.isFinite(seconds) || seconds < 0 || seconds > ANSWER_MAX_SECONDS + 5) return json({ error: 'Invalid recording' }, { status: 400 });
-		const refused = await checkAllowance(locals, user);
-		if (refused) return refused;
-		const transcript = await transcribe(audio, 'English quick-fire', 'They are answering a short personal question in a friendly chat.');
-		if (transcript === null) return json({ error: 'Transcription unavailable' }, { status: 502 });
+		const transcript = await meteredTranscribe(locals, user, 'quick-fire', audio, seconds, 'English quick-fire', 'They are answering a short personal question in a friendly chat.');
+		if (transcript instanceof Response) return transcript;
 		return json({ transcript });
 	}
 
@@ -55,7 +53,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	try { input = await request.json(); } catch { return json({ error: 'Invalid request' }, { status: 400 }); }
 	const parsed = TurnRequest.safeParse(input);
 	if (!parsed.success) return json({ error: 'Invalid request' }, { status: 400 });
-	const refused = await checkAllowance(locals, user);
+	// Practice: every turn counts against the day's Practice budget, before it is made.
+	const refused = await chargePractice(locals, user, 'quick-fire');
 	if (refused) return refused;
 	const { turns, last } = parsed.data;
 	const asked = parsed.data.asked?.length ? parsed.data.asked : turns.map(t => t.question);
@@ -64,6 +63,5 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		schema: RawTurnSchema, ...turnSchemas, temperature: 0.6, maxTokens: 400
 	});
 	if (!raw) return json({ onTopic: true, next: null, fixed: null, better: null });
-	if (last) await recordAllowance(locals, user, 0, 'quick-fire-v1');
 	return json(checkTurn(raw, asked, turns[turns.length - 1].answer, last));
 };

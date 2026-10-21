@@ -1,19 +1,23 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+// The per-minute limit is tested where it is defined; here every request may go through.
+vi.mock('$lib/server/rate-limit', () => ({ createLimiter: () => () => true, tooMany: () => new Response(null, { status: 429 }) }));
 
 const { env } = vi.hoisted(() => ({ env: {} as Record<string, string | undefined> }));
 vi.mock('$env/dynamic/private', () => ({ env }));
 
 import { POST } from './+server';
+import { fakeEvents } from '../../../../test/english-events';
 import { verifyJamieLine } from '$lib/server/jamie-line';
 
 const fetchMock = vi.fn();
 const TRANSCRIPT = 'Maria take a taxi from the airport and she sleep. At home her phone was not there. The driver find it under the seat and bring it back and he want only coffee.';
 
 function fixture({ piece = 'lost-phone', seconds = '48', audio = new Blob([new Uint8Array(2000)], { type: 'audio/webm' }) as Blob | string, count = 0, metadata = {} as Record<string, unknown> } = {}) {
-	const insert = vi.fn().mockResolvedValue({ error: null });
-	const query: any = { select: () => query, eq: () => query, gte: () => Promise.resolve({ count, error: null }), maybeSingle: () => Promise.resolve({ data: { is_admin: false }, error: null }), insert };
+	// The AI allowance's inserts (the clip budget's are separate).
+	const insert = vi.fn();
+	const events = fakeEvents({ ai: count }, row => { if (row.event_name === 'english_ai_requested') insert(row); });
 	const updateUser = vi.fn().mockResolvedValue({ error: null });
-	const supabase = { auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'u1', user_metadata: { target_language: 'en', ...metadata } } }, error: null }), updateUser }, from: vi.fn(() => query) };
+	const supabase = { auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'u1', user_metadata: { target_language: 'en', ...metadata } } }, error: null }), updateUser }, from: events.from };
 	const body = new FormData();
 	body.set('piece', piece); body.set('seconds', seconds); body.set('textShown', '0');
 	if (typeof audio === 'string') body.set('audio', audio); else body.set('audio', audio, 'retell');

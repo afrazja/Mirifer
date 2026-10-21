@@ -4,18 +4,18 @@
  * Each day has its own choice (`set`, the apartments when absent); the server looks it up by id.
  *
  * - multipart {audio, seconds, set}: transcribes one recording (OpenAI); the audio is not
- *   stored. Refused once the day's AI allowance is used up, but it doesn't spend it.
+ *   stored. Counts against the day's voice budget.
  * - JSON {kind: 'feedback', set, flat, reasons, answer}: Mira's feedback. The objection is
  *   worked out again here from the reasons (never taken from the browser). Spends one
- *   unit of allowance, only when it succeeds.
+ *   unit of allowance, counted before the AI is asked.
  *
  * Nothing the learner said is stored on our server.
  */
 import { json } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { RequestHandler } from './$types';
-import { askChain, checkAllowance, englishLearner, recordAllowance } from '$lib/server/english-ai';
-import { transcribe, transcriptionConfigured } from '$lib/server/transcribe';
+import { askChain, checkAllowance, englishLearner, meteredTranscribe, spendAllowance } from '$lib/server/english-ai';
+import { transcriptionConfigured } from '$lib/server/transcribe';
 import { createLimiter, tooMany } from '$lib/server/rate-limit';
 import { readEnglishProfile } from '$lib/practice/english-profile';
 import { levelFor } from '$lib/server/coach-ai';
@@ -49,8 +49,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		if (!Number.isFinite(seconds) || seconds < 0 || seconds > REASONS_MAX + 10) return json({ error: 'Invalid recording' }, { status: 400 });
 		const refused = await checkAllowance(locals, user);
 		if (refused) return refused;
-		const transcript = await transcribe(audio, 'English persuade', set.ai.transcription);
-		if (transcript === null) return json({ error: 'Transcription unavailable' }, { status: 502 });
+		const transcript = await meteredTranscribe(locals, user, 'persuade', audio, seconds, 'English persuade', set.ai.transcription);
+		if (transcript instanceof Response) return transcript;
 		return json({ transcript });
 	}
 
@@ -58,7 +58,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	try { input = await request.json(); } catch { return json({ error: 'Invalid request' }, { status: 400 }); }
 	const parsed = FeedbackRequest.safeParse(input);
 	if (!parsed.success) return json({ error: 'Invalid request' }, { status: 400 });
-	const refused = await checkAllowance(locals, user);
+	// Counted before the AI is asked, so a request that fails still counts.
+	const refused = await spendAllowance(locals, user, 0, 'choose-persuade-v1');
 	if (refused) return refused;
 
 	const { flat, reasons, answer } = parsed.data;
@@ -76,6 +77,5 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		if (second) { raw = again; checked = second; }
 	}
 	if (!checked) return json({ error: 'Feedback unavailable' }, { status: 502 });
-	await recordAllowance(locals, user, 0, 'choose-persuade-v1');
 	return json(checked.feedback);
 };

@@ -8,8 +8,8 @@
  */
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { checkAllowance, englishLearner, spendClip } from '$lib/server/english-ai';
-import { transcribe, transcriptionConfigured } from '$lib/server/transcribe';
+import { checkAllowance, englishLearner, meteredTranscribe } from '$lib/server/english-ai';
+import { transcriptionConfigured } from '$lib/server/transcribe';
 import { createLimiter, tooMany } from '$lib/server/rate-limit';
 import { MAX_CLIP_SECONDS } from '$lib/practice/phrases';
 
@@ -30,10 +30,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!Number.isFinite(seconds) || seconds < 0 || seconds > MAX_CLIP_SECONDS + 3) return json({ error: 'Invalid recording' }, { status: 400 });
 	const refused = await checkAllowance(locals, user);
 	if (refused) return refused;
-	const overBudget = await spendClip(locals, user, 'phrases');
-	if (overBudget) return overBudget;
 	// Generic context only: naming the target sentence would make the model "hear" it.
-	const transcript = await transcribe(audio, 'English phrases', 'They are repeating one short sentence after their coach.');
-	if (transcript === null) return json({ error: 'Transcription unavailable' }, { status: 502 });
+	const transcript = await meteredTranscribe(locals, user, 'phrases', audio, seconds, 'English phrases', 'They are repeating one short sentence after their coach.');
+	if (transcript instanceof Response) return transcript;
 	return json({ transcript });
 };

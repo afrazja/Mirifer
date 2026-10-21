@@ -4,20 +4,18 @@ vi.mock('$env/dynamic/private', () => ({ env }));
 vi.mock('$lib/server/english-ai', async importOriginal => ({ ...(await importOriginal<object>()), askChain }));
 vi.mock('$lib/server/transcribe', () => ({ transcribe: transcribeMock, transcriptionConfigured: () => !!env.OPENAI_API_KEY }));
 import { POST } from './+server';
+import { fakeEvents } from '../../../../test/english-events';
 
 const REASONS = 'I would take the studio because it is only five minutes from my work and it is cheaper.';
 const ANSWER = 'Yes, it is noisy, but I can sleep with earplugs.';
 function fixture(body: FormData | object, count = 0) {
 	const user = { id: 'u1', email: 'owner@m.test', email_confirmed_at: '2026-01-01T00:00:00Z', user_metadata: { target_language: 'en' } };
-	const inserted: unknown[] = [];
-	const from = vi.fn().mockImplementation(() => ({
-		select: () => ({ eq: () => ({ eq: () => ({ gte: () => Promise.resolve({ count, error: null }) }), maybeSingle: () => Promise.resolve({ data: null }) }) }),
-		insert: (row: unknown) => { inserted.push(row); return Promise.resolve({ error: null }); }
-	}));
+	const events = fakeEvents({ ai: count });
+	const from = events.from;
 	const request = body instanceof FormData
 		? { url: 'https://m.test/api/english/persuade', headers: new Headers({ origin: 'https://m.test', 'content-type': 'multipart/form-data; boundary=x' }), formData: async () => body }
 		: new Request('https://m.test/api/english/persuade', { method: 'POST', headers: { origin: 'https://m.test', 'content-type': 'application/json' }, body: JSON.stringify(body) });
-	return { inserted, event: { request, locals: { supabase: { auth: { getUser: vi.fn().mockResolvedValue({ data: { user }, error: null }) }, from } } } as any };
+	return { get inserted() { return events.inserted.filter(row => row.event_name !== 'english_clip_transcribed'); }, clips: () => events.rows('english_clip_transcribed'), event: { request, locals: { supabase: { auth: { getUser: vi.fn().mockResolvedValue({ data: { user }, error: null }) }, from } } } as any };
 }
 const audio = (seconds = 30) => { const f = new FormData(); f.set('audio', new File([new Uint8Array(2000)], 'a.webm', { type: 'audio/webm' })); f.set('seconds', String(seconds)); return f; };
 const good = { reasons: [{ quote: 'only five minutes from my work', text: 'It is close to work.', fact: 'walk' }], verdict: 'answered', evidence: 'I can sleep with earplugs', switched: false, objectionEn: 'Good.', objectionFa: 'خوب.', phrases: [], praiseEn: null, praiseFa: null };

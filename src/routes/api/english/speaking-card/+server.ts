@@ -2,19 +2,19 @@
  * "Speaking card" (docs/english-speaking-card-spec.md).
  *
  * - multipart {audio, seconds, card}: transcribes one talk (OpenAI, split at pauses); the audio
- *   is not stored. Refused once the day's AI allowance is used up, but it doesn't spend it.
+ *   is not stored. Counts against the day's voice budget.
  * - JSON {kind: 'coverage', card, talks: [talk]}: which points the talk covered.
  * - JSON {kind: 'feedback', card, talk, covered}: how the talk was organised, the job for the
  *   phrase (the phrase itself comes from our fixed list) and a better version of the talk.
- *   Spends one unit of allowance, only when it succeeds.
+ *   Each JSON request (coverage or feedback) counts against the day's Practice budget, before it is made.
  *
  * Nothing the learner said is stored on our server.
  */
 import { json } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { RequestHandler } from './$types';
-import { askChain, checkAllowance, englishLearner, recordAllowance } from '$lib/server/english-ai';
-import { transcribe, transcriptionConfigured } from '$lib/server/transcribe';
+import { askChain, englishLearner, meteredTranscribe, chargePractice } from '$lib/server/english-ai';
+import { transcriptionConfigured } from '$lib/server/transcribe';
 import { createLimiter, tooMany } from '$lib/server/rate-limit';
 import { JOB_WHY, TALK_MAX_SECONDS, betterProblem, cardById, chooseJob, choosePhrase } from '$lib/practice/speaking-card';
 import {
@@ -49,10 +49,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const audio = form.get('audio'), seconds = Number(form.get('seconds')), card = cardById(Number(form.get('card')));
 		if (!(audio instanceof File) || !audio.size || audio.size > MAX_AUDIO_BYTES || !audio.type.startsWith('audio/')) return json({ error: 'Invalid recording' }, { status: 400 });
 		if (!card || !Number.isFinite(seconds) || seconds < 0 || seconds > TALK_MAX_SECONDS + 10) return json({ error: 'Invalid recording' }, { status: 400 });
-		const refused = await checkAllowance(locals, user);
-		if (refused) return refused;
-		const transcript = await transcribe(audio, 'English speaking card', `They are talking for one to two minutes about this topic: "${card.title.en}" They say several sentences: write every sentence.`, { splitAtPauses: true });
-		if (transcript === null) return json({ error: 'Transcription unavailable' }, { status: 502 });
+		const transcript = await meteredTranscribe(locals, user, 'speaking-card', audio, seconds, 'English speaking card', `They are talking for one to two minutes about this topic: "${card.title.en}" They say several sentences: write every sentence.`, { splitAtPauses: true });
+		if (transcript instanceof Response) return transcript;
 		return json({ transcript });
 	}
 
@@ -62,7 +60,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!parsed.success) return json({ error: 'Invalid request' }, { status: 400 });
 	const card = cardById(parsed.data.card);
 	if (!card) return json({ error: 'Invalid request' }, { status: 400 });
-	const refused = await checkAllowance(locals, user);
+	// Practice: each AI request counts against the day's Practice budget, before it is made.
+	const refused = await chargePractice(locals, user, 'speaking-card');
 	if (refused) return refused;
 
 	if (parsed.data.kind === 'coverage') {
@@ -99,7 +98,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const phrase = choosePhrase(job, talk.text, card);
 	const whyEn = raw.whyEn.trim(), whyFa = raw.whyFa.trim();
 	const why = job === raw.job && whyEn && words(whyEn).length <= 14 && !PERSIAN.test(whyEn) ? { en: whyEn, fa: PERSIAN.test(whyFa) ? whyFa : JOB_WHY[job].fa } : JOB_WHY[phrase.job];
-	await recordAllowance(locals, user, 0, 'speaking-card-v1');
 	// A failed organisation line is left out rather than shown unchecked.
 	// A part that still fails its check is left out rather than shown unchecked.
 	return json({ organisation: 'problem' in line ? null : line, phrase: phrase.id, why, better: checked.better ? null : raw.betterEn.replace(/\s+/g, ' ').trim() });

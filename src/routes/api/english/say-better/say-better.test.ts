@@ -4,20 +4,18 @@ vi.mock('$env/dynamic/private', () => ({ env }));
 vi.mock('$lib/server/english-ai', async importOriginal => ({ ...(await importOriginal<object>()), askChain }));
 vi.mock('$lib/server/transcribe', () => ({ transcribe: transcribeMock, transcriptionConfigured: () => !!env.OPENAI_API_KEY }));
 import { POST } from './+server';
+import { fakeEvents } from '../../../../test/english-events';
 
 const T = 'Last summer I go to airport in Istanbul and my bag not arrive so I was very worried and I talked to the woman at the desk and she helped me';
 function fixture(body: BodyInit, type: string, count = 0) {
 	const user = { id: 'u1', email: 'a@b.c', user_metadata: { target_language: 'en' } };
-	const inserted: unknown[] = [];
-	const from = vi.fn().mockImplementation(() => ({
-		select: () => ({ eq: () => ({ eq: () => ({ gte: () => Promise.resolve({ count, error: null }) }), maybeSingle: () => Promise.resolve({ data: null }) }) }),
-		insert: (row: unknown) => { inserted.push(row); return Promise.resolve({ error: null }); }
-	}));
+	const events = fakeEvents({ ai: count });
+	const from = events.from;
 	// jsdom's FormData can't travel through Node's Request, so a multipart request hands the form over directly.
 	const request = body instanceof FormData
 		? { url: 'https://m.test/api/english/say-better', headers: new Headers({ origin: 'https://m.test', 'content-type': 'multipart/form-data; boundary=x' }), formData: async () => body }
 		: new Request('https://m.test/api/english/say-better', { method: 'POST', headers: { origin: 'https://m.test', 'content-type': type }, body });
-	return { inserted, event: { request, locals: { supabase: { auth: { getUser: vi.fn().mockResolvedValue({ data: { user }, error: null }) }, from } } } as any };
+	return { get inserted() { return events.inserted.filter(row => row.event_name !== 'english_clip_transcribed'); }, clips: () => events.rows('english_clip_transcribed'), event: { request, locals: { supabase: { auth: { getUser: vi.fn().mockResolvedValue({ data: { user }, error: null }) }, from } } } as any };
 }
 const audioForm = (seconds = 30) => { const f = new FormData(); f.set('audio', new File([new Uint8Array(2000)], 'a.webm', { type: 'audio/webm' })); f.set('seconds', String(seconds)); return f; };
 
@@ -29,7 +27,7 @@ describe('/api/english/say-better', () => {
 		const f = fixture(audioForm(), '');
 		const res = await POST(f.event);
 		expect(await res.json()).toEqual({ transcript: T });
-		expect(transcribeMock).toHaveBeenCalledWith(expect.anything(), 'English say-better', expect.stringContaining('a problem you had on a trip'));
+		expect(transcribeMock).toHaveBeenCalledWith(expect.anything(), 'English say-better', expect.stringContaining('a problem you had on a trip'), expect.anything());
 		expect(f.inserted).toHaveLength(0);
 	});
 	it('refuses recordings over a minute and when the daily allowance is used up', async () => {
