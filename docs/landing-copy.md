@@ -1,7 +1,7 @@
 # Landing page copy (v2, English and Persian)
 
-Status: **v2, after review (product growth, English coach, Persian localization, accessibility,
-learning UX); waiting for the owner's approval.** Plan: `docs/landing-plan.md`. Every line must be
+Status: **v2, approved by the owner (2026-10-21)** after review (product growth, English coach,
+Persian localization, accessibility, learning UX). Plan: `docs/landing-plan.md`. Every line must be
 true of the app today. "IELTS-style" only: no exam logos, no score or band promises, no
 affiliation claims. US English. `/` English, `/fa` Persian (written for Persian readers); a visitor
 whose browser is in Persian is offered `/fa`, never redirected.
@@ -68,10 +68,10 @@ Heading: **About 15 minutes a day** / **روزی حدود ۱۵ دقیقه**
 |---|---|---|
 | Heading | Made for Persian speakers | برای فارسی‌زبان‌ها ساخته شده |
 | Point 1 | The whole app, tips included, works in Persian or English. | زبان کل برنامه، نکته‌ها هم، می‌تواند فارسی یا انگلیسی باشد. |
-| Point 2 | Two levels: Intermediate if speaking feels hard, Professional if you want to sound more fluent. | دو سطح: «متوسط» اگر حرف زدن برایت سخت است، «حرفه‌ای» اگر می‌خواهی روان‌تر حرف بزنی. |
+| Point 2 | Work on the mistakes Persian speakers often make, in Practice. | در بخش تمرین، روی اشتباه‌هایی کار کن که فارسی‌زبان‌ها زیاد می‌کنند. |
+| Point 3 | Two levels: Intermediate if speaking feels hard, Professional if you want to sound more fluent. | دو سطح: «متوسط» اگر حرف زدن برایت سخت است، «حرفه‌ای» اگر می‌خواهی روان‌تر حرف بزنی. |
 
-(The v1 point about "the mistakes Persian speakers often make" is cut: Persian-speaker traps left
-the daily lessons when they were shortened. It comes back if Traps joins Practice.)
+(Point 2 is true because Persian-speaker traps is in Practice: owner's decision, 2026-10-21.)
 
 ## 6. Privacy
 
