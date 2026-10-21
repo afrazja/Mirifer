@@ -9,7 +9,7 @@ export interface LandingPhoto {
 }
 
 export const LANDING_PHOTOS: Record<'hero' | 'practice' | 'end', LandingPhoto | null> = {
-	/** First screen, behind the phone. Landscape, about 4:3. */
+	/** First screen: the tilted card beside the lesson phone. Portrait, about 3:4. */
 	hero: null,
 	/** The "Coming soon" card in Practice. Landscape, about 16:9. */
 	practice: null,
