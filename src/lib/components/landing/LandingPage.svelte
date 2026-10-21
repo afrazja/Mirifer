@@ -108,7 +108,7 @@
 				<p class="small">{c.small}</p>
 			</div>
 
-			<div class="stage">
+			<div class="stage reveal">
 				{@render photo(LANDING_PHOTOS.hero, 'hero-photo', true)}
 				<figure class="phone">
 					<figcaption class="sr-only">{c.figure.caption}</figcaption>
@@ -132,7 +132,7 @@
 						<p class="tip"><b>{c.figure.tipLabel}:</b> {@render rich(c.figure.tip)}</p>
 					</div>
 				</figure>
-				<ul class="badges" aria-label={c.eyebrow}>
+				<ul class="badges">
 					{#each c.badges as badge, i}<li class="badge b{i}">{badge}</li>{/each}
 				</ul>
 			</div>
@@ -144,7 +144,9 @@
 				<h2 id="day-h">{c.day.h}</h2>
 				<p class="pill">{c.day.dayOne}</p>
 			</div>
-			<div class="scroller" role="region" aria-labelledby="day-h" tabindex="-1">
+			<!-- A sideways-scrolling row must take keyboard focus so arrow keys can scroll it. -->
+			<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+			<div class="scroller" role="region" aria-label={c.day.row} tabindex="0">
 				<ol class="steps" role="list">
 					{#each c.day.steps as step, i}
 						<li class="card step reveal" style="--d:{i}">
@@ -204,7 +206,7 @@
 				<li class="card tile soon reveal" style="--d:4">
 					{@render photo(LANDING_PHOTOS.practice, 'soon-photo')}
 					<div class="words">
-						<span class="tag">{c.practice.soon.title}</span>
+						<h3 class="tag">{c.practice.soon.title}</h3>
 						<p>{c.practice.soon.text}</p>
 					</div>
 				</li>
@@ -315,7 +317,8 @@
 	h3 { font-size: 1.08rem; font-weight: 700; margin-bottom: 4px; }
 	p { line-height: 1.6; margin: 0; }
 	.en { direction: ltr; text-align: left; unicode-bidi: isolate; }
-	a:focus-visible, button:focus-visible, summary:focus-visible, .scroller:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 8px; }
+	a:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 8px; }
+	.scroller:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; border-radius: 12px; }
 
 	.primary { display: flex; gap: 12px; align-items: center; justify-content: center; min-height: 56px; padding: 12px 26px; border-radius: 999px; background: var(--btn); color: var(--on-btn); font-weight: 700; font-size: 1.08rem; text-decoration: none; box-shadow: var(--shadow); transition: transform .15s ease, background .15s ease; }
 	.primary:hover { background: var(--btn-hover); transform: translateY(-1px); }
@@ -325,7 +328,7 @@
 	/* ── 1. First screen ── */
 	.hero { max-width: 1120px; margin: 0 auto; padding: 12px 16px 40px; display: grid; gap: 28px; }
 	.copy { display: grid; justify-items: start; }
-	.eyebrow { display: inline-block; margin: 0 0 14px; padding: 6px 12px; border-radius: 999px; background: var(--card); font-size: .74rem; font-weight: 700; letter-spacing: .08em; }
+	.eyebrow { display: inline-block; margin: 0 0 14px; padding: 6px 12px; border-radius: 999px; background: var(--card); font-size: .74rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 	[dir='rtl'] .eyebrow { letter-spacing: normal; font-size: .86rem; }
 	.line { font-size: 1.12rem; color: var(--ink-2); margin-bottom: 22px; max-width: 34em; }
 	.copy .primary { justify-self: stretch; }
@@ -354,11 +357,8 @@
 	.better { font-weight: 700; color: var(--g-text); }
 	.tip { color: var(--ink-2); font-size: .86rem; }
 
-	.badges { list-style: none; margin: 0; padding: 0; }
-	.badge { position: absolute; z-index: 2; padding: 7px 12px; border-radius: 999px; background: var(--card); box-shadow: var(--shadow); font-size: .8rem; font-weight: 700; white-space: nowrap; }
-	.b0 { inset-block-start: 14px; inset-inline-start: 14px; }
-	.b1 { inset-block-start: 14px; inset-inline-end: 14px; }
-	.b2 { inset-block-end: -10px; inset-inline-end: 22px; }
+	.badges { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+	.badge { position: relative; z-index: 2; padding: 7px 12px; border-radius: 999px; background: var(--card); box-shadow: var(--shadow); font-size: .8rem; font-weight: 700; white-space: nowrap; }
 
 	/* The wave: little bars that rise and fall like a voice. */
 	.wave { display: inline-flex; align-items: center; gap: 2px; block-size: 18px; }
@@ -398,7 +398,7 @@
 
 	/* ── 3. Practice: a grid of cards ── */
 	.bento { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
-	.tile { display: flex; gap: 14px; align-items: center; padding: 12px; }
+	.tile { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; padding: 12px; }
 	.tile .art { flex: none; inline-size: 92px; block-size: 92px; }
 	.t0 .art { background: var(--g); color: #fff; }
 	.t1 .art { background: var(--y-soft); }
@@ -419,12 +419,12 @@
 	.t1 .art { gap: 5px; }
 	.trap { font-size: .8rem; font-weight: 700; color: var(--ink); text-align: center; line-height: 1.3; }
 	.trap s { color: var(--coral); text-decoration-thickness: 2px; }
-	.words { min-width: 0; }
+	.words { flex: 1 1 10em; min-width: 0; }
 	.words p { font-size: .93rem; line-height: 1.5; }
 	.soon-photo { flex: none; inline-size: 92px; block-size: 92px; border-radius: 18px; }
 	.soon-photo.empty svg { inline-size: 26px; }
 	.soon .words { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
-	.tag { padding: 4px 10px; border-radius: 999px; background: #ffd65a; color: #14201b; font-weight: 800; font-size: .8rem; }
+	.tag { margin: 0; padding: 4px 10px; border-radius: 999px; background: #ffd65a; color: #14201b; font-weight: 800; font-size: .8rem; }
 
 	/* ── 4. Privacy and questions ── */
 	.two { display: grid; gap: 12px; }
@@ -467,6 +467,7 @@
 	.bar .primary { max-width: 520px; margin: 0 auto; }
 	.bar[hidden] { display: none; }
 	@media (max-height: 480px) { .bar { display: none; } }
+	@media print { .reveal { opacity: 1 !important; transform: none !important; } .bar { display: none; } }
 
 	/* ── Wider screens ── */
 	@media (min-width: 720px) {
@@ -482,6 +483,8 @@
 		.stage { padding: 0 0 30px; }
 		.phone { position: absolute; inset-block-end: 0; inset-inline-start: -36px; inline-size: 340px; margin: 0; }
 		.hero-photo { aspect-ratio: 5 / 4; inline-size: 88%; margin-inline-start: auto; }
+		.badges { margin: 0; display: block; }
+		.badge { position: absolute; }
 		.b0 { inset-block-start: 22px; inset-inline-start: 18%; }
 		.b1 { inset-block-start: 40%; inset-inline-end: -10px; }
 		.b2 { inset-block-end: 6px; inset-inline-end: 6%; }
@@ -513,43 +516,44 @@
 	/* ── Motion, only for people who have not asked to reduce it ── */
 	@media (prefers-reduced-motion: no-preference) {
 		.landing:global([data-anim='on']) .reveal { transition: opacity .6s ease, transform .6s cubic-bezier(.2, .7, .2, 1); transition-delay: calc(var(--d, 0) * 90ms); }
-		.landing:global([data-anim='on']) .reveal:not(:global(.in)) { opacity: 0; transform: translateY(22px); }
+		.landing:global([data-anim='on']) .reveal:not(:focus-within):not(:global(.in)) { opacity: 0; transform: translateY(22px); }
 
-		.wave i { animation: talk 1.1s ease-in-out infinite alternate; animation-delay: calc(var(--i) * -170ms); }
+		/* Each drawing plays when its card comes into view and stops within about five seconds. */
+		.landing:global([data-anim='on']) .reveal:global(.in) .wave i { animation: talk 1.1s ease-in-out 4 alternate; animation-delay: calc(var(--i) * -170ms); }
 		@keyframes talk { from { transform: scaleY(.22); } to { transform: scaleY(1); } }
 
-		/* The chat plays like a lesson: Mira asks, you answer, then the better way appears. */
-		.msg { animation: 11s ease infinite both; }
-		.mira { animation-name: msg1; }
-		.you { animation-name: msg2; }
-		.fix { animation-name: msg3; }
-		@keyframes msg1 { 0% { opacity: 0; transform: translateY(10px); } 4%, 94% { opacity: 1; transform: none; } 100% { opacity: 0; } }
-		@keyframes msg2 { 0%, 22% { opacity: 0; transform: translateY(10px); } 27%, 94% { opacity: 1; transform: none; } 100% { opacity: 0; } }
-		@keyframes msg3 { 0%, 46% { opacity: 0; transform: translateY(10px) scale(.97); } 52%, 94% { opacity: 1; transform: none; } 100% { opacity: 0; } }
-		.dot { animation: blink 1s steps(2, start) infinite; }
+		/* The chat plays once like a lesson: Mira asks, you answer, then the better way appears. */
+		.landing:global([data-anim='on']) .reveal:global(.in) .msg { animation: 4.5s ease 1 both; }
+		.landing:global([data-anim='on']) .reveal:global(.in) .mira { animation-name: msg1; }
+		.landing:global([data-anim='on']) .reveal:global(.in) .you { animation-name: msg2; }
+		.landing:global([data-anim='on']) .reveal:global(.in) .fix { animation-name: msg3; }
+		@keyframes msg1 { 0% { opacity: 0; transform: translateY(10px); } 12%, 100% { opacity: 1; transform: none; } }
+		@keyframes msg2 { 0%, 35% { opacity: 0; transform: translateY(10px); } 48%, 100% { opacity: 1; transform: none; } }
+		@keyframes msg3 { 0%, 70% { opacity: 0; transform: translateY(10px) scale(.97); } 84%, 100% { opacity: 1; transform: none; } }
+		.landing:global([data-anim='on']) .reveal:global(.in) .dot { animation: blink 1s steps(2, start) 4; }
 		@keyframes blink { to { visibility: hidden; } }
 
-		.badge { animation: bob 5s ease-in-out infinite; }
-		.b1 { animation-delay: -1.6s; }
-		.b2 { animation-delay: -3.2s; }
+		.landing:global([data-anim='on']) .reveal:global(.in) .badge { animation: bob 2.4s ease-in-out 2; }
+		.landing:global([data-anim='on']) .reveal:global(.in) .b1 { animation-delay: .4s; }
+		.landing:global([data-anim='on']) .reveal:global(.in) .b2 { animation-delay: .8s; }
 		@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
 
-		.ring { animation: pulse 2.2s ease-out infinite; }
-		.r2 { animation-delay: 1.1s; }
+		.landing:global([data-anim='on']) .reveal:global(.in) .ring { animation: pulse 2.2s ease-out 2; }
+		.landing:global([data-anim='on']) .reveal:global(.in) .r2 { animation-delay: 1.1s; }
 		@keyframes pulse { from { opacity: .7; transform: scale(1); } to { opacity: 0; transform: scale(1.9); } }
-		.chip-fix b { animation: pop 3.2s ease infinite; display: inline-block; }
-		@keyframes pop { 0%, 40% { transform: scale(1); } 50% { transform: scale(1.18); } 60%, 100% { transform: scale(1); } }
+		.landing:global([data-anim='on']) .reveal:global(.in) .chip-fix b { animation: pop 1.6s ease 1.2s 1; display: inline-block; }
+		@keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.25); } 100% { transform: scale(1); } }
 
-		.n1 { animation: slide 4s ease infinite; }
-		.n2 { animation: slide 4s ease infinite 2s; }
-		@keyframes slide { 0% { opacity: 0; transform: translateY(8px); } 12%, 85% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+		.landing:global([data-anim='on']) .reveal:global(.in) .n1 { animation: slide .8s ease 1 both; }
+		.landing:global([data-anim='on']) .reveal:global(.in) .n2 { animation: slide .8s ease 1.4s 1 both; }
+		@keyframes slide { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
-		.timer .run { animation: count 8s linear infinite; }
-		@keyframes count { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 113.1; } }
-		.s2 { animation: grow 3.6s ease infinite; }
-		@keyframes grow { 0%, 30% { transform: scale(.85); opacity: .5; } 45%, 100% { transform: none; opacity: 1; } }
-		.trap s { text-decoration-color: transparent; animation: strike 3.6s ease infinite; }
-		@keyframes strike { 0%, 30% { text-decoration-color: transparent; } 40%, 100% { text-decoration-color: currentColor; } }
+		.landing:global([data-anim='on']) .reveal:global(.in) .timer .run { animation: count 4s linear 1 both; }
+		@keyframes count { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 28; } }
+		.landing:global([data-anim='on']) .reveal:global(.in) .s2 { animation: grow 1.4s ease .6s 1 both; }
+		@keyframes grow { from { transform: scale(.85); opacity: .5; } to { transform: none; opacity: 1; } }
+		.landing:global([data-anim='on']) .reveal:global(.in) .trap s { animation: strike 1.6s ease 1 both; }
+		@keyframes strike { 0%, 50% { text-decoration-color: transparent; } 100% { text-decoration-color: currentColor; } }
 		.primary { transition: transform .15s ease, background .15s ease; }
 	}
 </style>

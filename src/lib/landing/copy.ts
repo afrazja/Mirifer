@@ -22,7 +22,7 @@ export interface LandingCopy {
 	figure: { caption: string; mira: string; you: string; promptFa: string; promptEn: string | null; said: string; fixLabel: string; fix: string; tipLabel: string; tip: Rich };
 	/** Short facts that float around the phone in the first screen. */
 	badges: string[];
-	day: { h: string; steps: { title: string; text: string }[]; dayOne: string; need: string };
+	day: { h: string; steps: { title: string; text: string }[]; dayOne: string; need: string; row: string };
 	practice: { h: string; cards: { title: string; text: string }[]; soon: { title: string; text: string } };
 	/** Heading for the privacy-and-questions section (read by screen readers only). */
 	trust: string;
@@ -37,7 +37,7 @@ export const LANDING: Record<LandingLang, LandingCopy> = {
 	en: {
 		title: 'Mirifer: English speaking practice with an AI coach',
 		description: 'Practice speaking English out loud with Mira, your AI coach: short daily lessons for travel, everyday life and IELTS-style speaking, with feedback. Free for now.',
-		eyebrow: 'ENGLISH SPEAKING PRACTICE WITH AN AI COACH',
+		eyebrow: 'English speaking practice with an AI coach',
 		h1: 'You know English. Now speak it.',
 		line: 'Short daily speaking lessons with Mira, your AI coach. For travel, everyday life, and IELTS-style speaking practice.',
 		cta: 'Start free',
@@ -61,7 +61,8 @@ export const LANDING: Record<LandingLang, LandingCopy> = {
 				{ title: 'Talk', text: 'Reply to voice messages. At the Professional level, you also talk to an AI character.' }
 			],
 			dayOne: 'Day 1: your bag didn’t arrive. Each day continues the story.',
-			need: 'You need a microphone and a quiet place. You can stop between steps and come back later.'
+			need: 'You need a microphone and a quiet place. You can stop between steps and come back later.',
+			row: 'The three steps (scroll sideways)'
 		},
 		practice: {
 			h: 'More practice, whenever you want',
@@ -121,7 +122,8 @@ export const LANDING: Record<LandingLang, LandingCopy> = {
 				{ title: 'گفت‌وگو کن', text: 'به پیام‌های صوتی جواب بده. در سطح «حرفه‌ای» با یک شخصیت هوش مصنوعی هم حرف می‌زنی.' }
 			],
 			dayOne: 'روز اول: چمدانت نرسیده. درسِ هر روز ادامهٔ همان ماجراست.',
-			need: 'یک میکروفون و جایی آرام لازم داری. بین بخش‌ها می‌توانی دست نگه داری و بعداً ادامه بدهی.'
+			need: 'یک میکروفون و جایی آرام لازم داری. بین بخش‌ها می‌توانی دست نگه داری و بعداً ادامه بدهی.',
+			row: 'سه مرحله (به پهلو بکش)'
 		},
 		practice: {
 			h: 'تمرین بیشتر، هر وقت خواستی',
