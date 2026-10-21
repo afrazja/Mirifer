@@ -34,6 +34,7 @@
 	let recording: Recording | null = null;
 	let heading: HTMLElement | undefined = $state();
 	let started = false;
+	const noMic = $derived(recState === 'blocked' || !canRecord());
 
 	onDestroy(() => { stopAllAudio(); recording?.cancel(); if (clipUrl) URL.revokeObjectURL(clipUrl); });
 
@@ -82,9 +83,9 @@
 	<div class="top">
 		<a class="close" href={homeHref} aria-label={T('Close the sample', 'بستن نمونه')}><span aria-hidden="true">✕</span></a>
 		{#if step < STEPS}
-			<ol class="dots" aria-label={T(`Step ${step + 1} of ${STEPS}`, `مرحلهٔ ${(step + 1).toLocaleString('fa-IR')} از ${STEPS.toLocaleString('fa-IR')}`)}>
-				{#each Array(STEPS) as _, i}<li class:on={i <= step} aria-hidden="true"></li>{/each}
-			</ol>
+			<div class="dots" role="img" aria-label={T(`Step ${step + 1} of ${STEPS}`, `مرحلهٔ ${(step + 1).toLocaleString('fa-IR')} از ${STEPS.toLocaleString('fa-IR')}`)}>
+				{#each Array(STEPS) as _, i}<span class:on={i <= step}></span>{/each}
+			</div>
 		{/if}
 	</div>
 
@@ -95,30 +96,31 @@
 		{#if showWords}
 			<ul class="words" dir="ltr" lang="en">{#each LINES as line}<li><b>{SPEAKERS[line.who as 'agent' | 'sara'].name}:</b> {line.text}</li>{/each}</ul>
 		{/if}
-		{#if heard || playing}<button class="quiet" type="button" onclick={() => (showWords = !showWords)}>{showWords ? T('Hide the words', 'پنهان کردن متن') : T('Show the words', 'نشان دادن متن')}</button>{/if}
-		{#if !heard}
-			<ActionBar label={playing ? T('Stop', 'توقف') : T('Play', 'پخش')} icon={playing ? 'stop' : 'play'} onclick={() => (playing ? stopPlaying() : void playConversation())} />
-		{:else}
-			<ActionBar label={T('Next', 'بعدی')} onclick={() => go(1)} secondary={{ label: T('Play again', 'دوباره پخش کن'), onclick: () => void playConversation() }} />
-		{/if}
+		<button class="quiet" type="button" onclick={() => (showWords = !showWords)}>{showWords ? T('Hide the words', 'پنهان کردن متن') : T('Show the words', 'نشان دادن متن')}</button>
+		<!-- One bar whose action changes, so keyboard focus stays on it when playback ends. -->
+		<ActionBar
+			label={heard && !playing ? T('Next', 'بعدی') : playing ? T('Stop', 'توقف') : T('Play', 'پخش')}
+			icon={heard && !playing ? null : playing ? 'stop' : 'play'}
+			onclick={() => (heard && !playing ? go(1) : playing ? stopPlaying() : void playConversation())}
+			secondary={heard && !playing ? { label: T('Play again', 'دوباره پخش کن'), onclick: () => void playConversation() } : null} />
 
 	{:else if step === 1}
 		<p class="eyebrow">{T('ONE QUESTION', 'یک سؤال')}</p>
 		<h1 id="sample-step" tabindex="-1" bind:this={heading} lang="en" dir="ltr" class="en">{QUESTION}</h1>
 		<div class="options" role="group" aria-label={T('Answers', 'جواب‌ها')}>
 			{#each OPTIONS as option, i}
-				<button type="button" class="option" class:right={picked === i && i === ANSWER} class:wrong={picked === i && i !== ANSWER} aria-pressed={picked === i} lang="en" dir="ltr" onclick={() => (picked = i)} disabled={picked === ANSWER}>{option}</button>
+				<button type="button" class="option" class:right={picked === i && i === ANSWER} class:wrong={picked === i && i !== ANSWER} aria-pressed={picked === i} lang="en" dir="ltr" onclick={() => { if (picked !== ANSWER) picked = i; }} aria-disabled={picked === ANSWER}>{option}</button>
 			{/each}
 		</div>
-		{#if picked !== null && picked !== ANSWER}
-			<div role="status">
-				<p class="note">{T('Not quite. That’s not the missing one. Sara said:', 'نه، این نیست. سارا گفت:')}</p>
+		<div role="status">
+			{#if picked !== null && picked !== ANSWER}
+				<p class="note">{T('Not quite:', 'نه، این نیست:')} <bdi lang="en">“{OPTIONS[picked]}”</bdi> {T('isn’t the missing one. Sara said:', 'گمشده نیست. سارا گفت:')}</p>
 				<p class="note en" lang="en" dir="ltr">“{LINES[3].text}”</p>
 				<p class="note">{T('Try again.', 'دوباره امتحان کن.')}</p>
-			</div>
-		{:else if picked === ANSWER}
-			<p class="note good" role="status">✓ {T('Yes, a small green backpack.', 'درست است، یک کوله‌پشتی کوچک سبز.')}</p>
-		{/if}
+			{:else if picked === ANSWER}
+				<p class="note good">✓ {T('Yes, a small green backpack.', 'درست است، یک کوله‌پشتی کوچک سبز.')}</p>
+			{/if}
+		</div>
 		{#if picked === ANSWER}<ActionBar label={T('Next', 'بعدی')} onclick={() => go(2)} />{/if}
 
 	{:else if step === 2}
@@ -128,13 +130,14 @@
 		<p class="gloss">{T('(Hello, only one of my bags came out.)', '(سلام، فقط یکی از چمدان‌هایم آمد.)')}</p>
 		<button class="quiet" type="button" onclick={hearMira}><span aria-hidden="true">▶</span> {T('Hear Mira say it', 'بشنو میرا چطور می‌گوید')}</button>
 		<p class="small">{T('Your voice stays on this phone. Nothing is sent.', 'صدایت روی همین گوشی می‌ماند و جایی فرستاده نمی‌شود.')}</p>
-		{#if recState === 'silent'}<p class="note" role="status">{T('I didn’t hear anything. Try again, a little louder.', 'صدایی نشنیدم. دوباره، کمی بلندتر امتحان کن.')}</p>{/if}
-		{#if recState === 'blocked' || !canRecord()}
-			<p class="note" role="status">{T('The microphone isn’t available. You can still see the rest.', 'میکروفون در دسترس نیست. باز هم می‌توانی بقیه را ببینی.')}</p>
-			<ActionBar label={T('Next', 'بعدی')} onclick={() => go(4)} />
-		{:else}
-			<ActionBar label={recState === 'recording' ? T('Stop', 'توقف') : T('Say it', 'بگو')} icon={recState === 'recording' ? 'stop' : 'mic'} recording={recState === 'recording'} onclick={() => void record()} secondary={{ label: T('Skip', 'رد کن'), onclick: () => go(4) }} />
-		{/if}
+		<p class="note" role="status">{#if recState === 'silent'}{T('I didn’t hear anything. Try again, a little louder.', 'صدایی نشنیدم. دوباره، کمی بلندتر امتحان کن.')}{:else if noMic}{T('The microphone isn’t available. You can still see the rest.', 'میکروفون در دسترس نیست. باز هم می‌توانی بقیه را ببینی.')}{/if}</p>
+		<!-- One bar whose action changes, so focus stays on it if the microphone is refused. -->
+		<ActionBar
+			label={noMic ? T('Next', 'بعدی') : recState === 'recording' ? T('Stop', 'توقف') : T('Say it', 'بگو')}
+			icon={noMic ? null : recState === 'recording' ? 'stop' : 'mic'}
+			recording={recState === 'recording'}
+			onclick={() => (noMic ? go(4) : void record())}
+			secondary={noMic ? null : { label: T('Skip', 'رد کن'), onclick: () => go(4) }} />
 
 	{:else if step === 3}
 		<p class="eyebrow">{T('HEAR YOURSELF', 'صدای خودت را بشنو')}</p>
@@ -170,9 +173,9 @@
 	.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; }
 	.close { display: inline-grid; place-items: center; inline-size: 44px; block-size: 44px; border-radius: 50%; color: var(--ink); text-decoration: none; font-size: 1.1rem; }
 	.close:focus-visible, .quiet:focus-visible, .option:focus-visible, .primary:focus-visible { outline: 3px solid var(--accent-deep); outline-offset: 2px; }
-	.dots { display: flex; gap: 6px; list-style: none; margin: 0; padding: 0; }
-	.dots li { inline-size: 8px; block-size: 8px; border-radius: 50%; background: var(--line); }
-	.dots li.on { background: var(--accent); }
+	.dots { display: flex; gap: 6px; }
+	.dots span { inline-size: 8px; block-size: 8px; border-radius: 50%; background: var(--control-border); }
+	.dots span.on { background: var(--accent); }
 	.eyebrow { margin: 12px 0 2px; font-size: .76rem; font-weight: 700; letter-spacing: .08em; color: var(--accent-deep); }
 	:global([dir='rtl']) .eyebrow { letter-spacing: normal; }
 	h1 { margin: 0 0 12px; font-family: var(--font-display); font-weight: 500; font-size: clamp(1.6rem, 6vw, 2.1rem); line-height: 1.2; overflow-wrap: break-word; }
@@ -186,7 +189,7 @@
 	.option { min-height: 52px; padding: 12px 16px; border: 1.5px solid var(--control-border); border-radius: 12px; background: var(--paper-raised); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
 	.option.right { border-color: var(--accent); background: var(--accent-wash); }
 	.option.wrong { border-color: var(--attention); }
-	.option:disabled { cursor: default; }
+	.option[aria-disabled='true'] { cursor: default; }
 	.note { margin: 10px 0 0; line-height: 1.6; }
 	.note.good { color: var(--accent-deep); font-weight: 600; }
 	.phrase { margin: 4px 0 0; font-size: 1.3rem; font-weight: 600; text-align: left; }

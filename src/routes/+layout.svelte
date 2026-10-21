@@ -124,6 +124,9 @@
 			});
 	});
 
+	// On public pages the address sets the language, so the link matches the page.
+	const skipFa = $derived((urlLanguage(page.url.pathname) ?? skipLang) === 'fa');
+
 	afterNavigate(() => {
 		refreshTheme();
 		captureAcquisition();
@@ -184,7 +187,7 @@
 </svelte:head>
 
 <a href="#main-content" class="skip-link">
-	{skipLang === 'fa' ? 'رفتن به محتوا' : 'Skip to content'}
+	{skipFa ? 'رفتن به محتوا' : 'Skip to content'}
 </a>
 
 {@render children()}

@@ -4,7 +4,7 @@
 	 * v2. One primary action, "Start free" (sign-up): in the hero, at the end, and in a bar at the
 	 * bottom of the screen while neither of those is in view (never two at once).
 	 */
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import BrandLogo from '$lib/components/BrandLogo.svelte';
 	import { LANDING, type LandingLang, type Rich } from '$lib/landing/copy';
 	import { visitorEvent } from '$services/visitor-events';
@@ -38,7 +38,12 @@
 		if (endCta) watch.observe(endCta);
 		return () => watch.disconnect();
 	});
-	function dismissFa() { suggestFa = false; try { localStorage.setItem('mirifer_fa_suggestion', 'no'); } catch { /* fine */ } }
+	function dismissFa() {
+		suggestFa = false;
+		try { localStorage.setItem('mirifer_fa_suggestion', 'no'); } catch { /* fine */ }
+		// The ✕ is gone: keep keyboard focus on the page.
+		void tick().then(() => document.querySelector<HTMLElement>('.landing .brand')?.focus());
+	}
 	const started = () => visitorEvent('signup_clicked', lang, 'landing');
 </script>
 
@@ -148,14 +153,16 @@
 </div>
 
 <style>
-	.landing { min-height: 100dvh; background: var(--paper); color: var(--ink); scroll-padding-bottom: 96px; }
+	.landing { min-height: 100dvh; background: var(--paper); color: var(--ink); }
+	/* The page scrolls on <html>: keep a focused item clear of the bottom bar. */
+	:global(html:has(.landing)) { scroll-padding-block-end: 100px; }
 	.suggest { display: flex; justify-content: center; align-items: center; gap: 8px; margin: 0; padding: 6px 16px; background: var(--accent-wash); font-size: .92rem; }
 	.suggest a { color: var(--accent-deep); font-weight: 600; min-height: 44px; display: inline-flex; align-items: center; }
 	.suggest button { min-width: 44px; min-height: 44px; border: 0; background: none; color: var(--ink-soft); font: inherit; cursor: pointer; }
-	.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; max-width: 1000px; margin: 0 auto; padding: 8px 16px; }
+	.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; max-width: 1000px; margin: 0 auto; padding: 8px 16px; }
 	.brand { display: inline-flex; align-items: center; min-height: 44px; color: var(--ink); text-decoration: none; }
 	.links { display: flex; gap: 18px; }
-	.links a { min-height: 44px; display: inline-flex; align-items: center; color: var(--accent-deep); font-weight: 500; text-decoration: none; }
+	.links a { min-height: 44px; min-inline-size: 44px; justify-content: center; display: inline-flex; align-items: center; color: var(--accent-deep); font-weight: 500; text-decoration: none; }
 	.links a:hover { text-decoration: underline; }
 	main { display: block; }
 	.hero { max-width: 560px; margin: 0 auto; padding: 18px 16px 32px; }
@@ -192,7 +199,7 @@
 	.tip { color: var(--ink-soft); font-size: .86rem; }
 	.steps { list-style: none; padding: 0; margin: 14px 0; display: grid; gap: 12px; }
 	.steps li { display: flex; gap: 12px; }
-	.n { flex: none; display: grid; place-items: center; inline-size: 30px; block-size: 30px; border-radius: 50%; border: 1px solid var(--accent); color: var(--accent-deep); font-weight: 700; }
+	.n { flex: none; display: grid; place-items: center; inline-size: 1.9em; block-size: 1.9em; border-radius: 50%; border: 1px solid var(--accent); color: var(--accent-deep); font-weight: 700; }
 	.note { color: var(--ink-soft); font-size: .93rem; }
 	.plain { list-style: none; padding: 0; margin: 14px 0; display: grid; gap: 10px; }
 	.plain li { padding: 12px 14px; border-inline-start: 3px solid var(--accent); border-radius: 8px; background: var(--paper); line-height: 1.6; }
@@ -204,7 +211,7 @@
 	.end { text-align: center; }
 	footer { max-width: 560px; margin: 0 auto; padding: 20px 16px 120px; text-align: center; color: var(--ink-soft); font-size: .85rem; }
 	footer nav { display: flex; justify-content: center; gap: 16px; }
-	footer a { min-height: 44px; display: inline-flex; align-items: center; color: var(--accent-deep); }
+	footer a { min-height: 44px; min-inline-size: 44px; justify-content: center; display: inline-flex; align-items: center; color: var(--accent-deep); }
 	footer p { margin: 6px 0 0; font-size: .8rem; }
 	.bar { position: fixed; inset-inline: 0; inset-block-end: 0; z-index: 30; padding: 10px 16px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--paper) 35%); }
 	.bar .primary { max-width: 560px; margin: 0 auto; }
