@@ -12,8 +12,8 @@
 import { json } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { RequestHandler } from './$types';
-import { askChain, checkAllowance, englishLearner, recordAllowance } from '$lib/server/english-ai';
-import { transcribe, transcriptionConfigured } from '$lib/server/transcribe';
+import { askChain, checkAllowance, englishLearner, recordAllowance, meteredTranscribe } from '$lib/server/english-ai';
+import { transcriptionConfigured } from '$lib/server/transcribe';
 import { createLimiter, tooMany } from '$lib/server/rate-limit';
 import { readEnglishProfile } from '$lib/practice/english-profile';
 import { levelFor } from '$lib/server/coach-ai';
@@ -41,8 +41,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		if (!Number.isFinite(seconds) || seconds < 0 || seconds > MAX_SECONDS + 10) return json({ error: 'Invalid recording' }, { status: 400 });
 		const refused = await checkAllowance(locals, user);
 		if (refused) return refused;
-		const transcript = await transcribe(audio, 'English say-better', `They are answering: "${QUESTION}"`);
-		if (transcript === null) return json({ error: 'Transcription unavailable' }, { status: 502 });
+		const transcript = await meteredTranscribe(locals, user, 'say-better', audio, seconds, 'English say-better', `They are answering: "${QUESTION}"`);
+		if (transcript instanceof Response) return transcript;
 		return json({ transcript });
 	}
 

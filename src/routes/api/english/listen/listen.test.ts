@@ -3,19 +3,17 @@ const { env, transcribeMock } = vi.hoisted(() => ({ env: {} as Record<string, st
 vi.mock('$env/dynamic/private', () => ({ env }));
 vi.mock('$lib/server/transcribe', () => ({ transcribe: transcribeMock, transcriptionConfigured: () => !!env.OPENAI_API_KEY }));
 import { POST } from './+server';
+import { fakeEvents } from '../../../../test/english-events';
 import { CLIP_SECONDS, isClipUse, maxClipBytes } from '$lib/practice/voice-clip';
 import { MAX_DAILY_CLIPS } from '$lib/server/english-ai';
 
 /** `count`: AI requests today; `clips`: clips today. */
 function fixture(form: FormData, count = 0, user: Record<string, unknown> | null = { id: 'u1', email: 'a@b.c', user_metadata: { target_language: 'en' } }, origin = 'https://m.test', clips = 0) {
-	const inserted: unknown[] = [];
-	const from = vi.fn().mockImplementation(() => ({
-		select: () => ({ eq: () => ({ eq: (_: string, name: string) => ({ gte: () => Promise.resolve({ count: name === 'english_clip_transcribed' ? clips : count, error: null }) }), maybeSingle: () => Promise.resolve({ data: null }) }) }),
-		insert: (row: unknown) => { inserted.push(row); return Promise.resolve({ error: null }); }
-	}));
+	const events = fakeEvents({ ai: count, clips });
+	const from = events.from;
 	// jsdom's FormData can't travel through Node's Request, so the form is handed over directly.
 	const request = { url: 'https://m.test/api/english/listen', headers: new Headers({ origin, 'content-type': 'multipart/form-data; boundary=x' }), formData: async () => form };
-	return { inserted, event: { request, locals: { supabase: { auth: { getUser: vi.fn().mockResolvedValue({ data: { user }, error: null }) }, from } } } as any };
+	return { get inserted() { return events.inserted.filter(row => row.event_name !== 'english_clip_transcribed'); }, clips: () => events.rows('english_clip_transcribed'), event: { request, locals: { supabase: { auth: { getUser: vi.fn().mockResolvedValue({ data: { user }, error: null }) }, from } } } as any };
 }
 const clip = (use: string | null = 'greeting', seconds = 4, size = 2000, type = 'audio/webm') => {
 	const f = new FormData();
@@ -32,7 +30,9 @@ describe('/api/english/listen', () => {
 		for (const use of ['greeting', 'role-play', 'say-again']) {
 			const f = fixture(clip(use));
 			expect(await (await POST(f.event)).json()).toEqual({ transcript: 'I usually have coffee in the morning.' });
-			expect(f.inserted).toEqual([expect.objectContaining({ event_name: 'english_clip_transcribed', metadata: { course: 'en', route: use } })]);
+			// It counts one clip (and its audio) against the day's voice budget, not an AI request.
+			expect(f.inserted).toEqual([]);
+			expect(f.clips()).toEqual([expect.objectContaining({ metadata: { course: 'en', route: use, audio_seconds: 4 } })]);
 		}
 		expect(transcribeMock.mock.calls.map(call => call[1])).toEqual(['English greeting', 'English role-play', 'English say-again']);
 	});

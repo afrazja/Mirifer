@@ -9,7 +9,8 @@ export const EVENT_NAMES = [
 	'hint_opened', 'answer_revealed', 'audio_replayed', 'lesson_active', 'sentence_practice_opened', 'answer_timed_out',
 	'mic_requested', 'mic_ready', 'obstacle', 'audio_fallback',
 	'free_turn_offered', 'free_turn_begun', 'free_turn_completed',
-	'exam_completed', 'review_started', 'conversation_started', 'conversation_completed', 'english_ai_requested'
+	'exam_completed', 'review_started', 'conversation_started', 'conversation_completed', 'english_ai_requested',
+	'english_clip_transcribed', 'english_practice_ai'
 ] as const;
 export type AnalyticsEvent = typeof EVENT_NAMES[number];
 export const OBSTACLES = {
@@ -37,7 +38,7 @@ export interface StoredEvent extends AnalyticsRecord {
 	created_at: string;
 }
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const numericKeys = new Set(['sequence', 'index', 'total', 'sentenceCount', 'estimateMinutes', 'actualSeconds', 'secondsOnOverlay', 'score', 'percentage', 'week', 'count', 'length', 'done', 'skipped']);
+const numericKeys = new Set(['sequence', 'index', 'total', 'sentenceCount', 'estimateMinutes', 'actualSeconds', 'secondsOnOverlay', 'score', 'percentage', 'week', 'count', 'length', 'done', 'skipped', 'audio_seconds']);
 const choices: Record<string, readonly string[]> = {
 	page: ['home', 'languages', 'onboarding', 'practice', 'lesson', 'review', 'basics', 'vocabulary', 'progress', 'profile', 'settings', 'exam', 'sprechen', 'hoeren', 'lesen', 'schreiben', 'other'],
 	device: ['mobile', 'tablet', 'desktop'],

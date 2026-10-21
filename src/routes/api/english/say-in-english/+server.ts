@@ -9,8 +9,8 @@
  */
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { askChain, checkAllowance, englishLearner, recordAllowance } from '$lib/server/english-ai';
-import { transcribe, transcriptionConfigured } from '$lib/server/transcribe';
+import { askChain, checkAllowance, englishLearner, recordAllowance, meteredTranscribe } from '$lib/server/english-ai';
+import { transcriptionConfigured } from '$lib/server/transcribe';
 import { createLimiter, tooMany } from '$lib/server/rate-limit';
 import { NAMES, SAY_MAX_SECONDS } from '$lib/practice/say-in-english';
 import { sayItemById } from '$lib/practice/day-content';
@@ -39,8 +39,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 	const refused = await checkAllowance(locals, user);
 	if (refused) return refused;
-	const transcript = await transcribe(audio, 'English say-in-english', `A Persian speaker is saying one or two short sentences in English, ${item.to.en.toLowerCase()}. Names that may come up: ${item.names ?? NAMES}`);
-	if (transcript === null) return json({ error: 'Transcription unavailable' }, { status: 502 });
+	const transcript = await meteredTranscribe(locals, user, 'say-in-english', audio, seconds, 'English say-in-english', `A Persian speaker is saying one or two short sentences in English, ${item.to.en.toLowerCase()}. Names that may come up: ${item.names ?? NAMES}`);
+	if (transcript instanceof Response) return transcript;
 	if (!transcript.trim()) return json({ error: 'Nothing heard' }, { status: 422 });
 
 	const raw = await askChain<RawSay>({

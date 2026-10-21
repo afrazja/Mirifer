@@ -9,12 +9,26 @@ export const AUDIO_EXTENSIONS: Record<string, string> = { 'audio/webm': 'webm', 
 
 export const transcriptionConfigured = () => !!env.OPENAI_API_KEY;
 
+/** gpt-4o-transcribe bills about 1,000 audio tokens a minute ($6 per million, about $0.006 a minute). */
+const AUDIO_TOKENS_PER_SECOND = 1000 / 60;
+/**
+ * The audio length the service billed, from the response's `usage`: seconds for models billed by
+ * duration, or audio tokens for token-billed ones. Null when the response doesn't say.
+ */
+export function billedSeconds(usage: unknown): number | null {
+	if (!usage || typeof usage !== 'object') return null;
+	const u = usage as { type?: unknown; seconds?: unknown; input_token_details?: { audio_tokens?: unknown } };
+	if (u.type === 'duration' && typeof u.seconds === 'number' && Number.isFinite(u.seconds)) return Math.max(0, u.seconds);
+	const tokens = u.input_token_details?.audio_tokens;
+	return typeof tokens === 'number' && Number.isFinite(tokens) ? Math.max(0, tokens / AUDIO_TOKENS_PER_SECOND) : null;
+}
+
 /**
  * The transcript (whitespace tidied), or null on any failure. `context` tells
  * the model what the learner is talking about, which helps a lot with accented
  * speech; it is also told to keep the learner's mistakes, not tidy them.
  */
-export async function transcribe(audio: File, label: string, context?: string, options: { splitAtPauses?: boolean } = {}): Promise<string | null> {
+export async function transcribe(audio: File, label: string, context?: string, options: { splitAtPauses?: boolean; /** The billed audio length, when the service reports it. */ onUsage?: (seconds: number | null) => void } = {}): Promise<string | null> {
 	const type = audio.type.split(';')[0];
 	const body = new FormData();
 	body.set('file', audio, `speech.${AUDIO_EXTENSIONS[type] ?? 'webm'}`);
@@ -33,10 +47,11 @@ export async function transcribe(audio: File, label: string, context?: string, o
 		if (response.status === 400 && options.splitAtPauses) {
 			// The service refused the pause setting: ask once more without it rather than lose the turn.
 			clearTimeout(timeout);
-			return transcribe(audio, label, context);
+			return transcribe(audio, label, context, { onUsage: options.onUsage });
 		}
 		if (!response.ok) { console.error(`${label}: transcription failed: ${response.status}`); return null; }
 		const data = await response.json();
+		options.onUsage?.(billedSeconds(data?.usage));
 		return typeof data?.text === 'string' ? data.text.replace(/\s+/g, ' ').trim() : null;
 	} catch (err) {
 		console.error(`${label}: transcription: ${(err as Error).message}`);

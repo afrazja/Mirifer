@@ -8,8 +8,8 @@
  */
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { checkAllowance, englishLearner, spendClip } from '$lib/server/english-ai';
-import { transcribe, transcriptionConfigured } from '$lib/server/transcribe';
+import { checkAllowance, englishLearner, meteredTranscribe } from '$lib/server/english-ai';
+import { transcriptionConfigured } from '$lib/server/transcribe';
 import { createLimiter, tooMany } from '$lib/server/rate-limit';
 import { CLIP_SECONDS, CLIP_USES, isClipUse, maxClipBytes, type ClipUse } from '$lib/practice/voice-clip';
 
@@ -39,9 +39,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!Number.isFinite(seconds) || seconds < 0 || seconds > CLIP_SECONDS[use] + 3) return json({ error: 'Invalid recording' }, { status: 400 });
 	const refused = await checkAllowance(locals, user);
 	if (refused) return refused;
-	const overBudget = await spendClip(locals, user, use);
-	if (overBudget) return overBudget;
-	const transcript = await transcribe(audio, `English ${use}`, CONTEXT[use]);
-	if (transcript === null) return json({ error: 'Transcription unavailable' }, { status: 502 });
+	const transcript = await meteredTranscribe(locals, user, use, audio, seconds, `English ${use}`, CONTEXT[use]);
+	if (transcript instanceof Response) return transcript;
 	return json({ transcript });
 };

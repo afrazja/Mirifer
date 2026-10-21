@@ -3,17 +3,15 @@ const { env, transcribeMock } = vi.hoisted(() => ({ env: {} as Record<string, st
 vi.mock('$env/dynamic/private', () => ({ env }));
 vi.mock('$lib/server/transcribe', () => ({ transcribe: transcribeMock, transcriptionConfigured: () => !!env.OPENAI_API_KEY }));
 import { POST } from './+server';
+import { fakeEvents } from '../../../../test/english-events';
 
 function fixture(form: FormData, count = 0) {
 	const user = { id: 'u1', email: 'a@b.c', user_metadata: { target_language: 'en' } };
-	const inserted: unknown[] = [];
-	const from = vi.fn().mockImplementation(() => ({
-		select: () => ({ eq: () => ({ eq: () => ({ gte: () => Promise.resolve({ count, error: null }) }), maybeSingle: () => Promise.resolve({ data: null }) }) }),
-		insert: (row: unknown) => { inserted.push(row); return Promise.resolve({ error: null }); }
-	}));
+	const events = fakeEvents({ ai: count });
+	const from = events.from;
 	// jsdom's FormData can't travel through Node's Request, so the form is handed over directly.
 	const request = { url: 'https://m.test/api/english/phrases', headers: new Headers({ origin: 'https://m.test', 'content-type': 'multipart/form-data; boundary=x' }), formData: async () => form };
-	return { inserted, event: { request, locals: { supabase: { auth: { getUser: vi.fn().mockResolvedValue({ data: { user }, error: null }) }, from } } } as any };
+	return { get inserted() { return events.inserted.filter(row => row.event_name !== 'english_clip_transcribed'); }, clips: () => events.rows('english_clip_transcribed'), event: { request, locals: { supabase: { auth: { getUser: vi.fn().mockResolvedValue({ data: { user }, error: null }) }, from } } } as any };
 }
 const clip = (seconds = 4, size = 2000, type = 'audio/webm') => { const f = new FormData(); f.set('audio', new File([new Uint8Array(size)], 'a.webm', { type })); f.set('seconds', String(seconds)); return f; };
 
@@ -26,7 +24,8 @@ describe('/api/english/phrases', () => {
 		expect(await (await POST(f.event)).json()).toEqual({ transcript: 'It turned out they had put it on the wrong flight.' });
 		expect(transcribeMock.mock.calls[0][2]).not.toMatch(/turned|flight/i);
 		// It counts one clip against the day's clip budget, not an AI request.
-		expect(f.inserted).toEqual([expect.objectContaining({ event_name: 'english_clip_transcribed', metadata: { course: 'en', route: 'phrases' } })]);
+		expect(f.inserted).toEqual([]);
+		expect(f.clips()).toEqual([expect.objectContaining({ metadata: { course: 'en', route: 'phrases', audio_seconds: 4 } })]);
 	});
 	it('refuses long, large or non-audio clips, and when the day’s allowance is used up', async () => {
 		expect((await POST(fixture(clip(20)).event)).status).toBe(400);

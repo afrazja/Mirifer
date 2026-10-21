@@ -9,6 +9,7 @@ import { env } from '$env/dynamic/private';
 import type { z } from 'zod';
 import type { User } from '@supabase/supabase-js';
 import { isAdminEmail } from '$lib/server/admin-auth';
+import { transcribe } from '$lib/server/transcribe';
 
 /** A conversation is roughly 6–12 turns, so this allows a few full runs a day. */
 export const MAX_DAILY_TURNS = 40;
@@ -41,12 +42,15 @@ export async function checkAllowance(locals: Locals, user: User): Promise<Respon
 }
 
 /**
- * Short voice clips that are only turned into text (Natural phrases, Traps, Free talk, and the
- * greeting, role-play and recap mics) don't spend the AI allowance, but each one still costs a
- * transcription: at most this many a day. A full day's lesson uses about 30–60.
+ * Every recording that is turned into text counts against a daily voice budget: at most this many
+ * clips, and at most this much audio. A full day's lesson uses about 30–60 clips and 5–10 minutes.
+ * The audio counted is what the transcription service billed (or, if it doesn't say, the length the
+ * page reported), recorded after each clip, so the budget follows what the clips really cost.
  */
 export const MAX_DAILY_CLIPS = 150;
 export const MAX_ADMIN_DAILY_CLIPS = 400;
+export const MAX_DAILY_AUDIO_SECONDS = 60 * 60;
+export const MAX_ADMIN_DAILY_AUDIO_SECONDS = 3 * 60 * 60;
 const CLIP_EVENT = 'english_clip_transcribed';
 
 async function isAdminTester(locals: Locals, user: User): Promise<boolean> {
@@ -55,24 +59,75 @@ async function isAdminTester(locals: Locals, user: User): Promise<boolean> {
 	return profile?.is_admin === true;
 }
 
-/**
- * Checks today's clip budget and, if there is room, counts this clip (before it is sent, so a
- * clip that fails still counts). The error response if not.
- */
-export async function spendClip(locals: Locals, user: User, route: string): Promise<Response | null> {
-	const today = new Date(); today.setUTCHours(0, 0, 0, 0);
-	const { count, error } = await locals.supabase.from('events').select('id', { count: 'exact', head: true })
-		.eq('user_id', user.id).eq('event_name', CLIP_EVENT).gte('created_at', today.toISOString());
-	if (error || count === null) return json({ error: 'Transcription temporarily unavailable' }, { status: 503 });
-	if (count >= MAX_DAILY_CLIPS && (count >= MAX_ADMIN_DAILY_CLIPS || !(await isAdminTester(locals, user)))) {
+const startOfDay = () => { const today = new Date(); today.setUTCHours(0, 0, 0, 0); return today.toISOString(); };
+
+/** Whether today's voice budget has room for another clip; the error response if not. Records nothing. */
+export async function checkClipBudget(locals: Locals, user: User): Promise<Response | null> {
+	const { data, error } = await locals.supabase.from('events').select('metadata')
+		.eq('user_id', user.id).eq('event_name', CLIP_EVENT).gte('created_at', startOfDay()).limit(MAX_ADMIN_DAILY_CLIPS + 1);
+	if (error || !Array.isArray(data)) return json({ error: 'Transcription temporarily unavailable' }, { status: 503 });
+	const count = data.length;
+	const seconds = data.reduce((sum, row) => {
+		const value = (row as { metadata?: { audio_seconds?: unknown } }).metadata?.audio_seconds;
+		return sum + (typeof value === 'number' && Number.isFinite(value) ? value : 0);
+	}, 0);
+	const over = (clips: number, audio: number) => count >= clips || seconds >= audio;
+	if (over(MAX_DAILY_CLIPS, MAX_DAILY_AUDIO_SECONDS) && (over(MAX_ADMIN_DAILY_CLIPS, MAX_ADMIN_DAILY_AUDIO_SECONDS) || !(await isAdminTester(locals, user)))) {
 		return json({ error: 'Daily voice limit reached' }, { status: 429 });
+	}
+	return null;
+}
+
+/** Counts one clip and its audio length against today's voice budget. */
+export async function recordClip(locals: Locals, user: User, route: string, audioSeconds: number): Promise<void> {
+	try {
+		await locals.supabase.from('events').insert({
+			user_id: user.id, event_id: crypto.randomUUID(), session_id: crypto.randomUUID(), attempt_id: null,
+			event_name: CLIP_EVENT, day: null, occurred_at: new Date().toISOString(), schema_version: 2,
+			metadata: { course: 'en', route, audio_seconds: Math.round(Math.max(0, audioSeconds) * 10) / 10 }
+		});
+	} catch { /* the budget is best effort; the clip was already sent */ }
+}
+
+/**
+ * Turns one recording into text, inside today's voice budget: checks the budget, transcribes, then
+ * counts the clip with the audio length the service billed (or `reportedSeconds`, the length the
+ * page reported). A clip that fails still counts. The transcript, or the error response.
+ */
+export async function meteredTranscribe(
+	locals: Locals, user: User, route: string, audio: File, reportedSeconds: number,
+	label: string, context?: string, options: { splitAtPauses?: boolean } = {}
+): Promise<string | Response> {
+	const refused = await checkClipBudget(locals, user);
+	if (refused) return refused;
+	let billed: number | null = null;
+	const transcript = await transcribe(audio, label, context, { ...options, onUsage: seconds => { billed = seconds; } });
+	await recordClip(locals, user, route, billed ?? reportedSeconds);
+	return transcript === null ? json({ error: 'Transcription unavailable' }, { status: 502 }) : transcript;
+}
+
+/**
+ * The Practice area's own AI budget, apart from the daily lesson's, so practicing never uses up
+ * what today's lesson needs. Each AI request is counted before it is made, so a failed one counts.
+ */
+export const MAX_DAILY_PRACTICE = 30;
+export const MAX_ADMIN_DAILY_PRACTICE = 150;
+const PRACTICE_EVENT = 'english_practice_ai';
+
+/** Counts one Practice AI request, if today's Practice budget has room; the error response if not. */
+export async function chargePractice(locals: Locals, user: User, module: string): Promise<Response | null> {
+	const { count, error } = await locals.supabase.from('events').select('id', { count: 'exact', head: true })
+		.eq('user_id', user.id).eq('event_name', PRACTICE_EVENT).gte('created_at', startOfDay());
+	if (error || count === null) return json({ error: 'AI temporarily unavailable' }, { status: 503 });
+	if (count >= MAX_DAILY_PRACTICE && (count >= MAX_ADMIN_DAILY_PRACTICE || !(await isAdminTester(locals, user)))) {
+		return json({ error: 'Daily practice limit reached' }, { status: 429 });
 	}
 	const { error: insertError } = await locals.supabase.from('events').insert({
 		user_id: user.id, event_id: crypto.randomUUID(), session_id: crypto.randomUUID(), attempt_id: null,
-		event_name: CLIP_EVENT, day: null, occurred_at: new Date().toISOString(), schema_version: 2,
-		metadata: { course: 'en', route }
+		event_name: PRACTICE_EVENT, day: null, occurred_at: new Date().toISOString(), schema_version: 2,
+		metadata: { course: 'en', module }
 	});
-	return insertError ? json({ error: 'Transcription temporarily unavailable' }, { status: 503 }) : null;
+	return insertError ? json({ error: 'AI temporarily unavailable' }, { status: 503 }) : null;
 }
 
 /** Counts one AI request against today's allowance. */
@@ -86,10 +141,10 @@ export async function recordAllowance(locals: Locals, user: User, index: number,
 }
 
 /** Records one AI request against today's allowance, or returns the error response. */
-export async function spendAllowance(locals: Locals, user: User, index: number): Promise<Response | null> {
+export async function spendAllowance(locals: Locals, user: User, index: number, scenario?: string): Promise<Response | null> {
 	const refused = await checkAllowance(locals, user);
 	if (refused) return refused;
-	return (await recordAllowance(locals, user, index)) ? null : json({ error: 'AI temporarily unavailable' }, { status: 503 });
+	return (await recordAllowance(locals, user, index, scenario)) ? null : json({ error: 'AI temporarily unavailable' }, { status: 503 });
 }
 
 export interface ChainRequest<T> {

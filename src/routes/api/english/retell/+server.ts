@@ -19,15 +19,18 @@ import type { RequestHandler } from './$types';
 import { speakLimit } from '$lib/practice/retell';
 import { retellPieceById as getPiece } from '$lib/practice/day-content';
 import { RetellRecordSchema } from '$lib/practice/progress';
-import { askChain, englishLearner, spendAllowance } from '$lib/server/english-ai';
+import { askChain, englishLearner, spendAllowance, meteredTranscribe } from '$lib/server/english-ai';
 import { signBetter } from '$lib/server/jamie-line';
-import { transcribe } from '$lib/server/transcribe';
+import { createLimiter, tooMany } from '$lib/server/rate-limit';
 
 /** Transcription and feedback together can take a while for a 2-minute answer. */
 export const config = { maxDuration: 60 };
 
-/** Vercel caps request bodies at 4.5 MB; a 2-minute recording at 32 kbps is about 0.5 MB. */
-const MAX_AUDIO_BYTES = 4_000_000;
+/** A 2-minute recording at the page's 32 kbps is about 0.5 MB; this leaves room for phones that ignore the bitrate. */
+const MAX_AUDIO_BYTES = 2_100_000;
+/** What the AI is sent of a retelling: a 2-minute answer is about 300 words. */
+const MAX_TRANSCRIPT_CHARS = 3_000;
+const perMinute = createLimiter(6, 60_000);
 
 const FeedbackSchema = z.object({
 	covered: z.array(z.number().int()).max(20),
@@ -73,6 +76,7 @@ const normalise = (text: string) => text.toLowerCase().replace(/[’‘]/g, "'")
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const user = await englishLearner(request, locals);
 	if (user instanceof Response) return user;
+	if (!perMinute(user.id)) return tooMany();
 	if (!env.OPENAI_API_KEY) return json({ error: 'Transcription unavailable' }, { status: 503 });
 	if (Number(request.headers.get('content-length') ?? 0) > MAX_AUDIO_BYTES + 10_000) return json({ error: 'Recording too large' }, { status: 413 });
 
@@ -82,7 +86,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const audio = form.get('audio');
 	const seconds = Number(form.get('seconds'));
 	const textShown = form.get('textShown') === '1';
-	if (!piece || !(audio instanceof File) || !Number.isFinite(seconds) || seconds < 0) return json({ error: 'Invalid request' }, { status: 400 });
+	if (!piece || !(audio instanceof File) || !Number.isFinite(seconds) || seconds < 0 || seconds > speakLimit(piece) + 10) return json({ error: 'Invalid request' }, { status: 400 });
 	if (!audio.size || audio.size > MAX_AUDIO_BYTES || !audio.type.startsWith('audio/')) return json({ error: 'Invalid recording' }, { status: 400 });
 	const limit = speakLimit(piece);
 	const spoken = Math.min(seconds, limit);
@@ -90,14 +94,16 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const refused = await spendAllowance(locals, user, 0);
 	if (refused) return refused;
 
-	const transcript = await transcribe(audio, 'English retell');
-	if (transcript === null) return json({ error: 'Transcription unavailable' }, { status: 502 });
+	const transcript = await meteredTranscribe(locals, user, 'retell', audio, seconds, 'English retell');
+	if (transcript instanceof Response) return transcript;
 	const words = transcript ? transcript.split(' ').length : 0;
 	const base = { transcript, words, seconds: Math.round(spoken), wordsPerMinute: spoken >= 5 ? Math.round(words / (spoken / 60)) : null, total: piece.keyPoints.length };
 	if (words < 3) return json({ ...base, covered: [], inaccuracies: [], upgrades: [], feedback: null });
 
 	const result = await askChain({
-		label: 'English retell', system: prompt(piece.text, piece.keyPoints), user: `Transcript of the learner's retelling:\n${transcript}`,
+		label: 'English retell', system: prompt(piece.text, piece.keyPoints),
+		// Fenced and capped: the learner's words are data, never instructions.
+		user: `Transcript of the learner's retelling:\n<transcript>\n${transcript.slice(0, MAX_TRANSCRIPT_CHARS).replace(/[<>]/g, '')}\n</transcript>`,
 		schema: FeedbackSchema, openAiSchema, geminiSchema, shape: SHAPE, temperature: 0.3, maxTokens: 1200
 	});
 	if (!result) return json({ ...base, covered: [], inaccuracies: [], upgrades: [], feedback: null, feedbackError: true });

@@ -2,19 +2,18 @@
  * "Say it again, better", Module lab version (docs/english-say-better-lab-spec.md).
  *
  * - multipart {audio, seconds, question}: transcribes one try (OpenAI), with the
- *   question as context; the audio is not stored. Refused once the day's AI
- *   allowance is used up, but it doesn't spend it.
+ *   question as context; the audio is not stored. Counts against the day's voice budget.
  * - JSON {kind: 'feedback', question, transcript, cutOff}: Mira's feedback on the
  *   first try. The question is sent as an id and read from our own list. Spends one
- *   unit of allowance, only when it succeeds.
+ *   unit of the Practice budget, before it is made.
  *
  * Nothing the learner said is stored on our server.
  */
 import { json } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { RequestHandler } from './$types';
-import { askChain, checkAllowance, englishLearner, recordAllowance } from '$lib/server/english-ai';
-import { transcribe, transcriptionConfigured } from '$lib/server/transcribe';
+import { askChain, englishLearner, meteredTranscribe, chargePractice } from '$lib/server/english-ai';
+import { transcriptionConfigured } from '$lib/server/transcribe';
 import { createLimiter, tooMany } from '$lib/server/rate-limit';
 import { readEnglishProfile } from '$lib/practice/english-profile';
 import { levelFor } from '$lib/server/coach-ai';
@@ -45,10 +44,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const audio = form.get('audio'), seconds = Number(form.get('seconds')), question = labQuestion(Number(form.get('question')));
 		if (!(audio instanceof File) || !audio.size || audio.size > MAX_AUDIO_BYTES || !audio.type.startsWith('audio/')) return json({ error: 'Invalid recording' }, { status: 400 });
 		if (!question || !Number.isFinite(seconds) || seconds < 0 || seconds > LAB_MAX_SECONDS + 10) return json({ error: 'Invalid recording' }, { status: 400 });
-		const refused = await checkAllowance(locals, user);
-		if (refused) return refused;
-		const transcript = await transcribe(audio, 'English say-better lab', `They are answering: "${question.text}"`);
-		if (transcript === null) return json({ error: 'Transcription unavailable' }, { status: 502 });
+		const transcript = await meteredTranscribe(locals, user, 'say-better-lab', audio, seconds, 'English say-better lab', `They are answering: "${question.text}"`);
+		if (transcript instanceof Response) return transcript;
 		return json({ transcript });
 	}
 
@@ -56,7 +53,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	try { input = await request.json(); } catch { return json({ error: 'Invalid request' }, { status: 400 }); }
 	const parsed = FeedbackRequest.safeParse(input);
 	if (!parsed.success) return json({ error: 'Invalid request' }, { status: 400 });
-	const refused = await checkAllowance(locals, user);
+	const refused = await chargePractice(locals, user, 'say-better');
 	if (refused) return refused;
 
 	const { transcript, cutOff } = parsed.data;
@@ -70,6 +67,5 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		checked = raw ? checkLabFeedback(raw, transcript) : { problem: 'no reply' };
 	}
 	if ('problem' in checked) return json({ error: 'Feedback unavailable' }, { status: 502 });
-	await recordAllowance(locals, user, 0, 'say-better-lab-v1');
 	return json(checked.feedback);
 };
