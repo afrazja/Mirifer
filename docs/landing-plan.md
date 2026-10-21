@@ -45,7 +45,8 @@ coach, for real situations and international speaking tests."**
 
 ## The order of work
 
-1. **Practice area for learners** (prerequisite): the IELTS-style and challenge modules that are
+1. **Practice area for learners** (prerequisite; **done**: `/practice/english/practice`, seven modules,
+   Choose and persuade held back until it has sets of its own; cost controls in #178): the IELTS-style and challenge modules that are
    built in the Module lab (Speaking card, Quick-fire questions, Read-rate-respond, 60-second free
    talk, Listen and retell, Dictation sprint, Choose and persuade, Say it again, better) open to
    learners, behind a quiet "Practice" link next to today's lesson. Reviewed for quality, cost

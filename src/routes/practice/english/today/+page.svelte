@@ -40,6 +40,7 @@
 	import { DAYS } from '$lib/practice/day';
 	import type { DayId, DayModule, DayPack } from '$lib/practice/day';
 	import ActionBar from '$lib/components/ActionBar.svelte';
+	import { goto } from '$app/navigation';
 
 	let { data }: PageProps = $props();
 	let language = $state<'en' | 'fa'>('en');
@@ -308,7 +309,10 @@
 			{#if session}
 				<button class="text-button" type="button" onclick={() => { showCheckIn = false; again(); }}>{isFa ? 'شروع دوباره' : 'Start again'}</button>
 			{:else}
-				<button class="text-button" type="button" onclick={() => (startStep = 'greeting')}><span aria-hidden="true">{isFa ? '→' : '←'}</span> {isFa ? 'میرا' : 'Mira'}</button>
+				<div class="quiet-row">
+					<button class="text-button" type="button" onclick={() => (startStep = 'greeting')}><span aria-hidden="true">{isFa ? '→' : '←'}</span> {isFa ? 'میرا' : 'Mira'}</button>
+					<a class="text-button" href="/practice/english/practice">{isFa ? 'تمرین به انتخاب خودت' : 'Practice on your own'}</a>
+				</div>
 				{#if ownerNext}{@render tryNext(ownerNext)}{/if}
 			{/if}
 
@@ -395,8 +399,9 @@
 			{:else}
 				<p>{isFa ? 'فردا برگرد؛ پیشنهاد بعدی آماده است.' : 'Come back tomorrow; your next suggestion is ready.'}</p>
 			{/if}
-			<button class="secondary" type="button" onclick={again}>{isFa ? `روز ${day.number.toLocaleString('fa-IR')} را دوباره شروع کن` : `Start Day ${day.number} again`}</button>
+			<p>{isFa ? 'تا آن موقع، اگر دوست داشتی، به انتخاب خودت تمرین کن.' : 'Until then, you can practice on your own if you like.'}</p>
 			{#if ownerNext}{@render tryNext(ownerNext)}{/if}
+			<ActionBar label={isFa ? 'تمرین به انتخاب خودت' : 'Practice on your own'} onclick={() => void goto('/practice/english/practice')} secondary={{ label: isFa ? `روز ${day.number.toLocaleString('fa-IR')} را دوباره شروع کن` : `Start Day ${day.number} again`, onclick: again }} />
 		</section>
 	{/if}
 
@@ -425,6 +430,8 @@
 	.primary:hover:not(:disabled) { background: var(--accent-deep); }
 	.secondary { min-height: 48px; padding: 12px 18px; background: var(--paper-raised); border: 1px solid var(--control-border); border-radius: 10px; color: var(--ink); }
 	.text-button { min-height: 44px; padding: 8px 4px; background: none; border: 0; color: var(--accent-deep); }
+	a.text-button { display: inline-flex; align-items: center; text-decoration: none; }
+	.quiet-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; }
 	.back { display: inline-flex; gap: 8px; align-items: center; min-height: 44px; padding: 8px 4px; margin-bottom: 4px; background: none; border: 0; color: var(--accent-deep); font-weight: 600; }
 	.inline { min-height: 44px; padding: 8px 0; }
 	.start { padding-bottom: 96px; }

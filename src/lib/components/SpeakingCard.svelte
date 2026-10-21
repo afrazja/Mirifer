@@ -5,6 +5,7 @@
 	 * follow (one phrase) → your talk, said better. One talk, so nothing is judged twice. Long-turn
 	 * skills only, never grammar. The run is kept in this browser; the recording is never stored.
 	 */
+	import { practiceFetch } from '$services/practice-fetch';
 	import { onDestroy, onMount } from 'svelte';
 	import { playAudioPromise, stopAllAudio, ttsIsPlaying } from '$services/tts';
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
@@ -185,7 +186,7 @@
 		body.set('audio', blob, 'speech'); body.set('seconds', String(seconds)); body.set('card', String(record.card));
 		let text: string | null = null;
 		try {
-			const response = await fetch('/api/english/speaking-card', { method: 'POST', body });
+			const response = await practiceFetch('/api/english/speaking-card', { method: 'POST', body });
 			const data = response.ok ? await response.json() : null;
 			text = typeof data?.transcript === 'string' && data.transcript.trim() ? data.transcript.trim() : null;
 		} catch { text = null; }
@@ -200,7 +201,7 @@
 		const controller = new AbortController();
 		const timeout = setTimeout(() => controller.abort(), wait);
 		try {
-			const response = await fetch('/api/english/speaking-card', { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: controller.signal, body: JSON.stringify(body) });
+			const response = await practiceFetch('/api/english/speaking-card', { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: controller.signal, body: JSON.stringify(body) });
 			return response.ok ? await response.json() : null;
 		} catch { return null; }
 		finally { clearTimeout(timeout); }

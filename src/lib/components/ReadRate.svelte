@@ -5,6 +5,7 @@
 	 * then say a reply that uses facts from the text. After "I heard: …" the learner asks for
 	 * feedback: one AI call checks the reply against the text. Recordings are never stored.
 	 */
+	import { practiceFetch } from '$services/practice-fetch';
 	import { onDestroy, onMount } from 'svelte';
 	import { playAudioPromise, stopAllAudio } from '$services/tts';
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
@@ -99,7 +100,7 @@
 		body.set('audio', lastBlob, 'speech'); body.set('seconds', String(lastSeconds)); body.set('text', text.id);
 		let transcript: string | null = null;
 		try {
-			const response = await fetch('/api/english/read-rate', { method: 'POST', body });
+			const response = await practiceFetch('/api/english/read-rate', { method: 'POST', body });
 			const data = response.ok ? await response.json() : null;
 			transcript = typeof data?.transcript === 'string' && data.transcript.trim() ? data.transcript.trim() : null;
 		} catch { transcript = null; }
@@ -114,7 +115,7 @@
 		status = 'checking';
 		let feedback: ReplyFeedback | null = null;
 		try {
-			const response = await fetch('/api/english/read-rate', {
+			const response = await practiceFetch('/api/english/read-rate', {
 				method: 'POST', headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ kind: 'feedback', text: text.id, rating: mine.rating, reply: mine.transcript })
 			});
