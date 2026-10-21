@@ -72,6 +72,11 @@ Predictability is a real risk, but mostly from **week 2–3**. The code shows bi
 - **Three short scenes of 2–3 minutes**, each saved, with the week's people and phrases, and a
   surprise ending to listen to. Intermediate gets guided tasks, not a free role-play.
 
+### Later: the version follows the learner's progress (owner's decision)
+- Each learner sees only their own version (from the onboarding answer); only the owner can open
+  both. For now a learner can't switch. Later, the app moves a learner between Intermediate and
+  Professional from their progress (the owner will design how), using the lesson events from step 1.
+
 ### Later: Mira remembers (needs an owner decision on privacy)
 - A few short facts the learner **confirms** ("Mira will remember: you're a nurse. Keep / Don't"),
   in their account, visible and deletable, at most 5. No stored chats or audio.
