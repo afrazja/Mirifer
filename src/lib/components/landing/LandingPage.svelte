@@ -357,7 +357,7 @@
 	.badges { list-style: none; margin: 0; padding: 0; }
 	.badge { position: absolute; z-index: 2; padding: 7px 12px; border-radius: 999px; background: var(--card); box-shadow: var(--shadow); font-size: .8rem; font-weight: 700; white-space: nowrap; }
 	.b0 { inset-block-start: 14px; inset-inline-start: 14px; }
-	.b1 { inset-block-start: 14px; inset-inline-end: 14px; background: var(--btn); color: var(--on-btn); }
+	.b1 { inset-block-start: 14px; inset-inline-end: 14px; }
 	.b2 { inset-block-end: -10px; inset-inline-end: 22px; }
 
 	/* The wave: little bars that rise and fall like a voice. */
