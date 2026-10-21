@@ -1,7 +1,8 @@
 <script lang="ts">
 	/**
-	 * Module lab: "Listen and retell", the same module as in the daily lesson, with every story: the
-	 * lab's own and the daily lessons'. The learner's best score per story is kept in their account.
+	 * Practice: "Listen and retell", the same module as in the daily lesson. Learners get the stories
+	 * made for practice and those of days they have finished; the owner gets every story. The best
+	 * score per story is kept in the learner's account.
 	 */
 	import { onMount } from 'svelte';
 	import type { PageProps } from './$types';
@@ -13,6 +14,7 @@
 	import type { RetellRecord } from '$lib/practice/progress';
 	import { DAYS } from '$lib/practice/day';
 	import { getLanguage } from '$services/data-layer';
+	import { markTried } from '$lib/practice/practice-area';
 	import { ENGLISH_VOICES, stopAllAudio } from '$services/tts';
 
 	let { data }: PageProps = $props();
@@ -35,8 +37,10 @@
 		void getLanguage().then(value => { if (value === 'fa' || value === 'en') language = value; });
 		return () => stopAllAudio();
 	});
+	const pieces = $derived(ALL_RETELL_PIECES.filter(item => data.visible.includes(item.id)));
 	function open(next: RetellPiece) {
 		stopAllAudio();
+		markTried(data.learnerId, 'retell');
 		voice = next.voice ?? ENGLISH_VOICES[Math.floor(Math.random() * ENGLISH_VOICES.length)].id;
 		piece = next; run += 1;
 		queueMicrotask(() => window.scrollTo({ top: 0 }));
@@ -54,18 +58,18 @@
 </svelte:head>
 
 <main id="main-content" class="module" dir={isFa ? 'rtl' : 'ltr'}>
-	<AppHeader backHref="/practice/english/lab" backLabel={isFa ? 'آزمایشگاه بخش‌ها' : 'Module lab'} direction={isFa ? 'rtl' : 'ltr'} />
+	<AppHeader backHref="/practice/english/practice" backLabel={isFa ? 'تمرین' : 'Practice'} direction={isFa ? 'rtl' : 'ltr'} />
 	{#if piece}
 		<button class="quiet" type="button" onclick={backToList}><span aria-hidden="true">{isFa ? '→' : '←'}</span> {isFa ? 'همهٔ داستان‌ها' : 'All stories'}</button>
 		{#key run}
 			<ListenRetell {isFa} {piece} {voice} doneLabel={{ en: 'All stories', fa: 'همهٔ داستان‌ها' }} onResult={keepBest} onDone={backToList} />
 		{/key}
 	{:else}
-		<p class="eyebrow">{isFa ? 'آزمایشگاه — شنیدن و صحبت' : 'MODULE LAB · LISTENING AND SPEAKING'}</p>
+		<p class="eyebrow">{isFa ? 'تمرین — شنیدن' : 'PRACTICE · LISTENING'}</p>
 		<h1>{isFa ? 'گوش بده و بازگو کن' : 'Listen and retell'}</h1>
 		<p class="lead">{isFa ? `یک داستان را بشنو (حداکثر ${(MAX_LISTENS).toLocaleString('fa-IR')} بار)، بعد با کلمات خودت تعریفش کن. می‌بینی کدام نکته‌ها را گفتی و چطور می‌شد طبیعی‌تر گفت.` : `Hear a story (up to ${MAX_LISTENS} times), then tell it in your own words. You’ll see which points you got across, and how to say things more naturally.`}</p>
 		<ul class="pieces">
-			{#each ALL_RETELL_PIECES as item}
+			{#each pieces as item}
 				{@const best = records[item.id]}
 				{@const day = fromDay(item)}
 				{@const thumb = pieceImage(item, true)}

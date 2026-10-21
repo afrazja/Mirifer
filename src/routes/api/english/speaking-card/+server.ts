@@ -22,7 +22,6 @@ import {
 	type RawCardFeedback, type RawCoverage
 } from '$lib/server/speaking-card-ai';
 import { words } from '$lib/practice/say-better';
-import { canUseLab } from '$lib/server/lab-access';
 
 export const config = { maxDuration: 60 };
 const MAX_AUDIO_BYTES = 2_000_000;
@@ -37,8 +36,7 @@ const PERSIAN = /[؀-ۿ]/;
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const user = await englishLearner(request, locals);
 	if (user instanceof Response) return user;
-	// A Module lab route: the owner only.
-	if (!canUseLab(user)) return json({ error: 'Not found' }, { status: 404 });
+	// Open to every English learner: the Practice area (docs/landing-plan.md).
 	if (!perMinute(user.id)) return tooMany();
 
 	if ((request.headers.get('content-type') ?? '').startsWith('multipart/form-data')) {

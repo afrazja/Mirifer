@@ -5,6 +5,7 @@
 	 * better version → second try → before and after. One focused screen at a time. The run is kept in
 	 * this browser; the recordings only in memory, for playback, until the page closes.
 	 */
+	import { practiceFetch } from '$services/practice-fetch';
 	import { onDestroy, onMount } from 'svelte';
 	import { SILENT_BELOW, measureLevel, type MicLevel } from '$utils/mic-level';
 	import { playAudioPromise, stopAllAudio, ttsIsPlaying } from '$services/tts';
@@ -127,7 +128,7 @@
 		body.set('audio', blob, 'speech'); body.set('seconds', String(elapsed)); body.set('question', String(record.question));
 		let transcript: string | null = null;
 		try {
-			const response = await fetch('/api/english/say-better-lab', { method: 'POST', body });
+			const response = await practiceFetch('/api/english/say-better-lab', { method: 'POST', body });
 			const data = response.ok ? await response.json() : null;
 			transcript = typeof data?.transcript === 'string' ? data.transcript : null;
 		} catch { transcript = null; }
@@ -152,7 +153,7 @@
 		const wait = setTimeout(() => controller.abort(), 30_000);
 		let result: LabFeedback | null = null;
 		try {
-			const response = await fetch('/api/english/say-better-lab', {
+			const response = await practiceFetch('/api/english/say-better-lab', {
 				method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: controller.signal,
 				body: JSON.stringify({ kind: 'feedback', question: record.question, transcript: record.transcript1, cutOff: record.cut1 })
 			});

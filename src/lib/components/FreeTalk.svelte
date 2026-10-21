@@ -4,6 +4,7 @@
 	 * Ready → surprise topic and 3-2-1 → sixty seconds of talk → words and long pauses, against
 	 * the learner's earlier runs. Numbers only, no AI judging. The recording is never stored.
 	 */
+	import { practiceFetch } from '$services/practice-fetch';
 	import { onDestroy, onMount } from 'svelte';
 	import { playAudioPromise, stopAllAudio } from '$services/tts';
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
@@ -23,8 +24,8 @@
 	} = $props();
 
 	const INTRO = {
-		en: 'Final challenge! When you tap Start, you’ll see a surprise topic. Talk about it for one minute and just keep going. Mistakes are fine. Recording starts by itself.',
-		fa: 'چالش آخر! وقتی «شروع» را بزنی، یک موضوع غافلگیرکننده می‌بینی. یک دقیقه درباره‌اش حرف بزن و فقط ادامه بده. اشتباه اشکالی ندارد. ضبط خودش شروع می‌شود.'
+		en: 'Here’s the challenge: when you tap Start, you’ll see a surprise topic. Talk about it for one minute and just keep going. Mistakes are fine. Recording starts by itself.',
+		fa: 'چالش این است: وقتی «شروع» را بزنی، یک موضوع غافلگیرکننده می‌بینی. یک دقیقه درباره‌اش حرف بزن و فقط ادامه بده. اشتباه اشکالی ندارد. ضبط خودش شروع می‌شود.'
 	};
 
 	type Stage = 'ready' | 'countdown' | 'talk' | 'processing' | 'result' | 'quiet' | 'interrupted' | 'denied' | 'failed';
@@ -120,7 +121,7 @@
 		body.set('audio', blob, 'speech'); body.set('seconds', String(elapsed)); body.set('topic', String(topic));
 		let text: string | null = null;
 		try {
-			const response = await fetch('/api/english/free-talk', { method: 'POST', body });
+			const response = await practiceFetch('/api/english/free-talk', { method: 'POST', body });
 			const data = response.ok ? await response.json() : null;
 			text = typeof data?.transcript === 'string' ? data.transcript.trim() : null;
 		} catch { text = null; }

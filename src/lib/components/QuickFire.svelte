@@ -6,6 +6,7 @@
 	 * doesn't fit the question is asked again once. Feedback (each answer corrected and said better,
 	 * quick starts, reasons) comes at the end. Recordings are never stored.
 	 */
+	import { practiceFetch } from '$services/practice-fetch';
 	import { onDestroy, onMount } from 'svelte';
 	import { playAudioPromise, stopAllAudio } from '$services/tts';
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
@@ -120,7 +121,7 @@
 		body.set('audio', lastBlob, 'speech'); body.set('seconds', String(Math.round(elapsed)));
 		let text: string | null = null;
 		try {
-			const response = await fetch('/api/english/quick-fire', { method: 'POST', body });
+			const response = await practiceFetch('/api/english/quick-fire', { method: 'POST', body });
 			const data = response.ok ? await response.json() : null;
 			text = typeof data?.transcript === 'string' && data.transcript.trim() ? data.transcript.trim() : null;
 		} catch { text = null; }
@@ -140,7 +141,7 @@
 		const answer = record.turns[index].answer;
 		const answered = record.turns.filter(t => t.answer).map(t => ({ question: t.question, answer: t.answer! }));
 		const call = answered.length
-			? fetch('/api/english/quick-fire', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind: 'turn', turns: answered, asked: record.turns.map(t => t.question), last }) })
+			? practiceFetch('/api/english/quick-fire', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind: 'turn', turns: answered, asked: record.turns.map(t => t.question), last }) })
 				.then(r => (r.ok ? r.json() : null)).catch(() => null) as Promise<Reply | null>
 			: Promise.resolve(null);
 		// Whenever it arrives, the feedback is kept for the end (unless they've answered this question again since).
