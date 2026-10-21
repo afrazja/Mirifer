@@ -22,7 +22,6 @@ export interface LandingCopy {
 	problem: { h: string; t: string };
 	day: { h: string; steps: { title: string; text: string }[]; dayOne: string; need: string };
 	practice: { h: string; lines: { lead: string; text: string }[]; note: string };
-	persian: { h: string; points: string[] };
 	privacy: { h: string; t: string; link: string };
 	faq: { h: string; items: { q: string; a: string }[] };
 	end: { h: string; t: string };
@@ -71,14 +70,6 @@ export const LANDING: Record<LandingLang, LandingCopy> = {
 				{ lead: 'Listening:', text: 'hear a story and retell it, or write down what you hear.' }
 			],
 			note: 'Job interviews and presentations are coming soon.'
-		},
-		persian: {
-			h: 'Made for Persian speakers',
-			points: [
-				'The whole app, tips included, works in Persian or English.',
-				'Work on the mistakes Persian speakers often make, in Practice.',
-				'Two levels: Intermediate if speaking feels hard, Professional if you want to sound more fluent.'
-			]
 		},
 		privacy: {
 			h: 'Your voice stays yours',
@@ -140,14 +131,6 @@ export const LANDING: Record<LandingLang, LandingCopy> = {
 				{ lead: 'شنیداری:', text: 'یک داستان بشنو و دوباره تعریفش کن، یا هر چه می‌شنوی بنویس.' }
 			],
 			note: 'مصاحبهٔ کاری و ارائه به‌زودی اضافه می‌شوند.'
-		},
-		persian: {
-			h: 'برای فارسی‌زبان‌ها ساخته شده',
-			points: [
-				'کل برنامه، حتی نکته‌ها، هم به فارسی هست و هم به انگلیسی.',
-				'در بخش تمرین، روی اشتباه‌هایی کار کن که فارسی‌زبان‌ها زیاد می‌کنند.',
-				'دو سطح: «متوسط» اگر حرف زدن برایت سخت است، «حرفه‌ای» اگر می‌خواهی روان‌تر حرف بزنی.'
-			]
 		},
 		privacy: {
 			h: 'صدایت مال خودت است',

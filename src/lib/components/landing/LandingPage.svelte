@@ -119,21 +119,17 @@
 		</section>
 
 		<section>
-			<div class="wrap"><h2>{c.persian.h}</h2><ul class="points">{#each c.persian.points as point}<li>{point}</li>{/each}</ul></div>
-		</section>
-
-		<section class="band">
 			<div class="wrap"><h2>{c.privacy.h}</h2><p>{c.privacy.t}</p><a class="quiet" href="/privacy">{c.privacy.link}</a></div>
 		</section>
 
-		<section>
+		<section class="band">
 			<div class="wrap">
 				<h2>{c.faq.h}</h2>
 				{#each c.faq.items as item, i}<details open={i === 0}><summary>{item.q}</summary><p>{item.a}</p></details>{/each}
 			</div>
 		</section>
 
-		<section class="band end">
+		<section class="end">
 			<div class="wrap">
 				<h2>{c.end.h}</h2>
 				<p>{c.end.t}</p>
@@ -203,8 +199,6 @@
 	.note { color: var(--ink-soft); font-size: .93rem; }
 	.plain { list-style: none; padding: 0; margin: 14px 0; display: grid; gap: 10px; }
 	.plain li { padding: 12px 14px; border-inline-start: 3px solid var(--accent); border-radius: 8px; background: var(--paper); line-height: 1.6; }
-	.points { padding-inline-start: 20px; margin: 10px 0; }
-	.points li { margin-bottom: 8px; line-height: 1.6; }
 	details { border-bottom: 1px solid var(--line); }
 	summary { min-height: 48px; display: flex; align-items: center; font-weight: 600; cursor: pointer; }
 	details p { color: var(--ink-soft); }

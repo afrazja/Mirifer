@@ -62,16 +62,7 @@ Heading: **About 15 minutes a day** / **روزی حدود ۱۵ دقیقه**
 | Line 3 | **Listening:** hear a story and retell it, or write down what you hear. | **شنیداری:** یک داستان بشنو و دوباره تعریفش کن، یا هر چه می‌شنوی بنویس. |
 | Note | Job interviews and presentations are coming soon. | مصاحبهٔ کاری و ارائه به‌زودی اضافه می‌شوند. |
 
-## 5. Made for Persian speakers
-
-| | English | فارسی |
-|---|---|---|
-| Heading | Made for Persian speakers | برای فارسی‌زبان‌ها ساخته شده |
-| Point 1 | The whole app, tips included, works in Persian or English. | زبان کل برنامه، نکته‌ها هم، می‌تواند فارسی یا انگلیسی باشد. |
-| Point 2 | Work on the mistakes Persian speakers often make, in Practice. | در بخش تمرین، روی اشتباه‌هایی کار کن که فارسی‌زبان‌ها زیاد می‌کنند. |
-| Point 3 | Two levels: Intermediate if speaking feels hard, Professional if you want to sound more fluent. | دو سطح: «متوسط» اگر حرف زدن برایت سخت است، «حرفه‌ای» اگر می‌خواهی روان‌تر حرف بزنی. |
-
-(Point 2 is true because Persian-speaker traps is in Practice: owner's decision, 2026-10-21.)
+(Section 5, "Made for Persian speakers", was removed from the page by the owner on 2026-10-21.)
 
 ## 6. Privacy
 
