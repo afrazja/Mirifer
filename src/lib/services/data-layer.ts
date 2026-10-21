@@ -36,9 +36,16 @@ import {
  *
  * WCAG 3.1.1 (Language of Page).
  */
+/** The language a public page's address sets: /fa and its pages Persian; /, /try English; else null. */
+export function urlLanguage(pathname: string): 'en' | 'fa' | null {
+	if (pathname === '/fa' || pathname.startsWith('/fa/')) return 'fa';
+	return pathname === '/' || pathname === '/try' ? 'en' : null;
+}
+
 export function applyDocumentLanguage(lang: string | null | undefined): void {
 	if (typeof document === 'undefined') return;
-	const isFa = lang === 'fa';
+	// The public pages' language is their address's (/fa is Persian), whatever the saved setting.
+	const isFa = (urlLanguage(location.pathname) ?? lang) === 'fa';
 	document.documentElement.setAttribute('lang', isFa ? 'fa' : 'en');
 	document.documentElement.setAttribute('dir', isFa ? 'rtl' : 'ltr');
 }

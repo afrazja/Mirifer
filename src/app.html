@@ -27,7 +27,10 @@
 					if (m) m.setAttribute('content', dark ? '#0f0f1a' : '#0e5c45');
 					// Same reason as the theme: flipping lang/dir after paint
 					// would visibly jump the layout from LTR to RTL.
-					var fa = localStorage.getItem('mirifer_language') === 'fa';
+					// The public pages' language comes from the address: /fa is Persian; /, /try, /login stay English.
+					var path = window.location.pathname;
+					var urlFa = /^\/fa(?:\/|$)/.test(path) ? true : /^\/(?:try\/?)?$/.test(path) ? false : null;
+					var fa = urlFa !== null ? urlFa : localStorage.getItem('mirifer_language') === 'fa';
 					document.documentElement.setAttribute('lang', fa ? 'fa' : 'en');
 					document.documentElement.setAttribute('dir', fa ? 'rtl' : 'ltr');
 					// Back after a break (the browser reopened the last tab):
