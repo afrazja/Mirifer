@@ -47,14 +47,22 @@ describe('English today page', () => {
 		await actions.save(midway.event());
 		expect(midway.supabase.auth.updateUser).toHaveBeenCalledWith({ data: { english_day_v1: expect.anything() } });
 	});
-	it('picks the day: the one after the last finished; Day 2 only for the owner until it is ready', async () => {
+	it('picks the day: the one after the last finished; a day that isn’t ready is only for the owner', async () => {
 		const progress = { sessionsCompleted: 1, lastCompletedAt: '2026-10-01T10:00:00.000Z', lastThemeId: 'day-1', lastResult: 'ok', recent: [] };
 		expect(await load(fixture('en').event())).toMatchObject({ nextDayId: 'day-1' });
-		expect(await load(fixture('en', { english_progress_v1: progress }).event())).toMatchObject({ nextDayId: 'day-1' });
-		expect(await load(fixture('en', { english_progress_v1: progress }, undefined, true).event())).toMatchObject({ nextDayId: 'day-2' });
+		// Day 2 is released: a learner who finished Day 1 gets it.
+		expect(await load(fixture('en', { english_progress_v1: progress }).event())).toMatchObject({ nextDayId: 'day-2' });
+		const two = DAY_TWO as { ready: boolean };
+		two.ready = false;
+		try {
+			expect(await load(fixture('en', { english_progress_v1: progress }).event())).toMatchObject({ nextDayId: 'day-1' });
+			expect(await load(fixture('en', { english_progress_v1: progress }, undefined, true).event())).toMatchObject({ nextDayId: 'day-2' });
+			expect(await load(fixture('en', {}, undefined, false, '?day=day-2').event())).toMatchObject({ nextDayId: 'day-1', requestedDay: null });
+		} finally { two.ready = true; }
 		// ?day= works for the owner only, and sets aside a session on another day.
 		expect(await load(fixture('en', { english_day_v1: startSession(15) }, undefined, true, '?day=day-2').event())).toMatchObject({ nextDayId: 'day-2', session: null });
-		expect(await load(fixture('en', {}, undefined, false, '?day=day-2').event())).toMatchObject({ nextDayId: 'day-1', requestedDay: null });
+		// ?day= is for the owner only: a learner gets their own next day.
+		expect(await load(fixture('en', {}, undefined, false, '?day=day-3').event())).toMatchObject({ nextDayId: 'day-1', requestedDay: null });
 		expect(await load(fixture('en', {}, undefined, true, '?day=day-1').event())).toMatchObject({ nextDayId: 'day-1', requestedDay: 'day-1' });
 	});
 	it('a Day 1 session saved before Day 1 had two versions carries on in the learner’s version', async () => {
@@ -83,8 +91,13 @@ describe('English today page', () => {
 	});
 	it('saves a session on a day that is not ready only for the owner', async () => {
 		const dayTwo = startSession(15, new Date(), DAY_TWO);
-		expect(await actions.save(fixture('en', {}, dayTwo).event())).toMatchObject({ status: 400 });
-		expect(await actions.save(fixture('en', {}, dayTwo, true).event())).toEqual({ saved: true });
+		expect(await actions.save(fixture('en', {}, dayTwo).event())).toEqual({ saved: true });
+		const two = DAY_TWO as { ready: boolean };
+		two.ready = false;
+		try {
+			expect(await actions.save(fixture('en', {}, dayTwo).event())).toMatchObject({ status: 400 });
+			expect(await actions.save(fixture('en', {}, dayTwo, true).event())).toEqual({ saved: true });
+		} finally { two.ready = true; }
 	});
 	it('a day with a skipped step still counts as passed; only a day with every step skipped comes back', async () => {
 		const base = { ...startSession(15), stage: 'done', completedAt: new Date().toISOString() };

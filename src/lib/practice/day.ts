@@ -144,7 +144,7 @@ export const DAY_ONE: DayPack = {
 export const DAY_TWO: DayPack = {
 	id: 'day-2',
 	number: 2,
-	ready: false,
+	ready: true,
 	theme: { en: 'Taking a taxi', fa: 'گرفتن تاکسی' },
 	themePhrase: 'taking a taxi',
 	question: 'And you? When you travel, how do you usually get from the airport to your hotel?',
@@ -208,7 +208,7 @@ export const DAY_TWO: DayPack = {
 export const DAY_THREE: DayPack = {
 	id: 'day-3',
 	number: 3,
-	ready: false,
+	ready: true,
 	theme: { en: 'Checking in at the hotel', fa: 'تحویل گرفتن اتاق در هتل' },
 	themePhrase: 'checking in at a hotel',
 	question: 'And you? When you get to a hotel, what’s the first thing you ask about?',
@@ -267,11 +267,13 @@ export function dayById(id: string | null | undefined): DayPack | null {
 	return DAYS.find(day => day.id === id) ?? null;
 }
 /**
- * The day to do next: the first one after the last finished day. A day that isn't ready is
- * skipped, except for the owner (who tries it). After the last day, the last one again.
+ * The day to do next: the first one after the last finished day. Learners stop at a day that
+ * isn't ready (the owner can try it). After the last day, the last one again.
  */
 export function nextDay(lastDayId: string | null | undefined, preview = false): DayPack {
-	const open = DAYS.filter(day => day.ready || preview);
+	// The days tell one story, so learners never skip a day that isn't ready: they get the days up to it.
+	const firstClosed = DAYS.findIndex(day => !day.ready);
+	const open = preview || firstClosed === -1 ? DAYS : DAYS.slice(0, Math.max(1, firstClosed));
 	const lastIndex = DAYS.findIndex(day => day.id === lastDayId);
 	return open.find(day => DAYS.indexOf(day) > lastIndex) ?? open.at(-1) ?? DAY_ONE;
 }

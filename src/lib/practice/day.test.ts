@@ -104,13 +104,20 @@ describe('more than one day', () => {
 	});
 	it('the next day follows the last finished one; a day that isn’t ready is only for the owner', () => {
 		expect(nextDay(null).id).toBe('day-1');
-		expect(nextDay('day-1', true).id).toBe('day-2');
-		// Not ready: learners stay on the last ready day.
-		expect(DAY_TWO.ready).toBe(false);
-		expect(nextDay('day-1').id).toBe('day-1');
+		// Days 1–3 are released (owner, 2026-10-21).
+		for (const day of DAYS) expect(day.ready, day.id).toBe(true);
+		expect(nextDay('day-1').id).toBe('day-2');
+		expect(nextDay('day-2').id).toBe('day-3');
+		// Not ready: learners stay on the last ready day; the owner goes on.
+		const two = DAY_TWO as { ready: boolean };
+		two.ready = false;
+		try {
+			expect(nextDay('day-1').id).toBe('day-1');
+			expect(nextDay('day-1', true).id).toBe('day-2');
+		} finally { two.ready = true; }
 		// After the last day: the last one again.
-		expect(nextDay('day-2', true).id).toBe('day-3');
-	expect(nextDay('day-3', true).id).toBe('day-3');
+		expect(nextDay('day-3').id).toBe('day-3');
+		expect(nextDay('day-3', true).id).toBe('day-3');
 		expect(nextDay('unknown').id).toBe('day-1');
 		expect(dayById('day-2')).toBe(DAY_TWO);
 		expect(dayById('nope')).toBeNull();
