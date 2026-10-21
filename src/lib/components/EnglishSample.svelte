@@ -91,7 +91,7 @@
 	{#if step === 0}
 		<p class="eyebrow">{T('DAY 1 · AT THE BAGGAGE DESK', 'روز اول — باجهٔ بار گمشده')}</p>
 		<h1 id="sample-step" tabindex="-1" bind:this={heading}>{T('Listen', 'گوش بده')}</h1>
-		<p class="mira"><span class="av" aria-hidden="true">M</span>{T('Sara has just landed. One of her bags is missing. Listen: what does it look like?', 'سارا تازه رسیده و یکی از چمدان‌هایش گم شده. گوش بده: چه شکلی است؟')}</p>
+		<p class="mira"><span class="av" aria-hidden="true">M</span>{T('Sara has just landed. One of her bags is missing. Listen: what does it look like?', 'سارا تازه رسیده و یکی از بارهایش گم شده. گوش بده: چه شکلی است؟')}</p>
 		{#if showWords}
 			<ul class="words" dir="ltr" lang="en">{#each LINES as line}<li><b>{SPEAKERS[line.who as 'agent' | 'sara'].name}:</b> {line.text}</li>{/each}</ul>
 		{/if}
@@ -111,7 +111,11 @@
 			{/each}
 		</div>
 		{#if picked !== null && picked !== ANSWER}
-			<p class="note" role="status">{T('Not quite. That’s not the missing one. Sara said:', 'نه دقیقاً. آن چمدانِ گمشده نیست. سارا گفت:')} <bdi lang="en">“{LINES[3].text}”</bdi> {T('Try again.', 'دوباره امتحان کن.')}</p>
+			<div role="status">
+				<p class="note">{T('Not quite. That’s not the missing one. Sara said:', 'نه، این نیست. سارا گفت:')}</p>
+				<p class="note en" lang="en" dir="ltr">“{LINES[3].text}”</p>
+				<p class="note">{T('Try again.', 'دوباره امتحان کن.')}</p>
+			</div>
 		{:else if picked === ANSWER}
 			<p class="note good" role="status">✓ {T('Yes, a small green backpack.', 'درست است، یک کوله‌پشتی کوچک سبز.')}</p>
 		{/if}
@@ -121,7 +125,7 @@
 		<p class="eyebrow">{T('SAY IT', 'بگو')}</p>
 		<h1 id="sample-step" tabindex="-1" bind:this={heading}>{T('Now it’s you at the desk', 'حالا تو جلوی باجه‌ای')}</h1>
 		<p class="phrase" lang="en" dir="ltr">“{PHRASE}”</p>
-		<p class="gloss">{T('(Hello, only one of my bags came out.)', '(سلام، فقط یکی از چمدان‌هایم بیرون آمد.)')}</p>
+		<p class="gloss">{T('(Hello, only one of my bags came out.)', '(سلام، فقط یکی از چمدان‌هایم آمد.)')}</p>
 		<button class="quiet" type="button" onclick={hearMira}><span aria-hidden="true">▶</span> {T('Hear Mira say it', 'بشنو میرا چطور می‌گوید')}</button>
 		<p class="small">{T('Your voice stays on this phone. Nothing is sent.', 'صدایت روی همین گوشی می‌ماند و جایی فرستاده نمی‌شود.')}</p>
 		{#if recState === 'silent'}<p class="note" role="status">{T('I didn’t hear anything. Try again, a little louder.', 'صدایی نشنیدم. دوباره، کمی بلندتر امتحان کن.')}</p>{/if}
@@ -129,7 +133,7 @@
 			<p class="note" role="status">{T('The microphone isn’t available. You can still see the rest.', 'میکروفون در دسترس نیست. باز هم می‌توانی بقیه را ببینی.')}</p>
 			<ActionBar label={T('Next', 'بعدی')} onclick={() => go(4)} />
 		{:else}
-			<ActionBar label={recState === 'recording' ? T('Stop', 'توقف') : T('Say it', 'بگو')} icon={recState === 'recording' ? 'stop' : 'mic'} recording={recState === 'recording'} onclick={() => void record()} secondary={{ label: T('Skip', 'رد شو'), onclick: () => go(4) }} />
+			<ActionBar label={recState === 'recording' ? T('Stop', 'توقف') : T('Say it', 'بگو')} icon={recState === 'recording' ? 'stop' : 'mic'} recording={recState === 'recording'} onclick={() => void record()} secondary={{ label: T('Skip', 'رد کن'), onclick: () => go(4) }} />
 		{/if}
 
 	{:else if step === 3}
@@ -156,7 +160,7 @@
 		<p>{T('The full lesson is about 15 minutes, and Mira checks what you say. It’s free for now.', 'درس کامل حدود ۱۵ دقیقه است و میرا حرفت را بررسی می‌کند. فعلاً رایگان است.')}</p>
 		<div class="bar">
 			<a class="primary" href={signupHref} onclick={() => visitorEvent('signup_clicked', isFa ? 'fa' : 'en', 'sample')}>{T('Start Day 1 free', 'روز اول را رایگان شروع کن')} <span aria-hidden="true">{isFa ? '←' : '→'}</span></a>
-			<a class="quiet back" href={homeHref}>{T('Back to the page', 'برگشت به صفحه')}</a>
+			<a class="quiet back" href={homeHref}>{T('Back to the page', 'برگشت به صفحهٔ اصلی')}</a>
 		</div>
 	{/if}
 </section>
@@ -173,7 +177,7 @@
 	:global([dir='rtl']) .eyebrow { letter-spacing: normal; }
 	h1 { margin: 0 0 12px; font-family: var(--font-display); font-weight: 500; font-size: clamp(1.6rem, 6vw, 2.1rem); line-height: 1.2; overflow-wrap: break-word; }
 	h1:focus { outline: none; }
-	.en { direction: ltr; unicode-bidi: isolate; }
+	.en { direction: ltr; text-align: left; unicode-bidi: isolate; }
 	.mira { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 14px; background: var(--paper-raised); border: 1px solid var(--line); line-height: 1.6; }
 	.av { flex: none; display: grid; place-items: center; inline-size: 32px; block-size: 32px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-weight: 700; }
 	.words { list-style: none; margin: 8px 0 0; padding: 12px 14px; border-radius: 12px; background: var(--paper-sunken); display: grid; gap: 6px; text-align: left; }

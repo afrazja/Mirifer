@@ -100,7 +100,7 @@
 		? T('You’ve used today’s speaking time. Come back tomorrow to keep practicing.', 'وقت صحبت امروزت تمام شد. فردا برگرد و تمرین را ادامه بده.')
 		: $dailyLimit === 'practice'
 			? T('You’ve done all the practice for today. Come back tomorrow; your daily lesson is still open.', 'تمرین امروزت کامل شد. فردا برگرد؛ درس روزانه‌ات هنوز باز است.')
-			: T('Today’s coaching is used up. Come back tomorrow.', 'مربی‌گری امروز تمام شد. فردا برگرد.'));
+			: T('Today’s coaching is used up. Come back tomorrow.', 'سهم امروزت از بازخورد میرا تمام شد. فردا برگرد.'));
 </script>
 
 <svelte:head>

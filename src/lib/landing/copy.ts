@@ -60,7 +60,7 @@ export const LANDING: Record<LandingLang, LandingCopy> = {
 				{ title: 'Say it', text: 'Say what you need in English. Mira shows you a natural way to say it, with a short tip when it helps.' },
 				{ title: 'Talk', text: 'Reply to voice messages. At the Professional level, you also talk to an AI character who has a surprise for you.' }
 			],
-			dayOne: 'Day 1: your suitcase didn’t arrive. You describe it and ask when you’ll get it back. Each day continues the story, and new days are on the way.',
+			dayOne: 'Day 1: your bag didn’t arrive. You describe it and ask when you’ll get it back. Each day continues the story, and new days are on the way.',
 			need: 'You need a microphone and a quiet place. You can stop between steps and come back later.'
 		},
 		practice: {
@@ -129,7 +129,7 @@ export const LANDING: Record<LandingLang, LandingCopy> = {
 				{ title: 'بگو', text: 'حرفت را به انگلیسی بزن. میرا شکل طبیعی‌ترش را نشانت می‌دهد و هر جا لازم باشد یک نکتهٔ کوتاه هم می‌گوید.' },
 				{ title: 'گفت‌وگو کن', text: 'به پیام‌های صوتی جواب بده. در سطح «حرفه‌ای» با یک شخصیت هوش مصنوعی هم حرف می‌زنی که قرار است غافلگیرت کند.' }
 			],
-			dayOne: 'روز اول: چمدانت نرسیده. آن را توصیف می‌کنی و می‌پرسی کِی پسش می‌گیری. هر روز ادامهٔ همان ماجراست و روزهای تازه در راه است.',
+			dayOne: 'روز اول: بارت نرسیده. آن را توصیف می‌کنی و می‌پرسی کِی پسش می‌گیری. هر روز ادامهٔ همان ماجراست و روزهای تازه در راه است.',
 			need: 'یک میکروفون و جایی آرام لازم داری. بین بخش‌ها می‌توانی دست نگه داری و بعداً ادامه بدهی.'
 		},
 		practice: {
@@ -144,7 +144,7 @@ export const LANDING: Record<LandingLang, LandingCopy> = {
 		persian: {
 			h: 'برای فارسی‌زبان‌ها ساخته شده',
 			points: [
-				'زبان کل برنامه، نکته‌ها هم، می‌تواند فارسی یا انگلیسی باشد.',
+				'کل برنامه، حتی نکته‌ها، هم به فارسی هست و هم به انگلیسی.',
 				'در بخش تمرین، روی اشتباه‌هایی کار کن که فارسی‌زبان‌ها زیاد می‌کنند.',
 				'دو سطح: «متوسط» اگر حرف زدن برایت سخت است، «حرفه‌ای» اگر می‌خواهی روان‌تر حرف بزنی.'
 			]
@@ -162,10 +162,10 @@ export const LANDING: Record<LandingLang, LandingCopy> = {
 				{ q: 'رایگان است؟', a: 'بله، فعلاً رایگان است و پرداختی لازم نیست. تازه راه افتاده‌ایم و از اولین کاربرانمان یاد می‌گیریم. اگر روزی تغییر کند، خیلی پیش از آن خبرت می‌کنیم.' },
 				{ q: 'جای کلاس آیلتس را می‌گیرد؟', a: 'نه. هر روز تمرین اسپیکینگ به سبک آزمون و بازخورد می‌دهد. میریفر هیچ ارتباط رسمی با آیلتس ندارد و نمرهٔ آزمون را پیش‌بینی نمی‌کند.' },
 				{ q: 'روی آیفون کار می‌کند؟', a: 'بله. در مرورگرِ آیفون و اندروید با میکروفون کار می‌کند. لازم نیست چیزی نصب کنی.' },
-				{ q: 'محدودیت روزانه دارد؟', a: 'درس روزانه همیشه جا دارد. تمرین‌های اضافه سقف روزانه دارند؛ اگر به سقف رسیدی، فردا ادامه بده.' }
+				{ q: 'محدودیت روزانه دارد؟', a: 'درس روزانه هیچ‌وقت به سقف نمی‌خورد. تمرین‌های اضافه سقف روزانه دارند؛ اگر به سقف رسیدی، فردا ادامه بده.' }
 			]
 		},
-		end: { h: 'همین امروز اولین درست را شروع کن', t: 'حدود ۱۵ دقیقه طول می‌کشد.' },
+		end: { h: 'همین امروز اولین درس را شروع کن', t: 'حدود ۱۵ دقیقه طول می‌کشد.' },
 		footer: { privacy: 'حریم خصوصی', terms: 'شرایط استفاده', trademark: 'آیلتس نشان تجاری ثبت‌شدهٔ صاحبانش است و میریفر وابسته به آن نیست.', nav: 'پانویس', site: 'سایت' },
 		digits: n => n.toLocaleString('fa-IR')
 	}

@@ -26,7 +26,7 @@ const href = (id: PracticeId) => (id === 'retell' ? '/practice/english/retell' :
 const module = (id: PracticeId, title: DisplayText, does: DisplayText, minutes: number): PracticeModule => ({ id, title, does, minutes, href: href(id) });
 
 export const PRACTICE_MODULES: Record<PracticeId, PracticeModule> = {
-	'speaking-card': module('speaking-card', { en: 'Speaking card', fa: 'کارت صحبت' },
+	'speaking-card': module('speaking-card', { en: 'Speaking card', fa: 'کیوکارت' },
 		{ en: 'Get a topic, prepare for a minute, then talk about it for up to two minutes.', fa: 'یک موضوع می‌گیری، یک دقیقه آماده می‌شوی و بعد تا دو دقیقه درباره‌اش صحبت می‌کنی.' }, 6),
 	'quick-fire': module('quick-fire', { en: 'Quick-fire questions', fa: 'سؤال‌های سریع' },
 		{ en: 'Answer six short questions about yourself, one after another.', fa: 'به شش سؤال کوتاه دربارهٔ خودت، یکی پس از دیگری، جواب بده.' }, 4),
@@ -39,16 +39,16 @@ export const PRACTICE_MODULES: Record<PracticeId, PracticeModule> = {
 	'free-talk': module('free-talk', { en: '60-second free talk', fa: 'صحبت آزاد ۶۰ ثانیه‌ای' },
 		{ en: 'Talk for one minute about an easy topic, without stopping.', fa: 'یک دقیقه، بدون توقف، دربارهٔ یک موضوع ساده صحبت کن.' }, 3),
 	retell: module('retell', { en: 'Listen and retell', fa: 'گوش بده و بازگو کن' },
-		{ en: 'Hear a short story, then tell it in your own words.', fa: 'یک ماجرای کوتاه بشنو و بعد با کلمات خودت تعریفش کن.' }, 5),
+		{ en: 'Hear a short story, then tell it in your own words.', fa: 'یک ماجرای کوتاه بشنو و بعد به زبان خودت تعریفش کن.' }, 5),
 	dictation: module('dictation', { en: 'Dictation sprint', fa: 'دیکتهٔ سریع' },
 		{ en: 'Hear short sentences and type exactly what you hear.', fa: 'جمله‌های کوتاه را بشنو و دقیقاً همان را که می‌شنوی بنویس.' }, 4)
 };
 
 export const PRACTICE_GROUPS: { id: string; title: DisplayText; ids: PracticeId[] }[] = [
-	{ id: 'test', title: { en: 'Speaking test practice', fa: 'تمرین آزمون صحبت' }, ids: ['speaking-card', 'quick-fire', 'say-better'] },
+	{ id: 'test', title: { en: 'Speaking test practice', fa: 'تمرین آزمون اسپیکینگ' }, ids: ['speaking-card', 'quick-fire', 'say-better'] },
 	{ id: 'mistakes', title: { en: 'Common mistakes', fa: 'اشتباه‌های رایج' }, ids: ['traps'] },
 	{ id: 'opinion', title: { en: 'Speak your mind', fa: 'نظرت را بگو' }, ids: ['read-rate', 'free-talk'] },
-	{ id: 'listening', title: { en: 'Listening', fa: 'شنیدن' }, ids: ['retell', 'dictation'] }
+	{ id: 'listening', title: { en: 'Listening', fa: 'شنیداری' }, ids: ['retell', 'dictation'] }
 ];
 
 /**

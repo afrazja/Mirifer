@@ -71,7 +71,7 @@
 					<span class="av" aria-hidden="true">M</span>
 					<div class="bubble">
 						<span class="sr-only">{c.figure.mira}</span>
-						<span class="chip" aria-hidden="true">▶ 0:03</span>
+						<span class="chip" aria-hidden="true">▶ {c.digits(0)}:{c.digits(0)}{c.digits(3)}</span>
 						<p class="prompt-fa" lang="fa" dir="rtl">{c.figure.promptFa}</p>
 						{#if c.figure.promptEn}<p class="prompt-en" lang="en" dir="ltr">{c.figure.promptEn}</p>{/if}
 					</div>
