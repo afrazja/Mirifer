@@ -34,6 +34,7 @@ const STATIC_PAGES: StaticPage[] = [
 	{ path: '/fa', priority: '1.0', changefreq: 'weekly' },
 	{ path: '/fa/basics', priority: '0.9', changefreq: 'weekly' },
 	{ path: '/try', priority: '0.8', changefreq: 'monthly' },
+	{ path: '/fa/try', priority: '0.8', changefreq: 'monthly' },
 	{ path: '/basics', priority: '0.8', changefreq: 'weekly' },
 	{ path: '/drill/sprechen', priority: '0.7', changefreq: 'monthly' },
 	{ path: '/privacy', priority: '0.3', changefreq: 'yearly', lastmod: '2026-02-24' },
