@@ -1,5 +1,7 @@
 # Landing page copy (v2, English and Persian)
 
+> **Card layout (2026-10-21, owner's request):** the page became five card sections on a yellow background. The problem section was dropped, the step texts and Day 1 line were shortened, Practice became four cards plus a "Coming soon" card (adding "Common mistakes"), and three short badges sit around the phone. The live words are in `src/lib/landing/copy.ts`.
+
 Status: **v2, approved by the owner (2026-10-21)** after review (product growth, English coach,
 Persian localization, accessibility, learning UX). Plan: `docs/landing-plan.md`. Every line must be
 true of the app today. "IELTS-style" only: no exam logos, no score or band promises, no
