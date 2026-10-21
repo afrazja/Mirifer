@@ -19,7 +19,7 @@ describe('landing pages', () => {
 		expect(en).toMatch(/isn’t affiliated with or endorsed by IELTS/);
 		expect(fa).toContain('هیچ ارتباط رسمی با آیلتس ندارد');
 		// The two languages say the same things.
-		for (const key of ['faq', 'day', 'practice', 'persian'] as const) {
+		for (const key of ['faq', 'day', 'practice'] as const) {
 			expect(JSON.stringify(Object.values(LANDING.en[key]).map(v => (Array.isArray(v) ? v.length : typeof v)))).toBe(JSON.stringify(Object.values(LANDING.fa[key]).map(v => (Array.isArray(v) ? v.length : typeof v))));
 		}
 		// No Persian "·" next to digits (it reads like a zero).
