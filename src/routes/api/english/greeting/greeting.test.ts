@@ -58,9 +58,13 @@ describe('/api/english/greeting', () => {
 	});
 	it('doesn’t open a day that isn’t ready to a learner', async () => {
 		const sameDay = { ...recordSession(EMPTY_PROGRESS, null, []), lastCompletedAt: new Date().toISOString() };
-		const learner = fixture({ kind: 'reply', timeZone: 'UTC', opening: 'Q?', answer: 'I take the bus', day: 'day-2' }, sameDay);
-		expect((await POST(learner.event)).status).toBe(409);
-		expect(askChain).not.toHaveBeenCalled();
+		const two = DAY_TWO as { ready: boolean };
+		two.ready = false;
+		try {
+			const learner = fixture({ kind: 'reply', timeZone: 'UTC', opening: 'Q?', answer: 'I take the bus', day: 'day-2' }, sameDay);
+			expect((await POST(learner.event)).status).toBe(409);
+			expect(askChain).not.toHaveBeenCalled();
+		} finally { two.ready = true; }
 	});
 	it('rejects bad input and other sites', async () => {
 		expect((await POST(fixture({ kind: 'reply', timeZone: 'UTC', opening: 'Q?', answer: 'x'.repeat(301) }).event)).status).toBe(400);

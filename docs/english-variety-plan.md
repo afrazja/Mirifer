@@ -26,7 +26,7 @@ Predictability is a real risk, but mostly from **week 2–3**. The code shows bi
 ## The plan, in order
 
 ### Step 1: groundwork (before any variety)
-- **Release Days 2–3** after the owner's phone test.
+- **Release Days 2–3** after the owner's phone test. (Done, 2026-10-21.)
 - **Measure:** the server records `lesson_started`, one `lesson_progress` per step (done or
   skipped) and `lesson_completed`, with day, version and length. Next-day and day-7 return are
   worked out from these in a report. Collect 1–2 weeks of data as a baseline.

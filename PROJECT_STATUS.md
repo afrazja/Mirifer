@@ -11,7 +11,8 @@ Updated: 2026-10-21.
 - The landing page (`/`, `/fa`), the guest demo (`/try`) and the grammar pages (`/basics`) are
   still the German ones until the landing page is redone for English (owner: later).
 - English: daily lessons in two versions (`src/lib/practice/day.ts`); the plan to make them less
-  predictable is `docs/english-variety-plan.md`. Days 2–3 are owner-only until the owner's phone test.
+  predictable is `docs/english-variety-plan.md`. **Days 1–3 are released to learners** (2026-10-21);
+  learners never skip a day that isn't ready (`nextDay`), and after Day 3 the recap says new days are on the way.
 
 ## Latest release (2026-09-25): English AI quota efficiency
 
