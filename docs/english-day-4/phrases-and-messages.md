@@ -286,8 +286,8 @@ transfer.
 - `to`: To Daniel at the front desk / به دنیل، در پذیرش هتل (Day 3's `TO_DANIEL`)
 - `fa`: امکانش هست سه‌شنبه یه کم دیرتر اتاق رو تحویل بدم، مثلاً ساعت یک؟ اگه هزینهٔ اضافه داره، ترجیح می‌دم همون ساعت یازده برم.
 - `points`:
-  1. you'd like a late check-out on Tuesday, at about one / می‌خواهی سه‌شنبه دیرتر، حدود ساعت یک، اتاق را تحویل بدهی
-  2. if it costs extra, you'd rather leave at eleven / اگر هزینهٔ اضافه دارد، ترجیح می‌دهی همان ساعت یازده بروی
+  1. you’d like a late check-out on Tuesday, at about one / می‌خواهی سه‌شنبه دیرتر، حدود ساعت یک، اتاق را تحویل بدهی
+  2. if it costs extra, you’d rather leave at eleven / اگر هزینهٔ اضافه دارد، ترجیح می‌دهی همان ساعت یازده بروی
 - `models`:
   - "Would it be possible to get a late check-out on Tuesday, around one? If it costs extra, I'll just leave at eleven." (22 words)
   - "Could I check out a bit later on Tuesday, say at one? If there's an extra charge, eleven is fine." (20 words)
@@ -471,7 +471,7 @@ for it.
 
 ## Checks
 
-- **Regexes**, run in Node (`/tmp/claude-0/…/scratchpad/check.mjs`) with copies of both `normalise()`
+- **Regexes**, run in Node (a throwaway script, not committed) with copies of both `normalise()`
   functions (say-better for `found`, traps for `accept`/`reject`, and a copy of `checkSaid`); 0
   failures:
   - each `found` matches its own sentence and **none of the other nine** sentences in either set
@@ -487,7 +487,7 @@ for it.
     speak more slow?", "That's very kind from you.", "It's kind of far").
   - Each trap: `right` gives "right", `words.join(' ')` (the sentence with the mistake) gives
     "wrong", and every extra form listed gives the result shown (right, also good, wrong or
-    self-fixed): 6 traps, 37 sentences. `call-me` was re-run unchanged and still gives Day 1's
+    self-fixed), for all 6 traps. `call-me` was re-run unchanged and still gives Day 1's
     results.
 - **Shapes:** each `shown` minus `**` and with `‿` as a space equals its `sentence`; every bold part
   has two or more words; every Persian field has Persian letters; no `why.fa` has a backtick; every
@@ -577,8 +577,8 @@ for it.
 1. **Speech-to-text risk:** "Pine Street" may come out as "pine" or "Spine Street"; "Oak Street" as
    "oak"; no regex depends on names. "fifteen" may come out as "15"; `minutes-away` and its
    alsoGood accept both. As on Days 2–3, record each wrong trap sentence with a Persian accent before
-   these ship ("turn to left" and "pass the street" may be quietly fixed by speech-to-text into
-   "turn left" or "past the street"; the second would fail both checks, which is safe).
+   these ship: speech-to-text may quietly "fix" "turn to left" into "turn left" (a false "right"), and
+   may write "pass the street" as "past the street" (still "wrong", as it should be).
 2. **The voice-messages AI tone rule** may need "To the hotel desk and a friend: friendly and
    simple" for Day 4.
 3. **Day 1's `call-me` sentence** ("…when you find it") belongs to a lost bag. If reviewers find it

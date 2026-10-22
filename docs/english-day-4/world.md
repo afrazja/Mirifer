@@ -123,6 +123,41 @@ One item inside the lesson comes back from an earlier day, word for word, marked
 - **Professional:** in Say it in English, one item from Day 2–3 that fits today.
 The writers pick the item; it must be reused as it is (same text, same checks), not rewritten.
 
+## Facts added from the drafts (v1)
+
+From `listening.md`:
+- Daniel offers to call Sara a taxi (no price said); she walks because it's a beautiful day.
+- Sara first says the gate is on her left; Daniel corrects her: it's on the right.
+- Greg first says "Oak's closed till one", then speaks so fast that Sara only catches "library";
+  she asks him to slow down. At 10:45 "hundreds" of runners are passing.
+
+From `phrases-and-messages.md`:
+- Daniel's 8:50 call to room 714 gets no answer (Sara is in the shower), so he leaves a voice
+  message on her phone.
+- Tom's voice message comes at about 10:35, while Sara is still on the hotel Wi-Fi; he doesn't know
+  about the Fun Run.
+- Sara leaves the hotel at about 10:38. She tells Daniel she has no data and asks for the way step
+  by step.
+- The learner (Karimi) asks the desk the way to the City Museum (no time given, so the Oak Street
+  closure never makes the directions wrong).
+- Day 3's late check-out question comes back on Day 4 as a review (from an earlier day), not as
+  something Sara asks again on Sunday.
+
+From `conversation.md`:
+- **Paul** (Brian, c), a cheerful local waiting for a friend at the corner of Main and Oak, about
+  11:15 a.m. Never in a scene with Daniel or Tom. In the replay he moved to Riverton last month and
+  doesn't know the park; he sends you to the library's help desk.
+- The learner's Sunday: the front desk gave them the normal way and forgot the Fun Run; like Sara,
+  they have no mobile data.
+- From the corner of Main and Oak: about 3 minutes to Pine Street, 4 to the library, 12 to the
+  fountain (the way around).
+- The library is open on Sundays until 4 p.m., with a help desk just inside the glass doors.
+- Bus 4 is back on its normal route (Oak Street) after 1 p.m.; with the wait, the bus can take up to
+  about 26 minutes in all.
+- Choose and persuade's friend (not in Sara's story): staying at the Park Hotel, leaves at about
+  2 p.m. to meet his sister at the City Museum at 2:30; his knee is a little sore after a long
+  flight; he loves taking photos.
+
 ## Facts that must stay true across modules
 
 - Today is **Sunday**; the Park Hotel is at 210 Main Street, across from Central Station.
