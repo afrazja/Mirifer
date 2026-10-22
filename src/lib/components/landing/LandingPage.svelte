@@ -96,7 +96,7 @@
 			<a href={home} class="brand" aria-label={isFa ? 'میریفر، صفحهٔ اصلی' : 'Mirifer home'}><BrandLogo tone="light" /></a>
 			<nav class="links" aria-label={c.footer.site}>
 				<!-- The language switch is hidden for now (owner's choice); Persian browsers still get the suggestion banner. -->
-				<a href="/login">{c.signIn}</a>
+				<a href="/login" class="signin">{c.signIn}</a>
 				<a href={signupHref} class="signup" onclick={started}>{c.signUp}</a>
 			</nav>
 		</header>
@@ -326,21 +326,22 @@
 	.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; max-width: 1120px; margin: 0 auto; padding: 8px 16px; }
 	.brand { display: inline-flex; align-items: center; min-height: 44px; color: #fff; text-decoration: none; }
 	.links { display: flex; align-items: center; gap: 10px; }
-	.links a { min-height: 44px; min-inline-size: 44px; padding: 0 10px; justify-content: center; display: inline-flex; align-items: center; color: #fff; font-weight: 600; text-decoration: none; border-radius: 999px; }
-	.links a:hover { text-decoration: underline; }
-	.links .signup { background: #fff; color: #0e5c45; padding: 0 18px; }
-	.links .signup:hover { background: #e9f5ee; text-decoration: none; }
+	.links a { min-height: 44px; min-inline-size: 44px; padding: 0 18px; justify-content: center; display: inline-flex; align-items: center; font-weight: 700; text-decoration: none; border-radius: 12px; transition: background .15s ease, border-color .15s ease, transform .12s ease, box-shadow .12s ease; }
+	/* Sign in: outlined in white. Sign up: the golden raised button, like Start free. */
+	.links .signin { color: #fff; border: 2px solid rgba(255, 255, 255, .75); }
+	.links .signin:hover { background: rgba(255, 255, 255, .12); border-color: #fff; }
+	.links .signup { color: #14201b; background: linear-gradient(180deg, #ffe27d, #ffcf3a); border: 2px solid #ffcf3a; box-shadow: 0 3px 0 #c48f00, 0 8px 16px -8px rgba(0, 0, 0, .45); }
+	.links .signup:hover { transform: translateY(-1px); box-shadow: 0 4px 0 #c48f00, 0 10px 18px -8px rgba(0, 0, 0, .45); }
+	.links .signup:active { transform: translateY(2px); box-shadow: 0 1px 0 #c48f00; }
 	/* Narrow phones: logo, Sign in and Sign up stay on one line. */
 	@media (max-width: 420px) {
 		.brand { --brand-logo-width: 136px; }
-		.links { gap: 4px; }
-		.links a { padding: 0 8px; }
-		.links .signup { padding: 0 14px; }
+		.links { gap: 6px; }
+		.links a { padding: 0 12px; }
 	}
 	@media (max-width: 360px) {
 		.brand { --brand-logo-width: 112px; }
-		.links a { font-size: .95rem; padding: 0 6px; }
-		.links .signup { padding: 0 12px; }
+		.links a { font-size: .92rem; padding: 0 9px; }
 	}
 
 	main { display: block; }
