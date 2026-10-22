@@ -1,4 +1,4 @@
-# Day 4 world: "Asking the way"
+# Day 4 world: "Asking the way" (v2, after review)
 
 The shared source for every Day 4 module. Every fact a module uses must come from here (or be
 added here first), so the modules never contradict each other or Days 1–3. Theme 1.14 ("Asking the
@@ -37,7 +37,7 @@ easy pace.
 | **The fountain** | Just inside the main gate. **The Sunday market is around the fountain.** | about 15 minutes |
 | **Pine Street** | Crosses Main Street at the **third traffic light**, one block after Oak Street. | about 10 minutes |
 | **The library** | Pine Street, on the left, just after you turn left off Main Street. Big glass doors. | about 11 minutes |
-| **Central Park, side gate** (the Pine Street gate) | Pine Street, about five minutes after the library, on the right. From there, signs to the fountain: a 3-minute walk through the park. | about 20 minutes to the fountain |
+| **Central Park, side gate** (the Pine Street gate) | Pine Street, about five minutes after the library, **on the left** (the park lies between Oak Street and Pine Street). From there, signs to the fountain: a 3-minute walk through the park. | about 20 minutes to the fountain |
 | **The Riverwalk** | A path along the Riverton River. You reach it **behind Central Station** (cross Main Street, walk through the station, out of the back doors). It goes all the way to the back of Central Park. Flat, trees, benches; no cars. | about 25 minutes to the park, the same to the City Museum |
 | **Bus 4** | Stops **in front of Central Station**, across the street from the hotel. Goes along Main Street and Oak Street. **The Central Park stop** is at the main gate. | 6 minutes on the bus; every **20 minutes** on Sundays; **$2.50**, card or exact change |
 | **City Museum** | Oak Street, across from Central Park's main gate (Day 2). Open Sunday 10 a.m. to 5 p.m.; last entry 4:30. | about 15 minutes |
@@ -54,7 +54,7 @@ stops at the Pine Street gate instead; only modules that mention the bus use thi
 
 **The way around (the stranger's):** don't turn at Oak Street; keep going straight on Main Street
 to the **next traffic light**, **Pine Street**; turn **left**; go **past the library** (on your
-left); after about five minutes, the park's **side gate is on your right**; inside, follow the
+left); after about five minutes, the park's **side gate is on your left, too**; inside, follow the
 signs to the fountain (about 3 minutes). **About 20 minutes in all** from the hotel.
 
 ## The Sunday market
@@ -132,8 +132,7 @@ From `listening.md`:
   she asks him to slow down. At 10:45 "hundreds" of runners are passing.
 
 From `phrases-and-messages.md`:
-- Daniel's 8:50 call to room 714 gets no answer (Sara is in the shower), so he leaves a voice
-  message on her phone.
+- Daniel's 8:50 call to room 714 gets no answer, so he leaves a voice message on her phone.
 - Tom's voice message comes at about 10:35, while Sara is still on the hotel Wi-Fi; he doesn't know
   about the Fun Run.
 - Sara leaves the hotel at about 10:38. She tells Daniel she has no data and asks for the way step
@@ -145,8 +144,9 @@ From `phrases-and-messages.md`:
 
 From `conversation.md`:
 - **Paul** (Brian, c), a cheerful local waiting for a friend at the corner of Main and Oak, about
-  11:15 a.m. Never in a scene with Daniel or Tom. In the replay he moved to Riverton last month and
-  doesn't know the park; he sends you to the library's help desk.
+  11:15 a.m. Never in a scene with Daniel or Tom. **First run:** he moved to Riverton last month and
+  doesn't know the park; he sends you to the library's help desk. **Replay:** he knows the way and
+  gives the way around by Pine Street.
 - The learner's Sunday: the front desk gave them the normal way and forgot the Fun Run; like Sara,
   they have no mobile data.
 - From the corner of Main and Oak: about 3 minutes to Pine Street, 4 to the library, 12 to the
@@ -155,8 +155,8 @@ From `conversation.md`:
 - Bus 4 is back on its normal route (Oak Street) after 1 p.m.; with the wait, the bus can take up to
   about 26 minutes in all.
 - Choose and persuade's friend (not in Sara's story): staying at the Park Hotel, leaves at about
-  2 p.m. to meet his sister at the City Museum at 2:30; his knee is a little sore after a long
-  flight; he loves taking photos.
+  2 p.m. to meet his sister at the City Museum at 2:45; he's tired after a long flight; he loves
+  taking photos.
 
 ## Facts that must stay true across modules
 
@@ -166,7 +166,7 @@ From `conversation.md`:
   across from the City Museum**; about 15 minutes.
 - **Oak Street is closed 9 a.m. to 1 p.m.** for the Riverton Fun Run.
 - The way around: straight to the **third light, Pine Street**, left, **past the library on the
-  left**, the side gate **on the right**, signs to the fountain; about 20 minutes.
+  left**, the side gate **on the left, too**, signs to the fountain; about 20 minutes.
 - The Sunday market: around the fountain in Central Park, 9 a.m. to 2 p.m.; live music at noon.
 - Sara has **no mobile data**; her phone works on Wi-Fi only.
 - Sara meets **Tom at the fountain at noon**; his car is still at the mechanic; he comes by bus.
