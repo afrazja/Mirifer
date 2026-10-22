@@ -20,6 +20,7 @@ export interface LandingCopy {
 	sample: string;
 	small: string;
 	signIn: string;
+	signUp: string;
 	switchLabel: string;
 	figure: { caption: string; mira: string; you: string; promptFa: string; promptEn: string | null; said: string; fixLabel: string; fix: string; tipLabel: string; tip: Rich };
 	day: { h: string; steps: { title: string; text: string }[]; dayOne: string; need: string; row: string };
@@ -45,6 +46,7 @@ export const LANDING: Record<LandingLang, LandingCopy> = {
 		sample: 'Try a 2-minute sample (no sign-up)',
 		small: 'Free for now · No payment details · Nothing to install',
 		signIn: 'Sign in',
+		signUp: 'Sign up',
 		switchLabel: 'فارسی',
 		figure: {
 			caption: 'Example from Day 1: Mira gives you something to say, you say it, and she shows a natural way to say it.',
@@ -106,6 +108,7 @@ export const LANDING: Record<LandingLang, LandingCopy> = {
 		sample: 'یک نمونهٔ دودقیقه‌ای امتحان کن (بدون ثبت‌نام)',
 		small: 'فعلاً رایگان، بدون پرداخت، بدون نصب',
 		signIn: 'ورود',
+		signUp: 'ثبت‌نام',
 		switchLabel: 'English',
 		figure: {
 			caption: 'نمونه‌ای از روز اول: میرا می‌گوید چه بگویی، تو می‌گویی و او شکل طبیعی‌ترش را نشانت می‌دهد.',

@@ -19,7 +19,6 @@
 	const c = $derived(LANDING[lang]);
 	const isFa = $derived(lang === 'fa');
 	const home = $derived(isFa ? '/fa' : '/');
-	const other = $derived(isFa ? '/' : '/fa');
 	const sampleHref = $derived(isFa ? '/fa/try' : '/try');
 	const signupHref = '/login?mode=signup';
 	const arrow = $derived(isFa ? '←' : '→');
@@ -96,8 +95,9 @@
 		<header class="top">
 			<a href={home} class="brand" aria-label={isFa ? 'میریفر، صفحهٔ اصلی' : 'Mirifer home'}><BrandLogo tone="light" /></a>
 			<nav class="links" aria-label={c.footer.site}>
-				<a href={other} lang={isFa ? 'en' : 'fa'} hreflang={isFa ? 'en' : 'fa'}>{c.switchLabel}</a>
-				<a href="/login" class="signin">{c.signIn}</a>
+				<!-- The language switch is hidden for now (owner's choice); Persian browsers still get the suggestion banner. -->
+				<a href="/login">{c.signIn}</a>
+				<a href={signupHref} class="signup" onclick={started}>{c.signUp}</a>
 			</nav>
 		</header>
 
@@ -328,7 +328,20 @@
 	.links { display: flex; align-items: center; gap: 10px; }
 	.links a { min-height: 44px; min-inline-size: 44px; padding: 0 10px; justify-content: center; display: inline-flex; align-items: center; color: #fff; font-weight: 600; text-decoration: none; border-radius: 999px; }
 	.links a:hover { text-decoration: underline; }
-	.links .signin { background: #fff; color: #0e5c45; padding: 0 18px; }
+	.links .signup { background: #fff; color: #0e5c45; padding: 0 18px; }
+	.links .signup:hover { background: #e9f5ee; text-decoration: none; }
+	/* Narrow phones: logo, Sign in and Sign up stay on one line. */
+	@media (max-width: 420px) {
+		.brand { --brand-logo-width: 136px; }
+		.links { gap: 4px; }
+		.links a { padding: 0 8px; }
+		.links .signup { padding: 0 14px; }
+	}
+	@media (max-width: 360px) {
+		.brand { --brand-logo-width: 112px; }
+		.links a { font-size: .95rem; padding: 0 6px; }
+		.links .signup { padding: 0 12px; }
+	}
 
 	main { display: block; }
 	h1, h2, h3 { margin: 0; overflow-wrap: break-word; }
