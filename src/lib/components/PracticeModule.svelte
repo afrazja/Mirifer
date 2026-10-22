@@ -16,7 +16,7 @@
 	import DictationSprint from '$lib/components/DictationSprint.svelte';
 	import Traps from '$lib/components/Traps.svelte';
 	import { trapsFor } from '$lib/practice/day-content';
-	import { DAY_IDS } from '$lib/practice/day';
+	import { DAYS } from '$lib/practice/day';
 	import { asTrapsRecord, type TrapsRecord } from '$lib/practice/traps';
 	import { getLanguage } from '$services/data-layer';
 	import { stopAllAudio } from '$services/tts';
@@ -49,18 +49,20 @@
 	 * { day, record }; "Try another one" goes on to the next day's.
 	 */
 	type TrapsRun = { day: string; record: TrapsRecord | null };
+	/** Only days released to learners (a day still in testing stays out of Practice). */
+	const TRAP_DAYS: string[] = DAYS.filter(day => day.ready).map(day => day.id);
 	function trapsRun(): TrapsRun {
 		const value = load() as { day?: unknown; record?: unknown } | null;
-		const day = typeof value?.day === 'string' && (DAY_IDS as readonly string[]).includes(value.day) ? value.day : DAY_IDS[0];
+		const day = typeof value?.day === 'string' && TRAP_DAYS.includes(value.day) ? value.day : TRAP_DAYS[0];
 		return { day, record: asTrapsRecord(value?.record, trapsFor(day, true)) };
 	}
 	function nextTrapsRun(): TrapsRun {
 		const run = trapsRun();
 		if (!run.record?.done) return run;
-		const day = DAY_IDS[(DAY_IDS.indexOf(run.day as never) + 1) % DAY_IDS.length];
+		const day = TRAP_DAYS[(TRAP_DAYS.indexOf(run.day) + 1) % TRAP_DAYS.length];
 		return { day, record: null };
 	}
-	let trapsDay = $state(DAY_IDS[0] as string);
+	let trapsDay = $state(TRAP_DAYS[0]);
 
 	/** A finished run in storage: show its end screen, not a silent restart. */
 	function savedDone(): boolean {

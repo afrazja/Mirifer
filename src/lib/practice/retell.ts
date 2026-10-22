@@ -24,6 +24,8 @@ export interface RetellPiece {
 	imageAlt?: DisplayText;
 	/** The narrator (a daily lesson's piece keeps its own); without one, the Module lab picks a voice at random. */
 	voice?: 'a' | 'b' | 'c' | 'd';
+	/** The heading on the speaking screen when the task isn't "tell the story" (Day 4: tell a friend the way). */
+	task?: DisplayText;
 }
 
 /** The piece's picture, or null while it has none. */
