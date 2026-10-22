@@ -107,8 +107,8 @@
 				<p class="eyebrow">{c.eyebrow}</p>
 				<h1>{h1Parts[0]}<span class="hl">{c.h1Mark}</span>{h1Parts[1]}</h1>
 				<p class="line">{c.line}</p>
-				<a class="primary" href={signupHref} bind:this={heroCta} onclick={started}>{c.cta} <span aria-hidden="true">{arrow}</span></a>
-				<a class="quiet" href={sampleHref}>{c.sample}</a>
+				<a class="primary gold" href={signupHref} bind:this={heroCta} onclick={started}>{c.cta} <span aria-hidden="true">{arrow}</span></a>
+				<a class="ghost" href={sampleHref}><span class="play-dot" aria-hidden="true">▶</span>{c.sample}</a>
 				<p class="small">{c.small}</p>
 			</div>
 
@@ -253,8 +253,8 @@
 				<div class="end-words">
 					<h2>{c.end.h}</h2>
 					<p>{c.end.t}</p>
-					<a class="primary on-green" href={signupHref} bind:this={endCta} onclick={started}>{c.cta} <span aria-hidden="true">{arrow}</span></a>
-					<a class="quiet on-green" href={sampleHref}>{c.sample}</a>
+					<a class="primary gold" href={signupHref} bind:this={endCta} onclick={started}>{c.cta} <span aria-hidden="true">{arrow}</span></a>
+					<a class="ghost" href={sampleHref}><span class="play-dot" aria-hidden="true">▶</span>{c.sample}</a>
 				</div>
 				{@render photo(LANDING_PHOTOS.end, 'end-photo')}
 			</div>
@@ -342,8 +342,22 @@
 	a:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 8px; }
 	.scroller:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; border-radius: 12px; }
 
-	.primary { display: flex; gap: 12px; align-items: center; justify-content: center; min-height: 56px; padding: 12px 26px; border-radius: 999px; background: var(--btn); color: var(--on-btn); font-weight: 700; font-size: 1.08rem; text-decoration: none; box-shadow: var(--shadow); transition: transform .15s ease, background .15s ease; }
-	.primary:hover { background: var(--btn-hover); transform: translateY(-1px); }
+	/* "Start free": a raised button with a solid lower edge, so it looks pressable. It lifts on
+	   hover and sinks when pressed. Green on the yellow page; golden on the green areas. */
+	.primary { --edge: #07392b; --glow: rgba(7, 57, 43, .35); position: relative; display: flex; gap: 12px; align-items: center; justify-content: center; min-height: 58px; padding: 12px 30px; border-radius: 16px; background: linear-gradient(180deg, #1a7a5c, #0e5c45); color: #fff; font-weight: 800; font-size: 1.1rem; letter-spacing: .01em; text-decoration: none; box-shadow: 0 5px 0 var(--edge), 0 14px 26px -10px var(--glow), inset 0 1px 0 rgba(255, 255, 255, .25); transform: translateY(0); transition: transform .12s ease, box-shadow .12s ease, filter .12s ease; }
+	.primary:hover { transform: translateY(-2px); box-shadow: 0 7px 0 var(--edge), 0 18px 30px -10px var(--glow), inset 0 1px 0 rgba(255, 255, 255, .25); filter: brightness(1.04); }
+	.primary:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--edge), 0 6px 12px -8px var(--glow), inset 0 1px 0 rgba(255, 255, 255, .25); }
+	.primary > span { display: inline-block; transition: transform .2s ease; }
+	.primary:hover > span { transform: translateX(4px); }
+	[dir='rtl'] .primary:hover > span { transform: translateX(-4px); }
+	.primary.gold { --edge: #c48f00; --glow: rgba(0, 0, 0, .4); background: linear-gradient(180deg, #ffe27d, #ffcf3a); color: #14201b; box-shadow: 0 5px 0 var(--edge), 0 14px 26px -10px var(--glow), inset 0 1px 0 rgba(255, 255, 255, .6); }
+	.primary.gold:hover { box-shadow: 0 7px 0 var(--edge), 0 18px 30px -10px var(--glow), inset 0 1px 0 rgba(255, 255, 255, .6); }
+	.primary.gold:active { box-shadow: 0 1px 0 var(--edge), 0 6px 12px -8px var(--glow), inset 0 1px 0 rgba(255, 255, 255, .6); }
+	/* "Try a 2-minute sample": an outlined button on green, clearly a second choice. */
+	.ghost { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 50px; padding: 8px 20px 8px 10px; border: 2px solid rgba(255, 255, 255, .75); border-radius: 16px; color: #fff; font-weight: 700; text-decoration: none; transition: background .15s ease, border-color .15s ease; }
+	[dir='rtl'] .ghost { padding: 8px 10px 8px 20px; }
+	.ghost:hover { background: rgba(255, 255, 255, .12); border-color: #fff; }
+	.play-dot { display: grid; place-items: center; inline-size: 30px; block-size: 30px; border-radius: 50%; background: #fff; color: #0e5c45; font-size: .7rem; padding-inline-start: 2px; direction: ltr; }
 	.quiet { display: inline-flex; align-items: center; min-height: 44px; color: var(--ink); font-weight: 600; text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 2px; }
 	.quiet.inline { display: inline; min-height: 0; }
 
@@ -357,10 +371,9 @@
 	.hl { display: inline-block; padding: 0 .18em .06em; margin-inline: .02em; border-radius: .3em .3em .3em .06em; background: #ffffff; color: #0e5c45; }
 	[dir='rtl'] .hl { border-radius: .3em .3em .06em .3em; }
 	.line { font-size: 1.12rem; color: rgba(255, 255, 255, .88); margin-bottom: 22px; max-width: 34em; }
-	.copy .primary { justify-self: stretch; background: #ffffff; color: #0e5c45; }
-	.copy .primary:hover { background: #e9f5ee; }
-	.copy .quiet { justify-self: center; margin-top: 6px; color: #fff; }
-	.small { justify-self: center; color: rgba(255, 255, 255, .78); font-size: .86rem; }
+	.copy .primary { justify-self: stretch; }
+	.copy .ghost { justify-self: stretch; margin-top: 16px; }
+	.small { justify-self: center; margin-top: 12px; color: rgba(255, 255, 255, .78); font-size: .86rem; }
 
 	/* The lesson phone in front, two tilted cards behind it. */
 	.stage { position: relative; padding: 22px 11% 6px; }
@@ -494,9 +507,8 @@
 	.endcard { display: grid; gap: 18px; padding: 26px 20px; border-radius: 28px; background: var(--g); color: #fff; box-shadow: var(--shadow); overflow: hidden; }
 	.end-words { display: grid; gap: 10px; justify-items: center; text-align: center; }
 	.end-words p { color: rgba(255, 255, 255, .85); }
-	.endcard .primary.on-green { justify-self: stretch; background: #ffffff; color: #0e5c45; }
-	.endcard .primary.on-green:hover { background: #e9f5ee; }
-	.endcard .quiet.on-green { color: #fff; }
+	.endcard .primary { justify-self: stretch; }
+	.endcard .ghost { justify-self: stretch; margin-top: 6px; }
 	.endcard a:focus-visible { outline-color: #ffffff; }
 	.end-photo { aspect-ratio: 16 / 9; border-radius: 20px; }
 	.end-photo.empty { background-color: var(--g-deep); }
@@ -525,8 +537,8 @@
 		.heroband { border-end-start-radius: 56px; border-end-end-radius: 56px; }
 		.blob { inline-size: 940px; inset-block-end: -470px; inset-inline-end: -160px; }
 		.hero { grid-template-columns: 1fr 1fr; align-items: center; column-gap: 48px; padding-top: 30px; padding-bottom: 76px; }
-		.copy .primary { justify-self: start; }
-		.copy .quiet, .small { justify-self: start; }
+		.copy .primary, .copy .ghost { justify-self: start; }
+		.small { justify-self: start; }
 		.stage { padding: 34px 16% 10px; }
 		.stage.with-photo { padding-inline: 0 36%; }
 		.with-photo .pic { inline-size: 52%; block-size: 94%; inset-block-start: 2%; }
@@ -553,7 +565,7 @@
 		.trap { font-size: 1.1rem; }
 		.endcard { grid-template-columns: 1.1fr 1fr; align-items: center; padding: 36px; }
 		.end-words { justify-items: start; text-align: start; }
-		.endcard .primary.on-green { justify-self: start; }
+		.endcard .primary, .endcard .ghost { justify-self: start; }
 		.end-photo { aspect-ratio: 4 / 3; }
 	}
 
@@ -596,6 +608,5 @@
 		@keyframes grow { from { transform: scale(.85); opacity: .5; } to { transform: none; opacity: 1; } }
 		.landing:global([data-anim='on']) .reveal:global(.in) .trap s { animation: strike 1.6s ease 1 both; }
 		@keyframes strike { 0%, 50% { text-decoration-color: transparent; } 100% { text-decoration-color: currentColor; } }
-		.primary { transition: transform .15s ease, background .15s ease; }
 	}
 </style>
