@@ -464,9 +464,11 @@
 	.trap s { color: var(--coral); text-decoration-thickness: 2px; }
 	.words { flex: 1 1 10em; min-width: 0; }
 	.words p { font-size: .93rem; line-height: 1.5; }
-	.soon-photo { flex: none; inline-size: 92px; block-size: 92px; border-radius: 18px; }
+	/* The whole interview photo (4:3), so both people show; text goes under it. */
+	.soon { flex-direction: column; align-items: stretch; }
+	.soon-photo { inline-size: 100%; aspect-ratio: 4 / 3; border-radius: 18px; }
 	.soon-photo.empty svg { inline-size: 26px; }
-	.soon .words { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+	.soon .words { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
 	.tag { margin: 0; padding: 4px 10px; border-radius: 999px; background: var(--g-soft); color: var(--g-text); font-weight: 800; font-size: .8rem; }
 
 	/* ── 4. Privacy and questions ── */
@@ -540,8 +542,9 @@
 		.cue i:first-child { inline-size: 70%; background: var(--g); }
 		.cue i:last-child { inline-size: 55%; }
 		.t0 .timer { inline-size: 76px; block-size: 76px; }
-		.soon { flex-direction: column; align-items: stretch; }
-		.soon-photo { inline-size: auto; block-size: 110px; }
+		.soon-photo { block-size: auto; }
+		/* Cards in the same row as the photo card grow with it: their drawing fills the extra height. */
+		.tile .art { flex: 1 0 auto; }
 		.t1 .art > * { scale: 1.45; }
 		.t1 .art { gap: 14px; }
 		.t2 .art .head-icon svg { inline-size: 34px; block-size: 34px; }

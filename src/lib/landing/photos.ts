@@ -18,11 +18,10 @@ export const LANDING_PHOTOS: Record<'hero' | 'practice' | 'end', LandingPhoto | 
 		// The phone covers the inner side of this card: keep her face on the outer side.
 		focus: { ltr: '15% 25%', rtl: '72% 25%' }
 	},
-	/** The "Coming soon" card in Practice. Landscape (here 800×599); it is shown as a wide strip. */
+	/** The "Coming soon" card in Practice. Shown whole at 4:3 (here 800×600). */
 	practice: {
 		src: '/images/landing/interview.webp',
 		alt: { en: 'A woman answering a question in a job interview.', fa: 'زنی در مصاحبهٔ کاری به یک سؤال جواب می‌دهد.' },
-		focus: { ltr: '50% 22%', rtl: '50% 22%' }
 	},
 	/** The closing card. About 4:3 (here 900×692); shown wider on phones. */
 	end: {
