@@ -1,6 +1,6 @@
 # English Day 4: listening modules (draft)
 
-Status: **draft, for review and owner approval.** Modules: Listen and connect (Intermediate set) and
+Status: **draft v2 (after review v1), for owner approval.** Modules: Listen and connect (Intermediate set) and
 Listen and retell (Professional). Every fact comes from `world.md`. The few new facts are listed at
 the end, under "New facts for world.md". US English. Each module is written in the shape of its
 built `.ts` file, field by field (`ConnectSet` in `listen-connect.ts`, `RetellPiece` in `retell.ts`),
@@ -34,7 +34,7 @@ same keys and voices as Day 3, so `CHECK_IN_SPEAKERS` can be reused or copied.
 
 ### 1.2 `conversation`
 
-There are 12 lines and 156 words; the built test allows 110 to 160. `#` is the line index that
+There are 12 lines and 160 words; the built test allows 110 to 160 (so it is at the top of the range). `#` is the line index that
 `evidence` uses. Each line carries one idea, in short spoken A2 English with contractions.
 
 | # | `who` | `text` | Words |
@@ -43,10 +43,10 @@ There are 12 lines and 156 words; the built test allows 110 to 160. `#` is the l
 | 1 | daniel | It's about fifteen minutes on foot. Or I can call you a taxi. | 13 |
 | 2 | sara | I'll walk. It's a beautiful day. | 6 |
 | 3 | daniel | OK. Turn right out of the hotel and walk along Main Street, past the post office. | 16 |
-| 4 | daniel | Keep going until the second traffic light, at the bank. Turn left there, onto Oak Street. | 16 |
+| 4 | daniel | Keep going until you get to the second traffic light, at the bank. Turn left there, onto Oak Street. | 19 |
 | 5 | daniel | Once you're on Oak Street, it's two blocks. The main gate's on your right. | 14 |
 | 6 | daniel | It's across from the City Museum. The market's just inside, around the fountain. | 13 |
-| 7 | sara | Thanks! I won't have maps on my phone, so let me say it back. | 14 |
+| 7 | sara | Thanks! I won't have a map on my phone, so let me say it back. | 15 |
 | 8 | sara | So I turn right out of the hotel, left at the second light, and the gate's on my left? | 19 |
 | 9 | daniel | Almost. Actually, it's on your right, across from the museum. | 10 |
 | 10 | sara | On my right. Got it! I'm meeting a friend there at noon. | 12 |
@@ -66,8 +66,8 @@ the way by saying it back, and it makes left and right a real listening point.
 | Part | `from` | `to` | `title.en` | `title.fa` | Words |
 |---|---|---|---|---|---|
 | 0 | 0 | 2 | Walk or taxi | پیاده یا تاکسی | 32 |
-| 1 | 3 | 6 | The way | مسیر | 59 |
-| 2 | 7 | 11 | Saying it back | تکرار مسیر | 65 |
+| 1 | 3 | 6 | The way | مسیر | 62 |
+| 2 | 7 | 11 | Saying it back | چک کردن مسیر | 66 |
 
 ### 1.4 `linkPhrases`
 
@@ -97,7 +97,7 @@ This is the module `intro`, the same text as in section 3.
 | # | Cause | `answers` (result index) | `evidence` (line) |
 |---|---|---|---|
 | 0 | It's a beautiful day. | 2 | 2 |
-| 1 | Sara won't have maps on her phone. | 0 | 7 |
+| 1 | Sara won't have a map on her phone. | 0 | 7 |
 | 2 | Sara puts the gate on the wrong side. | 3 | 9 |
 
 `results` (shuffled once, shown for every cause):
@@ -112,9 +112,9 @@ This is the module `intro`, the same text as in section 3.
 **Second-match check** (every cause against every result):
 - Cause 0 (the beautiful day): it leads only to the walk. The music, the check-back and the
   correction have nothing to do with the weather.
-- Cause 1 (no maps): if anything, having no maps is a reason *not* to walk, so result 2 doesn't
-  match. Sara says it herself: "I won't have maps on my phone, so let me say it back" (line 7). The
-  correction (result 3) follows her mistake, not the missing maps.
+- Cause 1 (no map): if anything, having no map is a reason *not* to walk, so result 2 doesn't
+  match. Sara says it herself: "I won't have a map on my phone, so let me say it back" (line 7). The
+  correction (result 3) follows her mistake, not the missing map.
 - Cause 2 (the gate on the wrong side): her mistake is *part of* her check-back, but it doesn't
   cause it; she has already started checking (line 8) before the mistake. So result 0 doesn't
   match, and only the correction does. I wrote this cause as "puts the gate on the wrong side" and
@@ -132,7 +132,7 @@ walk" for "I'll walk".
 | # | `kind.en` / `kind.fa` | `question` | `options` (the answer in bold) | `answer` | `evidence` |
 |---|---|---|---|---|---|
 | 0 | How long / چقدر طول می‌کشد | How long is the walk to the market? | About five minutes. / **About fifteen minutes.** / About fifty minutes. | 1 | 1 |
-| 1 | Where to turn / کجا بپیچد | Where does Sara turn left? | At the post office. / At the first traffic light. / **At the second traffic light.** | 2 | 4 |
+| 1 | Where to turn / کجا می‌پیچد | Where does Sara turn left? | At the post office. / At the first traffic light. / **At the second traffic light.** | 2 | 4 |
 | 2 | The market / جای بازار | Where's the Sunday market? | **Around the fountain.** / Next to the bank. / Inside the City Museum. | 0 | 6 |
 
 Where the wrong options come from:
@@ -157,7 +157,7 @@ Where the wrong options come from:
 | 2 | 0 | connect | 0 | The beautiful day → ? | (the walk) |
 | 3 | 1 | choice | 1 | Where Sara turns left | understand the answer |
 | 4 | 1 | choice | 2 | Where the market is | understand the answer |
-| 5 | 2 | connect | 1 | No maps → ? | check it by saying it back |
+| 5 | 2 | connect | 1 | No map → ? | check it by saying it back |
 | 6 | 2 | connect | 2 | The gate on the wrong side → ? | check it by saying it back |
 
 `stepsOf` gives `listen, question, question, listen, question, question, listen, question, question,
@@ -193,7 +193,7 @@ All three words are Daniel's, so the line names only him (Day 3's named both spe
   - line 2 has "I'll walk. It's a beautiful day.";
   - line 4 has "the second traffic light … Turn left there";
   - line 6 has "around the fountain";
-  - line 7 has "I won't have maps on my phone, so let me say it back";
+  - line 7 has "I won't have a map on my phone, so let me say it back";
   - line 9 has "Almost. Actually, it's on your right".
 - The questions and options are English only, as on Days 1–3. Persian is given for every field that
   has one in `ConnectSet`: the part titles, the question kinds and `miraLine`.
@@ -223,24 +223,25 @@ context, not scored.
 | `level` | `B1` |
 | `voice` | `a` (Andrew narrates; Greg is Andrew in `world.md`) |
 | `imageAlt` | none (no picture yet) |
+| `task` (**new optional field**, the speaking-screen heading; see the notes) | en: Now tell a friend the way, from the corner of Main and Oak. · fa: حالا راه را از سر خیابان Main و Oak برای یک دوست تعریف کن. |
 | Words | 189 |
 | Listening (`listenSeconds`) | ≈ 0:58 (189 ÷ (3.1 × 1.06)) |
 | Speaking limit (`speakLimit`) | 1:30 (about 68 s at its written pace, 189 ÷ (3.1 × 0.9), so it is under 90 s) |
 
 **`text`**
 
-> At about a quarter to eleven, Sara got to the corner of Main and Oak, and stopped. There were police barriers across Oak Street, and hundreds of runners were going past. Daniel hadn’t said anything about a race! Her phone had no data, so she couldn’t check a map. A man was waiting at the bus stop, so she asked him. His name was Greg, and his bus was late because of the Riverton Fun Run. “Oak’s closed till one,” he said, and then the directions came so fast that she only caught the word “library.” She smiled and asked him to slow down. “Sorry! Don’t turn here. Keep going straight on Main Street to the next traffic light. That’s Pine Street. Turn left there, and you’ll go past the library, on your left. After about five minutes, you’ll see the park’s side gate on your right. Inside, just follow the signs to the fountain. It’s about three minutes, and the market’s all around it.” Sara said the way back to him, and he nodded. “Perfect. And try the coffee stall with the blue umbrella. Best coffee in Riverton!”
+> At about a quarter to eleven, Sara got to the corner of Main and Oak, and stopped. There were police barriers across Oak Street, and hundreds of runners were going past. Daniel hadn’t said anything about a race! Her phone had no data, so she couldn’t check a map. A man was waiting at the bus stop, so she asked him. His name was Greg, and his bus was late because of the Fun Run. “Oak’s closed till one,” he said, and then the directions came so fast that she only caught the word “library.” She smiled and asked him to slow down. “Sorry!” he said. “Don’t turn here. Keep going straight on Main Street to the next traffic light. That’s Pine Street. Turn left there, and you’ll go past the library, on your left. After about five minutes, you’ll see the park’s side gate on your left, too. Inside, follow the signs to the fountain. It’s about three minutes, and the market’s around it.” Sara said the way back to him, and he nodded. “Perfect. And try the coffee stall with the blue umbrella. Best coffee in Riverton!”
 
 (Written with curly apostrophes and quotation marks, as the `.ts` files use: hadn’t, couldn’t,
 Oak’s, “library.”)
 
 **`keyPoints`** (6, plain English, as directions to a friend)
-1. Oak Street is closed until 1 p.m. for the Fun Run, so don't turn left onto it at the corner.
+1. Oak Street is closed for the Fun Run, so don't turn onto it.
 2. Keep going straight on Main Street to the next traffic light, at Pine Street.
 3. Turn left onto Pine Street.
 4. Go past the library, which is on your left.
-5. After about five minutes, the park's side gate is on your right.
-6. Inside the park, follow the signs to the fountain, about three minutes; the market is all around it.
+5. After about five minutes, the park's side gate is on your left, too.
+6. Inside the park, follow the signs to the fountain; the market is around it.
 
 Greg's coffee tip (the stall with the blue umbrella) is in the text but isn't a key point: it isn't
 part of the way. A learner who adds it loses nothing.
@@ -250,12 +251,16 @@ Level notes:
   hadn’t said anything`) and `will` for what you'll find on the way (`you’ll go past`, `you’ll
   see`).
 - **B1 chunks:** `so fast that`, `only caught the word`, `because of`, `keep going straight`,
-  `follow the signs`, `all around it`.
+  `follow the signs`, `on your left, too`.
 - **The link to the day:** the story turns on the two skills of the day besides asking: asking
   someone to slow down, and saying the way back to check it. The learner's retelling is itself a
   set of directions, which is the day's goal from the other side.
 - **Spelling and style:** US spelling and punctuation (the comma and the full stop inside the
-  quotation marks). "Till" is Greg's fast, spoken form; the key point says "until 1 p.m.".
+  quotation marks). "Till" is Greg's fast, spoken form; the key point leaves the time out, since it
+  isn't part of the way.
+- **One voice, two speakers:** each change of speaker is marked in the narration: "he said" after
+  Greg's first words (“Oak’s closed till one,” he said) and again when he starts the directions
+  (“Sorry!” he said. “Don’t turn here…”), so a listener hears who is talking without a second voice.
 
 ---
 
@@ -264,11 +269,13 @@ Level notes:
 | Track | Module | `title` / `short` | `does` (en / fa) | `intro` (en / fa) |
 |---|---|---|---|---|
 | Intermediate | `listen-act` | As on Days 2–3: Listen and connect / گوش بده و وصل کن · Listen / گوش دادن | Hear Sara ask Daniel the way to the Sunday market, then show how the facts connect. / بشنو سارا چطور راه بازار یکشنبه را از دنیل می‌پرسد و بعد نشان بده اتفاق‌هایش چطور به هم ربط دارند. | Sara wants to go to the Sunday market in Central Park. Listen for how long it takes, where she turns left, where the market is, and how Sara checks the way. / سارا می‌خواهد به بازار یکشنبه در Central Park برود. گوش بده ببین راه چقدر طول می‌کشد، کجا باید به چپ بپیچد، بازار کجاست و سارا چطور مطمئن می‌شود راه را درست فهمیده. |
-| Professional | `listen-retell` | As on Days 2–3: Listen and retell / گوش بده و بازگو کن · Retell / بازگویی | Hear how Sara finds another way to the market, then tell a friend the way. / بشنو سارا چطور از راه دیگری به بازار می‌رسد و بعد راه را با کلمات خودت برای یک دوست توضیح بده. | Oak Street is closed, so Sara asks a man at the bus stop for another way to the market. Listen, then tell a friend how to get there from the corner of Main and Oak, in your own words. / خیابان Oak بسته است و سارا از مردی در ایستگاه اتوبوس راه دیگری به بازار می‌پرسد. گوش بده و بعد با کلمات خودت به یک دوست بگو از سرِ چهارراه Main و Oak چطور به بازار برسد. |
+| Professional | `listen-retell` | As on Days 2–3: Listen and retell / گوش بده و بازگو کن · Retell / بازگویی | Hear how Sara finds another way to the market, then tell a friend the way. / بشنو سارا چطور از راه دیگری به بازار می‌رسد و بعد راه را با کلمات خودت برای یک دوست توضیح بده. | Oak Street is closed, so Sara asks a man at the bus stop for another way to the market. Listen, then tell a friend how to get there from the corner of Main and Oak, in your own words. / خیابان Oak بسته است و سارا از مردی در ایستگاه اتوبوس راه دیگری به بازار می‌پرسد. گوش بده و بعد با کلمات خودت به یک دوست بگو از سر خیابان Main و Oak چطور به بازار برسد. |
 
-The minutes are as on Days 2–3: `{ 15: 4, 20: 4 }`. In Persian lines, street and place names are
-written in Latin letters (`Central Park`, `Oak`, `Main`), as the README's check-in story does, and
-each Persian sentence starts with a Persian word so the mixed-direction line renders cleanly.
+The minutes are as on Days 2–3: `{ 15: 4, 20: 4 }`. In Mira's Persian intros and on cards, street
+and place names are written in Latin letters with a Persian noun where it helps («خیابان Oak»,
+«سر خیابان Main و Oak», «Central Park»), as the README's check-in story does (the lead's rule), and
+each Persian sentence starts with a Persian word so the mixed-direction line renders cleanly. The
+retell's new `task` line follows the same rule.
 
 ---
 
@@ -307,16 +314,17 @@ two scenes go.
   **15 minutes** on foot. All match "The normal way" and the map table.
 - The way around (Greg), from the corner of Main and Oak: straight on Main Street to the **next**
   traffic light (the third from the hotel), **Pine Street**; **left**; **past the library on the
-  left**; the **side gate on the right** after **about five minutes**; signs to the fountain,
-  **about 3 minutes**. All match "The way around". Greg doesn't give the 20-minute total, because
-  he starts from the corner, not the hotel.
+  left**; the **side gate on the left, too** after **about five minutes** (the park lies between
+  Oak Street and Pine Street); signs to the fountain, **about 3 minutes**. All match "The way
+  around". Nothing in the retell or its key points puts the side gate on the right. Greg doesn't
+  give the 20-minute total, because he starts from the corner, not the hotel.
 - Oak Street closed **9 a.m. to 1 p.m.** for the **Riverton Fun Run**; police barriers at the
   corner of Main and Oak; Greg's bus is late because of it. Daniel never mentions the run.
 - Times: Sara asks Daniel at about 10:30 (not said in the conversation); she reaches the corner at
   "about a quarter to eleven" (`world.md`: about 10:45). The market is open (9 to 2); live music at
   noon by the fountain; Sara meets her friend (Tom) there at noon.
-- Sara has **no mobile data**, so no maps outside the hotel (line 7; the retell's "Her phone had no
-  data"). Today is Sunday; it's a beautiful day (`world.md`: sunny, warm).
+- Sara has **no mobile data**, so no map outside the hotel (line 7, "I won't have a map on my
+  phone"; the retell's "Her phone had no data"). Today is Sunday; it's a beautiful day (`world.md`: sunny, warm).
 - Greg's tip: "the stall with the blue umbrella, best coffee in Riverton".
 - Nothing contradicts Days 1–3: Daniel already knows Sara; the Park Hotel is on Main Street; the City
   Museum is across from Central Park's main gate (Day 2).
@@ -331,7 +339,7 @@ two scenes go.
 
 | What | Limit (where) | Day 4 |
 |---|---|---|
-| Conversation words | 110–160 (`listen-connect.test.ts`) | 156 |
+| Conversation words | 110–160 (`listen-connect.test.ts`) | 160 (at the top of the range) |
 | Lines | – (Day 3 had 15) | 12 |
 | Parts, covering every line once | 3 (`stepsOf`: 3 listens) | 3: 0–2, 3–6, 7–11 |
 | Connect causes / results | results = causes + 1 | 3 / 4 |
@@ -346,9 +354,13 @@ two scenes go.
 | Retell `listenSeconds` | > 40 (test) | 58 |
 | Retell `speakLimit` | 90 for a piece ≤ 90 s at written pace | 90 (68 s) |
 | Retell words | 160–190 (Days 2–3 docs) | 189 |
+| Retell `task` (new optional field) | en and fa, Persian has Persian letters | 1 line each |
 | Retell `id` | kebab-case, ≤ 40 characters, unique | `the-way-around`, 14; not `lost-phone`, `four-day-week`, `night-market`, `wedding-cake`, `wrong-park-hotel` |
 
-Word counts were made with a script, `split(/\s+/)` as in the tests.
+Word counts were made with a script, `split(/\s+/)` as in the tests, and re-run after review v1:
+conversation 160 (parts 32, 62, 66), each link phrase once (`until`, `once`, `actually`; none inside
+another word), retell 189 words, `listenSeconds` 58 (189 ÷ (3.1 × 1.06)), 67.7 s at the written
+pace (under 90, so `speakLimit` stays 90). The retell text has no "right" in it.
 
 ---
 
@@ -361,24 +373,26 @@ Word counts were made with a script, `split(/\s+/)` as in the tests.
    If the owner wants the scene as a real dialogue (Greg in Andrew, Sara in Emma, Greg's first try
    faster), `RetellPiece` needs a `lines` field like `ConnectSet`'s; the text and key points would
    stay the same.
-2. **The retell screen says "Now tell the story in your own words."** That heading is fixed in
-   `ListenRetell.svelte`. The "tell a friend the way" task lives only in Mira's `intro`. The key
-   points are written as directions, so a learner who retells it as Sara's story still gets them
-   all. If the owner wants the task on the speaking screen too, a per-piece task line is a small
-   code change.
+2. **The retell's own task line (new field, for the builder).** The speaking-screen heading is
+   fixed today in `ListenRetell.svelte` ("Now tell the story in your own words."). The lead decided
+   to add an optional per-piece `task?: DisplayText` to `RetellPiece`, shown as that heading when
+   present (the fixed heading stays the default for Days 1–3 and the Module lab). This piece sets it
+   to "Now tell a friend the way, from the corner of Main and Oak." / «حالا راه را از سر خیابان Main
+   و Oak برای یک دوست تعریف کن.» The key points are written as directions, so a learner who still
+   retells it as Sara's story gets them all.
 3. **`until` and spec rule 3.** The spec says every "until" needs an earlier plan to contrast with.
-   That rule is about time ("wait until…"); here `until` marks a place ("keep going until the second
-   traffic light"), which has no plan to contrast with. Confirm, or swap it for `after` ("after the
-   post office").
+   That rule is about time ("wait until…"); here `until` marks a place, now as a full clause ("Keep
+   going until you get to the second traffic light"), which has no plan to contrast with. Confirm,
+   or swap it for `after` ("after the post office").
 4. **The no-listening test.** Connect 0 (the beautiful day → the walk) and Connect 2 (the wrong side
-   → the correction) are easy to guess, like Day 3's spelling. Connect 1 (no maps → checking the way)
+   → the correction) are easy to guess, like Day 3's spelling. Connect 1 (no map → checking the way)
    and all three choices need the audio. Question 1's "first traffic light" is the real test of the
    ordinal.
 5. **Things to check in the audio.** "fifteen" must be clearly "fif-TEEN" (against "fifty"); "Oak's
    closed till one" should not swallow "Oak's"; "a quarter to eleven"; "Main and Oak". Check that
    "Actually," at the start of line 9 gets its own small stress.
-6. **Persian review.** All Persian uses informal تو. Please check «تکرار مسیر» as the part title,
-   «جای بازار» as a question kind, the glosses `once` = «همین که» and `actually` = «در واقع؛ برای
+6. **Persian review.** All Persian uses informal تو. The part title is now «چک کردن مسیر» and the
+   question kind «کجا می‌پیچد» (review v1). Please check «جای بازار» as a question kind, the glosses `once` = «همین که» and `actually` = «در واقع؛ برای
    اصلاح یک اشتباه», and the retell title «یک راه دیگر».
 7. **Overlap with other Day 4 modules.** The role-play with a twist has the learner ask a stranger
    the way, and the Intermediate voice messages have Tom meeting Sara at the fountain. Neither
@@ -387,3 +401,29 @@ Word counts were made with a script, `split(/\s+/)` as in the tests.
    as chunks.
 8. **Professional has no Listen and connect today**, as on Day 3, so `connectSetFor('day-4',
    'professional')` should fall back to the Intermediate set in the Module lab.
+
+---
+
+## Review v1: changes
+
+- **Map fix:** the retell's side gate is now **on your left, too** ("you’ll see the park’s side
+  gate on your left, too"), and so is key point 5. The Checks line says so. The normal way (Daniel's:
+  main gate on the right, across from the City Museum) is unchanged.
+- **Retell `task` (new optional field):** en "Now tell a friend the way, from the corner of Main and
+  Oak." · fa «حالا راه را از سر خیابان Main و Oak برای یک دوست تعریف کن.» Noted for the builder
+  (notes, 2).
+- **Key points simplified:** KP1 "Oak Street is closed for the Fun Run, so don't turn onto it."; KP6
+  "Inside the park, follow the signs to the fountain; the market is around it." The level notes no
+  longer point to "until 1 p.m." or the chunk `all around it`.
+- **Retell text:** the change of speaker is marked ("“Sorry!” he said. “Don’t turn here…”"). To keep
+  it at 189 words, "Riverton" (in "the Riverton Fun Run"), "just" (before "follow the signs") and
+  "all" (in "all around it") were cut, so the text matches the key points.
+- **Intermediate lines:** line 4 is now "Keep going until you get to the second traffic light, at
+  the bank. Turn left there, onto Oak Street." (the turn stays, since question 1 needs it); line 7
+  is "Thanks! I won't have a map on my phone, so let me say it back." Connect cause 1 and its checks
+  say "a map" too. The conversation is now 160 words (limit 110–160); parts 32, 62, 66.
+- **Persian:** part title «چک کردن مسیر»; question kind «کجا می‌پیچد»; Mira's retell intro says «از
+  سر خیابان Main و Oak», like the new task line; the place-name note now gives the rule (Latin
+  names, with a Persian noun such as «خیابان Oak», in intros and on cards).
+- Re-verified with a script: the counts above, `listenSeconds` 58, 67.7 s at the written pace,
+  each link phrase once.

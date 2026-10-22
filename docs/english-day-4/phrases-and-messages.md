@@ -1,6 +1,6 @@
 # English Day 4: Natural phrases, Persian-speaker traps, Say it in English, Voice messages (draft)
 
-Status: **draft v1, for review and owner approval.** Every fact comes from `world.md` (and Days 1–3);
+Status: **draft v2 (after review v1), for owner approval.** Every fact comes from `world.md` (and Days 1–3);
 anything new is listed under "New facts for world.md" near the end. US English. Each module is
 written in its built format: the field names below are the ones in its `.ts` file, and the layout
 follows `docs/english-day-3/phrases-and-messages.md` and `src/lib/practice/days/day-3/phrases.ts`.
@@ -14,21 +14,27 @@ follows `docs/english-day-3/phrases-and-messages.md` and `src/lib/practice/days/
 | Say it in English | Professional (3 items, B1) | Professional | the same | the same |
 | Voice messages | one set (A2+) | Intermediate | `src/lib/practice/voice-messages.ts` | `docs/english-voice-messages-spec.md` |
 
-**Daily lesson subsets.** Traps (Intermediate): 5 of 6: four new direction traps and Day 1's
-`call-me` (**From Day 1**, the owner's "one item from an earlier day"); left out: #6 `go-straight`,
-lab only. Voice messages (Intermediate): both of the 2 (Daniel and Tom); there are no lab-only
+**Daily lesson subsets.** Traps (Intermediate): 5 of 6: Day 1's `call-me` first (**From Day 1**,
+the owner's "one item from an earlier day"), then four new direction traps; left out: #6
+`go-straight`, lab only. Voice messages (Intermediate): both of the 2 (Daniel and Tom); there are no lab-only
 messages. Say it in English: the whole set in both versions (4 and 3), so `LESSON_SAY_IDS` is `null`
 for both; the Professional set's first item is Day 3's `d3-late-checkout` (**From Day 3**). Each
 section says which.
 
 **From an earlier day (owner's decision).** Two items come back word for word, with the same id,
 text and checks, and are marked "From Day N" here and in Mira's intro:
-- Intermediate traps: **`call-me`**, from `src/lib/practice/days/day-1/phrases.ts` (see §2, #5).
+- Intermediate traps: **`call-me`**, from `src/lib/practice/days/day-1/phrases.ts` (see §2, #1).
 - Professional Say it: **`d3-late-checkout`**, from `src/lib/practice/days/day-3/phrases.ts` (see §3b,
   #1).
 
+Both come **first** in their module, right after Mira's intro names them (the lead's decision).
 Neither has a code field that says "From Day N"; Mira's module intro says it (§5). The builder
 should reuse the objects by reference, not copy them (see "Notes for reviewers", code).
+
+**Place names in Persian** (the lead's rule): Latin letters in Mira's intros and on cards (phrase
+`situation`s, a message's `who`), with a Persian noun where it helps («خیابان Oak», «Central
+Park»); Persian script in the spoken prompts (a Say-it item's `fa`, `points` and `hints`), as on
+Days 2–3. One exception, as the lead wrote it: `MESSAGES_INTRO` keeps «هتل پارک», as Day 3's did.
 
 **Who "you" are.** One name for the learner everywhere: **Karimi** («کریمی»), as on Day 3.
 - **Natural phrases (both sets), Say it in English (Professional) and Voice messages:** these are
@@ -99,7 +105,7 @@ down (Greg) → thanks.** Each tip has one sound feature only.
 
 | # | `situation` (en / fa) | `shown` (chunk in bold) | Habit it replaces | `tip` (en / fa) |
 |---|---|---|---|---|
-| 1 | You want to go to the Sunday market in Central Park. You ask at the front desk. / می‌خواهی به بازار یکشنبه در پارک مرکزی بروی. از پذیرش هتل می‌پرسی. | Hi, what's **the best‿way to get to** the Sunday market from here? | "What is the best way for going to…?" / "Which way is better for going…?" (from «بهترین راه برای رفتن به … چیه؟») | `best way`: the `t` almost disappears: `bes-WAY`. / در `best way` صدای `t` تقریباً شنیده نمی‌شود: `bes-WAY`. |
+| 1 | You want to go to the Sunday market in Central Park. You ask at the front desk. / می‌خواهی به بازار یکشنبه در Central Park بروی. از پذیرش هتل می‌پرسی. | Hi, what's **the best‿way to get to** the Sunday market from here? | "What is the best way for going to…?" / "Which way is better for going…?" (from «بهترین راه برای رفتن به … چیه؟») | `best way`: the `t` almost disappears: `bes-WAY`. / در `best way` صدای `t` تقریباً شنیده نمی‌شود: `bes-WAY`. |
 | 2 | You'd like to walk, but you don't know how far it is. / دوست داری پیاده بروی، ولی نمی‌دانی چقدر راه است. | Is it **within walking distance**, or should I take the bus? | "Can I go there by walk?" / "Is it near for walking?" (from «پیاده می‌شه رفت؟ نزدیکه؟») | `walking`: the `l` is silent: `WAW-king`. / در `walking` حرف `l` خوانده نمی‌شود: `WAW-king`. |
 | 3 | Daniel explains the way. You say it back to check. / دنیل راه را توضیح می‌دهد. آن را برایش تکرار می‌کنی تا مطمئن شوی. | So **if I've got this right**, I go left at the bank and walk two blocks? | "Did I understand correct?" (from «درست فهمیدم؟») | Stress `got` and `right`: `if I've GOT this RIGHT`. / روی `got` و `right` تأکید کن: `if I've GOT this RIGHT`. |
 | 4 | The street is closed for a race. A man at the bus stop explains another way, very fast. / خیابان به‌خاطر یک مسابقهٔ دو بسته است. مردی در ایستگاه اتوبوس راه دیگری را خیلی تند توضیح می‌دهد. | Sorry, I'm not from around here. Could you **slow down‿a bit**? | "Can you speak more slow?" (from «آروم‌تر صحبت کنید») | `down a bit` runs together: `dow-nuh-BIT`. / `down a bit` را پیوسته بگو: `n` به `a` می‌چسبد، یعنی `dow-nuh-BIT`. |
@@ -148,60 +154,20 @@ All six were run through a copy of the code's check (`checkSaid` with the traps 
 `right` passes, the sentence with the mistake fails, and the extra forms listed get the result
 shown.
 
-**Daily lesson:** the Intermediate lesson uses 5 of the 6. First the four new ones, in the order
-you meet them when you ask the way (which way to turn → where it is → how far → on the way), then
-the one from Day 1 as a review: `turn-left`, `across-from`, `minutes-away`, `cross-street`,
-`call-me`. Left out: #6 `go-straight` (lab only, as Day 3's `phone-dead`; the same idea "straight
-on Main Street" is in the listening and the Say-it models). All six stay defined in `TRAPS`.
+**Daily lesson:** the Intermediate lesson uses 5 of the 6. First the one from Day 1, as a review,
+right after Mira's intro names it; then the four new ones, in the order you meet them when you ask
+the way (which way to turn → where it is → how far → on the way): `call-me`, `turn-left`,
+`across-from`, `minutes-away`, `cross-street`. Left out: #6 `go-straight` (lab only, as Day 3's
+`phone-dead`; the same idea "straight on Main Street" is in the listening and the Say-it models).
+All six stay defined in `TRAPS`, in the order below.
 
-`LESSON_TRAP_IDS = ['turn-left', 'across-from', 'minutes-away', 'cross-street', 'call-me']`
+`LESSON_TRAP_IDS = ['call-me', 'turn-left', 'across-from', 'minutes-away', 'cross-street']`
 
-**1. `id`: `turn-left`** · `kind`: turn left (no “to”) / turn left (بدون to)
-- `words`: `["So", "I", "turn", "to", "left", "at", "the", "bank?"]` · `wrong`: 3 (`to`)
-- `right`: So I turn left at the bank?
-- `why` en: After “turn”, say “left” or “right” with no “to”: “turn left at the bank”.
-- `why` fa: در فارسی می‌گوییم «بپیچ به چپ» و برای همین «to» به ذهنمان می‌رسد. در انگلیسی بعد از «turn» مستقیم «left» یا «right» می‌آید: «turn left at the bank».
-- `accept`: `/\bturn(?:s|ed|ing)? (?:left|right)\b/`
-- `reject`: `/\bturn(?:s|ed|ing)? (?:to|in|into) (?:left|right)\b/`
-- `alsoGood`: patterns `/\b(?:take|make) a (?:left|right)\b/`, `/\bturn(?:s|ed|ing)? to the (?:left|right)\b/` · word "turn left"
-- Also passes: "So I turn left at the bank, right?", "I turn left at the second light." "So I take a left at the bank?" and "So I turn to the left at the bank?" get "also good". ("I go to left at the bank" and "turn to right" fail; "So I turn to left, sorry, turn left…" is self-fixed.)
-- From the map: the normal way turns left at the second light, at the bank (world). The check-back part of the day's goal; phrase A2 #3.
+**Order, for the builder:** `trapsFor` filters `TRAPS` by `LESSON_TRAP_IDS`, so the lesson follows
+the order of `TRAPS`, not of the ids. `call-me` must therefore be the **first entry of `TRAPS`** (as
+numbered here), not only the first id.
 
-**2. `id`: `across-from`** · `kind`: across from / across from (روبه‌روی)
-- `words`: `["The", "museum", "is", "in front of", "the", "park."]` · `wrong`: 3 (`in front of`, one tap: see below)
-- `right`: The museum is across from the park.
-- `why` en: “In front of” means on the same side, right before something. When the street is between them, say “across from”.
-- `why` fa: در فارسی «روبه‌روی پارک» را معمولاً «in front of the park» ترجمه می‌کنیم. ولی «in front of» یعنی همین طرف خیابان، درست جلوی چیزی. وقتی خیابان وسطشان است، در انگلیسی «across from» می‌گوییم: «across from the park».
-- `accept`: `/\bacross (?:the street |the road )?from\b/`
-- `reject`: `/\bin front of\b/`
-- `alsoGood`: patterns `/\bopposite\b/`, `/\bon the other side of the (?:street|road)\b/`, `/\bfacing\b/` · word "across from"
-- Also passes: "The museum's across the street from the park.", "The City Museum is right across from Central Park." "The museum is opposite the park" and "…on the other side of the street" get "also good". ("The museum is in front of the park" fails; "…in front of, I mean across from the park" is self-fixed.)
-- From the map: the City Museum is on Oak Street, across from Central Park's main gate (world, Day 2). Day 2's Say-it `d2-museum` taught "across from" as a hint; this makes it a trap.
-- **One word, three words:** "in front of" is one tap target (one entry in `words`). The mistake is the whole phrase, and splitting it would make "in", "front" and "of" three different taps for one mistake. The code allows it (`words` are strings; `Traps.svelte` shows each as one button and strikes it through); it's the first multi-word entry, so see "Notes for reviewers".
-
-**3. `id`: `minutes-away`** · `kind`: … minutes away / … minutes away (فاصله)
-- `words`: `["The", "park", "is", "fifteen", "minutes", "far", "from", "the", "hotel."]` · `wrong`: 5 (`far`)
-- `right`: The park is fifteen minutes away from the hotel.
-- `why` en: After a time or a distance, say “away”: “fifteen minutes away”, or “a fifteen-minute walk”. “Far” is for questions and “not far”: “Is it far?”
-- `why` fa: در فارسی می‌گوییم «پونزده دقیقه راهه» یا «پونزده دقیقه فاصله داره» و چون فاصله را با «دور» یکی می‌گیریم، «far» به ذهنمان می‌رسد. در انگلیسی بعد از زمان یا مسافت «away» می‌آید: «fifteen minutes away» یا «a fifteen-minute walk». «far» بیشتر در سؤال و جملهٔ منفی می‌آید: «Is it far?»، «It’s not far».
-- `accept`: `/\b(?:minutes?|mins?|blocks?|miles?|hours?) away\b/`, `/\b(?:minute|block|mile|hour) (?:walk|drive|ride)\b/`
-- `reject`: `/\b(?:minutes?|mins?|blocks?|miles?|hours?) far\b/`
-- `alsoGood`: patterns `/\b(?:minutes?|blocks?|miles?) from (?:the|here|my|our|your)\b/`, `/\btakes? (?:about |around )?(?:fifteen|15) minutes\b/` · word "away"
-- Also passes: "The park is 15 minutes away.", "It's a fifteen-minute walk from the hotel.", "The park's about fifteen minutes away from the hotel." "The park is fifteen minutes from the hotel" and "It takes about fifteen minutes" are good English, so they get "also good" and are asked for "away". ("The park is 15 minutes far", "The park is far from the hotel" and "It's not far" fail: the last two don't give the time.)
-- From the map: the park's main gate is about 15 minutes from the hotel on foot, the normal way (world). The "understand the answer" part of the day's goal.
-
-**4. `id`: `cross-street`** · `kind`: cross the street / cross (رد شدن از خیابان)
-- `words`: `["Can", "I", "pass", "the", "street", "here?"]` · `wrong`: 2 (`pass`)
-- `right`: Can I cross the street here?
-- `why` en: To go to the other side of a street, you “cross” it. “Pass” means to go by something: “You’ll pass the library.”
-- `why` fa: در فارسی می‌گوییم «از خیابون رد بشم؟» و «رد شدن» را «pass» ترجمه می‌کنیم. در انگلیسی برای رفتن به آن طرف خیابان «cross» می‌گوییم: «cross the street». «pass» یعنی از کنار چیزی گذشتن: «You’ll pass the library».
-- `accept`: `/\bcross(?:es|ed|ing)?\b/`
-- `reject`: `/\bpass(?:es|ed|ing)? (?:from |through )?(?:the |this |that |main )?(?:street|road)\b/`
-- `alsoGood`: patterns `/\b(?:go|get|walk) across\b/`, `/\bget to the other side\b/` · word "cross"
-- Also passes: "Can I cross here?", "Is it OK to cross the street here?", "Can I cross Main Street here?" "Can I go across the street here?" gets "also good". ("Can I pass from the street here?" and "Can I pass Main Street here?" fail; "Can I pass the street, I mean cross…" is self-fixed.) "pass the library" isn't rejected (only "pass + street / road" is), so the `why`'s own example stays right.
-- From the map: you cross Main Street to reach Bus 4 and the Riverwalk (world); the way around goes past the library (world), which is the `why`'s "pass" example. The sentence itself is true anywhere, so it names no corner.
-
-**5. `id`: `call-me`** · **From Day 1**, reused word for word (owner's decision) · `kind`: call (no “to”) / call (بدون to)
+**1. `id`: `call-me`** · **From Day 1**, reused word for word (owner's decision) · `kind`: call (no “to”) / call (بدون to)
 - `words`: `["Please", "call", "to", "me", "when", "you", "find", "it."]` · `wrong`: 2 (`to`)
 - `right`: Please call me when you find it.
 - `why` en: You “call” someone, with no “to”: “call me”, “call the hotel”.
@@ -212,6 +178,51 @@ on Main Street" is in the listening and the Say-it models). All six stay defined
 - Copied exactly from `src/lib/practice/days/day-1/phrases.ts` (`TRAPS`, id `call-me`); not rewritten. Also passes (as on Day 1): "Could you call me when you find it?", "Please give me a call when you find it." "Please let me know…" gets "also good". ("Please call for me…" fails.)
 - **Why this one:** the owner's example, and it fits Sunday morning: Daniel calls Sara's room at about 8:50, as he promised on Day 3 (world, step 2), and in Daniel's voice message he says he tried calling her room. It was in Day 1's Intermediate lesson (`LESSON_TRAP_IDS = ['my-bags', 'by-tomorrow', 'call-me']`), so for lesson learners it truly comes back after three days. It also gives the set one item that isn't a preposition of place, so the five don't all feel the same. Its sentence ("…when you find it") is from Day 1's lost bag; as a marked review, that's fine.
 - **Considered and not chosen:** Day 2's `how-long` ("How much does it take to get there?") fits the theme best, but it was lab only on Day 2, so lesson learners never had it as a trap (it wouldn't "come back"). Day 2's `near-of` ("Is the hotel near of Central Station?") was in Day 2's lesson and fits directions; it's the best alternative if the owner prefers the theme over this morning's story moment (see "Notes for reviewers").
+
+**2. `id`: `turn-left`** · `kind`: turn left (no “to”) / turn left (بدون to)
+- `words`: `["So", "I", "turn", "to", "left", "at", "the", "bank?"]` · `wrong`: 3 (`to`)
+- `right`: So I turn left at the bank?
+- `why` en: After “turn”, say “left” or “right” with no “to”: “turn left at the bank”.
+- `why` fa: در فارسی می‌گوییم «بپیچ به چپ» و برای همین «to» به ذهنمان می‌رسد. در انگلیسی بعد از «turn» مستقیم «left» یا «right» می‌آید: «turn left at the bank».
+- `accept`: `/\bturn(?:s|ed|ing)? (?:left|right)\b/`
+- `reject`: `/\bturn(?:s|ed|ing)? (?:to|in|into) (?:left|right)\b/`
+- `alsoGood`: patterns `/\b(?:take|make) a (?:left|right)\b/`, `/\bturn(?:s|ed|ing)? to the (?:left|right)\b/` · word "turn left"
+- Also passes: "So I turn left at the bank, right?", "I turn left at the second light." "So I take a left at the bank?" and "So I turn to the left at the bank?" get "also good". ("I go to left at the bank" and "turn to right" fail; "So I turn to left, sorry, turn left…" is self-fixed.)
+- From the map: the normal way turns left at the second light, at the bank (world). The check-back part of the day's goal; phrase A2 #3.
+
+**3. `id`: `across-from`** · `kind`: across from / across from (روبه‌روی)
+- `words`: `["The", "museum", "is", "in front of", "the", "park."]` · `wrong`: 3 (`in front of`, one tap: see below)
+- `right`: The museum is across from the park.
+- `why` en: “In front of” means right by its front, on the same side of the street. When the street is between them, say “across from.”
+- `why` fa: در فارسی «روبه‌روی پارک» را معمولاً «in front of the park» ترجمه می‌کنیم. ولی «in front of» یعنی درست جلوی خودِ آن، همین طرف خیابان. وقتی خیابان وسطشان است، در انگلیسی «across from» می‌گوییم: «across from the park».
+- `accept`: `/\bacross (?:the street |the road )?from\b/`
+- `reject`: `/\bin front of\b/`
+- `alsoGood`: patterns `/\bopposite\b/`, `/\bon the other side of the (?:street|road)\b/`, `/\bfacing\b/` · word "across from"
+- Also passes: "The museum's across the street from the park.", "The City Museum is right across from Central Park." "The museum is opposite the park" and "…on the other side of the street" get "also good". ("The museum is in front of the park" fails; "…in front of, I mean across from the park" is self-fixed.)
+- From the map: the City Museum is on Oak Street, across from Central Park's main gate (world, Day 2). Day 2's Say-it `d2-museum` taught "across from" as a hint; this makes it a trap.
+- **One word, three words:** "in front of" is one tap target (one entry in `words`). The mistake is the whole phrase, and splitting it would make "in", "front" and "of" three different taps for one mistake. The code allows it (`words` are strings; `Traps.svelte` shows each as one button and strikes it through); it's the first multi-word entry, so see "Notes for reviewers".
+
+**4. `id`: `minutes-away`** · `kind`: … minutes away / minutes away (فاصله)
+- `words`: `["The", "park", "is", "fifteen", "minutes", "far", "from", "the", "hotel."]` · `wrong`: 5 (`far`)
+- `right`: The park is fifteen minutes away from the hotel.
+- `why` en: With a time or a distance, say “away”: “fifteen minutes away.” Use “far” without a number: “Is it far?” “It’s not far.”
+- `why` fa: در فارسی می‌گوییم «پونزده دقیقه با هتل فاصله داره» و «فاصله» ما را یاد «far» می‌اندازد. در انگلیسی بعد از زمان یا مسافت «away» می‌آید: «fifteen minutes away» یا «a fifteen-minute walk». «far» بیشتر در سؤال و جملهٔ منفی می‌آید: «Is it far?»، «It’s not far».
+- `accept`: `/\b(?:minutes?|mins?|blocks?|miles?|hours?) away\b/`, `/\b(?:minute|block|mile|hour) (?:walk|drive|ride)\b/`
+- `reject`: `/\b(?:minutes?|mins?|blocks?|miles?|hours?) far\b/`
+- `alsoGood`: patterns `/\b(?:minutes?|blocks?|miles?) from (?:the|here|my|our|your)\b/`, `/\btakes? (?:about |around )?(?:fifteen|15) minutes\b/` · word "away"
+- Also passes: "The park is 15 minutes away.", "It's a fifteen-minute walk from the hotel.", "The park's about fifteen minutes away from the hotel." "The park is fifteen minutes from the hotel" and "It takes about fifteen minutes" are good English, so they get "also good" and are asked for "away". ("The park is 15 minutes far", "The park is far from the hotel" and "It's not far" fail: the last two don't give the time.)
+- From the map: the park's main gate is about 15 minutes from the hotel on foot, the normal way (world). The "understand the answer" part of the day's goal.
+
+**5. `id`: `cross-street`** · `kind`: cross the street / cross (رد شدن از خیابان)
+- `words`: `["Can", "I", "pass", "the", "street", "here?"]` · `wrong`: 2 (`pass`)
+- `right`: Can I cross the street here?
+- `why` en: To go to the other side of a street, you “cross” it. “Pass” means to go by something: “You’ll pass the library.”
+- `why` fa: در فارسی می‌گوییم «از خیابون رد بشم؟» و «رد شدن» را «pass» ترجمه می‌کنیم. در انگلیسی برای رفتن به آن طرف خیابان «cross» می‌گوییم: «cross the street». «pass» یعنی از کنار چیزی گذشتن: «You’ll pass the library».
+- `accept`: `/\bcross(?:es|ed|ing)?\b/`
+- `reject`: `/\bpass(?:es|ed|ing)? (?:from |through )?(?:the |this |that |main )?(?:street|road)\b/`
+- `alsoGood`: patterns `/\b(?:go|get|walk) across\b/`, `/\bget to the other side\b/` · word "cross"
+- Also passes: "Can I cross here?", "Is it OK to cross the street here?", "Can I cross Main Street here?" "Can I go across the street here?" gets "also good". ("Can I pass from the street here?" and "Can I pass Main Street here?" fail; "Can I pass the street, I mean cross…" is self-fixed.) "pass the library" isn't rejected (only "pass + street / road" is), so the `why`'s own example stays right.
+- From the map: you cross Main Street to reach Bus 4 and the Riverwalk (world); the way around goes past the library (world), which is the `why`'s "pass" example. The sentence itself is true anywhere, so it names no corner.
 
 **6. `id`: `go-straight`** (lab only) · `kind`: go straight / go straight (مستقیم)
 - `words`: `["Go", "direct", "to", "the", "second", "light."]` · `wrong`: 1 (`direct`)
@@ -250,19 +261,19 @@ of asking the way: ask → it was too fast → check it back → a way back.
 
 | # | `id` | `fa` | `points` (en / fa) | `models` | `hints` (en / fa) |
 |---|---|---|---|---|---|
-| 1 | `d4-museum-way` | ببخشید، از این‌جا چطوری برم موزهٔ شهر؟ پیاده دوره؟ | you're asking how to get to the City Museum / می‌پرسی چطور به موزهٔ شهر بروی · you're asking if it's far to walk / می‌پرسی پیاده دور است یا نه | "Excuse me, I'd like to go to the City Museum. How do I get there? Is it far to walk?" · "Hi, how do I get to the City Museum from here? Can I walk there, or is it too far?" | how do I get to…? / چطوری برم…؟ · far to walk / پیاده دوره |
+| 1 | `d4-museum-way` | ببخشید، از این‌جا چطوری برم موزهٔ شهر؟ پیاده دوره؟ | you're asking how to get to the City Museum / می‌پرسی چطور به موزهٔ شهر بروی · you're asking if it's far to walk / می‌پرسی پیاده دور است یا نه | "Excuse me, I'd like to go to the City Museum. How do I get there? Is it too far to walk?" · "Hi, how do I get to the City Museum from here? Can I walk there, or is it too far?" | how do I get to…? / چطوری برم…؟ · too far to walk / پیاده دوره |
 | 2 | `d4-slower` | ببخشید، یه کم تند بود. می‌شه دوباره بگید، یه کم آروم‌تر؟ | it was a little fast for you / برایت کمی تند بود · you're asking them to say it again, more slowly / می‌خواهی دوباره و آهسته‌تر بگویند | "Sorry, that was a little fast. Could you say that again, more slowly?" · "Sorry, I didn't catch all of that. Can you say it again a little slower?" | say that again / دوباره بگید · more slowly / آروم‌تر |
 | 3 | `d4-check-way` | پس از هتل که اومدم بیرون، می‌پیچم راست. بعد سر چراغ دوم، کنار بانک، می‌پیچم چپ. درسته؟ | you turn right out of the hotel / از هتل که بیرون آمدی، به راست می‌پیچی · you turn left at the second light, at the bank / سر چراغ دوم، کنار بانک، به چپ می‌پیچی | "So I turn right out of the hotel, and then left at the second light, at the bank. Is that right?" · "Let me check: right out of the hotel, then left at the second traffic light, by the bank?" | right out of the hotel / از هتل که اومدم بیرون، راست · at the second light / سر چراغ دوم |
 | 4 | `d4-bus-back` | اگه خسته شدم، می‌تونم با اتوبوس برگردم؟ ایستگاهش کجاست؟ | you're asking if you can come back by bus if you get tired / می‌پرسی اگر خسته شدی، می‌توانی با اتوبوس برگردی یا نه · you're asking where the bus stop is / می‌پرسی ایستگاه اتوبوس کجاست | "If I get tired, can I take the bus back? Where's the bus stop?" · "Can I come back by bus if I'm tired? Where do I catch it?" | take the bus back / با اتوبوس برگردم · the bus stop / ایستگاه اتوبوس |
 
 - Traps on purpose: «چطوری برم» is "How do I get to…", not "How can I go to…" (phrase A2 #1);
-  «پیاده دوره؟» is "Is it far to walk?" or "Can I walk there?", not "Is it far by walk?" (phrase A2
+  «پیاده دوره؟» is "Is it too far to walk?" or "Can I walk there?", not "Is it far by walk?" (phrase A2
   #2); «دوباره بگید» is "say that again", not "repeat again" (phrase A2 #4); «آروم‌تر» here is
   "more slowly" or "slower", not "more quietly" («آروم» means both slow and quiet in Persian); «می‌پیچم
   چپ» is "turn left", not "turn to left" (trap `turn-left`); «سر چراغ» is "at the light", not "on
   the light"; «خسته شدم» is "if I get tired", not "if I became tired"; «ایستگاهش» is "the bus stop",
   not "the station" (a station is for trains; Central Station is one).
-- Word counts: 20, 20 · 13, 15 · 21, 18 · 14, 14 (all within 25).
+- Word counts: 21, 20 · 13, 15 · 21, 18 · 14, 14 (all within 25).
 - Facts: the City Museum is on Oak Street, across from Central Park's main gate; the normal way is
   right out of the hotel, left at the second traffic light (the bank) onto Oak Street, about 15
   minutes on foot (world). `d4-check-way` says back only the two turns of the normal way, which
@@ -305,7 +316,8 @@ transfer.
   `d2-ridenow-pickup` (the nearest to directions) was lab only on Day 2, and Sara takes no ride
   today.
 - **Story:** Sara asked this at check-in on Saturday (Day 3, new fact 8 there). On Day 4 it's a
-  marked review ("From Day 3: say it again"), not a new event on Sunday, so the two days don't
+  marked review (Mira: "The first one is from Day 3, from when you were checking in"), not a new
+  event on Sunday, so the two days don't
   disagree. Mira's intro says so (§5).
 
 **2. `id`: `d4-no-data`**
@@ -323,16 +335,16 @@ transfer.
 
 **3. `id`: `d4-way-around`**
 - `to`: To a man at the bus stop / به مردی در ایستگاه اتوبوس
-- `fa`: پس اگه درست فهمیده باشم، مستقیم می‌رم تا چراغ بعدی، یعنی خیابون پاین، و می‌پیچم چپ. از کنار کتابخونه رد می‌شم و در کناری پارک سمت راستمه، درسته؟
+- `fa`: پس اگه درست فهمیده باشم، مستقیم می‌رم تا چراغ بعدی، یعنی خیابون پاین، و می‌پیچم چپ. از کنار کتابخونه رد می‌شم و درِ فرعی پارک سمت چپمه، درسته؟
 - `points`:
   1. you go straight to the next light, Pine Street, and turn left / مستقیم تا چراغ بعدی، یعنی خیابان پاین، می‌روی و به چپ می‌پیچی
-  2. you go past the library, and the park's side gate is on your right / از کنار کتابخانه رد می‌شوی و در کناری پارک سمت راستت است
+  2. you go past the library, and the park's side gate is on your left, too / از کنار کتابخانه رد می‌شوی و درِ فرعی پارک هم سمت چپت است
 - `models`:
-  - "So if I've got this right, I keep going to the next light, Pine Street, and turn left. Then past the library, and the side gate's on the right?" (29 words)
-  - "Just to check: I go straight to Pine Street, turn left, walk past the library, and the side gate is on my right?" (23 words)
+  - "So if I've got this right, I keep going to the next light, Pine Street, and turn left. Then past the library, and the side gate's on the left?" (29 words)
+  - "Just to check: I go straight to Pine Street, turn left, walk past the library, and the side gate is on my left, too?" (24 words)
 - `hints`: if I've got this right / اگه درست فهمیده باشم · go past the library / از کنار کتابخونه رد شم
-- Main trap: «اگه درست فهمیده باشم» → "If I understood correct" (natural: "If I've got this right"); «از کنار … رد می‌شم» → "pass from beside the library" (natural: "go past the library"); «سمت راستمه» → "it's in my right" (natural: "on my right"); «در کناری» → "the side door" (for a park: "the side gate").
-- Facts: Oak Street is closed for the Fun Run; the way around is straight on Main Street to the next (third) light, Pine Street, left, past the library (on the left), and after about five minutes the side gate is on the right (world). Greg gives it, fast at first; Sara says it back to him (world, step 4). Sara doesn't know his name, so `to` doesn't use it.
+- Main trap: «اگه درست فهمیده باشم» → "If I understood correct" (natural: "If I've got this right"); «از کنار … رد می‌شم» → "pass from beside the library" (natural: "go past the library"); «سمت چپمه» → "it's in my left" (natural: "on my left"); «درِ فرعی» → "the side door" or "the secondary door" (for a park: "the side gate").
+- Facts: Oak Street is closed for the Fun Run; the way around is straight on Main Street to the next (third) light, Pine Street, left, past the library (on the left), and after about five minutes the side gate is on the left, too (world: the park lies between Oak Street and Pine Street). Greg gives it, fast at first; Sara says it back to him (world, step 4). Sara doesn't know his name, so `to` doesn't use it.
 
 - `NAMES` (items 2 and 3): "Park Hotel, Daniel, Central Park, Main Street, Oak Street, Pine Street, Riverton." (Item 1 keeps Day 3's string, so the set has two `names` strings; the field is per item, so that's fine.)
 - `LESSON_SAY_IDS`: `{ intermediate: null, professional: null }` (both sets are used whole).
@@ -358,7 +370,7 @@ There are no lab-only messages, so the Module lab has the same two.
 
 **`MESSAGES_INTRO`** (the Module lab's introduction):
 - en: "Today, you’re Sara, in room 714 at the Park Hotel. It’s Sunday morning. You’ll get two voice messages: from Daniel at the front desk and your friend Tom. Listen, then reply with a voice message. Make sure you answer their questions."
-- fa: امروز جای سارا هستی، در اتاق ۷۱۴ هتل پارک. صبح یکشنبه است. دو پیام صوتی می‌گیری: از دنیل در پذیرش هتل و از دوستت تام. گوش بده و با یک پیام صوتی جواب بده. حواست باشد به سؤال‌هایشان جواب بدهی.
+- fa: امروز جای سارا هستی، در هتل پارک، اتاق ۷۱۴. صبح یکشنبه است. دو پیام صوتی می‌گیری: از دنیل در پذیرش هتل و از دوستت تام. گوش بده و با یک پیام صوتی جواب بده. حواست باشد به سؤال‌هایشان جواب بدهی.
 
 `NAMES` (both): "Daniel, Tom, Park Hotel, Main Street, Oak Street, Central Park, Riverton."
 
@@ -380,18 +392,18 @@ left as it is.
   1. Good morning, it's Daniel at the front desk. Good news: your green backpack is here!
   2. The airline dropped it off a few minutes ago. I tried calling your room, but there was no answer.
   3. Would you like to come down and get it, or should I send it up to your room?
-  4. Oh, and no rush with our charger. Just bring it back whenever it's convenient.
+  4. Oh, and no rush with our charger. Just bring it back whenever you can.
   5. Are you going out today? I'm happy to suggest a few places.
   6. Have a great Sunday!
 - `asks`:
-  1. ask: Will you come down and get it, or should he send it up? / خودت پایین می‌آیی و می‌گیری‌اش، یا آن را به اتاقت بفرستد؟ · missed: You didn't say if you'll come down or if he should send it up. / نگفتی خودت پایین می‌آیی یا آن را به اتاقت بفرستد.
+  1. ask: Will you come down and get it, or should he send it up? / خودت پایین می‌آیی و می‌گیری‌اش، یا دنیل آن را به اتاقت بفرستد؟ · missed: You didn't say if you'll come down or if he should send it up. / نگفتی خودت پایین می‌آیی یا دنیل آن را به اتاقت بفرستد.
   2. ask: Are you going out today? / امروز بیرون می‌روی؟ · missed: You didn't say if you're going out today. / نگفتی امروز بیرون می‌روی یا نه.
 - `model`: "Good morning, Daniel, and thank you! I'll come down and get it in a few minutes, and I'll bring your charger back. I'm going to the Sunday market today. Could you tell me the way later?" (36 words)
 - Facts: the airline's van brings the green backpack at about 8:50; Daniel calls room 714, as he promised on Day 3; Sara picks it up at the desk and gives back the hotel's charger; at about 10:30 she asks him the way to the Sunday market (world, steps 2–3). "Small green backpack" (Days 1–3). The hotel has Sara's number (Daniel sent her a voice message on Day 2, `d2-hotel`). New: nobody answers the room phone, so he leaves this message; "no rush with our charger"; his offer to suggest places (see New facts). The second ask leads to the 10:30 conversation, which the model reply sets up ("Could you tell me the way later?").
 
 ### Message 2. `id`: `d4-tom` (Sunday, about 10:35: just after Sara asked Daniel the way)
 
-- `from`: name **Tom** · who: your friend in Riverton / دوستت در ریورتون · voice `c` (Brian; Daniel isn't in this message)
+- `from`: name **Tom** · who: your friend in Riverton / دوستت در Riverton · voice `c` (Brian; Daniel isn't in this message)
 - `sentences`:
   1. Hey, it's Tom! Are we still on for noon at the market?
   2. Let's meet by the fountain. The market's all around it, so you can't miss it.
@@ -422,11 +434,11 @@ for it.
 
 **Persian-speaker traps** (`traps`)
 - `does`: Find the mistake Persian speakers often make when they ask the way, then say the sentence right. / اشتباهی را که فارسی‌زبان‌ها موقع پرسیدن راه زیاد می‌کنند پیدا کن، بعد جمله را درست بگو.
-- `intro`: Each sentence has one mistake that Persian speakers often make with directions. The last one is from Day 1: let’s see if you remember it. Tap the mistake, then say the sentence the right way. / هر جمله یک اشتباه دارد که فارسی‌زبان‌ها در آدرس پرسیدن زیاد می‌کنند. جملهٔ آخر از روز اول است؛ ببینیم یادت مانده یا نه. روی اشتباه بزن، بعد جمله را درست بگو.
+- `intro`: Each sentence has one mistake that Persian speakers often make. The first one is from Day 1, about your lost bag. The other four are about directions. Tap the mistake, then say the sentence the right way. / هر جمله یک اشتباه دارد که فارسی‌زبان‌ها زیاد می‌کنند. اولی از روز اول است، دربارهٔ چمدان گمشده‌ات. چهار تای دیگر اشتباه‌هایی است که موقع پرسیدن راه پیش می‌آید. روی اشتباه بزن، بعد جمله را درست بگو.
 
 **Say it in English** (`say-in-english`)
 - `does`: Read what you want to ask the front desk in Persian, and say it in English. / چیزی را که می‌خواهی از پذیرش هتل بپرسی به فارسی می‌خوانی و به انگلیسی می‌گویی.
-- `intro`: Now it’s your turn. You want to go to the City Museum today, so you ask the front desk the way. I’ll show you what you want to say, in Persian. Say it in English, the way you’d really say it. / حالا نوبت خودت است. امروز می‌خواهی به موزهٔ شهر بروی و راهش را از پذیرش هتل می‌پرسی. چیزی را که می‌خواهی بگویی به فارسی نشانت می‌دهم. همان را به انگلیسی بگو، همان‌طور که واقعاً می‌گفتی.
+- `intro`: Now it’s your turn. You want to go to the City Museum today, so you ask the front desk the way. I’ll show you what you want to say, in Persian. Say it in English, the way you’d really say it. / حالا نوبت خودت است. امروز می‌خواهی به City Museum بروی و راهش را از پذیرش هتل می‌پرسی. چیزی را که می‌خواهی بگویی به فارسی نشانت می‌دهم. همان را به انگلیسی بگو، همان‌طور که واقعاً می‌گفتی.
 
 **Voice messages** (`voice-messages`)
 - `does`: Hear two voice messages, from Daniel and from Tom, and reply to each one. / دو پیام صوتی بشنو، از دنیل و از تام، و به هر کدام جواب بده.
@@ -440,7 +452,7 @@ for it.
 
 **Say it in English** (`say-in-english`)
 - `does`: Read three things Sara wants to say, in Persian, and say each one in English. / سه چیزی را که سارا می‌خواهد بگوید به فارسی می‌خوانی و هر کدام را به انگلیسی می‌گویی.
-- `intro`: Today, you’re Sara again. The first one is from Day 3, at check-in: let’s see if you can still say it. Then two things she says this morning, on her way to the market. Say each one in English, the way you’d really say it. / امروز هم جای سارا هستی. اولی از روز سوم است، از پذیرش هتل؛ ببینیم هنوز می‌توانی بگویی‌اش یا نه. بعد دو چیزی که امروز صبح، در راه بازار، می‌گوید. هر کدام را به انگلیسی بگو، همان‌طور که واقعاً می‌گفتی.
+- `intro`: Today, you’re Sara. The first one is from Day 3, from when you were checking in: let’s see if you still remember it. Then two things you say this morning, before you get to the market. Say each one in English, the way you’d really say it. / امروز جای سارا هستی. اولی مال روز سوم است، از وقتی اتاقت را تحویل می‌گرفتی؛ ببینیم هنوز یادت هست یا نه. بعد دو چیزی که امروز صبح، پیش از رسیدن به بازار، می‌گویی. هر کدام را به انگلیسی بگو، همان‌طور که واقعاً می‌گفتی.
 
 ---
 
@@ -473,7 +485,8 @@ for it.
 
 - **Regexes**, run in Node (a throwaway script, not committed) with copies of both `normalise()`
   functions (say-better for `found`, traps for `accept`/`reject`, and a copy of `checkSaid`); 0
-  failures:
+  failures, and 0 again when re-run after review v1 (no regex changed; only the `why` texts, the
+  order and the intros did):
   - each `found` matches its own sentence and **none of the other nine** sentences in either set
     (stricter than Day 3, which had one harmless cross-set match), so a Day 4 test in the style of
     Day 2's ("each check finds its own sentence only", both sets) passes;
@@ -492,11 +505,12 @@ for it.
 - **Shapes:** each `shown` minus `**` and with `‿` as a space equals its `sentence`; every bold part
   has two or more words; every Persian field has Persian letters; no `why.fa` has a backtick; every
   `wrong` index is inside `words` (and #2's is the one-entry phrase "in front of").
-- **Counts:** phrases 5 + 5; traps 6 defined, 5 in the lesson (4 new + `call-me`); Say it 4
+- **Counts:** phrases 5 + 5; traps 6 defined, 5 in the lesson (`call-me` first, then 4 new); Say it 4
   (Intermediate) + 3 (Professional, one of them `d3-late-checkout`), each with 2 points, 2 models
   and 2 hints; voice messages 2, both in the lesson, each with 2 asks. The same as Day 3.
-- **Limits:** A2 models 13–21 words (limit 25); B1 models 20–29 (limit 30); message sentences 13–97
-  characters (limit 120); model replies 36 and 33 words (limit 40). Voices `c` and `c`, never `b`.
+- **Limits** (recounted by script after review v1): A2 models 13–21 words (limit 25; `d4-museum-way`
+  is now 21, 20); B1 models 20–29 (limit 30; `d4-way-around` 29, 24); message sentences 13–97
+  characters (limit 120; Daniel's sentence 4 is now shorter); model replies 36 and 33 words (limit 40). Voices `c` and `c`, never `b`.
 - **Ids:** new trap ids (`turn-left`, `across-from`, `minutes-away`, `cross-street`, `go-straight`)
   don't clash with the Module lab, Day 1, Day 2 or Day 3; new Say-it and message ids start with
   `d4-`. The two reused ids (`call-me`, `d3-late-checkout`) are kept on purpose.
@@ -510,7 +524,8 @@ for it.
   light (the bank) onto Oak Street; two blocks; main gate on the right, across from the City Museum;
   about 15 minutes (phrases A2 #3, B1 #3; traps `turn-left`, `across-from`, `minutes-away`,
   `go-straight`; Say-it `d4-check-way`; Tom's model). The way around: straight to the third light,
-  Pine Street; left; past the library; side gate on the right (Say-it `d4-way-around`). Nothing
+  Pine Street; left; past the library (on the left); side gate **on the left, too** (Say-it
+  `d4-way-around`: `fa` «درِ فرعی پارک سمت چپمه», point 2 and both models). Nothing
   says the library is on the right or names a light number other than second (Oak) and third / next
   (Pine).
 - **No contradictions found with Days 1–3:** the backpack is small and green and comes this morning
@@ -518,8 +533,13 @@ for it.
   hotel has Sara's number (Day 2's `d2-hotel`); Tom's car is still not fixed (Days 2–3); Sara's
   check-out is Tuesday (Day 3); nothing names Karimi's room or dates. No real places or brands
   (no map app is named); no religion, politics or alcohol; the Fun Run is a charity race.
+- **Place names in Persian:** Latin in the intros and cards (B1 #1's `situation` «در Central Park»,
+  Intermediate Say-it intro «City Museum», Tom's `who` «دوستت در Riverton»), Persian script in the
+  Say-it prompts («موزهٔ شهر», «پارک مرکزی», «خیابون پاین»), as on Days 2–3. `MESSAGES_INTRO` keeps
+  «هتل پارک», as the lead wrote it.
 - **Persian half-spaces:** every «می‌» / «نمی‌» verb, «این‌جا», «به‌خاطر», «قدم‌به‌قدم»,
-  «سؤال‌هایشان», «فارسی‌زبان‌ها», «گوشی‌ات», «فهمیده‌ای», «آروم‌تر», «یواش‌تر» and «همان‌طور» use U+200C;
+  «سؤال‌هایشان», «فارسی‌زبان‌ها», «گوشی‌ات», «گمشده‌ات», «اشتباه‌هایی», «می‌گیری‌اش», «فهمیده‌ای»,
+  «آروم‌تر», «یواش‌تر» and «همان‌طور» use U+200C;
   checked with a search for a space after «می» / «نمی».
 
 ---
@@ -531,11 +551,12 @@ for it.
 1. **The reused trap (`call-me`).** Chosen as the owner suggested, for this morning's story (Daniel
    calls room 714) and because it was in Day 1's lesson. The best alternative is Day 2's `near-of`
    (in Day 2's lesson, and about directions); `how-long` fits the theme best but was lab only on
-   Day 2. Swapping is one id in `LESSON_TRAP_IDS` and one entry in `TRAPS`, and the Mira intro's
-   "from Day 1" becomes "from Day 2".
+   Day 2. Swapping is one id in `LESSON_TRAP_IDS` and the first entry in `TRAPS`, and the Mira
+   intro's "The first one is from Day 1, about your lost bag" becomes "The first one is from Day 2,
+   from your taxi ride".
 2. **The reused Say-it item (`d3-late-checkout`).** The only Day 2–3 Professional item still true on
-   Sunday; it is Saturday's question practised again, not a second request (Mira says "from Day 3,
-   at check-in"). It isn't about directions; none of the Day 2–3 Professional items is, apart from
+   Sunday; it is Saturday's question practised again, not a second request (Mira says it's from Day
+   3, "from when you were checking in", and it comes first, right after she says so). It isn't about directions; none of the Day 2–3 Professional items is, apart from
    `d2-ridenow-pickup`, which was lab only on Day 2 and has a ride Sara doesn't take today.
 3. **`across-from` taps a three-word entry** ("in front of"). It's the first multi-word entry in any
    `words` list. Alternative if the UX reviewer prefers one word per button: split it and make
@@ -568,6 +589,9 @@ for it.
 - **Day 4 needs** a `day-4` entry in `DAY_CONTENT` and `DAY_IDS`, a `DAY_FOUR` pack in `day.ts`,
   and its own tests (6 traps, 5 in the lesson; Say it 4 and 3, `LESSON_SAY_IDS` null; 2 messages,
   both in the lesson; `voiceMessagesFor('day-4', true)` returns the same two).
+- **Lesson order of the traps:** `trapsFor` keeps the order of `TRAPS`, so put `call-me` first in
+  Day 4's `TRAPS` (not only in `LESSON_TRAP_IDS`). `d3-late-checkout` is already first in
+  `SAY.professional`, and `sayItemsFor` returns the whole set in that order.
 - **"From Day N"** has no field in `Trap` or `SayItem`; Mira's intro carries it. A small badge on the
   card would need a new optional field (for example `from?: string`) and a line in `Traps.svelte`
   and the Say-it component; the owner decides.
@@ -581,6 +605,43 @@ for it.
    may write "pass the street" as "past the street" (still "wrong", as it should be).
 2. **The voice-messages AI tone rule** may need "To the hotel desk and a friend: friendly and
    simple" for Day 4.
-3. **Day 1's `call-me` sentence** ("…when you find it") belongs to a lost bag. If reviewers find it
-   confusing on a directions day, that's an argument for `near-of` (choice 1), since the owner wants
-   the reused item word for word, not rewritten.
+3. **Day 1's `call-me` sentence** ("…when you find it") belongs to a lost bag. Mira's intro now says
+   so ("The first one is from Day 1, about your lost bag"), and it comes first, so it doesn't break
+   the run of four direction traps. If reviewers still find it confusing on a directions day, that's
+   an argument for `near-of` (choice 1), since the owner wants the reused item word for word.
+
+---
+
+## Review v1: changes
+
+- **Map fix (`d4-way-around`):** the side gate is on the **left** now: `fa` «…از کنار کتابخونه رد
+  می‌شم و درِ فرعی پارک سمت چپمه، درسته؟»; point 2 "…the park's side gate is on your left, too" /
+  «…درِ فرعی پارک هم سمت چپت است»; models "…the side gate's on the left?" and "…the side gate is on
+  my left, too?"; the main-trap note («سمت چپمه» → "on my left", «درِ فرعی» → "the side gate"); its
+  facts line and the Checks line. No regex mentions the side; the normal way is unchanged.
+- **Traps order:** `call-me` (Day 1, word for word) is now **first**, as #1 in `TRAPS` and in
+  `LESSON_TRAP_IDS = ['call-me', 'turn-left', 'across-from', 'minutes-away', 'cross-street']`
+  (note for the builder: the lesson follows `TRAPS` order). New intro: "…The first one is from Day
+  1, about your lost bag. The other four are about directions." / «…اولی از روز اول است، دربارهٔ
+  چمدان گمشده‌ات. چهار تای دیگر اشتباه‌هایی است که موقع پرسیدن راه پیش می‌آید…»; `does` already
+  says «موقع پرسیدن راه».
+- **`minutes-away`:** new `why` en and fa (the lead's text); `kind.fa` «minutes away (فاصله)», no
+  ellipsis.
+- **`across-from`:** `why` en "“In front of” means right by its front, on the same side of the street.
+  When the street is between them, say “across from.”"; fa to match («…یعنی درست جلوی خودِ آن،
+  همین طرف خیابان…»).
+- **Professional Say it intro:** "Today, you’re Sara." (no "again"); new fa (the lead's text), with
+  the en to match: "The first one is from Day 3, from when you were checking in: let’s see if you
+  still remember it. Then two things you say this morning, before you get to the market."
+  `d3-late-checkout` stays first.
+- **Daniel's message:** "whenever you can"; ask 1 fa and its `missed` say «…یا دنیل آن را به اتاقت
+  بفرستد».
+- **`MESSAGES_INTRO` fa:** «…در هتل پارک، اتاق ۷۱۴…».
+- **`d4-museum-way`:** model 1 ends "Is it too far to walk?" (21 words); its hint and trap note say
+  "too far to walk".
+- **Place names:** B1 #1's `situation` «…در Central Park بروی»; the Intermediate Say-it intro «City
+  Museum»; Tom's `who` «دوستت در Riverton». The rule (Latin in intros and cards, Persian script in
+  Say-it prompts) is written near the top.
+- **`go-straight`** stays lab only (#6), unchanged.
+- Re-verified: all six traps and all ten `found` regexes (0 failures), Say-it model and message
+  counts.
