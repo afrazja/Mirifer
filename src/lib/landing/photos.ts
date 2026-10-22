@@ -24,6 +24,10 @@ export const LANDING_PHOTOS: Record<'hero' | 'practice' | 'end', LandingPhoto | 
 		alt: { en: 'A woman answering a question in a job interview.', fa: 'زنی در مصاحبهٔ کاری به یک سؤال جواب می‌دهد.' },
 		focus: { ltr: '50% 22%', rtl: '50% 22%' }
 	},
-	/** The closing card. Portrait or square. */
-	end: null
+	/** The closing card. About 4:3 (here 900×692); shown wider on phones. */
+	end: {
+		src: '/images/landing/thinking.webp',
+		alt: { en: 'A man thinking, his hand on his chin.', fa: 'مردی در فکر، با دستی زیر چانه.' },
+		focus: { ltr: '50% 35%', rtl: '50% 35%' }
+	}
 };
