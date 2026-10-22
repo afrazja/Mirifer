@@ -367,9 +367,8 @@
 	.eyebrow { display: inline-block; margin: 0 0 14px; padding: 6px 12px; border-radius: 999px; background: rgba(255, 255, 255, .14); color: #fff; font-size: .74rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 	[dir='rtl'] .eyebrow { letter-spacing: normal; font-size: .86rem; }
 	.hero h1 { color: #fff; }
-	/* The key word sits in a yellow speech bubble, its tail at the start of the line. */
-	.hl { display: inline-block; padding: 0 .18em .06em; margin-inline: .02em; border-radius: .3em .3em .3em .06em; background: #ffffff; color: #0e5c45; }
-	[dir='rtl'] .hl { border-radius: .3em .3em .06em .3em; }
+	/* The key word in the logo's red (a touch lighter than #F66E58 so it reads on the green). */
+	.hl { color: #ff7f68; }
 	.line { font-size: 1.12rem; color: rgba(255, 255, 255, .88); margin-bottom: 22px; max-width: 34em; }
 	.copy .primary { justify-self: stretch; }
 	.copy .ghost { justify-self: stretch; margin-top: 16px; }
