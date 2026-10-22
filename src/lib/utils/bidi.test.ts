@@ -25,3 +25,13 @@ describe('latinRuns: an English question inside Persian', () => {
 		expect(latinRuns('بگو today.')).toEqual([{ text: 'بگو ', latin: false }, { text: 'today', latin: true }, { text: '.', latin: false }]);
 	});
 });
+
+describe('latinRuns: an ellipsis or a slash between English words', () => {
+	it('keeps "on the … floor" and "lend / borrow" as one left-to-right run', () => {
+		expect(latinRuns('on the … floor (طبقه)').filter(p => p.latin).map(p => p.text)).toEqual(['on the … floor']);
+		expect(latinRuns('lend / borrow').filter(p => p.latin).map(p => p.text)).toEqual(['lend / borrow']);
+	});
+	it('still ends a run before Persian punctuation', () => {
+		expect(latinRuns('بگو «turn left»، نه «turn to left».').filter(p => p.latin).map(p => p.text)).toEqual(['turn left', 'turn to left']);
+	});
+});

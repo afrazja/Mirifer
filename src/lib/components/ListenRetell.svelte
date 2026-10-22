@@ -253,7 +253,7 @@
 
 	{:else if stage === 'speak'}
 		<p class="label" aria-hidden="true">{T('2 of 2 · Retell', '۲ از ۲ — بازگو کن')}</p>
-		<h2 class="title" tabindex="-1" bind:this={heading}>{T('Now tell the story in your own words.', 'حالا داستان را با کلمات خودت تعریف کن.')}</h2>
+		<h2 class="title" tabindex="-1" bind:this={heading}>{piece.task ? text(piece.task) : T('Now tell the story in your own words.', 'حالا داستان را با کلمات خودت تعریف کن.')}</h2>
 		<p class="meta">{T(`Say everything you remember. Aim for 30 to 60 seconds; recording stops at ${D(limit)}.`, `هر چه یادت مانده بگو. سعی کن ۳۰ تا ۶۰ ثانیه صحبت کنی؛ ضبط در ${D(limit)} متوقف می‌شود.`)}</p>
 		{#if recording || !recordingUrl}<div class="card player">
 			<div class="clock" aria-live="off"><strong>{D(elapsed)}</strong> / {D(limit)}</div>

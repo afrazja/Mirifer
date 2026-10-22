@@ -12,7 +12,9 @@ export const LAB_SETS: LabSet[] = [
 	{ id: 'day-2-intermediate', day: 'day-2', track: 'intermediate', name: { en: 'Day 2 · Intermediate', fa: 'روز ۲، متوسط' } },
 	{ id: 'day-2-professional', day: 'day-2', track: 'professional', name: { en: 'Day 2 · Professional', fa: 'روز ۲، حرفه‌ای' } },
 	{ id: 'day-3-intermediate', day: 'day-3', track: 'intermediate', name: { en: 'Day 3 · Intermediate', fa: 'روز ۳، متوسط' } },
-	{ id: 'day-3-professional', day: 'day-3', track: 'professional', name: { en: 'Day 3 · Professional', fa: 'روز ۳، حرفه‌ای' } }
+	{ id: 'day-3-professional', day: 'day-3', track: 'professional', name: { en: 'Day 3 · Professional', fa: 'روز ۳، حرفه‌ای' } },
+	{ id: 'day-4-intermediate', day: 'day-4', track: 'intermediate', name: { en: 'Day 4 · Intermediate', fa: 'روز ۴، متوسط' } },
+	{ id: 'day-4-professional', day: 'day-4', track: 'professional', name: { en: 'Day 4 · Professional', fa: 'روز ۴، حرفه‌ای' } }
 ];
 export const labSet = (id: string | null | undefined) => LAB_SETS.find(set => set.id === id) ?? LAB_SETS[0];
 

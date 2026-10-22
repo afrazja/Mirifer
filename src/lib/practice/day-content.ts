@@ -15,6 +15,7 @@ import type { DisplayText } from './hotel';
 import * as dayOne from './days/day-1';
 import * as dayTwo from './days/day-2';
 import * as dayThree from './days/day-3';
+import * as dayFour from './days/day-4';
 import type { Track } from './day';
 
 /** One later day's content: every part optional; a version without its own set uses the other's. */
@@ -34,7 +35,7 @@ export interface DayContent {
 }
 
 /** Every later day's content, by day id. */
-export const DAY_CONTENT: Record<string, DayContent> = { 'day-1': dayOne, 'day-2': dayTwo, 'day-3': dayThree };
+export const DAY_CONTENT: Record<string, DayContent> = { 'day-1': dayOne, 'day-2': dayTwo, 'day-3': dayThree, 'day-4': dayFour };
 const contentOf = (dayId: string): DayContent => DAY_CONTENT[dayId] ?? {};
 const LATER: DayContent[] = Object.values(DAY_CONTENT);
 /** This version's set, or the day's other version's. */

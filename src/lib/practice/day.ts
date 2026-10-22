@@ -12,7 +12,7 @@ import { z } from 'zod';
 import type { DisplayText } from './hotel';
 
 /** Every day's id, in order. */
-export const DAY_IDS = ['day-1', 'day-2', 'day-3'] as const;
+export const DAY_IDS = ['day-1', 'day-2', 'day-3', 'day-4'] as const;
 export type DayId = (typeof DAY_IDS)[number];
 /** Day 1's id (kept for older callers). */
 export const DAY_ID: DayId = 'day-1';
@@ -262,7 +262,72 @@ export const DAY_THREE: DayPack = {
 	}
 };
 
-export const DAYS: DayPack[] = [DAY_ONE, DAY_TWO, DAY_THREE];
+/**
+ * Day 4 (docs/english-themes-plan.md, sub-theme 1.14): Sara asks the way to the Sunday market.
+ * docs/english-day-4/: the world, the two lessons (the same five modules per version as Days 2–3,
+ * the owner's choice) and their reviewed content. One item comes back from an earlier day; so that
+ * learners see it in the 15-minute lesson, Day 4 keeps Traps (Intermediate) and Say it in English
+ * (Professional) and leaves out Say it in English and Choose and persuade instead (owner's decision).
+ * Only the owner gets it until it is ready.
+ */
+export const DAY_FOUR: DayPack = {
+	id: 'day-4',
+	number: 4,
+	ready: false,
+	theme: { en: 'Asking the way', fa: 'پرسیدن راه' },
+	themePhrase: 'asking the way',
+	question: 'And you? In a new city, do you ask people for directions, or use a map on your phone?',
+	goal: {
+		en: 'By the end, you can ask how to get somewhere, understand the answer, and check it by saying it back.',
+		fa: 'در پایان می‌توانی راه جایی را بپرسی، جواب را بفهمی و با تکرارش مطمئن شوی درست شنیده‌ای.'
+	},
+	checkIn: {
+		// Day 3: Sara checked in on Saturday; the airline was bringing her backpack on Sunday morning.
+		story: {
+			en: 'It’s Sunday morning in Riverton. Sara’s backpack finally arrived, and she wants to walk to the Sunday market in Central Park. But her phone has no data, so she can’t use a map.',
+			fa: 'یکشنبه صبح در Riverton. کوله‌پشتی سارا بالاخره رسیده و می‌خواهد پیاده تا بازار یکشنبه در Central Park برود. ولی گوشی‌اش اینترنت ندارد و نمی‌تواند نقشه ببیند.'
+		},
+		question: {
+			en: 'And you? In a new city, do you ask people for directions, or use a map on your phone?',
+			fa: 'و تو؟ در یک شهر تازه، راه را از مردم می‌پرسی یا با نقشهٔ گوشی‌ات پیدا می‌کنی؟'
+		},
+		reply: {
+			en: 'Thanks for telling me. Today you’ll practice asking the way, and understanding the answer.',
+			fa: 'ممنون که گفتی. امروز پرسیدن راه و فهمیدن جوابش را تمرین می‌کنی.'
+		}
+	},
+	checkInMinutes: 2,
+	recapMinutes: 2,
+	modules: [],
+	tracks: {
+		intermediate: [
+			{ id: 'listen-act', title: { en: 'Listen and connect', fa: 'گوش بده و وصل کن' }, short: { en: 'Listen', fa: 'گوش دادن' }, does: { en: 'Hear Sara ask Daniel the way to the Sunday market, then show how the facts connect.', fa: 'بشنو سارا چطور راه بازار یکشنبه را از دنیل می‌پرسد و بعد نشان بده اتفاق‌هایش چطور به هم ربط دارند.' }, skill: 'listening', minutes: { 15: 4, 20: 4 }, built: true,
+				intro: { en: 'Sara wants to go to the Sunday market in Central Park. Listen for how long it takes, where she turns left, where the market is, and how Sara checks the way.', fa: 'سارا می‌خواهد به بازار یکشنبه در Central Park برود. گوش بده ببین راه چقدر طول می‌کشد، کجا باید به چپ بپیچد، بازار کجاست و سارا چطور مطمئن می‌شود راه را درست فهمیده.' } },
+			{ id: 'phrases', title: { en: 'Natural phrases', fa: 'عبارت‌های طبیعی' }, short: { en: 'Phrases', fa: 'عبارت‌ها' }, does: { en: 'Hear five sentences from Sara’s walk to the Sunday market, and say each one after Mira.', fa: 'پنج جمله از مسیر سارا تا بازار یکشنبه بشنو و هر کدام را بعد از میرا تکرار کن.' }, skill: 'speaking', minutes: { 15: 4, 20: 4 }, built: true,
+				intro: { en: 'Here are five sentences from Sara’s Sunday morning, as she asks the way to the market. Listen, then say each one after me. Notice the phrases in bold.', fa: 'این پنج جمله از صبح یکشنبهٔ سارا است، وقتی راه بازار را می‌پرسد. گوش بده و هر جمله را بعد از من تکرار کن. به عبارت‌های پررنگ دقت کن.' } },
+			{ id: 'traps', title: { en: 'Persian-speaker traps', fa: 'اشتباه‌های آشنا' }, short: { en: 'Traps', fa: 'اشتباه‌ها' }, does: { en: 'Find the mistake Persian speakers often make when they ask the way, then say the sentence right.', fa: 'اشتباهی را که فارسی‌زبان‌ها موقع پرسیدن راه زیاد می‌کنند پیدا کن، بعد جمله را درست بگو.' }, skill: 'speaking', minutes: { 15: 3, 20: 3 }, built: true,
+				intro: { en: 'Each sentence has one mistake that Persian speakers often make. The first one is from Day 1, about your lost bag. The other four are about directions. Tap the mistake, then say the sentence the right way.', fa: 'هر جمله یک اشتباه دارد که فارسی‌زبان‌ها زیاد می‌کنند. اولی از روز اول است، دربارهٔ چمدان گمشده‌ات. چهار تای دیگر اشتباه‌هایی است که موقع پرسیدن راه پیش می‌آید. روی اشتباه بزن، بعد جمله را درست بگو.' } },
+			{ id: 'say-in-english', title: { en: 'Say it in English', fa: 'به انگلیسی بگو' }, short: { en: 'Say it', fa: 'بگو' }, does: { en: 'Read what you want to ask the front desk in Persian, and say it in English.', fa: 'چیزی را که می‌خواهی از پذیرش هتل بپرسی به فارسی می‌خوانی و به انگلیسی می‌گویی.' }, skill: 'speaking', minutes: { 20: 4 }, built: true,
+				intro: { en: 'Now it’s your turn. You want to go to the City Museum today, so you ask the front desk the way. I’ll show you what you want to say, in Persian. Say it in English, the way you’d really say it.', fa: 'حالا نوبت خودت است. امروز می‌خواهی به City Museum بروی و راهش را از پذیرش هتل می‌پرسی. چیزی را که می‌خواهی بگویی به فارسی نشانت می‌دهم. همان را به انگلیسی بگو، همان‌طور که واقعاً می‌گفتی.' } },
+			{ id: 'voice-messages', title: { en: 'Voice messages', fa: 'پیام صوتی' }, short: { en: 'Messages', fa: 'پیام‌ها' }, does: { en: 'Hear two voice messages, from Daniel and from Tom, and reply to each one.', fa: 'دو پیام صوتی بشنو، از دنیل و از تام، و به هر کدام جواب بده.' }, skill: 'speaking', minutes: { 15: 3, 20: 3 }, built: true,
+				intro: { en: 'Today, you’re Sara, in room 714. It’s Sunday morning, and your phone is on the hotel Wi-Fi. Two voice messages come in. Listen, then reply with a short voice message of your own. Make sure you answer their questions.', fa: 'امروز جای سارا هستی، در اتاق ۷۱۴. صبح یکشنبه است و گوشی‌ات به وای‌فای هتل وصل است. دو پیام صوتی برایت می‌آید. گوش بده و با یک پیام صوتی کوتاه جواب بده. حواست باشد به سؤال‌هایشان جواب بدهی.' } }
+		],
+		professional: [
+			{ id: 'listen-retell', title: { en: 'Listen and retell', fa: 'گوش بده و بازگو کن' }, short: { en: 'Retell', fa: 'بازگویی' }, does: { en: 'Hear how Sara finds another way to the market, then tell a friend the way.', fa: 'بشنو سارا چطور از راه دیگری به بازار می‌رسد و بعد راه را با کلمات خودت برای یک دوست توضیح بده.' }, skill: 'speaking', minutes: { 15: 4, 20: 4 }, built: true,
+				intro: { en: 'Oak Street is closed, so Sara asks a man at the bus stop for another way to the market. Listen, then tell a friend how to get there from the corner of Main and Oak, in your own words.', fa: 'خیابان Oak بسته است و سارا از مردی در ایستگاه اتوبوس راه دیگری به بازار می‌پرسد. گوش بده و بعد با کلمات خودت به یک دوست بگو از سر خیابان Main و Oak چطور به بازار برسد.' } },
+			{ id: 'phrases', title: { en: 'Natural phrases', fa: 'عبارت‌های طبیعی' }, short: { en: 'Phrases', fa: 'عبارت‌ها' }, does: { en: 'Hear five natural phrases for asking the way, and say each one after Mira.', fa: 'پنج عبارت طبیعی برای پرسیدن راه بشنو و هر کدام را بعد از میرا تکرار کن.' }, skill: 'speaking', minutes: { 15: 4, 20: 4 }, built: true,
+				intro: { en: 'Here are five phrases from Sara’s Sunday morning, on her way to the market. You’ll need them later today, too. Listen, then say each one after me.', fa: 'این پنج عبارت از صبح یکشنبهٔ سارا است، در راه بازار. امروز بعداً خودت هم به کارشان می‌بری. گوش بده و هر کدام را بعد از من تکرار کن.' } },
+			{ id: 'say-in-english', title: { en: 'Say it in English', fa: 'به انگلیسی بگو' }, short: { en: 'Say it', fa: 'بگو' }, does: { en: 'Read three things Sara wants to say, in Persian, and say each one in English.', fa: 'سه چیزی را که سارا می‌خواهد بگوید به فارسی می‌خوانی و هر کدام را به انگلیسی می‌گویی.' }, skill: 'speaking', minutes: { 15: 4, 20: 4 }, built: true,
+				intro: { en: 'Today, you’re Sara. The first one is from Day 3, from when you were checking in: let’s see if you still remember it. Then two things you say this morning, before you get to the market. Say each one in English, the way you’d really say it.', fa: 'امروز جای سارا هستی. اولی مال روز سوم است، از وقتی اتاقت را تحویل می‌گرفتی؛ ببینیم هنوز یادت هست یا نه. بعد دو چیزی که امروز صبح، پیش از رسیدن به بازار، می‌گویی. هر کدام را به انگلیسی بگو، همان‌طور که واقعاً می‌گفتی.' } },
+			{ id: 'choose-persuade', title: { en: 'Choose and persuade', fa: 'انتخاب کن و قانع کن' }, short: { en: 'Persuade', fa: 'قانع کردن' }, does: { en: 'Choose a way to the museum for a friend, and stand by your choice.', fa: 'برای رفتن دوستت به موزه یک راه انتخاب کن و از انتخابت دفاع کن.' }, skill: 'speaking', minutes: { 20: 4 }, built: true,
+				intro: { en: 'Your friend at the Park Hotel is meeting his sister at the City Museum at 2:45 this afternoon, and he’ll leave at about 2. He’s tired after his long flight, and he loves taking photos. Pick the better way for him, tell me why, and I’ll try to change your mind.', fa: 'دوستت در Park Hotel می‌ماند و امروز ساعت ۲:۴۵ بعدازظهر در City Museum با خواهرش قرار دارد؛ حدود ساعت ۲ راه می‌افتد. بعد از پرواز طولانی‌اش خسته است و عاشق عکس گرفتن است. راه بهتر را برایش انتخاب کن، بگو چرا، و من سعی می‌کنم نظرت را عوض کنم.' } },
+			{ id: 'scenario', title: { en: 'Asking the way with a twist', fa: 'پرسیدن راه با یک غافلگیری' }, short: { en: 'Ask the way', fa: 'پرسیدن راه' }, does: { en: 'Ask a stranger the way to the Sunday market, and check that you’ve understood.', fa: 'راه بازار یکشنبه را از یک غریبه بپرس و مطمئن شو درست فهمیده‌ای.' }, skill: 'speaking', minutes: { 15: 5, 20: 5 }, built: true,
+				intro: { en: 'You’re walking to the Sunday market in Central Park, but the street you need is closed. Ask the man at the corner the way. Something unexpected will happen, so listen carefully.', fa: 'داری پیاده به بازار یکشنبه در Central Park می‌روی، ولی خیابانی که باید از آن بروی بسته است. راه را از مردی که سر چهارراه ایستاده بپرس. یک اتفاق غیرمنتظره هم می‌افتد، پس با دقت گوش بده.' } }
+		]
+	}
+};
+
+export const DAYS: DayPack[] = [DAY_ONE, DAY_TWO, DAY_THREE, DAY_FOUR];
 export function dayById(id: string | null | undefined): DayPack | null {
 	return DAYS.find(day => day.id === id) ?? null;
 }
@@ -289,7 +354,8 @@ export const RECAP_INTRO: DisplayText = { en: 'Well done. Here’s what you did 
 /**
  * The modules in a day's session, in order: those in this length (a module without minutes for a
  * length isn't in it). Every lesson is 15 minutes (owner's decision), so each version leaves out one
- * middle step there: Traps in Intermediate, Say it in English in Professional.
+ * middle step there: on Days 2–3 Traps in Intermediate and Say it in English in Professional; on Day 4
+ * Say it in English and Choose and persuade, so the item from an earlier day is seen.
  */
 export function modulesFor(length: Length, day: DayPack = DAY_ONE, track: Track = 'intermediate'): DayModule[] {
 	const list = day.tracks ? day.tracks[track] : day.modules;

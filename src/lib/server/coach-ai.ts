@@ -11,7 +11,7 @@ import type { EnglishProfile } from '$lib/practice/english-profile';
 import { strongerSkill, type EnglishProgress } from '$lib/practice/english-progress';
 
 /** How a past day's theme is named in "practiced … yesterday". */
-const THEME_NAMES: Record<string, string> = { 'day-1': 'dealing with lost luggage', 'day-2': 'taking a taxi', 'day-3': 'checking in at a hotel' };
+const THEME_NAMES: Record<string, string> = { 'day-1': 'dealing with lost luggage', 'day-2': 'taking a taxi', 'day-3': 'checking in at a hotel', 'day-4': 'asking the way' };
 const REASON_PHRASES: Record<NonNullable<EnglishProfile['reason']>, string> = {
 	travel: 'is learning English for travel', work: 'is learning English for work', exam: 'is preparing for an English exam',
 	abroad: 'is learning English to live abroad', everyday: 'wants to feel more confident speaking English'
