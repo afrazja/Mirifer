@@ -272,13 +272,13 @@
 </div>
 
 <style>
-	/* ── The page's own palette: white with deep green (the owner's choice: calm and grown-up). ── */
+	/* ── The page's own palette: a warm yellow page, white cards, deep green (owner's choice). ── */
 	.landing {
-		--y: #ffffff;
+		--y: #ffd65a;
 		--y-soft: #eef5f1;
 		--n-soft: #f2f4f3;
 		--card: #ffffff;
-		--card-line: #e2ebe6;
+		--card-line: rgba(20, 32, 27, .06);
 		--ink: #14201b;
 		--ink-2: #4a5751;
 		--g: #0e5c45;
@@ -414,9 +414,7 @@
 	.block { max-width: 1120px; margin: 0 auto; padding: 36px 16px; }
 	.head { display: grid; gap: 12px; justify-items: start; margin-bottom: 20px; }
 	.pill { padding: 8px 14px; border-radius: 999px; background: var(--g-soft); font-weight: 600; font-size: .95rem; }
-	/* Cards are warm yellow (owner's experiment), in both themes; their text stays dark on it. */
-	.card { --ink: #14201b; --ink-2: #3c4842; color: var(--ink); border-radius: 24px; background: #ffd65a; border: 1px solid rgba(20, 32, 27, .08); box-shadow: var(--shadow); }
-	:global(:root[data-theme='dark']) .landing .card details { border-color: rgba(20, 32, 27, .14); }
+	.card { border-radius: 24px; background: var(--card); border: 1px solid var(--card-line); box-shadow: var(--shadow); }
 	.card p { color: var(--ink-2); }
 	.art { display: flex; align-items: center; justify-content: center; gap: 12px; border-radius: 18px; color: var(--g-text); }
 
