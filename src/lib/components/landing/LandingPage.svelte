@@ -74,7 +74,7 @@
 
 {#snippet photo(item: LandingPhoto | null, kind: string, eager = false)}
 	{#if item}
-		<img class="photo {kind}" src={item.src} alt={item.alt[lang]} loading={eager ? 'eager' : 'lazy'} decoding="async" />
+		<img class="photo {kind}" src={item.src} alt={item.alt[lang]} loading={eager ? 'eager' : 'lazy'} decoding="async" style:object-position={item.focus?.[isFa ? 'rtl' : 'ltr']} />
 	{:else}
 		<div class="photo {kind} empty" aria-hidden="true">
 			<svg viewBox="0 0 24 24" width="34" height="34"><path d="M4 7h3l2-2h6l2 2h3v12H4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" /><circle cx="12" cy="13" r="3.6" fill="none" stroke="currentColor" stroke-width="1.6" /></svg>
@@ -112,7 +112,8 @@
 				<p class="small">{c.small}</p>
 			</div>
 
-			<div class="stage reveal">
+			<!-- With a photo, the photo card takes the space behind the phone; without one, the days path shares it. -->
+			<div class="stage reveal" class:with-photo={!!LANDING_PHOTOS.hero}>
 				<!-- Behind the lesson: the days as a path, and a card for a real photo. -->
 				<div class="side path" aria-hidden="true">
 					<span class="bar-top"></span>
@@ -378,6 +379,10 @@
 	.hero-photo.empty { background-color: #187a5c; }
 	.pic-bar { position: absolute; inset-inline: 14px; inset-block-end: 14px; display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 999px; background: #ffd65a; color: #14201b; direction: ltr; }
 	.pic-bar i { flex: 1; block-size: 4px; border-radius: 2px; background: rgba(20, 32, 27, .35); }
+	/* A real photo: the phone moves to the inner side and the photo card grows on the outer side. */
+	.stage.with-photo { padding-inline: 0 24%; }
+	.with-photo .path, .with-photo .pic-bar { display: none; }
+	.with-photo .pic { inline-size: 46%; block-size: 92%; inset-block-start: 3%; }
 	.spark { position: absolute; z-index: 2; inline-size: 30px; aspect-ratio: 1; background: #ffd65a; clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%); }
 	.s-a { inset-block-start: 0; inset-inline-end: 24%; }
 	.s-b { inline-size: 16px; inset-block-start: 30px; inset-inline-end: 17%; }
@@ -522,6 +527,8 @@
 		.copy .primary { justify-self: start; }
 		.copy .quiet, .small { justify-self: start; }
 		.stage { padding: 34px 16% 10px; }
+		.stage.with-photo { padding-inline: 0 36%; }
+		.with-photo .pic { inline-size: 52%; block-size: 94%; inset-block-start: 2%; }
 		.block { padding: 48px 24px; }
 		.bento { grid-template-columns: repeat(3, 1fr); grid-template-rows: auto auto; }
 		.tile { flex-direction: column; align-items: stretch; padding: 14px; }
