@@ -77,11 +77,11 @@ export const RETELL: RetellPiece = {
 	task: { en: 'Now tell a friend the way, from the corner of Main and Oak.', fa: 'حالا راه را از سر خیابان Main و Oak برای یک دوست تعریف کن.' },
 	text: 'At about a quarter to eleven, Sara got to the corner of Main and Oak, and stopped. There were police barriers across Oak Street, and hundreds of runners were going past. Daniel hadn’t said anything about a race! Her phone had no data, so she couldn’t check a map. A man was waiting at the bus stop, so she asked him. His name was Greg, and his bus was late because of the Fun Run. “Oak’s closed till one,” he said, and then the directions came so fast that she only caught the word “library.” She smiled and asked him to slow down. “Sorry!” he said. “Don’t turn here. Keep going straight on Main Street to the next traffic light. That’s Pine Street. Turn left there, and you’ll go past the library, on your left. After about five minutes, you’ll see the park’s side gate on your left, too. Inside, follow the signs to the fountain. It’s about three minutes, and the market’s around it.” Sara said the way back to him, and he nodded. “Perfect. And try the coffee stall with the blue umbrella. Best coffee in Riverton!”',
 	keyPoints: [
-		"Oak Street is closed for the Fun Run, so don't turn onto it.",
+		'Oak Street is closed for the Fun Run, so don’t turn onto it.',
 		'Keep going straight on Main Street to the next traffic light, at Pine Street.',
 		'Turn left onto Pine Street.',
 		'Go past the library, which is on your left.',
-		"After about five minutes, the park's side gate is on your left, too.",
+		'After about five minutes, the park’s side gate is on your left, too.',
 		'Inside the park, follow the signs to the fountain; the market is around it.'
 	]
 };
