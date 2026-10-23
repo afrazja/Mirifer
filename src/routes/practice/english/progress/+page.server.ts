@@ -3,7 +3,7 @@ import type { PageServerLoad } from './$types';
 import { DaySessionSchema, caughtUp, currentModule, dayById, finishedDays, furthestDayId, nextDay, sessionModules } from '$lib/practice/day';
 import { readEnglishProgress } from '$lib/practice/english-progress';
 import { readEnglishProfile } from '$lib/practice/english-profile';
-import { activeDates, type LessonEventRow } from '$lib/practice/learner-stats';
+import { lessonDates, type LessonEventRow } from '$lib/practice/learner-stats';
 
 /**
  * The learner's dashboard, the first page of the English section (owner's decision): Mira's
@@ -25,7 +25,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		const { data, error: readError } = await locals.supabase.from('events')
 			.select('event_name, occurred_at, metadata')
 			.eq('user_id', user.id)
-			.in('event_name', ['lesson_started', 'lesson_progress', 'lesson_completed'])
+			.eq('event_name', 'lesson_completed')
 			.order('occurred_at', { ascending: true })
 			.limit(5000);
 		if (readError) eventsLoaded = false;
@@ -48,7 +48,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 		caughtUp: !inProgress && caughtUp(progress),
 		/** When the last lesson was finished (the page checks if that was today, on the learner's calendar). */
 		lastDoneAt: session?.stage === 'done' ? session.completedAt ?? null : null,
-		dates: activeDates(rows),
+		/** The days a lesson was finished (the week strip and the streak). */
+		dates: lessonDates(rows),
 		eventsLoaded,
 		/** A lesson started and not finished: the button says Resume. */
 		inProgress,

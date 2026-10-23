@@ -13,14 +13,15 @@ const english = (extra: Record<string, unknown> = {}) => ({ target_language: 'en
 const progress = { sessionsCompleted: 2, lastCompletedAt: null, lastThemeId: 'day-2', lastResult: 'ok', recent: [], finishedDays: ['day-1', 'day-2'] };
 
 describe('The learner’s dashboard', () => {
-	it('shows the lessons finished and the days practiced: only the learner’s own', async () => {
+	it('shows the lessons finished and the days a lesson was finished: only the learner’s own', async () => {
 		const l = locals(english({ english_progress_v1: progress }), [
-			{ event_name: 'lesson_started', occurred_at: '2026-10-20T08:00:00Z', metadata: {} },
-			{ event_name: 'lesson_progress', occurred_at: '2026-10-21T08:05:00Z', metadata: { outcome: 'done' } }
+			{ event_name: 'lesson_completed', occurred_at: '2026-10-20T08:20:00Z', metadata: { done: 4 } },
+			{ event_name: 'lesson_completed', occurred_at: '2026-10-21T08:20:00Z', metadata: { done: 3 } }
 		]);
 		const data = await load({ locals: l } as any) as any;
 		expect(data).toEqual({ name: '', finished: 2, lesson: { id: 'day-3', number: 3, theme: expect.any(Object) }, caughtUp: false, lastDoneAt: null, dates: ['2026-10-20', '2026-10-21'], eventsLoaded: true, inProgress: false, resume: null });
 		expect(l.query.eq).toHaveBeenCalledWith('user_id', 'u1');
+		expect(l.query.eq).toHaveBeenCalledWith('event_name', 'lesson_completed');
 	});
 	it('names the lesson the button opens: the one under way, the next one, or the last when caught up', async () => {
 		const busy = await load({ locals: locals(english({ english_progress_v1: progress, english_day_v1: startSession(15, new Date(), DAY_TWO) })) } as any) as any;
