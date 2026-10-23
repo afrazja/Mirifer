@@ -7,8 +7,6 @@
 	import ListenConnectReview from '$lib/components/ListenConnectReview.svelte';
 	import { clearRecords, loadRecord, saveRecord } from '$lib/practice/day-records';
 	import { asConnectRecord } from '$lib/practice/listen-connect';
-	import CoachGreeting from '$lib/components/CoachGreeting.svelte';
-	import SayAgain from '$lib/components/SayAgain.svelte';
 	import MiraSays from '$lib/components/MiraSays.svelte';
 	import SayItBetter from '$lib/components/SayItBetter.svelte';
 	import Traps from '$lib/components/Traps.svelte';
@@ -29,11 +27,11 @@
 	import PhrasePracticeReview from '$lib/components/PhrasePracticeReview.svelte';
 	import { asPhraseRecord } from '$lib/practice/phrases';
 	import { connectSetFor, persuadeSetFor, phrasesFor, roleSceneFor, retellPieceFor, sayItemsFor, trapsFor, voiceMessagesFor } from '$lib/practice/day-content';
-	import { COACH_RATE, COACH_VOICE, loadGreeting, localDate, planLine, type GreetingRecord } from '$lib/practice/coach';
+	import { COACH_RATE, COACH_VOICE, localDate, planLine } from '$lib/practice/coach';
 	import { playAudioPromise, stopAllAudio } from '$services/tts';
 	import { getLanguage } from '$services/data-layer';
 	import {
-		DAY_ONE, RECAP_INTRO, RECAP_SHORT, DEFAULT_LENGTH, TRACK_NAMES, agendaFor, agendaMinutes, completeSession, currentModule, dayById, nextDay,
+		DAY_ONE, RECAP_INTRO, RECAP_SHORT, DEFAULT_LENGTH, TRACK_NAMES, agendaFor, completeSession, currentModule, dayById, nextDay,
 		completeLater, finishModule, minutesOf, moduleBefore, modulesFor, recommend, startSession, type DaySession, type Length, type ModuleId, type Track
 	} from '$lib/practice/day';
 	import type { DisplayText } from '$lib/practice/hotel';
@@ -104,10 +102,11 @@
 	let replaying = $state(false);
 	/** A finished module the learner went back to look at again. Its result is not saved a second time. */
 	let reviewing = $state<string | null>(null);
-	/** Back at the check-in (greeting, plan) after the session has started. The plan is read-only then. */
+	/**
+	 * Back at today's plan after the session has started (read-only then). The lesson opens on the
+	 * plan: Mira greets on the dashboard, not here (owner's decision).
+	 */
 	let showCheckIn = $state(false);
-	/** Before a session starts: Mira first, then today's plan (one focused screen each). */
-	let startStep = $state<'greeting' | 'plan'>('greeting');
 	/**
 	 * Mira's instruction sits at the top of a module, on the same screen as the module
 	 * itself, while it is on its first screen ('full'); the module hides it once the
@@ -128,17 +127,13 @@
 	function leaveModule() { stopAllAudio(); }
 	/** Natural phrases: the sentence on screen (0-based), shown in the eyebrow instead of a second counter. */
 	let phraseStep = $state<number | null>(null);
-	/** Today's parts after the greeting, in order, and Mira's line that reads them. */
+	/** Today's parts, in order, and Mira's line that reads them. */
 	const parts = $derived([...modulesFor(length, day, track).map(module => module.title), { en: 'A short recap', fa: 'یک مرور کوتاه' }]);
 	/** The same parts with their estimated minutes, for the plan screen. */
 	const partMinutes = $derived([...modulesFor(length, day, track).map(module => minutesOf(module, length)), day.recapMinutes]);
 	const plan = $derived(planLine(parts));
-	function speakPlan() { stopAllAudio(); void playAudioPromise(plan.en, COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {}); }
-	/** From Mira's greeting to the plan: the tap on Next lets her read it aloud. */
-	function toPlan() { startStep = 'plan'; speakPlan(); }
-	/** Today's chat with Mira, for the recap's one correction (kept in this browser). */
-	let chat = $state<GreetingRecord | null>(null);
-	$effect(() => { if (session?.stage === 'recap') chat = loadGreeting(localDate(new Date()), session.day); });
+	/** The lesson's minutes: its steps and the recap. */
+	const lessonMinutes = $derived(partMinutes.reduce((sum, minutes) => sum + minutes, 0));
 	/** Doing a skipped module now, from the look-back view. */
 	let doingNow = $state(false);
 	const reviewed = $derived(reviewing && session ? modulesFor(session.length, day, track).find(m => m.id === reviewing) ?? null : null);
@@ -164,7 +159,6 @@
 		if (data.requestedDay) pinDay(data.requestedDay);
 		else if (!session) { const pinned = pinnedDay(); if (pinned) upcomingId = pinned; }
 		settled = true;
-		if (loadGreeting(localDate(new Date()), day.id)?.done) startStep = 'plan';
 	});
 
 	/** The checkpoint save under way, so Pause can wait for it before leaving. */
@@ -218,7 +212,7 @@
 	// Leaving the page any other way: nothing keeps talking.
 	$effect(() => () => stopAllAudio());
 	/** The owner tries another day now, without waiting for tomorrow. */
-	function tryDay(id: DayId) { showCheckIn = false; clearRecords(); upcomingId = id; pinDay(id); startStep = 'greeting'; void save(null); }
+	function tryDay(id: DayId) { showCheckIn = false; clearRecords(); upcomingId = id; pinDay(id); void save(null); }
 </script>
 
 {#snippet pauseAction()}
@@ -305,7 +299,7 @@
 	{#if previous}
 		<button class="back" type="button" onclick={() => { leaveModule(); doingNow = false; reviewing = previous?.id ?? null; }}><span aria-hidden="true">{isFa ? '→' : '←'}</span> {isFa ? `قبلی: ${text(previous.title)}` : `Back: ${text(previous.title)}`}</button>
 	{:else if session && session.stage !== 'done'}
-		<button class="back" type="button" onclick={() => { leaveModule(); doingNow = false; reviewing = null; showCheckIn = true; }}><span aria-hidden="true">{isFa ? '→' : '←'}</span> {isFa ? 'قبلی: شروع' : 'Back: Check-in'}</button>
+		<button class="back" type="button" onclick={() => { leaveModule(); doingNow = false; reviewing = null; showCheckIn = true; }}><span aria-hidden="true">{isFa ? '→' : '←'}</span> {isFa ? 'قبلی: برنامهٔ امروز' : 'Back: Today’s plan'}</button>
 	{/if}
 {/snippet}
 
@@ -331,15 +325,8 @@
 			<ActionBar label={isFa ? 'پیشرفتت را ببین' : 'See your progress'} onclick={() => void goto('/practice/english/progress')} secondary={{ label: isFa ? `روز ${day.number.toLocaleString('fa-IR')} را دوباره انجام بده` : `Do Day ${day.number} again`, onclick: () => (replaying = true) }} />
 		</section>
 
-	{:else if !session && startStep === 'greeting'}
-		<h1 class="sr-only">{isFa ? 'امروز' : 'Today'}</h1>
-		<CoachGreeting {isFa} name={data.name} profile={data.profile} progress={data.progress} question={day.question} dayId={day.id} checkIn={day.checkIn} onDone={toPlan} />
-
 	{:else if !session || showCheckIn}
 		<section aria-labelledby="start-title" class="start">
-			{#if session}
-				<CoachGreeting {isFa} name={data.name} profile={data.profile} progress={data.progress} question={day.question} dayId={day.id} checkIn={day.checkIn} readOnly />
-			{/if}
 			<p class="eyebrow day-label">{isFa ? `روز ${day.number.toLocaleString('fa-IR')}: ${day.theme.fa}` : `DAY ${day.number} · ${day.theme.en.toUpperCase()}`}{#if day.tracks && data.labAccess}{isFa ? ` (${TRACK_NAMES[track].fa})` : ` · ${TRACK_NAMES[track].en.toUpperCase()}`}{/if}</p>
 			<div class="plan-head">
 				<span class="avatar" aria-hidden="true">M</span>
@@ -353,7 +340,6 @@
 				<button class="text-button" type="button" onclick={() => { showCheckIn = false; again(); }}>{isFa ? 'شروع دوباره' : 'Start again'}</button>
 			{:else}
 				<div class="quiet-row">
-					<button class="text-button" type="button" onclick={() => (startStep = 'greeting')}><span aria-hidden="true">{isFa ? '→' : '←'}</span> {isFa ? 'میرا' : 'Mira'}</button>
 					{#if data.labAccess}<a class="text-button" href="/practice/english/practice">{isFa ? 'تمرین به انتخاب خودت' : 'Practice on your own'}</a>{/if}
 				</div>
 				{#if ownerNext}{@render tryNext(ownerNext)}{/if}
@@ -363,7 +349,7 @@
 				{#if session}
 					<button class="primary wide" type="button" onclick={() => (showCheckIn = false)}>{isFa ? 'ادامه' : 'Continue'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
 				{:else}
-					<button class="primary wide" type="button" onclick={begin}>{isFa ? `شروع (${agendaMinutes(length, day, track).toLocaleString('fa-IR')} دقیقه)` : `Start · ${agendaMinutes(length, day, track)} min`} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
+					<button class="primary wide" type="button" onclick={begin}>{isFa ? `شروع (${lessonMinutes.toLocaleString('fa-IR')} دقیقه)` : `Start · ${lessonMinutes} min`} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
 				{/if}
 			</div>
 		</section>
@@ -415,15 +401,6 @@
 						{:else}<button class="text-button inline" type="button" onclick={() => { doingNow = true; reviewing = item.id; }}>{isFa ? 'رد شد · همین حالا انجامش بده' : 'Skipped · do it now'}</button>{/if}</li>
 				{/each}
 			</ul>
-			{#if chat?.improved && chat.answer}
-				<div class="card">
-					<p class="eyebrow">{isFa ? 'از گفت‌وگویت با میرا' : 'FROM YOUR CHAT WITH MIRA'}</p>
-					<p><span class="small">{isFa ? 'گفتی:' : 'You said:'}</span> <bdi lang="en" class="said">“{chat.answer}”</bdi></p>
-					<p><span class="small">{isFa ? 'این‌طور بگو:' : 'Try:'}</span> <bdi lang="en" class="better">“{chat.improved}”</bdi></p>
-					{#if (isFa ? chat.noteFa : chat.noteEn)}<p class="small">{isFa ? chat.noteFa : chat.noteEn}</p>{/if}
-					<SayAgain sentence={chat.improved} {isFa} />
-				</div>
-			{/if}
 			<div class="card">
 				<p class="eyebrow">{isFa ? 'پیشنهاد برای دفعهٔ بعد' : 'NEXT TIME'}</p>
 				<strong>{text(next.title)}</strong>
