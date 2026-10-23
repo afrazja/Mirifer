@@ -206,6 +206,8 @@
 	 * Resume brings the learner back here. Waits for a save still under way.
 	 */
 	let pausing = false;
+	/** A lesson under way: a focused flow, so the header keeps only the back arrow (no logo link). */
+	const inLesson = $derived(!!session && session.stage !== 'done');
 	async function pause() {
 		if (pausing) return;
 		pausing = true;
@@ -305,7 +307,7 @@
 </svelte:head>
 
 <main id="main-content" class="today" dir={isFa ? 'rtl' : 'ltr'}>
-	<AppHeader {backHref} backLabel={data.labAccess ? (isFa ? "درس‌ها" : "Lessons") : (isFa ? "پیشرفت" : "Progress")} direction={isFa ? 'rtl' : 'ltr'} onBack={session && session.stage !== 'done' ? pause : undefined} />
+	<AppHeader {backHref} backLabel={data.labAccess ? (isFa ? "درس‌ها" : "Lessons") : (isFa ? "پیشرفت" : "Progress")} direction={isFa ? 'rtl' : 'ltr'} onBack={inLesson ? pause : undefined} logo={!inLesson} />
 	<!-- The section switch, off the focused flow: only before a session starts and once it's done. -->
 	{#if !session || session.stage === 'done'}<EnglishModuleTabs current="today" {isFa} />{/if}
 
