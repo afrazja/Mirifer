@@ -402,6 +402,9 @@ export function agendaFor(length: Length, day: DayPack = DAY_ONE, track: Track =
 	];
 }
 export const agendaMinutes = (length: Length, day: DayPack = DAY_ONE, track: Track = 'intermediate') => agendaFor(length, day, track).reduce((sum, item) => sum + item.minutes, 0);
+/** A lesson's length as the learner sees it: its steps and the recap (the lesson opens on the plan, with no check-in). */
+export const lessonMinutes = (day: DayPack = DAY_ONE, track: Track = 'intermediate', length: Length = DEFAULT_LENGTH) =>
+	modulesFor(length, day, track).reduce((sum, module) => sum + minutesOf(module, length), 0) + day.recapMinutes;
 
 /** Saved checkpoint. Holds progress only, never what the learner said. */
 export const DaySessionSchema = z.object({

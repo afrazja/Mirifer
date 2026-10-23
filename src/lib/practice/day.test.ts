@@ -170,3 +170,12 @@ describe('finished lessons: what a learner has done, never what is ahead', () =>
 		expect(caughtUp(progress())).toBe(false);
 	});
 });
+
+describe('a lesson’s length, as the learner sees it', () => {
+	it('is its steps and the recap: the number on the plan’s Start button and in onboarding', async () => {
+		const { lessonMinutes, modulesFor, minutesOf, DAY_ONE } = await import('./day');
+		expect(lessonMinutes(DAY_ONE, 'intermediate')).toBe(14);
+		expect(lessonMinutes(DAY_ONE, 'professional')).toBe(18);
+		expect(lessonMinutes(DAY_ONE, 'professional')).toBe(modulesFor(15, DAY_ONE, 'professional').reduce((sum, m) => sum + minutesOf(m, 15), 0) + DAY_ONE.recapMinutes);
+	});
+});
