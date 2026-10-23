@@ -296,8 +296,8 @@
 		<section aria-labelledby="caught-up-title">
 			<p class="eyebrow">{isFa ? 'درس‌های روزانه' : 'DAILY LESSONS'}</p>
 			<h1 id="caught-up-title">{isFa ? 'همهٔ درس‌ها را تا این‌جا تمام کرده‌ای.' : 'You’ve finished every lesson so far.'}</h1>
-			<p>{isFa ? 'درس بعدی به‌زودی آماده می‌شود. تا آن موقع، اگر دوست داشتی، به انتخاب خودت تمرین کن.' : 'Your next lesson is coming soon. Until then, you can practice on your own if you like.'}</p>
-			<ActionBar label={isFa ? 'تمرین به انتخاب خودت' : 'Practice on your own'} onclick={() => void goto('/practice/english/practice')} secondary={{ label: isFa ? `روز ${day.number.toLocaleString('fa-IR')} را دوباره انجام بده` : `Do Day ${day.number} again`, onclick: () => (replaying = true) }} />
+			<p>{isFa ? 'درس بعدی به‌زودی آماده می‌شود. تا آن موقع، می‌توانی درسی را که تمام کرده‌ای دوباره انجام بدهی.' : 'Your next lesson is coming soon. Until then, you can do the last one again.'}</p>
+			<ActionBar label={isFa ? 'پیشرفتت را ببین' : 'See your progress'} onclick={() => void goto('/practice/english/progress')} secondary={{ label: isFa ? `روز ${day.number.toLocaleString('fa-IR')} را دوباره انجام بده` : `Do Day ${day.number} again`, onclick: () => (replaying = true) }} />
 		</section>
 
 	{:else if !session && startStep === 'greeting'}
@@ -323,7 +323,7 @@
 			{:else}
 				<div class="quiet-row">
 					<button class="text-button" type="button" onclick={() => (startStep = 'greeting')}><span aria-hidden="true">{isFa ? '→' : '←'}</span> {isFa ? 'میرا' : 'Mira'}</button>
-					<a class="text-button" href="/practice/english/practice">{isFa ? 'تمرین به انتخاب خودت' : 'Practice on your own'}</a>
+					{#if data.labAccess}<a class="text-button" href="/practice/english/practice">{isFa ? 'تمرین به انتخاب خودت' : 'Practice on your own'}</a>{/if}
 				</div>
 				{#if ownerNext}{@render tryNext(ownerNext)}{/if}
 			{/if}
@@ -413,9 +413,8 @@
 			{:else}
 				<p>{isFa ? 'همهٔ درس‌ها را تا این‌جا تمام کرده‌ای. درس بعدی به‌زودی آماده می‌شود.' : 'You’ve finished every lesson so far. Your next lesson is coming soon.'}</p>
 			{/if}
-			<p>{isFa ? 'تا آن موقع، اگر دوست داشتی، به انتخاب خودت تمرین کن.' : 'Until then, you can practice on your own if you like.'}</p>
 			{#if ownerNext}{@render tryNext(ownerNext)}{/if}
-			<ActionBar label={isFa ? 'تمرین به انتخاب خودت' : 'Practice on your own'} onclick={() => void goto('/practice/english/practice')} secondary={{ label: isFa ? `روز ${day.number.toLocaleString('fa-IR')} را دوباره شروع کن` : `Start Day ${day.number} again`, onclick: again }} />
+			<ActionBar label={isFa ? 'پیشرفتت را ببین' : 'See your progress'} onclick={() => void goto('/practice/english/progress')} secondary={{ label: isFa ? `روز ${day.number.toLocaleString('fa-IR')} را دوباره شروع کن` : `Start Day ${day.number} again`, onclick: again }} />
 		</section>
 	{/if}
 

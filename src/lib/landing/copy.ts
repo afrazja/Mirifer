@@ -37,11 +37,11 @@ export interface LandingCopy {
 export const LANDING: Record<LandingLang, LandingCopy> = {
 	en: {
 		title: 'Mirifer: English speaking practice with an AI coach',
-		description: 'Practice speaking English out loud with Mira, your AI coach: short daily lessons for travel, everyday life and IELTS-style speaking, with feedback. Free for now.',
+		description: 'Practice speaking English out loud with Mira, your AI coach: short daily lessons for travel and everyday life, with feedback. Free for now.',
 		eyebrow: 'English speaking practice with an AI coach',
 		h1: 'You know English. Now speak it.',
 		h1Mark: 'speak',
-		line: 'Short daily speaking lessons with Mira, your AI coach. For travel, everyday life, and IELTS-style speaking practice.',
+		line: 'Short daily speaking lessons with Mira, your AI coach, for travel and everyday life.',
 		cta: 'Start free',
 		sample: 'Try a 2-minute sample (no sign-up)',
 		small: 'Free for now · No payment details · Nothing to install',
@@ -67,14 +67,14 @@ export const LANDING: Record<LandingLang, LandingCopy> = {
 			row: 'The three steps (scroll sideways)'
 		},
 		practice: {
-			h: 'More practice, whenever you want',
+			h: 'What you practice in the lessons',
 			cards: [
-				{ title: 'IELTS-style speaking', text: 'Talk for two minutes from a topic card, and answer quick questions.' },
-				{ title: 'Speak your mind', text: 'Give your opinion, describe something, and say your answer again, better.' },
-				{ title: 'Listening', text: 'Hear a story and retell it, or write down what you hear.' },
+				{ title: 'Speak your mind', text: 'Tell a short story from your life, then tell it again, clearer. Or choose for a friend, and say why.' },
+				{ title: 'Natural phrases', text: 'Hear useful sentences for each situation, and say each one after Mira.' },
+				{ title: 'Listening', text: 'Hear a conversation or a story, then show what you caught, or retell it in your own words.' },
 				{ title: 'Common mistakes', text: 'Find the small mistakes that are easy to make, and say the sentence the right way.' }
 			],
-			soon: { title: 'Coming soon', text: 'Job interviews and presentations.' }
+			soon: { title: 'Coming soon', text: 'Exam-style speaking, job interviews and presentations.' }
 		},
 		trust: 'Privacy and questions',
 		privacy: {
@@ -86,24 +86,24 @@ export const LANDING: Record<LandingLang, LandingCopy> = {
 			h: 'Questions',
 			items: [
 				{ q: 'What level do I need?', a: 'If you can understand simple English but find speaking hard, start with Intermediate. When you start, one question helps you choose.' },
-				{ q: 'How long does it take?', a: 'About 15 minutes a day. Extra practice is there whenever you want it.' },
+				{ q: 'How long does it take?', a: 'About 15 minutes a day, one lesson at a time.' },
 				{ q: 'Is it free?', a: 'Yes, for now, with no payment details. We’re early, and we’re learning from our first learners. If that changes, we’ll tell you long before it happens.' },
-				{ q: 'Does it replace an IELTS class?', a: 'No. It gives you daily speaking practice in the style of the test, with feedback. Mirifer isn’t affiliated with or endorsed by IELTS, and it can’t predict your score.' },
+				{ q: 'Does it help with speaking exams?', a: 'It builds the everyday speaking that every speaking exam needs, but it isn’t an exam course, and it can’t predict your result. Exam-style practice will come to the lessons later.' },
 				{ q: 'Does it work on iPhone?', a: 'Yes. It works in the browser on iPhone and Android, with your microphone. Nothing to install.' },
-				{ q: 'Is there a daily limit?', a: 'Your daily lesson always fits. Extra practice has a daily limit; if you reach it, carry on tomorrow.' }
+				{ q: 'Is there a daily limit?', a: 'Mira’s feedback has a daily limit, set so your daily lesson always fits.' }
 			]
 		},
 		end: { h: 'Start your first lesson today.', t: 'It takes about 15 minutes.' },
-		footer: { privacy: 'Privacy', terms: 'Terms', trademark: 'IELTS is a registered trademark of its owners. Mirifer is not affiliated with IELTS.', nav: 'Footer', site: 'Site' },
+		footer: { privacy: 'Privacy', terms: 'Terms', trademark: 'Mirifer is not affiliated with any exam board.', nav: 'Footer', site: 'Site' },
 		digits: n => String(n)
 	},
 	fa: {
 		title: 'میریفر | تمرین مکالمهٔ انگلیسی با مربی هوش مصنوعی',
-		description: 'با میرا، مربی هوش مصنوعی‌ات، انگلیسی را بلند تمرین کن: درس‌های کوتاه روزانه برای سفر، زندگی روزمره و تمرین اسپیکینگ به سبک آیلتس، با بازخورد. فعلاً رایگان.',
+		description: 'با میرا، مربی هوش مصنوعی‌ات، انگلیسی را بلند تمرین کن: درس‌های کوتاه روزانه برای سفر و زندگی روزمره، با بازخورد. فعلاً رایگان.',
 		eyebrow: 'تمرین مکالمهٔ انگلیسی با مربی هوش مصنوعی',
 		h1: 'انگلیسی بلدی. حالا وقت حرف زدن است',
 		h1Mark: 'حرف زدن',
-		line: 'درس‌های کوتاه روزانهٔ مکالمه با میرا، مربی هوش مصنوعی‌ات؛ برای سفر، زندگی روزمره و تمرین اسپیکینگ به سبک آیلتس.',
+		line: 'درس‌های کوتاه روزانهٔ مکالمه با میرا، مربی هوش مصنوعی‌ات؛ برای سفر و زندگی روزمره.',
 		cta: 'رایگان شروع کن',
 		sample: 'یک نمونهٔ دودقیقه‌ای امتحان کن (بدون ثبت‌نام)',
 		small: 'فعلاً رایگان، بدون پرداخت، بدون نصب',
@@ -129,14 +129,14 @@ export const LANDING: Record<LandingLang, LandingCopy> = {
 			row: 'سه مرحله (به پهلو بکش)'
 		},
 		practice: {
-			h: 'تمرین بیشتر، هر وقت خواستی',
+			h: 'در درس‌ها چه تمرین می‌کنی',
 			cards: [
-				{ title: 'اسپیکینگ به سبک آیلتس', text: 'از روی کیوکارت دو دقیقه حرف بزن و به سؤال‌های سریع جواب بده.' },
-				{ title: 'نظرت را بگو', text: 'نظر بده، چیزی را توصیف کن و جوابت را یک بار دیگر بهتر بگو.' },
-				{ title: 'تمرین شنیداری', text: 'یک داستان بشنو و دوباره تعریفش کن، یا هر چه می‌شنوی بنویس.' },
+				{ title: 'نظرت را بگو', text: 'ماجرای کوتاهی از زندگی‌ات تعریف کن و بعد یک بار دیگر روشن‌تر بگو. یا برای یک دوست انتخاب کن و بگو چرا.' },
+				{ title: 'عبارت‌های طبیعی', text: 'جمله‌های کاربردی هر موقعیت را بشنو و هر کدام را بعد از میرا تکرار کن.' },
+				{ title: 'تمرین شنیداری', text: 'یک گفت‌وگو یا داستان بشنو، بعد نشان بده چه فهمیدی، یا با کلمات خودت تعریفش کن.' },
 				{ title: 'اشتباه‌های رایج', text: 'اشتباه‌های کوچکی را که زیاد پیش می‌آید پیدا کن و جمله را درست بگو.' }
 			],
-			soon: { title: 'به‌زودی', text: 'مصاحبهٔ کاری و ارائه.' }
+			soon: { title: 'به‌زودی', text: 'اسپیکینگ به سبک آزمون، مصاحبهٔ کاری و ارائه.' }
 		},
 		trust: 'حریم خصوصی و سؤال‌ها',
 		privacy: {
@@ -148,15 +148,15 @@ export const LANDING: Record<LandingLang, LandingCopy> = {
 			h: 'سؤال‌های رایج',
 			items: [
 				{ q: 'چه سطحی باید داشته باشم؟', a: 'اگر انگلیسی ساده را می‌فهمی ولی حرف زدن برایت سخت است، با «متوسط» شروع کن. اول کار یک سؤال کمکت می‌کند انتخاب کنی.' },
-				{ q: 'چقدر وقت می‌گیرد؟', a: 'روزی حدود ۱۵ دقیقه. بخش تمرین اختیاری است؛ هر وقت خواستی سراغش برو.' },
+				{ q: 'چقدر وقت می‌گیرد؟', a: 'روزی حدود ۱۵ دقیقه، هر بار یک درس.' },
 				{ q: 'رایگان است؟', a: 'بله، فعلاً رایگان است و پرداختی لازم نیست. تازه راه افتاده‌ایم و از اولین کاربرانمان یاد می‌گیریم. اگر روزی تغییر کند، خیلی پیش از آن خبرت می‌کنیم.' },
-				{ q: 'جای کلاس آیلتس را می‌گیرد؟', a: 'نه. هر روز تمرین اسپیکینگ به سبک آزمون و بازخورد می‌دهد. میریفر هیچ ارتباط رسمی با آیلتس ندارد و نمرهٔ آزمون را پیش‌بینی نمی‌کند.' },
+				{ q: 'برای آزمون‌های اسپیکینگ هم کمک می‌کند؟', a: 'همان حرف زدن روزمره‌ای را تقویت می‌کند که هر آزمون اسپیکینگی لازم دارد، ولی دورهٔ آمادگی آزمون نیست و نتیجهٔ آزمون را پیش‌بینی نمی‌کند. تمرین به سبک آزمون بعداً به درس‌ها اضافه می‌شود.' },
 				{ q: 'روی آیفون کار می‌کند؟', a: 'بله. در مرورگرِ آیفون و اندروید با میکروفون کار می‌کند. لازم نیست چیزی نصب کنی.' },
-				{ q: 'محدودیت روزانه دارد؟', a: 'درس روزانه هیچ‌وقت به سقف نمی‌خورد. تمرین‌های اضافه سقف روزانه دارند؛ اگر به سقف رسیدی، فردا ادامه بده.' }
+				{ q: 'محدودیت روزانه دارد؟', a: 'بازخورد میرا سقف روزانه دارد، ولی طوری تنظیم شده که درس روزانه‌ات همیشه جا شود.' }
 			]
 		},
 		end: { h: 'همین امروز اولین درس را شروع کن', t: 'حدود ۱۵ دقیقه طول می‌کشد.' },
-		footer: { privacy: 'حریم خصوصی', terms: 'شرایط استفاده', trademark: 'آیلتس نشان تجاری ثبت‌شدهٔ صاحبانش است و میریفر وابسته به آن نیست.', nav: 'پانویس', site: 'سایت' },
+		footer: { privacy: 'حریم خصوصی', terms: 'شرایط استفاده', trademark: 'میریفر وابسته به هیچ نهاد برگزارکنندهٔ آزمون نیست.', nav: 'پانویس', site: 'سایت' },
 		digits: n => n.toLocaleString('fa-IR')
 	}
 };

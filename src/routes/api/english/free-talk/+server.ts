@@ -4,6 +4,7 @@
  * Counts against the day's voice budget.
  */
 import { json } from '@sveltejs/kit';
+import { canUseLab } from '$lib/server/lab-access';
 import type { RequestHandler } from './$types';
 import { englishLearner, meteredTranscribe } from '$lib/server/english-ai';
 import { transcriptionConfigured } from '$lib/server/transcribe';
@@ -17,6 +18,8 @@ const perMinute = createLimiter(8, 60_000);
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const user = await englishLearner(request, locals);
 	if (user instanceof Response) return user;
+	// Practice on your own is off for learners for now (owner's decision): the owner only, through the Module lab.
+	if (!canUseLab(user)) return json({ error: 'Not found' }, { status: 404 });
 	// Open to every English learner: the Practice area (docs/landing-plan.md).
 	if (!perMinute(user.id)) return tooMany();
 	if (!transcriptionConfigured()) return json({ error: 'Transcription unavailable' }, { status: 503 });
