@@ -10,14 +10,15 @@ describe('landing pages', () => {
 			await expect(load({ locals: { user: null } } as any)).resolves.toEqual({});
 		}
 	});
-	it('promise only what the app does: English, IELTS-style, both languages in step', () => {
+	it('promise only what the app does: English, daily lessons, both languages in step', () => {
 		const en = JSON.stringify(LANDING.en), fa = JSON.stringify(LANDING.fa);
 		// German is paused; the page is about English.
 		expect(en).not.toMatch(/German|Deutsch/);
-		// "IELTS-style" only: never a score, a band or a partnership.
-		expect(en).not.toMatch(/\bband\b|score (?!you)|official partner/i);
-		expect(en).toMatch(/isn’t affiliated with or endorsed by IELTS/);
-		expect(fa).toContain('هیچ ارتباط رسمی با آیلتس ندارد');
+		// Exams in general words only (owner's decision): no exam named, never a score, a band or a partnership.
+		expect(en).not.toMatch(/IELTS|TOEFL|\bband\b|score|official partner/i);
+		expect(fa).not.toMatch(/آیلتس|تافل|نمره/);
+		// The Practice area is off for learners for now: the page never offers extra practice.
+		expect(en).not.toMatch(/extra practice|whenever you want/i);
 		// The two languages say the same things.
 		for (const key of ['faq', 'day', 'practice'] as const) {
 			expect(JSON.stringify(Object.values(LANDING.en[key]).map(v => (Array.isArray(v) ? v.length : typeof v)))).toBe(JSON.stringify(Object.values(LANDING.fa[key]).map(v => (Array.isArray(v) ? v.length : typeof v))));

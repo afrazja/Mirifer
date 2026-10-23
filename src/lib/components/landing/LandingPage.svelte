@@ -200,7 +200,7 @@
 						<div class="art" aria-hidden="true">
 							{#if i === 0}
 								<span class="cue"><i></i><i></i><i></i></span>
-								<svg class="timer" viewBox="0 0 44 44" width="64" height="64"><circle cx="22" cy="22" r="18" class="track" /><circle cx="22" cy="22" r="18" class="run" /><text x="22" y="26" text-anchor="middle">2:00</text></svg>
+								<svg class="timer" viewBox="0 0 44 44" width="64" height="64"><circle cx="22" cy="22" r="18" class="track" /><circle cx="22" cy="22" r="18" class="run" /><text x="22" y="26" text-anchor="middle">1:00</text></svg>
 							{:else if i === 1}
 								<span class="say s1"><i></i></span><span class="arrow">{arrow}</span><span class="say s2"><i></i><i></i><b>★</b></span>
 							{:else if i === 2}
