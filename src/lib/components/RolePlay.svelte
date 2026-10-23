@@ -38,6 +38,8 @@
 
 	// svelte-ignore state_referenced_locally
 	let record = $state<RolePlayRecord>(initial ?? startRolePlay(scene));
+	/** The details card on the first screen stays folded (one thing per screen); it's also in the call. */
+	let showCard = $state(false);
 	// svelte-ignore state_referenced_locally
 	let stage = $state<'mission' | 'goals' | 'call' | 'end'>(initial?.done ? 'end' : initial && initial.turns.length > 1 ? 'call' : 'mission');
 	let draft = $state(''), pending = $state(''), checking = $state(false);
@@ -179,7 +181,8 @@
 	{#if stage === 'mission'}
 		<h2 class="title" tabindex="-1" bind:this={heading}>{text(scene.screen.title)}</h2>
 		<p class="lead">{#if isFa}<MixedText text={scene.screen.lead.fa} />{:else}{scene.screen.lead.en}{/if}</p>
-		{@render card()}
+		<button type="button" class="quiet details-toggle" aria-expanded={showCard} onclick={() => (showCard = !showCard)}>{showCard ? T('Hide your details', 'پنهان کردن جزئیات') : T('See your details', 'دیدن جزئیات')}</button>
+		{#if showCard}{@render card()}{/if}
 		<ActionBar label={T('Next', 'بعدی')} onclick={() => { onFocus?.('hidden'); go('goals'); }} secondary={onSkip ? { label: T('Skip this step', 'این مرحله را رد کن'), onclick: () => { stopAllAudio(); onSkip?.(); } } : null} />
 
 	{:else if stage === 'goals'}
@@ -304,5 +307,6 @@
 	.better { font-family: var(--font-display); font-size: 1.1rem; color: var(--accent-deep); }
 	.why { color: var(--ink-soft); font-size: .88rem; }
 	.item .quiet { justify-self: start; }
+	.details-toggle { justify-self: start; font-size: 1rem; }
 	button:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 </style>

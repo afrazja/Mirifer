@@ -150,6 +150,15 @@
 
 	$effect(() => { if (step && session?.stage === 'modules' && !reviewed) brief(step); });
 
+	/**
+	 * Steps whose first screen has its own content: Mira's note comes first, alone, with Next (one
+	 * thing per screen, owner's rule). A step already under way (something saved) opens where it was.
+	 */
+	const BRIEF_FIRST = new Set(['phrases', 'choose-persuade', 'scenario']);
+	let briefedFor = $state<string | null>(null);
+	const briefing = $derived(!!step && session?.stage === 'modules' && BRIEF_FIRST.has(step.id) && briefedFor !== step.id && !loadRecord(session.startedAt, step.id));
+	function endBrief() { if (!step) return; stopAllAudio(); briefedFor = step.id; }
+
 	onMount(() => {
 		void getLanguage().then(value => { if (value === 'fa' || value === 'en') language = value; });
 		// A session finished on an earlier day is over: today starts the next day, at the learner's usual length.
@@ -379,8 +388,13 @@
 			{@render strip()}
 			<p class="eyebrow">{isFa ? `مرحلهٔ ${stepNumber.toLocaleString('fa-IR')} از ${stepCount.toLocaleString('fa-IR')}` : `STEP ${stepNumber} OF ${stepCount}`}{#if step.id === 'phrases' && phraseStep !== null}{isFa ? ' — ' : ' · '}{isFa ? `${(phraseStep + 1).toLocaleString('fa-IR')} از ${dayPhrases.length.toLocaleString('fa-IR')}` : `${phraseStep + 1}/${dayPhrases.length}`}{/if}{isFa ? ' — ' : ' · '}{step.skill === 'listening' ? (isFa ? 'شنیدن' : 'LISTENING') : (isFa ? 'صحبت کردن' : 'SPEAKING')}</p>
 			<h1 id="step-title">{text(step.title)}</h1>
-			{#if intro === 'full'}{@render instruction(step)}{/if}
-			{@render moduleBody(step, (score, record) => finish('done', score, record), skipStep)}
+			{#if briefing}
+				{@render instruction(step)}
+				<ActionBar label={isFa ? 'بعدی' : 'Next'} onclick={endBrief} secondary={{ label: isFa ? 'این مرحله را رد کن' : 'Skip this step', onclick: skipStep }} />
+			{:else}
+				{#if intro === 'full' && briefedFor !== step.id}{@render instruction(step)}{/if}
+				{@render moduleBody(step, (score, record) => finish('done', score, record), skipStep)}
+			{/if}
 			<!-- Built modules show "Skip this step" under their own main button; a stand-in shows it here. -->
 			{#if intro === 'full' && !step.built}<button class="text-button" type="button" onclick={skipStep}>{isFa ? 'این مرحله را رد کن' : 'Skip this step'}</button>{/if}
 		</section>

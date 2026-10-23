@@ -30,10 +30,11 @@
 	} = $props();
 
 	type Take = 'reasons' | 'answer' | 'again';
-	type Stage = 'choose' | 'photo' | 'ready' | 'recording' | 'short' | 'interrupted' | 'denied' | 'processing' | 'more' | 'failed' | 'f1' | 'f2' | 'result';
+	type Stage = 'compare' | 'choose' | 'photo' | 'ready' | 'recording' | 'short' | 'interrupted' | 'denied' | 'processing' | 'more' | 'failed' | 'f1' | 'f2' | 'result';
 	// svelte-ignore state_referenced_locally
 	let record = $state<PersuadeRecord>(initial ?? emptyPersuadeRecord());
-	let stage = $state<Stage>('choose');
+	/** One thing per screen (owner's rule): compare the two first, then pick one. */
+	let stage = $state<Stage>('compare');
 	let take = $state<Take>('reasons');
 	let picked = $state<FlatId | null>(null), photoOf = $state<FlatId>('a');
 	let showWords = $state(false), showCompare = $state(false), phraseIndex = $state(0);
@@ -52,7 +53,7 @@
 	const maxFor = (t: Take) => (t === 'reasons' ? REASONS_MAX : ANSWER_MAX);
 	const minFor = (t: Take) => (t === 'reasons' ? REASONS_MIN : ANSWER_MIN);
 
-	$effect(() => { onFocus?.(stage === 'choose' ? 'full' : 'hidden'); });
+	$effect(() => { onFocus?.(stage === 'compare' ? 'full' : 'hidden'); });
 
 	onMount(() => {
 		// A reload returns to the step it left; an AI call that already finished isn't repeated.
@@ -206,7 +207,7 @@
 
 {#snippet compare()}
 	<table class="compare" lang="en" dir="ltr">
-		<thead><tr><th scope="col"><span class="sr-only">{T('Fact', 'ویژگی')}</span></th><th scope="col">A</th><th scope="col">B</th></tr></thead>
+		<thead><tr><th scope="col"><span class="sr-only">{T('Fact', 'ویژگی')}</span></th><th scope="col">{FLATS.a.label}</th><th scope="col">{FLATS.b.label}</th></tr></thead>
 		<tbody>{#each ROWS as row, i}<tr><th scope="row">{row.en}</th><td>{FLATS.a.facts[i]}</td><td>{FLATS.b.facts[i]}</td></tr>{/each}</tbody>
 	</table>
 {/snippet}
@@ -219,7 +220,13 @@
 <section class="persuade" aria-live="polite">
 	<h2 class="sr-only" tabindex="-1" bind:this={heading}>{T('Choose and persuade', 'انتخاب کن و قانع کن')}</h2>
 
-	{#if stage === 'choose'}
+	{#if stage === 'compare'}
+		<p class="step-title">{T('Compare the two', 'دو گزینه را با هم مقایسه کن')}</p>
+		{@render compare()}
+		{@render bottom(T('Next', 'بعدی'), () => go('choose'), false, skip)}
+
+	{:else if stage === 'choose'}
+		<p class="step-title">{T('Which one is better for your friend?', 'کدام برای دوستت بهتر است؟')}</p>
 		<div class="flats" role="group" aria-label={isFa ? set.groupLabel.fa : set.groupLabel.en}>
 			{#each [FLATS.a, FLATS.b] as option}
 				<button class="flat" type="button" class:on={picked === option.id} class:text={!option.photo} aria-pressed={picked === option.id} onclick={() => (picked = option.id)}
@@ -231,7 +238,7 @@
 				</button>
 			{/each}
 		</div>
-		{@render compare()}
+		<button class="link" type="button" onclick={() => go('compare')}>{T('See the comparison again', 'دوباره مقایسه را ببین')}</button>
 		{#if picked && FLATS[picked].photo}<button class="link" type="button" onclick={() => { photoOf = picked ?? 'a'; go('photo'); }}>{T('See the photo', 'دیدن عکس')}</button>{/if}
 		{@render bottom(picked ? (isFa ? set.pick[picked].fa : set.pick[picked].en) : T('Pick one', 'یکی را انتخاب کن'), choose, !picked, skip)}
 
@@ -377,6 +384,7 @@
 	.dots span:nth-child(2) { animation-delay: .2s; }
 	.dots span:nth-child(3) { animation-delay: .4s; }
 	@keyframes blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+	.step-title { margin: 4px 0 0; font-weight: 700; font-size: 1.1rem; }
 	.link { justify-self: start; min-height: 44px; padding: 8px 0; background: none; border: 0; color: var(--accent-deep); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 	.link.quiet { color: var(--ink-soft); }
 	.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
