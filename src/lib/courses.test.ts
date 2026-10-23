@@ -12,7 +12,7 @@ describe('German is paused (owner’s decision)', () => {
 	it('sends a German learner from German lessons to the language list, and keeps English learners on English', () => {
 		for (const path of ['/home', '/lesson', '/lessons', '/review', '/vocabulary', '/drill/sprechen', '/check-in']) expect(courseRedirect(path, 'de'), path).toBe('/languages');
 		expect(courseRedirect('/practice/english/today', 'en')).toBeNull();
-		expect(courseRedirect('/lesson', 'en')).toBe('/practice/english/today');
+		expect(courseRedirect('/lesson', 'en')).toBe('/practice/english/progress');
 	});
 	it('can’t be started or continued from the language list', async () => {
 		const user = { id: 'u1', user_metadata: { target_language: 'de' } };

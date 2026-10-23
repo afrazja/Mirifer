@@ -17,8 +17,12 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 	const name = typeof user.user_metadata?.display_name === 'string' ? user.user_metadata.display_name.slice(0, 40) : '';
 	const progress = readEnglishProgress(user.user_metadata);
 	// The owner can open any day with ?day=day-2, to try a day that isn't ready for learners yet.
+	// Learners can open a day they have finished (from their list of finished lessons), but not while
+	// another lesson is under way, so its progress is never lost.
 	const { labAccess } = await parent();
-	const requested = labAccess ? dayById(url.searchParams.get('day')) : null;
+	const asked = url.searchParams.get('day');
+	const underWay = saved.success && saved.data.stage !== 'done';
+	const requested = labAccess ? dayById(asked) : underWay ? null : finishedDays(progress).find(day => day.id === asked) ?? null;
 	// …and either version of a day (?track=professional); learners get theirs from onboarding.
 	const askedTrack = url.searchParams.get('track');
 	const requestedTrack = labAccess && TRACKS.includes(askedTrack as Track) ? (askedTrack as Track) : null;

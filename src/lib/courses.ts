@@ -32,7 +32,7 @@ export function needsCourse(pathname: string): boolean {
 export function courseRedirect(pathname: string, target: unknown): string | null {
 	if (needsCourse(pathname) && !isAvailableCourse(target)) return '/languages';
 	if (target === 'en' && ['/home', '/lesson', '/lessons', '/review', '/vocabulary', '/drill', '/check-in', '/basics', '/exam', '/progress']
-		.some(route => pathname === route || pathname.startsWith(`${route}/`))) return '/practice/english/today';
+		.some(route => pathname === route || pathname.startsWith(`${route}/`))) return '/practice/english/progress';
 	if ((pathname === '/practice' || pathname.startsWith('/practice/')) && target !== 'en') return '/languages';
 	return null;
 }

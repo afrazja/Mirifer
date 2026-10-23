@@ -61,9 +61,19 @@ describe('English today page', () => {
 		} finally { two.ready = true; }
 		// ?day= works for the owner only, and sets aside a session on another day.
 		expect(await load(fixture('en', { english_day_v1: startSession(15) }, undefined, true, '?day=day-2').event())).toMatchObject({ nextDayId: 'day-2', session: null });
-		// ?day= is for the owner only: a learner gets their own next day.
+		// A learner can't open a day they haven't finished: they get their own next day.
 		expect(await load(fixture('en', {}, undefined, false, '?day=day-3').event())).toMatchObject({ nextDayId: 'day-1', requestedDay: null });
 		expect(await load(fixture('en', {}, undefined, true, '?day=day-1').event())).toMatchObject({ nextDayId: 'day-1', requestedDay: 'day-1' });
+	});
+	it('lets a learner open a lesson they finished again, but never one ahead or over a lesson under way', async () => {
+		const done = { sessionsCompleted: 2, lastCompletedAt: '2026-10-02T10:00:00.000Z', lastThemeId: 'day-2', lastResult: 'ok', recent: [], finishedDays: ['day-1', 'day-2'] };
+		expect(await load(fixture('en', { english_progress_v1: done }, undefined, false, '?day=day-1').event())).toMatchObject({ nextDayId: 'day-1', requestedDay: 'day-1', caughtUp: false });
+		expect(await load(fixture('en', { english_progress_v1: done }, undefined, false, '?day=day-4').event())).toMatchObject({ nextDayId: 'day-3', requestedDay: null });
+		// A finished session (stage done) gives way; one under way stays, and the request is ignored.
+		const finishedToday = { ...startSession(15, new Date(), DAY_TWO), stage: 'done', completedAt: '2026-10-02T10:00:00.000Z' };
+		expect(await load(fixture('en', { english_progress_v1: done, english_day_v1: finishedToday }, undefined, false, '?day=day-1').event())).toMatchObject({ requestedDay: 'day-1', session: null });
+		const underWay = startSession(15, new Date(), DAY_TWO);
+		expect(await load(fixture('en', { english_progress_v1: done, english_day_v1: underWay }, undefined, false, '?day=day-1').event())).toMatchObject({ requestedDay: null, session: underWay });
 	});
 	it('a Day 1 session saved before Day 1 had two versions carries on in the learner’s version', async () => {
 		const { track: _dropped, ...legacy } = startSession(15);

@@ -1,19 +1,23 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { finishedDays } from '$lib/practice/day';
-import { readEnglishProgress, skillTotal } from '$lib/practice/english-progress';
-import { activeDates, stepsDone, type LessonEventRow } from '$lib/practice/learner-stats';
+import { DaySessionSchema, finishedDays } from '$lib/practice/day';
+import { readEnglishProgress } from '$lib/practice/english-progress';
+import { readEnglishProfile } from '$lib/practice/english-profile';
+import { activeDates, type LessonEventRow } from '$lib/practice/learner-stats';
 
 /**
- * The learner's progress: lessons finished, lesson steps done, the days they practised, and their
- * right answers in recent sessions. Only what they did (owner's rule): never a total, the lessons
- * ahead, or a level.
+ * The learner's dashboard, the first page of the English section (owner's decision): the lessons
+ * finished, this week's days with the streak, and one button to today's lesson. Only what they did
+ * (owner's rule): never a total, the lessons ahead, or a level.
  */
 export const load: PageServerLoad = async ({ locals }) => {
 	const { data: { user }, error } = await locals.supabase.auth.getUser();
 	if (error || !user) redirect(303, '/login');
 	if (user.user_metadata?.target_language !== 'en') redirect(303, '/languages');
+	// First visit: the three onboarding questions come first.
+	if (!readEnglishProfile(user.user_metadata)) redirect(303, '/practice/english/start');
 	const progress = readEnglishProgress(user.user_metadata);
+	const saved = DaySessionSchema.safeParse(user.user_metadata?.english_day_v1);
 	// The learner's own lesson events (row-level security: they can only read their own).
 	let rows: LessonEventRow[] = [];
 	let eventsLoaded = true;
@@ -28,11 +32,10 @@ export const load: PageServerLoad = async ({ locals }) => {
 		else rows = (data ?? []) as LessonEventRow[];
 	} catch { eventsLoaded = false; }
 	return {
-		finished: finishedDays(progress).map(day => ({ number: day.number, theme: day.theme })),
-		steps: stepsDone(rows),
+		finished: finishedDays(progress).length,
 		dates: activeDates(rows),
 		eventsLoaded,
-		listening: skillTotal(progress, 'listening'),
-		speaking: skillTotal(progress, 'speaking')
+		/** A lesson started and not finished: the button says Continue. */
+		inProgress: saved.success && saved.data.stage !== 'done'
 	};
 };

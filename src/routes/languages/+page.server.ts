@@ -16,7 +16,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 	};
 };
 
-/** English opens on its start page: the two parts for admins, straight to the daily lesson for everyone else. */
+/** English opens on its start page: the two parts for admins, the dashboard for everyone else. */
 const courseHome = (language: string) => (language === 'en' ? '/practice/english/home' : '/home');
 
 export const actions: Actions = {

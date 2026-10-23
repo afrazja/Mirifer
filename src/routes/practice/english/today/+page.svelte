@@ -40,7 +40,6 @@
 	import { DAYS } from '$lib/practice/day';
 	import type { DayId, DayModule, DayPack } from '$lib/practice/day';
 	import ActionBar from '$lib/components/ActionBar.svelte';
-	import LearnerTabs from '$lib/components/LearnerTabs.svelte';
 	import { goto } from '$app/navigation';
 
 	let { data }: PageProps = $props();
@@ -80,7 +79,11 @@
 	/** Role-play with a twist: this day's scene. */
 	const dayScene = $derived(roleSceneFor(day.id));
 	/** The day after today's (for the recap and the done screen); a day with skipped steps comes back. */
-	const following = $derived(session && !session.done.length && session.skipped.length ? day : nextDay(day.id, data.labAccess));
+	// After an earlier day done again, the next is still the one after the furthest day finished.
+	const furthest = $derived(DAYS[Math.max(DAYS.findIndex(item => item.id === day.id), ...data.finished.map(id => DAYS.findIndex(item => item.id === id)))] ?? day);
+	const following = $derived(session && !session.done.length && session.skipped.length ? day : nextDay(furthest.id, data.labAccess));
+	/** Every lesson so far is done: no new day comes next. */
+	const noNewDay = $derived(following.id === day.id || data.finished.includes(following.id));
 	/** The owner can always try the day after this one (ready or not, skipped steps or not). */
 	const ownerNext = $derived(data.labAccess ? DAYS[DAYS.findIndex(item => item.id === day.id) + 1] ?? null : null);
 	/** "Start Day N again" or "Try Day N now" is kept for the rest of the day on this device, so a reload keeps it. */
@@ -284,9 +287,9 @@
 </svelte:head>
 
 <main id="main-content" class="today" dir={isFa ? 'rtl' : 'ltr'}>
-	<AppHeader backHref={data.labAccess ? "/practice/english/days" : "/languages"} backLabel={data.labAccess ? (isFa ? "درس‌ها" : "Lessons") : (isFa ? "زبان‌ها" : "Languages")} direction={isFa ? 'rtl' : 'ltr'} />
+	<AppHeader backHref={data.labAccess ? "/practice/english/days" : "/practice/english/progress"} backLabel={data.labAccess ? (isFa ? "درس‌ها" : "Lessons") : (isFa ? "پیشرفت" : "Progress")} direction={isFa ? 'rtl' : 'ltr'} />
 	<!-- The section switch, off the focused flow: only before a session starts and once it's done. -->
-	{#if !session || session.stage === 'done'}<EnglishModuleTabs current="today" {isFa} /><LearnerTabs current="today" {isFa} />{/if}
+	{#if !session || session.stage === 'done'}<EnglishModuleTabs current="today" {isFa} />{/if}
 
 	<!-- A finished session waits for the device's own date before showing the done screen or a new start. -->
 	{#if !settled}
@@ -406,7 +409,7 @@
 		<section aria-labelledby="done-title">
 			<p class="eyebrow">{isFa ? `روز ${day.number.toLocaleString('fa-IR')}` : `DAY ${day.number}`}</p>
 			<h1 id="done-title">{isFa ? 'جلسهٔ امروز تمام شد.' : 'Today’s session is done.'}</h1>
-			{#if following.id !== day.id}
+			{#if !noNewDay}
 				<p>{isFa ? `فردا برگرد برای روز ${following.number.toLocaleString('fa-IR')}: ${following.theme.fa}.` : `Come back tomorrow for Day ${following.number}: ${following.theme.en}.`}</p>
 			{:else if !session?.done.length}
 				<p>{isFa ? 'فردا برگرد و این درس را دوباره امتحان کن.' : 'Come back tomorrow and try this lesson again.'}</p>
