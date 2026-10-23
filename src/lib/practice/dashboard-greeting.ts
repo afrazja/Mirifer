@@ -54,7 +54,7 @@ export function dashboardGreeting(m: DashboardMoment): DisplayText {
 				`سلام {name}، من میرا هستم، مربی انگلیسی تو. هر روز با هم یک درس کوتاه کار می‌کنیم، حدود ۱۵ دقیقه: اول گوش می‌دهی، بعد حرف می‌زنی. هر وقت آماده بودی، دکمهٔ «شروع روز ${fa(n)}» را پایین صفحه بزن.`);
 		case 'in-progress':
 			return hello(m.name,
-				`Welcome back, {name}! You started Day ${n}. Let’s finish it. Tap “Continue Day ${n}” below.`,
+				`Welcome back, {name}! You started Day ${n}. Let’s finish it. Tap “Resume Day ${n}” below.`,
 				`دوباره خوش آمدی {name}! درس روز ${fa(n)} را شروع کرده‌ای. بیا تمامش کنیم: دکمهٔ «ادامهٔ روز ${fa(n)}» را پایین صفحه بزن.`);
 		case 'done-today':
 			return m.caughtUp
