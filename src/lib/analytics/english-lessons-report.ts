@@ -9,7 +9,9 @@
  * A learner counts towards a return rate only once its whole window has passed.
  */
 import { DAY_MS, type StoredEvent } from './contract';
-import type { AnalyticsUser } from './report';
+
+/** An account, as the lesson report needs it. */
+export interface AnalyticsUser { id: string; created_at: string; is_admin: boolean; }
 
 const at = (e: StoredEvent) => Date.parse(e.occurred_at);
 /** The learner's calendar day of an event, as a day number (days since 1970 in their time zone). */

@@ -22,20 +22,25 @@
 	<p class="analysis-note">Returns count the {report.newLearners} learners whose first lesson was in this period. A learner counts only once the whole day or week after their first lesson has passed. With few learners, read these as signals, not proof.</p>
 
 	<div class="analysis-heading"><div><h3>By day and version</h3></div></div>
-	<div class="analysis-table"><table><caption class="sr-only">Lessons started and finished by day and version</caption><thead><tr><th>Day</th><th>Version</th><th>Started</th><th>Finished</th></tr></thead><tbody>
-		{#each report.days as row}<tr><td>Day {row.day}</td><td>{version(row.track)}</td><td>{row.started}</td><td>{row.completed} <small>{rate(row.completed, row.started)}</small></td></tr>
-		{:else}<tr><td colspan="4" class="analysis-empty">No English lesson has started in this period.</td></tr>{/each}
+	<div class="analysis-table"><table><caption class="sr-only">Lessons started and finished by day and version</caption><thead><tr><th>Lesson</th><th>Started</th><th>Finished</th></tr></thead><tbody>
+		{#each report.days as row}<tr><td>Day {row.day} <small>{version(row.track)}</small></td><td>{row.started}</td><td>{row.completed} <small>{rate(row.completed, row.started)}</small></td></tr>
+		{:else}<tr><td colspan="3" class="analysis-empty">No English lesson has started in this period.</td></tr>{/each}
 	</tbody></table></div>
 
 	<div class="analysis-heading"><div><h3>Steps: done or skipped</h3></div></div>
-	<div class="analysis-table"><table><caption class="sr-only">Each step, done or skipped</caption><thead><tr><th>Day</th><th>Version</th><th>Step</th><th>Done</th><th>Skipped</th></tr></thead><tbody>
-		{#each report.steps as step}<tr><td>Day {step.day}</td><td>{version(step.track)}</td><td>{step.index + 1}. {NAMES[step.module] ?? step.module}</td><td>{step.done}</td><td>{step.skipped} <small>{rate(step.skipped, step.done + step.skipped)}</small></td></tr>
-		{:else}<tr><td colspan="5" class="analysis-empty">No step was done or skipped in this period.</td></tr>{/each}
+	<div class="analysis-table"><table><caption class="sr-only">Each step, done or skipped</caption><thead><tr><th>Step</th><th>Done</th><th>Skipped</th></tr></thead><tbody>
+		{#each report.steps as step}<tr><td>{step.index + 1}. {NAMES[step.module] ?? step.module} <small>Day {step.day} · {version(step.track)}</small></td><td>{step.done}</td><td>{step.skipped} <small>{rate(step.skipped, step.done + step.skipped)}</small></td></tr>
+		{:else}<tr><td colspan="3" class="analysis-empty">No step was done or skipped in this period.</td></tr>{/each}
 	</tbody></table></div>
 
 	<div class="analysis-heading"><div><h3>Where unfinished lessons stopped</h3><p>Lessons with no save for a day, by the step the learner didn’t finish.</p></div></div>
-	<div class="analysis-table"><table><caption class="sr-only">Where unfinished lessons stopped</caption><thead><tr><th>Day</th><th>Version</th><th>Stopped at</th><th>Lessons</th></tr></thead><tbody>
-		{#each report.stops as stop}<tr><td>Day {stop.day}</td><td>{version(stop.track)}</td><td>{stop.atRecap ? 'The recap' : `Step ${stop.step}`}</td><td>{stop.count}</td></tr>
-		{:else}<tr><td colspan="4" class="analysis-empty">No unfinished lesson in this period.</td></tr>{/each}
+	<div class="analysis-table"><table><caption class="sr-only">Where unfinished lessons stopped</caption><thead><tr><th>Lesson</th><th>Stopped at</th><th>Lessons</th></tr></thead><tbody>
+		{#each report.stops as stop}<tr><td>Day {stop.day} <small>{version(stop.track)}</small></td><td>{stop.atRecap ? 'The recap' : `Step ${stop.step}`}</td><td>{stop.count}</td></tr>
+		{:else}<tr><td colspan="3" class="analysis-empty">No unfinished lesson in this period.</td></tr>{/each}
 	</tbody></table></div>
 </div>
+
+<style>
+	/* The version sits under the day or step name, so the tables fit a phone. */
+	td small { display: block; color: #a9b4b0; font-size: .78rem; }
+</style>

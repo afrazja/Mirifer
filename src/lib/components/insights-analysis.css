@@ -51,3 +51,9 @@
 .retention-hit { background: #253e2d; }
 @media(max-width:1100px) { .analysis-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); } .analysis-two-col { grid-template-columns: 1fr; } }
 @media(max-width:600px) { .analysis-metrics { gap: 10px; } .analysis-metrics.three { grid-template-columns: 1fr; } .analysis-metrics article,.analysis-panel { padding: 16px; } .analysis-pagination { justify-content: space-between; } .analysis-controls label { width: 100%; } .analysis-controls input { width: 100%; box-sizing: border-box; } .analysis-rules ul { padding-left: 18px; } }
+/* Phones: tighter cells so a three-column table fits without scrolling. */
+@media (max-width: 600px) {
+	.analysis-table th, .analysis-table td { padding: 10px 10px; }
+	.analysis-table td { min-width: 0; }
+	.analysis-table td:first-child { min-width: 0; }
+}
