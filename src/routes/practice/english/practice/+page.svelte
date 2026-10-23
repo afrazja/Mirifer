@@ -5,6 +5,7 @@
 	 */
 	import { onMount } from 'svelte';
 	import AppHeader from '$lib/components/AppHeader.svelte';
+	import LearnerTabs from '$lib/components/LearnerTabs.svelte';
 	import { getLanguage } from '$services/data-layer';
 	import { PRACTICE_GROUPS, PRACTICE_MODULES, suggestPractice, triedPractice, type PracticeId } from '$lib/practice/practice-area';
 	import type { DisplayText } from '$lib/practice/hotel';
@@ -31,6 +32,7 @@
 
 <main id="main-content" class="practice" dir={isFa ? 'rtl' : 'ltr'}>
 	<AppHeader backHref="/practice/english/today" backLabel={isFa ? 'درس امروز' : 'Today’s lesson'} direction={isFa ? 'rtl' : 'ltr'} />
+	<LearnerTabs current="practice" {isFa} />
 	<p class="eyebrow">{isFa ? 'تمرین' : 'PRACTICE'}</p>
 	<h1>{isFa ? 'تمرین به انتخاب خودت' : 'Practice on your own'}</h1>
 	<p class="lead">{isFa ? 'هر وقت خواستی، یکی را انتخاب کن. درس روزانه سر جایش می‌ماند.' : 'Pick one whenever you like. Your daily lesson stays where it is.'}</p>
