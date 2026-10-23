@@ -19,14 +19,18 @@ describe('The learner’s dashboard', () => {
 			{ event_name: 'lesson_progress', occurred_at: '2026-10-21T08:05:00Z', metadata: { outcome: 'done' } }
 		]);
 		const data = await load({ locals: l } as any) as any;
-		expect(data).toEqual({ finished: 2, dates: ['2026-10-20', '2026-10-21'], eventsLoaded: true, inProgress: false });
+		expect(data).toEqual({ finished: 2, lesson: { id: 'day-3', number: 3, theme: expect.any(Object) }, caughtUp: false, lastDoneAt: null, dates: ['2026-10-20', '2026-10-21'], eventsLoaded: true, inProgress: false });
 		expect(l.query.eq).toHaveBeenCalledWith('user_id', 'u1');
 	});
-	it('says Continue while a lesson is under way', async () => {
-		const data = await load({ locals: locals(english({ english_day_v1: startSession(15) })) } as any) as any;
-		expect(data.inProgress).toBe(true);
-		const done = { ...startSession(15), stage: 'done', completedAt: '2026-10-02T10:00:00.000Z' };
-		expect((await load({ locals: locals(english({ english_day_v1: done })) } as any) as any).inProgress).toBe(false);
+	it('names the lesson the button opens: the one under way, the next one, or the last when caught up', async () => {
+		const busy = await load({ locals: locals(english({ english_progress_v1: progress, english_day_v1: startSession(15, new Date(), DAY_TWO) })) } as any) as any;
+		expect(busy).toMatchObject({ inProgress: true, lesson: { id: 'day-2', number: 2 }, caughtUp: false });
+		const done = { ...startSession(15, new Date(), DAY_TWO), stage: 'done', completedAt: '2026-10-02T10:00:00.000Z' };
+		expect(await load({ locals: locals(english({ english_progress_v1: progress, english_day_v1: done })) } as any)).toMatchObject({ inProgress: false, lesson: { id: 'day-3' }, lastDoneAt: '2026-10-02T10:00:00.000Z' });
+		expect(await load({ locals: locals(english()) } as any)).toMatchObject({ lesson: { id: 'day-1', number: 1 }, caughtUp: false });
+		// Day 4 isn't released yet: after Day 3 the learner is caught up, and the lesson shown is Day 3.
+		const three = { ...progress, lastThemeId: 'day-3', finishedDays: ['day-1', 'day-2', 'day-3'] };
+		expect(await load({ locals: locals(english({ english_progress_v1: three })) } as any)).toMatchObject({ lesson: { id: 'day-3' }, caughtUp: true });
 	});
 	it('still opens when the events can’t be read', async () => {
 		const data = await load({ locals: locals(english(), [], { message: 'down' }) } as any) as any;
