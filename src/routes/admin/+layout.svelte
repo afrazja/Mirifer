@@ -8,11 +8,8 @@
 		<nav class="admin-nav">
 			<div class="admin-brand">⚙️ Mirifer Admin</div>
 			<div class="admin-user">👤 {data.adminUser.displayName}</div>
-			<a href="/admin" class="nav-link">📊 Learner Insights</a>
-			<a href="/admin/users" class="nav-link">👥 Users</a>
-			<a href="/admin/lessons" class="nav-link">📚 Lessons</a>
-			<a href="/admin/basics" class="nav-link">🔤 Basics</a>
-			<a href="/admin/glossary" class="nav-link">📖 Glossary</a>
+			<a href="/admin" class="nav-link">📊 English</a>
+			<a href="/admin/users" class="nav-link">👥 Accounts</a>
 			<a href="/" class="nav-link nav-back">← Back to App</a>
 		</nav>
 	{/if}
@@ -92,7 +89,8 @@
 		.admin-main { padding: 20px 14px; }
 		.admin-shell { flex-direction: column; }
 		.admin-nav { width: 100%; min-width: unset; flex-direction: row; flex-wrap: wrap; padding: 12px; gap: 4px; }
-		.admin-brand, .admin-user { width: 100%; }
+		.admin-brand { width: 100%; margin-bottom: 0; padding-bottom: 8px; }
+		.admin-user { display: none; }
 		.nav-back { margin-top: 0; border-top: none; padding-top: 0; }
 	}
 </style>
