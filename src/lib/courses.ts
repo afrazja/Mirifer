@@ -22,6 +22,16 @@ export function isAvailableCourse(code: unknown): code is TargetLanguage {
 	return getCourse(code)?.available === true;
 }
 
+/**
+ * The one course open right now, or null when there's a choice. While only one is open, there's
+ * nothing to pick: the language list steps aside and the app opens straight on that course
+ * (owner's decision, to cut taps). It comes back on its own once a second course opens.
+ */
+export function onlyOpenCourse(): (typeof COURSES)[number]['code'] | null {
+	const open = COURSES.filter(course => course.available);
+	return open.length === 1 ? open[0].code : null;
+}
+
 /** Learning routes require a selected, available course, including deep links. */
 export function needsCourse(pathname: string): boolean {
 	return ['/home', '/lesson', '/lessons', '/review', '/vocabulary', '/drill', '/check-in', '/practice']
