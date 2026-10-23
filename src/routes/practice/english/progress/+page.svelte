@@ -40,12 +40,16 @@
 	const doneToday = $derived(!data.inProgress && !!today && !!data.lastDoneAt && localOf(data.lastDoneAt) === today);
 	const dayName = (number: number) => (isFa ? `روز ${n(number)}` : `Day ${number}`);
 	const lessonLabel = $derived(data.caughtUp ? (isFa ? 'آخرین درس' : 'Latest lesson') : doneToday ? (isFa ? 'درس بعدی' : 'Next lesson') : (isFa ? 'درس امروز' : 'Today’s lesson'));
-	const lessonNote = $derived(data.caughtUp
+	const lessonNote = $derived(data.resume
+		? (data.resume.recap
+			? (isFa ? 'فقط مرور کوتاه آخر مانده.' : 'Only the short recap is left.')
+			: isFa ? `جایی که ماندی: مرحلهٔ ${n(data.resume.step)} از ${n(data.resume.steps)}${data.resume.title ? `، ${data.resume.title.fa}` : ''}.` : `You stopped at step ${data.resume.step} of ${data.resume.steps}${data.resume.title ? `: ${data.resume.title.en}` : ''}.`)
+		: data.caughtUp
 		? (isFa ? 'همهٔ درس‌ها را تا این‌جا تمام کرده‌ای. درس بعدی به‌زودی آماده می‌شود.' : 'You’ve finished every lesson so far. The next one is coming soon.')
 		: doneToday ? (isFa ? 'درس امروز تمام شد. این درس فردا باز می‌شود.' : 'Today’s lesson is done. This one opens tomorrow.')
 		: null);
 	const button = $derived(data.inProgress
-		? { label: isFa ? `ادامهٔ ${dayName(data.lesson.number)}` : `Continue ${dayName(data.lesson.number)}`, href: '/practice/english/today' }
+		? { label: isFa ? `ادامهٔ ${dayName(data.lesson.number)}` : `Resume ${dayName(data.lesson.number)}`, href: '/practice/english/today' }
 		: doneToday ? { label: isFa ? 'درس امروز را ببین' : 'See today’s lesson', href: '/practice/english/today' }
 		: data.caughtUp ? { label: isFa ? `${dayName(data.lesson.number)} را دوباره انجام بده` : `Do ${dayName(data.lesson.number)} again`, href: `/practice/english/today?day=${data.lesson.id}` }
 		: { label: isFa ? `شروع ${dayName(data.lesson.number)}` : `Start ${dayName(data.lesson.number)}`, href: '/practice/english/today' });

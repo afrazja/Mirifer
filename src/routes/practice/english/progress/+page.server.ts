@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { DaySessionSchema, caughtUp, dayById, finishedDays, furthestDayId, nextDay } from '$lib/practice/day';
+import { DaySessionSchema, caughtUp, currentModule, dayById, finishedDays, furthestDayId, nextDay, sessionModules } from '$lib/practice/day';
 import { readEnglishProgress } from '$lib/practice/english-progress';
 import { readEnglishProfile } from '$lib/practice/english-profile';
 import { activeDates, type LessonEventRow } from '$lib/practice/learner-stats';
@@ -35,6 +35,10 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const inProgress = !!session && session.stage !== 'done';
 	// The lesson the button opens: the one under way, or the next one (the last one when caught up).
 	const lesson = (inProgress ? dayById(session!.day) : null) ?? nextDay(furthestDayId(progress));
+	// Where a paused lesson picks up: its step, or the recap once every step is through.
+	const steps = inProgress ? sessionModules(session!) : [];
+	const next = inProgress ? currentModule(session!) : null;
+	const resume = inProgress ? { step: Math.min(session!.done.length + session!.skipped.length + 1, steps.length), steps: steps.length, recap: session!.stage === 'recap', title: next?.title ?? null } : null;
 	const name = typeof user.user_metadata?.display_name === 'string' ? user.user_metadata.display_name.trim().slice(0, 40) : '';
 	return {
 		name,
@@ -46,7 +50,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 		lastDoneAt: session?.stage === 'done' ? session.completedAt ?? null : null,
 		dates: activeDates(rows),
 		eventsLoaded,
-		/** A lesson started and not finished: the button says Continue. */
-		inProgress
+		/** A lesson started and not finished: the button says Resume. */
+		inProgress,
+		resume
 	};
 };

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { load } from './+page.server';
 import { load as loadFinished } from '../finished/+page.server';
-import { DAY_TWO, startSession } from '$lib/practice/day';
+import { DAY_TWO, sessionModules, startSession } from '$lib/practice/day';
 
 function locals(meta: Record<string, unknown> | null, rows: unknown[] = [], readError: unknown = null) {
 	const query: any = { select: () => query, eq: vi.fn(() => query), in: () => query, order: () => query, limit: vi.fn().mockResolvedValue({ data: rows, error: readError }) };
@@ -19,12 +19,21 @@ describe('The learner’s dashboard', () => {
 			{ event_name: 'lesson_progress', occurred_at: '2026-10-21T08:05:00Z', metadata: { outcome: 'done' } }
 		]);
 		const data = await load({ locals: l } as any) as any;
-		expect(data).toEqual({ name: '', finished: 2, lesson: { id: 'day-3', number: 3, theme: expect.any(Object) }, caughtUp: false, lastDoneAt: null, dates: ['2026-10-20', '2026-10-21'], eventsLoaded: true, inProgress: false });
+		expect(data).toEqual({ name: '', finished: 2, lesson: { id: 'day-3', number: 3, theme: expect.any(Object) }, caughtUp: false, lastDoneAt: null, dates: ['2026-10-20', '2026-10-21'], eventsLoaded: true, inProgress: false, resume: null });
 		expect(l.query.eq).toHaveBeenCalledWith('user_id', 'u1');
 	});
 	it('names the lesson the button opens: the one under way, the next one, or the last when caught up', async () => {
 		const busy = await load({ locals: locals(english({ english_progress_v1: progress, english_day_v1: startSession(15, new Date(), DAY_TWO) })) } as any) as any;
-		expect(busy).toMatchObject({ inProgress: true, lesson: { id: 'day-2', number: 2 }, caughtUp: false });
+		expect(busy).toMatchObject({ inProgress: true, lesson: { id: 'day-2', number: 2 }, caughtUp: false, resume: { step: 1, recap: false } });
+		expect(busy.resume.steps).toBeGreaterThan(1);
+		expect(busy.resume.title.en).toBeTruthy();
+		// Paused after two steps: Resume picks up at the third.
+		const paused = startSession(15, new Date(), DAY_TWO);
+		const [first, second] = sessionModules(paused);
+		const later = await load({ locals: locals(english({ english_progress_v1: progress, english_day_v1: { ...paused, done: [first.id], skipped: [second.id] } })) } as any) as any;
+		expect(later.resume).toMatchObject({ step: 3, recap: false });
+		const atRecap = await load({ locals: locals(english({ english_progress_v1: progress, english_day_v1: { ...paused, stage: 'recap', done: sessionModules(paused).map(m => m.id) } })) } as any) as any;
+		expect(atRecap.resume).toMatchObject({ recap: true, title: null });
 		const done = { ...startSession(15, new Date(), DAY_TWO), stage: 'done', completedAt: '2026-10-02T10:00:00.000Z' };
 		expect(await load({ locals: locals(english({ english_progress_v1: progress, english_day_v1: done })) } as any)).toMatchObject({ inProgress: false, lesson: { id: 'day-3' }, lastDoneAt: '2026-10-02T10:00:00.000Z' });
 		expect(await load({ locals: locals(english()) } as any)).toMatchObject({ lesson: { id: 'day-1', number: 1 }, caughtUp: false });

@@ -167,8 +167,15 @@
 		if (loadGreeting(localDate(new Date()), day.id)?.done) startStep = 'plan';
 	});
 
+	/** The checkpoint save under way, so Pause can wait for it before leaving. */
+	let saving: Promise<void> | null = null;
 	/** Saves the checkpoint. A failed save never blocks the learner; they get a quiet note. */
-	async function save(next: DaySession | null) {
+	function save(next: DaySession | null): Promise<void> {
+		const run = saveNow(next);
+		saving = run;
+		return run;
+	}
+	async function saveNow(next: DaySession | null) {
 		session = next; saveFailed = false;
 		try {
 			const body = new FormData();
@@ -197,9 +204,30 @@
 		void save(completeLater(session, id as ModuleId, score));
 	}
 	function again() { const id = day.id; clearRecords(); upcomingId = id; pinDay(id); void save(null); }
+	/** Where Back and Pause lead: the learner's dashboard (the owner's list of days). */
+	const backHref = $derived(data.labAccess ? '/practice/english/days' : '/practice/english/progress');
+	/** Pause mid-lesson: every finished step is already saved and each step keeps its own place, so
+	 * the dashboard's Resume brings the learner back here. Waits for a save still under way. */
+	let pausing = $state(false);
+	async function pause() {
+		pausing = true;
+		stopAllAudio();
+		try { await saving; } catch { /* the quiet note covers a failed save */ }
+		await goto(backHref);
+	}
+	// Leaving the page any other way: nothing keeps talking.
+	$effect(() => () => stopAllAudio());
 	/** The owner tries another day now, without waiting for tomorrow. */
 	function tryDay(id: DayId) { showCheckIn = false; clearRecords(); upcomingId = id; pinDay(id); startStep = 'greeting'; void save(null); }
 </script>
+
+{#snippet pauseAction()}
+	<!-- Mid-lesson: leave now, pick up later from the dashboard's Resume. -->
+	<button class="pause" type="button" onclick={pause} disabled={pausing}>
+		<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor" /><rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor" /></svg>
+		{isFa ? 'توقف' : 'Pause'}
+	</button>
+{/snippet}
 
 {#snippet tryNext(next: DayPack)}
 	<!-- Owner only: try the next day now (it may not be ready for learners yet). -->
@@ -287,7 +315,7 @@
 </svelte:head>
 
 <main id="main-content" class="today" dir={isFa ? 'rtl' : 'ltr'}>
-	<AppHeader backHref={data.labAccess ? "/practice/english/days" : "/practice/english/progress"} backLabel={data.labAccess ? (isFa ? "درس‌ها" : "Lessons") : (isFa ? "پیشرفت" : "Progress")} direction={isFa ? 'rtl' : 'ltr'} />
+	<AppHeader {backHref} backLabel={data.labAccess ? (isFa ? "درس‌ها" : "Lessons") : (isFa ? "پیشرفت" : "Progress")} direction={isFa ? 'rtl' : 'ltr'} actions={session && session.stage !== 'done' ? pauseAction : undefined} />
 	<!-- The section switch, off the focused flow: only before a session starts and once it's done. -->
 	{#if !session || session.stage === 'done'}<EnglishModuleTabs current="today" {isFa} />{/if}
 
@@ -466,6 +494,10 @@
 	.primary.wide { display: flex; inline-size: 100%; max-inline-size: 680px; margin-inline: auto; min-height: 54px; font-size: 1.05rem; }
 	.said { color: var(--ink-soft); }
 	.better { font-weight: 600; color: var(--accent-deep); }
+	.pause { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 8px 14px; border: 1px solid var(--control-border); border-radius: 999px; background: var(--paper-raised); color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; }
+	.pause:hover { border-color: var(--accent); }
+	.pause:focus-visible { outline: 3px solid var(--accent-deep); outline-offset: 2px; }
+	.pause:disabled { opacity: .6; cursor: default; }
 	.plan-head { display: flex; align-items: center; gap: 10px; margin: 18px 0 6px; }
 	.avatar { display: grid; place-items: center; inline-size: 44px; block-size: 44px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-family: var(--font-display); font-weight: 700; font-size: 1.2rem; }
 	.mira-name { margin: 0; font-weight: 700; }

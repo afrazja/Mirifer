@@ -19,7 +19,7 @@ describe('Mira’s greeting on the dashboard', () => {
 	it('welcomes a returning learner by name, and names the button and the lesson', () => {
 		const line = dashboardGreeting(at({ inProgress: true }));
 		expect(line.en).toMatch(/John/);
-		expect(line.en).toContain('Continue Day 3');
+		expect(line.en).toContain('Resume Day 3');
 		expect(line.fa).toContain('ادامهٔ روز ۳');
 		expect(dashboardGreeting(at({ streak: 4 })).en).toMatch(/4 days in a row/);
 	});
