@@ -14,7 +14,7 @@
 		secondary?: { label: string; onclick: () => void } | null;
 		/** Shown after the label but hidden from screen readers (a countdown). */
 		suffix?: string;
-		/** A soft pulse that draws the eye to the button (a learner's very first Start). */
+		/** A gentle grow-and-shrink that draws the eye to the button (a learner’s very first Start). */
 		attention?: boolean;
 	} = $props();
 </script>
@@ -38,13 +38,10 @@
 	.primary { display: flex; align-items: center; justify-content: center; gap: 10px; inline-size: 100%; max-inline-size: 680px; margin-inline: auto; min-height: 54px; border: 0; border-radius: 14px; background: var(--accent); color: var(--on-accent); font: inherit; font-size: 1.05rem; font-weight: 600; cursor: pointer; }
 	.primary:disabled { opacity: .5; cursor: default; }
 	.primary.recording { background: var(--attention); }
-	/* A soft yellow glow that pulses, then rests (never a hard flash). Still ring with reduced motion. */
+	/* The button gently grows and shrinks (owner's choice: size only, no colour). Still with reduced motion. */
 	.primary.attention { animation: beckon 1.8s ease-in-out infinite; }
-	@keyframes beckon {
-		0%, 100% { box-shadow: 0 0 0 0 rgb(255 214 90 / .95); transform: scale(1); }
-		50% { box-shadow: 0 0 0 10px rgb(255 214 90 / 0); transform: scale(1.03); }
-	}
-	@media (prefers-reduced-motion: reduce) { .primary.attention { animation: none; box-shadow: 0 0 0 4px #ffd65a; } }
+	@keyframes beckon { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+	@media (prefers-reduced-motion: reduce) { .primary.attention { animation: none; } }
 	.second { display: grid; place-items: center; min-block-size: 48px; }
 	.quiet { min-height: 44px; padding: 8px 12px; border: 0; background: none; color: var(--ink-soft); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 	button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
