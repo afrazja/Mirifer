@@ -19,18 +19,21 @@ export function localDate(row: Pick<LessonEventRow, 'occurred_at' | 'metadata'>)
 	return new Date(at + offset * 60_000).toISOString().slice(0, 10);
 }
 
-/** The days with any lesson activity, oldest first, each once. */
-export function activeDates(rows: LessonEventRow[]): string[] {
+/**
+ * The days the learner finished a lesson, oldest first, each once (owner's rule: a day counts only
+ * once a lesson is finished on it, not when one is started or paused; a lesson with every step
+ * skipped doesn't count).
+ */
+export function lessonDates(rows: LessonEventRow[]): string[] {
 	const dates = new Set<string>();
 	for (const row of rows) {
+		if (row.event_name !== 'lesson_completed') continue;
+		if (typeof row.metadata?.done === 'number' && row.metadata.done < 1) continue;
 		const date = localDate(row);
 		if (date) dates.add(date);
 	}
 	return [...dates].sort();
 }
-
-/** Lesson steps completed (a lesson done again counts its steps again; skipped steps don't count). */
-export const stepsDone = (rows: LessonEventRow[]): number => rows.filter(row => row.event_name === 'lesson_progress' && row.metadata?.outcome === 'done').length;
 
 const dayBefore = (date: string) => new Date(Date.parse(`${date}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
 

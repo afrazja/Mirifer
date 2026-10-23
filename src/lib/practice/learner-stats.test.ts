@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { activeDates, lastSevenDays, localDate, stepsDone, streak, type LessonEventRow } from './learner-stats';
+import { lastSevenDays, lessonDates, localDate, streak, type LessonEventRow } from './learner-stats';
 
 const row = (event_name: string, occurred_at: string, metadata: Record<string, unknown> = {}): LessonEventRow => ({ event_name, occurred_at, metadata });
 
@@ -10,15 +10,17 @@ describe('the learner’s progress numbers', () => {
 		expect(localDate(row('lesson_started', '2026-10-20T22:30:00Z'))).toBe('2026-10-20');
 		expect(localDate(row('lesson_started', 'not a date'))).toBeNull();
 	});
-	it('counts each active day once, and only the steps done', () => {
+	it('counts a day only once a lesson is finished on it, each day once', () => {
 		const rows = [
-			row('lesson_started', '2026-10-20T08:00:00Z'),
-			row('lesson_progress', '2026-10-20T08:05:00Z', { outcome: 'done' }),
-			row('lesson_progress', '2026-10-20T08:09:00Z', { outcome: 'skipped' }),
-			row('lesson_progress', '2026-10-22T08:05:00Z', { outcome: 'done' })
+			row('lesson_started', '2026-10-19T08:00:00Z'),
+			row('lesson_progress', '2026-10-19T08:05:00Z', { outcome: 'done' }),
+			row('lesson_completed', '2026-10-20T08:20:00Z', { done: 4, skipped: 0 }),
+			row('lesson_completed', '2026-10-20T18:20:00Z', { done: 3, skipped: 1 }),
+			// Every step skipped: not a finished lesson.
+			row('lesson_completed', '2026-10-21T08:20:00Z', { done: 0, skipped: 4 }),
+			row('lesson_completed', '2026-10-22T08:20:00Z', { done: 2, skipped: 2 })
 		];
-		expect(activeDates(rows)).toEqual(['2026-10-20', '2026-10-22']);
-		expect(stepsDone(rows)).toBe(2);
+		expect(lessonDates(rows)).toEqual(['2026-10-20', '2026-10-22']);
 	});
 	it('counts days in a row, ending today or (if nothing yet today) yesterday', () => {
 		const dates = ['2026-10-18', '2026-10-20', '2026-10-21', '2026-10-22'];
