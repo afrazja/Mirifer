@@ -6,8 +6,8 @@ import { readEnglishProfile } from '$lib/practice/english-profile';
 import { activeDates, type LessonEventRow } from '$lib/practice/learner-stats';
 
 /**
- * The learner's dashboard, the first page of the English section (owner's decision): the lessons
- * finished, this week's days with the streak, and one button to today's lesson. Only what they did
+ * The learner's dashboard, the first page of the English section (owner's decision): Mira's
+ * greeting, the lessons finished, this week's days with the streak, and one button to today's lesson. Only what they did
  * (owner's rule): never a total, the lessons ahead, or a level.
  */
 export const load: PageServerLoad = async ({ locals }) => {
@@ -35,7 +35,9 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const inProgress = !!session && session.stage !== 'done';
 	// The lesson the button opens: the one under way, or the next one (the last one when caught up).
 	const lesson = (inProgress ? dayById(session!.day) : null) ?? nextDay(furthestDayId(progress));
+	const name = typeof user.user_metadata?.display_name === 'string' ? user.user_metadata.display_name.trim().slice(0, 40) : '';
 	return {
+		name,
 		finished: finishedDays(progress).length,
 		lesson: { id: lesson.id, number: lesson.number, theme: lesson.theme },
 		/** Every released lesson is done: the next one is coming. */

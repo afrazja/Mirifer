@@ -61,7 +61,7 @@ export const isMicAttempt = (heard: string) => wordCount(heard) >= 3;
 /** Puts the name in, or drops it cleanly ("Welcome back, Sam." / "Welcome back."). */
 const fill = (line: string, name: string) => (name ? line.replaceAll('{name}', name) : line.replace(/[,،]? ?\{name\}/g, ''));
 /** In a Persian line the (usually Latin) name is isolated, so its direction can't pull the words around it. */
-const hello = (name: string, en: string, fa: string): DisplayText => ({ en: fill(en, name), fa: fill(fa, name ? `\u2068${name}\u2069` : '') });
+export const hello = (name: string, en: string, fa: string): DisplayText => ({ en: fill(en, name), fa: fill(fa, name ? `\u2068${name}\u2069` : '') });
 
 /** Mira's lines around the greeting: her hello, then a mic check, then on to the plan. */
 export const MIRA_LINES = {

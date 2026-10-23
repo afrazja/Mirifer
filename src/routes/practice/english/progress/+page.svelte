@@ -1,15 +1,19 @@
 <script lang="ts">
 	/**
-	 * The learner's dashboard, the first page of the English section: lessons finished (tap to see
+	 * The learner's dashboard, the first page of the English section: Mira's greeting (welcome back
+	 * by name, or what to do the first time; tap to hear her), lessons finished (tap to see
 	 * them), this week with the streak (today yellow, days with a lesson green, the rest white), and
 	 * today's lesson by number and name, with one button to it. No tabs (owner's decision).
 	 */
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import AppHeader from '$lib/components/AppHeader.svelte';
 	import ActionBar from '$lib/components/ActionBar.svelte';
 	import { getLanguage } from '$services/data-layer';
 	import { lastSevenDays, streak } from '$lib/practice/learner-stats';
+	import { dashboardGreeting, greetingKind, type DashboardMoment } from '$lib/practice/dashboard-greeting';
+	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
+	import { playAudioPromise, stopAllAudio } from '$services/tts';
 
 	let { data } = $props();
 	let language = $state<'en' | 'fa'>('en');
@@ -28,7 +32,7 @@
 	const weekdayLong = (date: string) => new Date(`${date}T12:00:00Z`).toLocaleDateString(isFa ? 'fa-IR' : 'en-US', { weekday: 'long', timeZone: 'UTC' });
 	const streakLine = $derived(inARow > 1
 		? (isFa ? `${n(inARow)} روز پشت سر هم` : `${inARow} days in a row`)
-		: inARow === 1 ? (isFa ? 'امروز یا دیروز تمرین کردی' : 'You practiced today or yesterday')
+		: inARow === 1 ? (today && data.dates.includes(today) ? (isFa ? 'امروز تمرین کردی' : 'You practiced today') : (isFa ? 'دیروز تمرین کردی' : 'You practiced yesterday'))
 		: (isFa ? 'یک درس امروز، شروع یک زنجیره' : 'A lesson today starts a streak'));
 	/** The device's calendar date for a stored time. */
 	const localOf = (iso: string) => { const at = new Date(iso); return new Date(at.getTime() - at.getTimezoneOffset() * 60_000).toISOString().slice(0, 10); };
@@ -45,6 +49,25 @@
 		: doneToday ? { label: isFa ? 'درس امروز را ببین' : 'See today’s lesson', href: '/practice/english/today' }
 		: data.caughtUp ? { label: isFa ? `${dayName(data.lesson.number)} را دوباره انجام بده` : `Do ${dayName(data.lesson.number)} again`, href: `/practice/english/today?day=${data.lesson.id}` }
 		: { label: isFa ? `شروع ${dayName(data.lesson.number)}` : `Start ${dayName(data.lesson.number)}`, href: '/practice/english/today' });
+
+	/** Days since the learner's last day with a lesson (null if none). */
+	const daysAway = $derived(today && data.dates.length ? Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${data.dates.at(-1)}T00:00:00Z`)) / 86_400_000) : null);
+	const moment = $derived<DashboardMoment>({
+		name: data.name, finished: data.finished, activeDays: data.dates.length, inProgress: data.inProgress, doneToday, caughtUp: data.caughtUp,
+		streak: inARow, activeToday: !!today && data.dates.includes(today), daysAway, lessonNumber: data.lesson.number
+	});
+	const greeting = $derived(dashboardGreeting(moment));
+	/** The very first visit: only Mira, today's lesson and the button (nothing to count yet). */
+	const firstVisit = $derived(greetingKind(moment) === 'first');
+	/** Mira says her line in English when tapped (phones only play sound from a tap). */
+	let speaking = $state(false);
+	function hearMira() {
+		stopAllAudio();
+		if (speaking) { speaking = false; return; }
+		speaking = true;
+		void playAudioPromise(greeting.en, COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {}).finally(() => { speaking = false; });
+	}
+	onDestroy(() => stopAllAudio());
 </script>
 
 <svelte:head>
@@ -54,9 +77,25 @@
 
 <main id="main-content" class="progress" dir={isFa ? 'rtl' : 'ltr'}>
 	<AppHeader backHref="/languages" backLabel={isFa ? 'زبان‌ها' : 'Languages'} direction={isFa ? 'rtl' : 'ltr'} />
-	<h1>{isFa ? 'پیشرفت تو' : 'Your progress'}</h1>
+	<h1 class="sr-only">{isFa ? 'پیشرفت تو' : 'Your progress'}</h1>
 
-	{#if data.finished}
+	{#if today}
+		<section class="mira" aria-labelledby="mira-name">
+			<span class="avatar" aria-hidden="true">M</span>
+			<div class="bubble">
+				<p id="mira-name" class="who">{isFa ? 'میرا' : 'Mira'}</p>
+				<p class="line">{isFa ? greeting.fa : greeting.en}</p>
+			</div>
+			<button class="listen" type="button" onclick={hearMira} aria-pressed={speaking} aria-label={isFa ? 'شنیدن صدای میرا به انگلیسی' : 'Hear Mira say it'}>
+				{#if speaking}<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" /></svg>
+				{:else}<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z" fill="currentColor" /><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>{/if}
+			</button>
+		</section>
+	{/if}
+
+	{#if firstVisit}
+		<!-- The first visit: nothing to count yet, so only today's lesson and the button. -->
+	{:else if data.finished}
 		<a class="card link" href="/practice/english/finished">
 			<span class="label">{isFa ? 'درس‌های تمام‌شده' : 'Lessons finished'}</span>
 			<span class="row"><span class="big">{n(data.finished)}</span><span class="see">{isFa ? 'ببین' : 'See them'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></span></span>
@@ -69,6 +108,7 @@
 		</section>
 	{/if}
 
+	{#if !firstVisit}
 	<section class="card" aria-labelledby="week-title">
 		<h2 id="week-title" class="label">{isFa ? 'این هفته' : 'This week'}</h2>
 		{#if data.eventsLoaded && week.length}
@@ -85,6 +125,7 @@
 			<p class="note">{isFa ? 'الان نشد این هفته را نشان بدهیم. بعداً دوباره سر بزن.' : 'We couldn’t load this week right now. Check back later.'}</p>
 		{/if}
 	</section>
+	{/if}
 
 	<section class="card" aria-labelledby="lesson-title">
 		<h2 id="lesson-title" class="label">{lessonLabel}</h2>
@@ -99,7 +140,15 @@
 
 <style>
 	.progress { max-width: 680px; margin: 0 auto; padding: 16px 16px 48px; color: var(--ink); }
-	h1 { font-family: var(--font-display); font-weight: 600; font-size: 1.9rem; margin: 18px 0 14px; }
+	.mira { display: flex; align-items: flex-start; gap: 10px; margin: 18px 0 16px; }
+	.avatar { display: grid; place-items: center; flex: none; inline-size: 44px; block-size: 44px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-family: var(--font-display); font-weight: 700; font-size: 1.2rem; }
+	.bubble { flex: 1; padding: 12px 14px; border-radius: 4px 18px 18px 18px; background: var(--accent-wash); }
+	[dir='rtl'] .bubble { border-radius: 18px 4px 18px 18px; }
+	.who { margin: 0 0 2px; font-weight: 700; font-size: .9rem; color: var(--accent-deep); }
+	.line { margin: 0; font-size: 1.05rem; line-height: 1.55; }
+	.listen { display: grid; place-items: center; flex: none; inline-size: 44px; block-size: 44px; border: 1px solid var(--control-border); border-radius: 50%; background: var(--paper-raised); color: var(--accent-deep); cursor: pointer; }
+	.listen:hover { border-color: var(--accent); }
+	.listen:focus-visible { outline: 3px solid var(--accent-deep); outline-offset: 2px; }
 	.card { display: block; padding: 18px; margin-bottom: 12px; border: 1px solid var(--control-border); border-radius: 18px; background: var(--paper-raised); box-shadow: var(--paper-shadow); color: inherit; text-decoration: none; }
 	.card.link { min-height: 44px; }
 	.card.link:hover { border-color: var(--accent); }
