@@ -84,10 +84,10 @@ describe('course entry and persistence', () => {
 			await expect(actions.default(f.event())).rejects.toMatchObject({ location: '/practice/english/home' });
 			expect(f.supabase.auth.updateUser).toHaveBeenCalledExactlyOnceWith({ data: { target_language: 'en', learning: target ? [target, 'en'] : ['en'] } });
 		}
-		await expect(home(fixture('en').event())).rejects.toMatchObject({ location: '/practice/english/today' });
+		await expect(home(fixture('en').event())).rejects.toMatchObject({ location: '/practice/english/progress' });
 	});
 	it('isolates English and German learning routes while keeping account and landing pages accessible', () => {
-		for (const path of ['/home', '/lesson', '/lessons', '/review/quiz', '/basics', '/drill/sprechen', '/check-in', '/vocabulary']) expect(courseRedirect(path, 'en')).toBe('/practice/english/today');
+		for (const path of ['/home', '/lesson', '/lessons', '/review/quiz', '/basics', '/drill/sprechen', '/check-in', '/vocabulary']) expect(courseRedirect(path, 'en')).toBe('/practice/english/progress');
 		for (const path of ['/', '/fa', '/languages', '/settings', '/admin', '/api/analytics', '/practice/english']) expect(courseRedirect(path, 'en')).toBeNull();
 		expect(courseRedirect('/practice/english', 'de')).toBe('/languages');
 		expect(courseRedirect('/practice/english', undefined)).toBe('/languages');
