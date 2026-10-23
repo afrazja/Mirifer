@@ -3,7 +3,7 @@ import type { PageServerLoad } from './$types';
 import { RetellRecordSchema } from '$lib/practice/progress';
 import { ALL_RETELL_PIECES, retellPieceFor } from '$lib/practice/day-content';
 import { RETELL_PIECES } from '$lib/practice/retell';
-import { DAYS, trackFor } from '$lib/practice/day';
+import { finishedDays, trackFor } from '$lib/practice/day';
 import { readEnglishProgress } from '$lib/practice/english-progress';
 import { readEnglishProfile } from '$lib/practice/english-profile';
 
@@ -18,9 +18,8 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 	if (user.user_metadata?.target_language !== 'en') redirect(303, '/languages');
 	const records = RetellRecordSchema.safeParse(user.user_metadata?.english_retell_v1);
 	const { labAccess } = await parent();
-	const lastDone = DAYS.findIndex(day => day.id === readEnglishProgress(user.user_metadata).lastThemeId);
 	const professional = trackFor(readEnglishProfile(user.user_metadata)) === 'professional';
-	const fromDoneDays = professional ? DAYS.slice(0, lastDone + 1).flatMap(day => { const piece = retellPieceFor(day.id); return piece ? [piece.id] : []; }) : [];
+	const fromDoneDays = professional ? finishedDays(readEnglishProgress(user.user_metadata)).flatMap(day => { const piece = retellPieceFor(day.id); return piece ? [piece.id] : []; }) : [];
 	const visible = labAccess ? ALL_RETELL_PIECES.map(piece => piece.id) : [...RETELL_PIECES.map(piece => piece.id), ...fromDoneDays];
 	return { records: records.success ? records.data : {}, visible, learnerId: user.id };
 };

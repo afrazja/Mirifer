@@ -30,3 +30,16 @@ describe('English progress', () => {
 		expect(readEnglishProgress(undefined)).toEqual(EMPTY_PROGRESS);
 	});
 });
+
+describe('the list of lessons passed', () => {
+	it('adds each lesson once, in the order first passed', () => {
+		let p = recordSession(EMPTY_PROGRESS, 'day-1', []);
+		p = recordSession(p, 'day-2', []);
+		p = recordSession(p, 'day-1', []);
+		expect(p.finishedDays).toEqual(['day-1', 'day-2']);
+		expect(EnglishProgressSchema.safeParse(p).success).toBe(true);
+	});
+	it('reads an older record without the list', () => {
+		expect(readEnglishProgress({ english_progress_v1: { sessionsCompleted: 2, lastCompletedAt: null, lastThemeId: 'day-2', lastResult: null, recent: [] } }).finishedDays).toBeUndefined();
+	});
+});

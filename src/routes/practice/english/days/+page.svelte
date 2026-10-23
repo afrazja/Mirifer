@@ -39,6 +39,12 @@
 	<AppHeader backHref="/practice/english/home" backLabel={isFa ? 'انگلیسی' : 'English'} direction={isFa ? 'rtl' : 'ltr'} />
 	<EnglishModuleTabs current="today" {isFa} />
 	<h1>{isFa ? 'درس‌های روزانه' : 'Daily lessons'}</h1>
+	<form class="see-as" method="POST" action="/practice/english/view">
+		<input type="hidden" name="as" value="learner" />
+		<input type="hidden" name="to" value="/practice/english/today" />
+		<button type="submit">{isFa ? 'برنامه را مثل یک زبان‌آموز ببین' : 'See the app as a learner'}</button>
+		<span>{isFa ? 'همهٔ ابزارهای مدیر پنهان می‌شود.' : 'Hides every owner tool.'}</span>
+	</form>
 	<ul class="list">
 		{#each DAYS as day}
 			<li>
@@ -80,6 +86,9 @@
 </main>
 
 <style>
+	.see-as { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 0 0 16px; color: var(--ink-soft); font-size: .9rem; }
+	.see-as button { min-height: 44px; padding: 0 16px; border: 1px solid var(--control-border); border-radius: 12px; background: var(--paper-raised); color: var(--accent-deep); font: inherit; font-weight: 600; cursor: pointer; }
+	.see-as button:focus-visible { outline: 3px solid var(--accent-deep); outline-offset: 2px; }
 	.days { max-width: 760px; margin: 0 auto; padding: 0 16px 48px; }
 	h1 { margin: 18px 0 14px; font-family: var(--font-display); }
 	.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }

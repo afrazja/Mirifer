@@ -20,7 +20,9 @@ export const EnglishProgressSchema = z.object({
 	lastCompletedAt: z.string().datetime().nullable(),
 	lastThemeId: z.string().max(40).nullable(),
 	lastResult: z.enum(['strong', 'ok', 'hard']).nullable(),
-	recent: z.array(SessionTally).max(RECENT_SESSIONS)
+	recent: z.array(SessionTally).max(RECENT_SESSIONS),
+	/** Every daily lesson passed, in the order they were first passed (older records don't have it). */
+	finishedDays: z.array(z.string().max(40)).max(400).optional()
 }).strict();
 export type EnglishProgress = z.infer<typeof EnglishProgressSchema>;
 
@@ -48,12 +50,14 @@ export function recordSession(progress: EnglishProgress, themeId: string | null,
 		tally[module.skill].total += module.total;
 	}
 	const correct = tally.listening.correct + tally.speaking.correct, total = tally.listening.total + tally.speaking.total;
+	const finished = progress.finishedDays ?? [];
 	return {
 		sessionsCompleted: progress.sessionsCompleted + 1,
 		lastCompletedAt: now.toISOString(),
 		lastThemeId: themeId,
 		lastResult: resultBand(correct, total),
-		recent: [...progress.recent, tally].slice(-RECENT_SESSIONS)
+		recent: [...progress.recent, tally].slice(-RECENT_SESSIONS),
+		finishedDays: themeId && !finished.includes(themeId) ? [...finished, themeId] : finished
 	};
 }
 

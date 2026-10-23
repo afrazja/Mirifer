@@ -151,3 +151,22 @@ describe('skipping a step', () => {
 		expect(rec(all, two).title.en).toBe('Next time: Listen and connect');
 	});
 });
+
+import { caughtUp, finishedDays, furthestDayId } from './day';
+describe('finished lessons: what a learner has done, never what is ahead', () => {
+	const progress = (finished?: string[], lastThemeId: string | null = null) => ({ lastThemeId, ...(finished ? { finishedDays: finished } : {}) });
+	it('lists the lessons passed, in course order; older records count every lesson up to the last one', () => {
+		expect(finishedDays(progress(['day-2', 'day-1'])).map(d => d.id)).toEqual(['day-1', 'day-2']);
+		expect(finishedDays(progress(undefined, 'day-3')).map(d => d.id)).toEqual(['day-1', 'day-2', 'day-3']);
+		expect(finishedDays(progress())).toEqual([]);
+	});
+	it('doing an earlier lesson again never moves a learner back', () => {
+		expect(furthestDayId(progress(['day-1', 'day-2', 'day-3'], 'day-1'))).toBe('day-3');
+		expect(nextDay(furthestDayId(progress(['day-1', 'day-2'], 'day-1'))).id).toBe('day-3');
+	});
+	it('is caught up only when every released lesson is done (Day 4 isn’t released yet)', () => {
+		expect(caughtUp(progress(['day-1', 'day-2', 'day-3']))).toBe(true);
+		expect(caughtUp(progress(['day-1', 'day-2']))).toBe(false);
+		expect(caughtUp(progress())).toBe(false);
+	});
+});

@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { DaySessionSchema, nextDay } from '$lib/practice/day';
+import { DaySessionSchema, furthestDayId, nextDay } from '$lib/practice/day';
 import { readEnglishProgress } from '$lib/practice/english-progress';
 
 /**
@@ -16,7 +16,7 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 	const saved = DaySessionSchema.safeParse(meta.english_day_v1);
 	return {
 		/** The day the owner's own progress would open next. */
-		nextDayId: nextDay(readEnglishProgress(meta).lastThemeId, true).id,
+		nextDayId: nextDay(furthestDayId(readEnglishProgress(meta)), true).id,
 		/** A saved session that isn't finished yet, on this day. */
 		openDayId: saved.success && saved.data.stage !== 'done' ? saved.data.day : null
 	};

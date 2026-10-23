@@ -20,11 +20,14 @@ describe('Module lab', () => {
 		expect(LAB_MODULES.filter(m => !m.href).map(m => m.id)).toEqual([]);
 	});
 	it('is open to the owner only; learners and other admins go to the daily lesson', async () => {
-		expect(await layoutLoad({ locals: locals(owner) } as any)).toEqual({ labAccess: true });
-		expect(await layoutLoad({ locals: locals({ ...owner, email_confirmed_at: null }) } as any)).toEqual({ labAccess: false });
-		expect(await layoutLoad({ locals: locals(learner, true) } as any)).toEqual({ labAccess: false });
-		expect(await layoutLoad({ locals: locals(learner, false) } as any)).toEqual({ labAccess: false });
-		expect(await layoutLoad({ locals: locals(null) } as any)).toEqual({ labAccess: false });
+		const cookies = (view?: string) => ({ get: (name: string) => (name === 'mirifer_learner_view' ? view : undefined) });
+		expect(await layoutLoad({ locals: locals(owner), cookies: cookies() } as any)).toEqual({ labAccess: true, learnerView: false });
+		// The owner seeing the app as a learner: no owner tools, and the banner to switch back.
+		expect(await layoutLoad({ locals: locals(owner), cookies: cookies('1') } as any)).toEqual({ labAccess: false, learnerView: true });
+		expect(await layoutLoad({ locals: locals({ ...owner, email_confirmed_at: null }), cookies: cookies() } as any)).toEqual({ labAccess: false, learnerView: false });
+		expect(await layoutLoad({ locals: locals(learner, true), cookies: cookies('1') } as any)).toEqual({ labAccess: false, learnerView: false });
+		expect(await layoutLoad({ locals: locals(learner, false), cookies: cookies() } as any)).toEqual({ labAccess: false, learnerView: false });
+		expect(await layoutLoad({ locals: locals(null), cookies: cookies() } as any)).toEqual({ labAccess: false, learnerView: false });
 		await expect(load({ locals: locals(learner), parent: async () => ({ labAccess: false }) } as any)).rejects.toMatchObject({ status: 303, location: '/practice/english/today' });
 		await expect(load({ locals: locals(learner), parent: async () => ({ labAccess: true }) } as any)).resolves.toEqual({});
 		await expect(load({ locals: locals(null), parent: async () => ({ labAccess: false }) } as any)).rejects.toMatchObject({ location: '/login' });

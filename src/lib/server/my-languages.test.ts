@@ -22,19 +22,23 @@ describe('My languages', () => {
 		expect(list.map(item => item.code)).toEqual(['en', 'de']);
 		expect(list[1]).toEqual({ code: 'de', currentDay: 12, completed: 3, total: TOTAL_DAYS, xp: 340 });
 	});
-	it('counts English progress from the saved completion records', async () => {
-		const [english] = await myLanguages(db(null), user({
-			target_language: 'en',
-			english_hotel_v1: { completedAt: '2026-09-26T10:00:00.000Z', variant: 'lift', turns: 7 },
-			english_retell_v1: { 'lost-phone': { completedAt: '2026-09-26T10:00:00.000Z', points: 4, total: 5, textShown: false } }
-		}));
-		expect(english).toEqual({ code: 'en', conversationDone: true, retellDone: 1, retellTotal: 3 });
-		expect(progressShare(english)).toBe(0.5);
+	it('shows only the English lessons finished, never how many there are', async () => {
+		const progress = (finishedDays?: string[], lastThemeId: string | null = null) => ({ sessionsCompleted: 1, lastCompletedAt: null, lastThemeId, lastResult: null, recent: [], ...(finishedDays ? { finishedDays } : {}) });
+		const [english] = await myLanguages(db(null), user({ target_language: 'en', english_progress_v1: progress(['day-1', 'day-2']) }));
+		expect(english).toEqual({ code: 'en', finished: [{ number: 1, theme: expect.any(Object) }, { number: 2, theme: expect.any(Object) }] });
+		// An older record kept only the last lesson: every lesson up to it counts.
+		const [older] = await myLanguages(db(null), user({ target_language: 'en', english_progress_v1: progress(undefined, 'day-2') }));
+		expect(older).toEqual({ code: 'en', finished: [{ number: 1, theme: expect.any(Object) }, { number: 2, theme: expect.any(Object) }] });
+		const [none] = await myLanguages(db(null), user({ target_language: 'en' }));
+		expect(none).toEqual({ code: 'en', finished: [] });
+	});
+	it('German keeps its progress bar', () => {
+		expect(progressShare({ code: 'de', currentDay: 3, completed: 1, total: 4, xp: 0 })).toBe(0.25);
 	});
 	it('finds courses started before the list existed, and ignores a German row with nothing done', async () => {
 		expect((await myLanguages(db({ current_day: 4, completed_lessons: {}, xp: 0 }), user({ target_language: 'en' }))).map(item => item.code)).toEqual(['en', 'de']);
 		expect((await myLanguages(db({ current_day: 1, completed_lessons: {}, xp: 0 }), user({ target_language: 'en' }))).map(item => item.code)).toEqual(['en']);
-		expect((await myLanguages(db(null), user({ english_retell_v1: { 'night-market': { completedAt: '2026-09-26T10:00:00.000Z', points: 2, total: 7, textShown: true } } }))).map(item => item.code)).toEqual(['en']);
+		expect((await myLanguages(db(null), user({ english_progress_v1: { sessionsCompleted: 1, lastCompletedAt: null, lastThemeId: 'day-1', lastResult: null, recent: [] } }))).map(item => item.code)).toEqual(['en']);
 	});
 	it('shows nothing for a new learner, and survives a progress read failure', async () => {
 		expect(await myLanguages(db(null), user({}))).toEqual([]);

@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { DaySessionSchema, TRACKS, dayById, dayOf, nextDay, sessionModules, trackFor, type DaySession, type Track } from '$lib/practice/day';
+import { DaySessionSchema, TRACKS, caughtUp, dayById, dayOf, finishedDays, furthestDayId, nextDay, sessionModules, trackFor, type DaySession, type Track } from '$lib/practice/day';
 import { readEnglishProgress, recordSession, type EnglishProgress } from '$lib/practice/english-progress';
 import { readEnglishProfile } from '$lib/practice/english-profile';
 import { canUseLab } from '$lib/server/lab-access';
@@ -29,9 +29,11 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 	// learner's own version; the version is saved with it from the next save on.
 	if (session && !session.track && dayById(session.day)?.tracks) session = { ...session, track: requestedTrack ?? trackFor(profile) };
 	// The day a new session starts on: the one after the last finished day.
-	const upcoming = requested ?? nextDay(progress.lastThemeId, labAccess);
+	const upcoming = requested ?? nextDay(furthestDayId(progress), labAccess);
 	const track = requestedTrack ?? trackFor(profile);
-	return { name, profile, progress, session, nextDayId: upcoming.id, requestedDay: requested?.id ?? null, track };
+	// A learner who has passed every released lesson: the page says the next one is coming (the owner always goes on).
+	const allDone = !labAccess && !requested && caughtUp(progress);
+	return { name, profile, progress, session, nextDayId: upcoming.id, requestedDay: requested?.id ?? null, track, caughtUp: allDone, finished: finishedDays(progress).map(day => day.id) };
 };
 
 export const actions: Actions = {
