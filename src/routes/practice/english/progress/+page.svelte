@@ -143,7 +143,7 @@
 	{/if}
 
 	<div class="bar-space" aria-hidden="true"></div>
-	<ActionBar label={button.label} onclick={() => go(button.href)} />
+	<ActionBar label={button.label} onclick={() => go(button.href)} attention={!!today && greetingKind(moment) === 'first'} />
 </main>
 
 <style>
