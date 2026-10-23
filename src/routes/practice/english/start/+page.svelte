@@ -6,6 +6,7 @@
 	import { getLanguage } from '$services/data-layer';
 	import { SKIPPED_PROFILE, type EnglishProfileAnswers } from '$lib/practice/english-profile';
 	import type { DisplayText } from '$lib/practice/hotel';
+	import { DAY_ONE, lessonMinutes, trackFor } from '$lib/practice/day';
 
 	let { data }: PageProps = $props();
 	let language = $state<'en' | 'fa'>('en');
@@ -33,6 +34,8 @@
 	let step = $state(1);
 	let reason = $state<Reason | null>(saved?.reason ?? null);
 	let comfort = $state<Comfort | null>(saved?.comfort ?? null);
+	/** Day 1's length in the version the answers lead to (the same number its Start button shows). */
+	const firstMinutes = $derived(lessonMinutes(DAY_ONE, trackFor({ comfort })));
 	/** Every session has the default length now (owner's decision); the learner no longer chooses. */
 	const minutes = 15;
 	let saving = $state(false), saveFailed = $state(false), advancing = $state(false);
@@ -90,7 +93,7 @@
 
 	{#if step === 1}
 		<section class="screen" aria-labelledby="q1">
-			<p class="intro">{#if data.name}{isFa ? 'سلام ' : 'Hi '}<bdi>{data.name}</bdi>{'! '}{/if}{isFa ? 'سه سؤال کوتاه تا تمرین‌ها مناسب خودت باشد.' : 'Three quick questions so your practice fits you.'}</p>
+			<p class="intro">{#if data.name}{isFa ? 'سلام ' : 'Hi '}<bdi>{data.name}</bdi>{'! '}{/if}{isFa ? 'دو سؤال کوتاه تا تمرین‌ها مناسب خودت باشد.' : 'Two quick questions so your practice fits you.'}</p>
 			<h1 id="q1" tabindex="-1" bind:this={heading}>{isFa ? 'بیشتر برای چه کاری انگلیسی لازم داری؟' : 'What do you want English for most?'}</h1>
 			<div class="options" role="group" aria-labelledby="q1">
 				{#each REASON_OPTIONS as option}
@@ -120,7 +123,7 @@
 			<ul class="summary">
 				{#if summary}<li>{text(summary)}</li>{/if}
 				<li>{isFa ? 'ما تمام تلاشمان را می‌کنیم که هر درس با سطح تو جور باشد: هر جا برایت سخت است آسان‌تر، و هر جا قوی‌تری سخت‌تر.' : 'We do our best to match every lesson to you: easier where you struggle, harder where you’re strong.'}</li>
-				<li>{isFa ? `هر جلسه حدود ${num(15)} تا ${num(20)} دقیقه است.` : 'Each session takes about 15 to 20 minutes.'}</li>
+				<li>{isFa ? `اولین درست حدود ${num(firstMinutes)} دقیقه طول می‌کشد.` : `Your first lesson takes about ${firstMinutes} minutes.`}</li>
 			</ul>
 			<button class="text-link" type="button" onclick={() => { step = 1; }} disabled={saving}>{isFa ? 'تغییر پاسخ‌ها' : 'Change my answers'}</button>
 		</section>

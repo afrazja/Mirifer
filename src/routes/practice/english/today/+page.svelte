@@ -145,7 +145,8 @@
 	const reviewedRecord = $derived(reviewed && session ? loadRecord(session.startedAt, reviewed.id) : null);
 	const previous = $derived(session && session.stage !== 'done' ? moduleBefore(session.length, reviewed ? reviewed.id : step ? step.id : null, day, track) : null);
 	const stepNumber = $derived(session && step ? (session.done.length + session.skipped.length + 1) : 0);
-	const stepCount = $derived(agenda.length - 2);
+	/** The plan's parts: the steps and the recap (so "Step 1 of 5" matches "five parts"). */
+	const stepCount = $derived(agenda.length - 1);
 
 	$effect(() => { if (step && session?.stage === 'modules' && !reviewed) brief(step); });
 
@@ -389,7 +390,7 @@
 		<section aria-labelledby="recap-title">
 			{@render backButton()}
 			{@render strip()}
-			<p class="eyebrow">{isFa ? 'مرور' : 'RECAP'}</p>
+			<p class="eyebrow">{isFa ? `مرحلهٔ ${stepCount.toLocaleString('fa-IR')} از ${stepCount.toLocaleString('fa-IR')} — مرور` : `STEP ${stepCount} OF ${stepCount} · RECAP`}</p>
 			<h1 id="recap-title">{isFa ? 'کار امروز' : 'What you did today'}</h1>
 			<MiraSays line={RECAP_INTRO} {isFa} />
 			<ul class="done-list">

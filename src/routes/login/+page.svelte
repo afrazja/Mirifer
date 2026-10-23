@@ -147,7 +147,7 @@
 				{mode === "reset"
 					? "We'll email you a link to choose a new one."
 					: mode === "signin"
-						? "Sign in to continue learning German."
+						? "Sign in to continue learning English."
 						: "Free during early access — no credit card."}
 			</p>
 
