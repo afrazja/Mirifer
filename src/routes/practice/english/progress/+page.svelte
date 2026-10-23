@@ -1,7 +1,8 @@
 <script lang="ts">
 	/**
 	 * The learner's dashboard, the first page of the English section: lessons finished (tap to see
-	 * them), this week with the streak, and one button to today's lesson. No tabs (owner's decision).
+	 * them), this week with the streak (today yellow, days with a lesson green, the rest white), and
+	 * today's lesson by number and name, with one button to it. No tabs (owner's decision).
 	 */
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
@@ -29,6 +30,21 @@
 		? (isFa ? `${n(inARow)} روز پشت سر هم` : `${inARow} days in a row`)
 		: inARow === 1 ? (isFa ? 'امروز یا دیروز تمرین کردی' : 'You practiced today or yesterday')
 		: (isFa ? 'یک درس امروز، شروع یک زنجیره' : 'A lesson today starts a streak'));
+	/** The device's calendar date for a stored time. */
+	const localOf = (iso: string) => { const at = new Date(iso); return new Date(at.getTime() - at.getTimezoneOffset() * 60_000).toISOString().slice(0, 10); };
+	/** Today's lesson is already done (on this device's calendar): the next one opens tomorrow. */
+	const doneToday = $derived(!data.inProgress && !!today && !!data.lastDoneAt && localOf(data.lastDoneAt) === today);
+	const dayName = (number: number) => (isFa ? `روز ${n(number)}` : `Day ${number}`);
+	const lessonLabel = $derived(data.caughtUp ? (isFa ? 'آخرین درس' : 'Latest lesson') : doneToday ? (isFa ? 'درس بعدی' : 'Next lesson') : (isFa ? 'درس امروز' : 'Today’s lesson'));
+	const lessonNote = $derived(data.caughtUp
+		? (isFa ? 'همهٔ درس‌ها را تا این‌جا تمام کرده‌ای. درس بعدی به‌زودی آماده می‌شود.' : 'You’ve finished every lesson so far. The next one is coming soon.')
+		: doneToday ? (isFa ? 'درس امروز تمام شد. این درس فردا باز می‌شود.' : 'Today’s lesson is done. This one opens tomorrow.')
+		: null);
+	const button = $derived(data.inProgress
+		? { label: isFa ? `ادامهٔ ${dayName(data.lesson.number)}` : `Continue ${dayName(data.lesson.number)}`, href: '/practice/english/today' }
+		: doneToday ? { label: isFa ? 'درس امروز را ببین' : 'See today’s lesson', href: '/practice/english/today' }
+		: data.caughtUp ? { label: isFa ? `${dayName(data.lesson.number)} را دوباره انجام بده` : `Do ${dayName(data.lesson.number)} again`, href: `/practice/english/today?day=${data.lesson.id}` }
+		: { label: isFa ? `شروع ${dayName(data.lesson.number)}` : `Start ${dayName(data.lesson.number)}`, href: '/practice/english/today' });
 </script>
 
 <svelte:head>
@@ -59,7 +75,7 @@
 			<p class="streak">{streakLine}</p>
 			<ol class="week">
 				{#each week as day (day.date)}
-					<li class:active={day.active} aria-label={`${weekdayLong(day.date)}: ${day.active ? (isFa ? 'تمرین کردی' : 'practiced') : (isFa ? 'تمرین نکردی' : 'no lesson')}`}>
+					<li class:active={day.active} class:today={day.date === today} aria-label={`${day.date === today ? (isFa ? 'امروز، ' : 'Today, ') : ''}${weekdayLong(day.date)}: ${day.active ? (isFa ? 'تمرین کردی' : 'practiced') : (isFa ? 'تمرین نکردی' : 'no lesson')}`} aria-current={day.date === today ? 'date' : undefined}>
 						<span class="dot" aria-hidden="true">{day.active ? '✓' : ''}</span>
 						<span class="weekday" aria-hidden="true">{weekday(day.date)}</span>
 					</li>
@@ -70,8 +86,15 @@
 		{/if}
 	</section>
 
+	<section class="card" aria-labelledby="lesson-title">
+		<h2 id="lesson-title" class="label">{lessonLabel}</h2>
+		<p class="big">{dayName(data.lesson.number)}</p>
+		<p class="theme">{isFa ? data.lesson.theme.fa : data.lesson.theme.en}</p>
+		{#if lessonNote}<p class="note">{lessonNote}</p>{/if}
+	</section>
+
 	<div class="bar-space" aria-hidden="true"></div>
-	<ActionBar label={data.inProgress ? (isFa ? 'ادامهٔ درس امروز' : 'Continue today’s lesson') : (isFa ? 'شروع درس امروز' : 'Start today’s lesson')} onclick={() => void goto('/practice/english/today')} />
+	<ActionBar label={button.label} onclick={() => void goto(button.href)} />
 </main>
 
 <style>
@@ -90,8 +113,13 @@
 	.streak { margin: 6px 0 0; font-weight: 600; }
 	.week { list-style: none; margin: 12px 0 0; padding: 0; display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
 	.week li { display: grid; justify-items: center; gap: 4px; }
-	.dot { display: grid; place-items: center; inline-size: 32px; block-size: 32px; border-radius: 50%; border: 2px solid var(--control-border); color: #fff; font-size: .8rem; font-weight: 700; }
+	/* Not done: white. Done: green. Today: yellow (green with a yellow ring once done). */
+	.dot { display: grid; place-items: center; inline-size: 32px; block-size: 32px; border-radius: 50%; border: 2px solid var(--control-border); background: #fff; color: #fff; font-size: .8rem; font-weight: 700; box-sizing: border-box; }
 	.week li.active .dot { background: var(--accent); border-color: var(--accent); }
+	.week li.today .dot { background: #ffd65a; border-color: #e0b52c; }
+	.week li.today.active .dot { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 0 3px #ffd65a; }
 	.weekday { font-size: .8rem; color: var(--ink-soft); }
+	.week li.today .weekday { color: var(--ink); font-weight: 700; }
+	.theme { margin: 0; font-weight: 600; }
 	.bar-space { block-size: 120px; }
 </style>

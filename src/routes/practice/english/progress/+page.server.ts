@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { DaySessionSchema, finishedDays } from '$lib/practice/day';
+import { DaySessionSchema, caughtUp, dayById, finishedDays, furthestDayId, nextDay } from '$lib/practice/day';
 import { readEnglishProgress } from '$lib/practice/english-progress';
 import { readEnglishProfile } from '$lib/practice/english-profile';
 import { activeDates, type LessonEventRow } from '$lib/practice/learner-stats';
@@ -31,11 +31,20 @@ export const load: PageServerLoad = async ({ locals }) => {
 		if (readError) eventsLoaded = false;
 		else rows = (data ?? []) as LessonEventRow[];
 	} catch { eventsLoaded = false; }
+	const session = saved.success ? saved.data : null;
+	const inProgress = !!session && session.stage !== 'done';
+	// The lesson the button opens: the one under way, or the next one (the last one when caught up).
+	const lesson = (inProgress ? dayById(session!.day) : null) ?? nextDay(furthestDayId(progress));
 	return {
 		finished: finishedDays(progress).length,
+		lesson: { id: lesson.id, number: lesson.number, theme: lesson.theme },
+		/** Every released lesson is done: the next one is coming. */
+		caughtUp: !inProgress && caughtUp(progress),
+		/** When the last lesson was finished (the page checks if that was today, on the learner's calendar). */
+		lastDoneAt: session?.stage === 'done' ? session.completedAt ?? null : null,
 		dates: activeDates(rows),
 		eventsLoaded,
 		/** A lesson started and not finished: the button says Continue. */
-		inProgress: saved.success && saved.data.stage !== 'done'
+		inProgress
 	};
 };
