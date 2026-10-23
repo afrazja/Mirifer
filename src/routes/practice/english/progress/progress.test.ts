@@ -19,7 +19,7 @@ describe('The learner’s dashboard', () => {
 			{ event_name: 'lesson_progress', occurred_at: '2026-10-21T08:05:00Z', metadata: { outcome: 'done' } }
 		]);
 		const data = await load({ locals: l } as any) as any;
-		expect(data).toEqual({ finished: 2, lesson: { id: 'day-3', number: 3, theme: expect.any(Object) }, caughtUp: false, lastDoneAt: null, dates: ['2026-10-20', '2026-10-21'], eventsLoaded: true, inProgress: false });
+		expect(data).toEqual({ name: '', finished: 2, lesson: { id: 'day-3', number: 3, theme: expect.any(Object) }, caughtUp: false, lastDoneAt: null, dates: ['2026-10-20', '2026-10-21'], eventsLoaded: true, inProgress: false });
 		expect(l.query.eq).toHaveBeenCalledWith('user_id', 'u1');
 	});
 	it('names the lesson the button opens: the one under way, the next one, or the last when caught up', async () => {
