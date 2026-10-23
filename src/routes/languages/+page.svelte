@@ -21,18 +21,17 @@
 		}).catch(() => applyDocumentLanguage(language));
 	});
 	const fa = (value: number) => isFa ? value.toLocaleString('fa-IR') : String(value);
-	function summary(progress: CourseProgress): { label: string; detail: string } {
-		if (progress.code === 'de') return {
+	/** German: lesson N of the total, with a bar. */
+	function germanSummary(progress: Extract<CourseProgress, { code: 'de' }>): { label: string; detail: string } {
+		return {
 			label: isFa ? `درس ${fa(progress.currentDay)} از ${fa(progress.total)}` : `Lesson ${progress.currentDay} of ${progress.total}`,
 			detail: isFa ? `${fa(progress.completed)} درس تمام‌شده` : `${progress.completed} ${progress.completed === 1 ? 'lesson' : 'lessons'} completed`
 		};
-		const done = (progress.conversationDone ? 1 : 0) + progress.retellDone, total = 1 + progress.retellTotal;
-		return {
-			label: isFa ? `${fa(done)} از ${fa(total)} تمرین` : `${done} of ${total} activities`,
-			detail: isFa
-				? `گفت‌وگو: ${progress.conversationDone ? 'انجام شد' : 'هنوز نه'} · گوش بده و بازگو کن: ${fa(progress.retellDone)} از ${fa(progress.retellTotal)}`
-				: `Conversation: ${progress.conversationDone ? 'done' : 'not yet'} · Listen & retell: ${progress.retellDone} of ${progress.retellTotal}`
-		};
+	}
+	/** English: only the lessons finished (never a total, never the lessons ahead). */
+	function englishLabel(count: number): string {
+		if (!count) return isFa ? 'هنوز درسی را تمام نکرده‌ای' : 'No lessons finished yet';
+		return isFa ? `${fa(count)} درس تمام‌شده` : `${count} ${count === 1 ? 'lesson' : 'lessons'} finished`;
 	}
 	const submitting = () => {
 		return async ({ result, update }: { result: { type: string }; update: () => Promise<void> }) => {
@@ -77,17 +76,28 @@
 				<div class="learning">
 					{#each learning as progress (progress.code)}
 						{@const course = getCourse(progress.code)!}
-						{@const info = summary(progress)}
-						{@const share = progressShare(progress)}
 						<article class="learning-card" class:active={data.currentLanguage === progress.code} aria-labelledby={`learning-${progress.code}`}>
 							<div class="card-top">
 								<span class={`flag flag-${course.code}`} aria-hidden="true" dir="ltr">{course.code === 'en' ? 'EN' : ''}</span>
 								<div class="names"><h3 id={`learning-${progress.code}`}>{course.name[language]}</h3>{#if course.nativeName !== course.name[language]}<p class="native-name" lang={course.code} dir="ltr">{course.nativeName}</p>{/if}</div>
 								{#if data.currentLanguage === progress.code}<span class="status available">{isFa ? 'آخرین زبان' : 'Last studied'}</span>{/if}
 							</div>
-							<div class="progress-label"><strong>{info.label}</strong><span>{fa(Math.round(share * 100))}%</span></div>
-							<div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(share * 100)} aria-label={isFa ? `پیشرفت ${course.name.fa}` : `${course.name.en} progress`}><span style:width={`${Math.max(share * 100, share > 0 ? 3 : 0)}%`}></span></div>
-							<p class="detail">{info.detail}</p>
+							{#if progress.code === 'de'}
+								{@const info = germanSummary(progress)}
+								{@const share = progressShare(progress)}
+								<div class="progress-label"><strong>{info.label}</strong><span>{fa(Math.round(share * 100))}%</span></div>
+								<div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(share * 100)} aria-label={isFa ? `پیشرفت ${course.name.fa}` : `${course.name.en} progress`}><span style:width={`${Math.max(share * 100, share > 0 ? 3 : 0)}%`}></span></div>
+								<p class="detail">{info.detail}</p>
+							{:else}
+								<div class="progress-label"><strong>{englishLabel(progress.finished.length)}</strong></div>
+								{#if progress.finished.length}
+									<ul class="finished" aria-label={isFa ? 'درس‌های تمام‌شده' : 'Lessons finished'}>
+										{#each progress.finished as lesson (lesson.number)}
+											<li><span class="tick" aria-hidden="true">✓</span>{isFa ? `روز ${fa(lesson.number)}: ${lesson.theme.fa}` : `Day ${lesson.number}: ${lesson.theme.en}`}</li>
+										{/each}
+									</ul>
+								{/if}
+							{/if}
 							<button type="submit" name="language" value={course.code} disabled={saving !== null}>
 								{saving === course.code ? (isFa ? 'در حال باز کردن…' : 'Opening…') : (isFa ? `ادامهٔ ${course.name.fa}` : `Continue ${course.name.en}`)}
 								<span aria-hidden="true">{isFa ? '←' : '→'}</span>
@@ -136,6 +146,9 @@
 	.learning { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 20px; }
 	.learning-card { display: flex; flex-direction: column; gap: 10px; padding: 26px; background: var(--paper-raised); border: 1px solid var(--control-border); border-radius: 20px; box-shadow: var(--paper-shadow); }
 	.learning-card.active { border-color: var(--accent); }
+	.finished { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+	.finished li { display: flex; align-items: center; gap: 8px; color: var(--ink-soft); font-size: .95rem; }
+	.finished .tick { display: inline-grid; place-items: center; inline-size: 22px; block-size: 22px; border-radius: 50%; background: var(--accent-wash); color: var(--accent-deep); font-size: .75rem; font-weight: 700; flex: none; }
 	.learning-card .card-top { margin-bottom: 8px; justify-content: flex-start; }
 	.learning-card .status { margin-inline-start: auto; }
 	.names h3 { margin: 0; }

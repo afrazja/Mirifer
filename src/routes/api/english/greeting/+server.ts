@@ -14,7 +14,7 @@ import type { RequestHandler } from './$types';
 import { askChain, englishLearner, spendAllowance } from '$lib/server/english-ai';
 import { readEnglishProfile } from '$lib/practice/english-profile';
 import { readEnglishProgress } from '$lib/practice/english-progress';
-import { DAY_IDS, dayById, nextDay } from '$lib/practice/day';
+import { DAY_IDS, dayById, furthestDayId, nextDay } from '$lib/practice/day';
 import { canUseLab } from '$lib/server/lab-access';
 import {
 	OpeningSchema, ReplySchema, coachFacts, daysSinceIn, levelFor, localParts, openingProblem, openingPrompt, openingUser,
@@ -56,7 +56,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	// else the one after the last finished day.
 	const owner = canUseLab(user);
 	const requested = parsed.data.kind === 'reply' ? dayById(parsed.data.day) : null;
-	const day = requested && (requested.ready || owner) ? requested : nextDay(progress.lastThemeId, owner);
+	const day = requested && (requested.ready || owner) ? requested : nextDay(furthestDayId(progress), owner);
 	// A day's check-in question always gets Mira's reply. Otherwise Day 1 and a second session the same day are scripted.
 	const checkInReply = parsed.data.kind === 'reply' && !!day.checkIn;
 	if (!checkInReply && (progress.sessionsCompleted === 0 || days === 0)) return json({ error: 'Scripted greeting' }, { status: 409 });

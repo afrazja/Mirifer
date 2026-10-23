@@ -10,8 +10,8 @@
 import type { SupabaseClient, User } from '@supabase/supabase-js';
 import { COURSES, isAvailableCourse } from '$lib/courses';
 import { TOTAL_DAYS } from '$services/curriculum';
-import { HotelCompletionSchema, RetellRecordSchema } from '$lib/practice/progress';
-import { RETELL_PIECES } from '$lib/practice/retell';
+import { readEnglishProgress } from '$lib/practice/english-progress';
+import { finishedDays } from '$lib/practice/day';
 import type { CourseProgress, EnglishProgress, GermanProgress } from '$lib/practice/course-progress';
 
 export type CourseCode = (typeof COURSES)[number]['code'];
@@ -21,11 +21,9 @@ export function learningList(value: unknown): CourseCode[] {
 	return Array.isArray(value) ? COURSES.map(course => course.code).filter(code => value.includes(code)) : [];
 }
 
+/** The daily lessons this learner has finished, and nothing about the ones ahead. */
 function englishProgress(user: User): EnglishProgress {
-	const hotel = HotelCompletionSchema.safeParse(user.user_metadata?.english_hotel_v1);
-	const retell = RetellRecordSchema.safeParse(user.user_metadata?.english_retell_v1);
-	const done = retell.success ? RETELL_PIECES.filter(piece => retell.data[piece.id]).length : 0;
-	return { code: 'en', conversationDone: hotel.success, retellDone: done, retellTotal: RETELL_PIECES.length };
+	return { code: 'en', finished: finishedDays(readEnglishProgress(user.user_metadata)).map(day => ({ number: day.number, theme: day.theme })) };
 }
 
 async function germanProgress(supabase: SupabaseClient, userId: string): Promise<GermanProgress | null> {
@@ -45,7 +43,7 @@ export async function myLanguages(supabase: SupabaseClient, user: User): Promise
 	if (active) started.add(active);
 
 	const english = englishProgress(user);
-	if (english.conversationDone || english.retellDone) started.add('en');
+	if (english.finished.length) started.add('en');
 	let german: GermanProgress | null = null;
 	try { german = await germanProgress(supabase, user.id); } catch { german = null; }
 	// A German progress row exists from the first lesson; day 1 with nothing done is not "started".

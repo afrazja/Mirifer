@@ -96,6 +96,8 @@
 	/** Every session has the default length (owner's decision); an existing session keeps its own. */
 	let length = $state<Length>(data.session?.length ?? DEFAULT_LENGTH);
 	let saveFailed = $state(false);
+	/** A learner who has done every released lesson chose to do the last one again. */
+	let replaying = $state(false);
 	/** A finished module the learner went back to look at again. Its result is not saved a second time. */
 	let reviewing = $state<string | null>(null);
 	/** Back at the check-in (greeting, plan) after the session has started. The plan is read-only then. */
@@ -288,6 +290,15 @@
 	<!-- A finished session waits for the device's own date before showing the done screen or a new start. -->
 	{#if !settled}
 		<h1 class="sr-only">{isFa ? 'امروز' : 'Today'}</h1>
+	{:else if data.caughtUp && !session && !replaying}
+		<!-- Every released lesson is done: say the next one is coming, never how many there are. -->
+		<section aria-labelledby="caught-up-title">
+			<p class="eyebrow">{isFa ? 'درس‌های روزانه' : 'DAILY LESSONS'}</p>
+			<h1 id="caught-up-title">{isFa ? 'همهٔ درس‌ها را تا این‌جا تمام کرده‌ای.' : 'You’ve finished every lesson so far.'}</h1>
+			<p>{isFa ? 'درس بعدی به‌زودی آماده می‌شود. تا آن موقع، اگر دوست داشتی، به انتخاب خودت تمرین کن.' : 'Your next lesson is coming soon. Until then, you can practice on your own if you like.'}</p>
+			<ActionBar label={isFa ? 'تمرین به انتخاب خودت' : 'Practice on your own'} onclick={() => void goto('/practice/english/practice')} secondary={{ label: isFa ? `روز ${day.number.toLocaleString('fa-IR')} را دوباره انجام بده` : `Do Day ${day.number} again`, onclick: () => (replaying = true) }} />
+		</section>
+
 	{:else if !session && startStep === 'greeting'}
 		<h1 class="sr-only">{isFa ? 'امروز' : 'Today'}</h1>
 		<CoachGreeting {isFa} name={data.name} profile={data.profile} progress={data.progress} question={day.question} dayId={day.id} checkIn={day.checkIn} onDone={toPlan} />
@@ -396,8 +407,10 @@
 			<h1 id="done-title">{isFa ? 'جلسهٔ امروز تمام شد.' : 'Today’s session is done.'}</h1>
 			{#if following.id !== day.id}
 				<p>{isFa ? `فردا برگرد برای روز ${following.number.toLocaleString('fa-IR')}: ${following.theme.fa}.` : `Come back tomorrow for Day ${following.number}: ${following.theme.en}.`}</p>
+			{:else if !session?.done.length}
+				<p>{isFa ? 'فردا برگرد و این درس را دوباره امتحان کن.' : 'Come back tomorrow and try this lesson again.'}</p>
 			{:else}
-				<p>{isFa ? 'فردا برگرد؛ پیشنهاد بعدی آماده است.' : 'Come back tomorrow; your next suggestion is ready.'}</p>
+				<p>{isFa ? 'همهٔ درس‌ها را تا این‌جا تمام کرده‌ای. درس بعدی به‌زودی آماده می‌شود.' : 'You’ve finished every lesson so far. Your next lesson is coming soon.'}</p>
 			{/if}
 			<p>{isFa ? 'تا آن موقع، اگر دوست داشتی، به انتخاب خودت تمرین کن.' : 'Until then, you can practice on your own if you like.'}</p>
 			{#if ownerNext}{@render tryNext(ownerNext)}{/if}

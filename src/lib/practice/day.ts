@@ -342,6 +342,25 @@ export function nextDay(lastDayId: string | null | undefined, preview = false): 
 	const lastIndex = DAYS.findIndex(day => day.id === lastDayId);
 	return open.find(day => DAYS.indexOf(day) > lastIndex) ?? open.at(-1) ?? DAY_ONE;
 }
+/**
+ * The daily lessons a learner has passed, in course order. Older progress records only kept the last
+ * one; the days are done in order, so every day up to it counts as passed.
+ */
+export function finishedDays(progress: { lastThemeId: string | null; finishedDays?: string[] }): DayPack[] {
+	if (progress.finishedDays) return DAYS.filter(day => progress.finishedDays!.includes(day.id));
+	const last = DAYS.findIndex(day => day.id === progress.lastThemeId);
+	return last < 0 ? [] : DAYS.slice(0, last + 1);
+}
+/** The furthest day passed (doing an earlier day again never moves a learner back), or null. */
+export const furthestDayId = (progress: { lastThemeId: string | null; finishedDays?: string[] }): string | null => finishedDays(progress).at(-1)?.id ?? null;
+/**
+ * Whether a learner has passed every lesson released so far: their next day would be one they've
+ * already passed. The lesson page then says the next one is coming, instead of offering it again.
+ */
+export function caughtUp(progress: { lastThemeId: string | null; finishedDays?: string[] }): boolean {
+	const furthest = furthestDayId(progress);
+	return furthest !== null && nextDay(furthest).id === furthest;
+}
 /** A saved session's day (Day 1 if the id is unknown). */
 export const dayOf = (session: { day: string }) => dayById(session.day) ?? DAY_ONE;
 
