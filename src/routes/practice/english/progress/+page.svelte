@@ -1,9 +1,13 @@
 <script lang="ts">
 	/**
-	 * The learner's dashboard, the first page of the English section: Mira's greeting (welcome back
-	 * by name, or what to do the first time; tap to hear her), lessons finished (tap to see
-	 * them), this week with the streak (today yellow, days with a lesson green, the rest white), and
-	 * today's lesson by number and name, with one button to it. No tabs (owner's decision).
+	 * The learner's dashboard, the first page of the English section (owner's layout): today's
+	 * lesson on top (by number and name, and where a paused one stopped), then this week with the
+	 * streak (today yellow, days with a lesson green, the rest white), then the lessons finished
+	 * (tap to see them), and one button to the lesson. No tabs.
+	 *
+	 * Mira says hello by voice only (owner's decision: no text): one short line for the moment,
+	 * once a day per moment, when the page opens. Her button on the lesson card says it again
+	 * (a phone may only play sound after a tap).
 	 */
 	import { onDestroy, onMount } from 'svelte';
 	import { goto } from '$app/navigation';
@@ -60,17 +64,29 @@
 		name: data.name, finished: data.finished, activeDays: data.dates.length, inProgress: data.inProgress, doneToday, caughtUp: data.caughtUp,
 		streak: inARow, activeToday: !!today && data.dates.includes(today), daysAway, lessonNumber: data.lesson.number
 	});
-	const greeting = $derived(dashboardGreeting(moment));
-	/** The very first visit: only Mira, today's lesson and the button (nothing to count yet). */
-	const firstVisit = $derived(greetingKind(moment) === 'first');
-	/** Mira says her line in English when tapped (phones only play sound from a tap). */
+	const greeting = $derived(today ? dashboardGreeting(moment, today) : '');
 	let speaking = $state(false);
-	function hearMira() {
+	function say() {
 		stopAllAudio();
-		if (speaking) { speaking = false; return; }
 		speaking = true;
-		void playAudioPromise(greeting.en, COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {}).finally(() => { speaking = false; });
+		void playAudioPromise(greeting, COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {}).finally(() => { speaking = false; });
 	}
+	/** Her button: say it again, or stop. */
+	function hearMira() {
+		if (speaking) { stopAllAudio(); speaking = false; return; }
+		say();
+	}
+	/** Once a day per moment: coming back after a pause is a new moment, a reload isn't. */
+	const HELLO_KEY = 'mirifer_mira_hello';
+	let greeted = false;
+	$effect(() => {
+		if (!today || greeted) return;
+		greeted = true;
+		const mark = `${today}|${greetingKind(moment)}`;
+		try { if (localStorage.getItem(HELLO_KEY) === mark) return; localStorage.setItem(HELLO_KEY, mark); } catch { /* private mode: say it */ }
+		say();
+	});
+	function go(href: string) { stopAllAudio(); void goto(href); }
 	onDestroy(() => stopAllAudio());
 </script>
 
@@ -81,38 +97,21 @@
 
 <main id="main-content" class="progress" dir={isFa ? 'rtl' : 'ltr'}>
 	<AppHeader backHref="/languages" backLabel={isFa ? 'زبان‌ها' : 'Languages'} direction={isFa ? 'rtl' : 'ltr'} />
-	<h1 class="sr-only">{isFa ? 'پیشرفت تو' : 'Your progress'}</h1>
+	<h1>{isFa ? 'پیشرفت تو' : 'Your progress'}</h1>
 
-	{#if today}
-		<section class="mira" aria-labelledby="mira-name">
-			<span class="avatar" aria-hidden="true">M</span>
-			<div class="bubble">
-				<p id="mira-name" class="who">{isFa ? 'میرا' : 'Mira'}</p>
-				<p class="line">{isFa ? greeting.fa : greeting.en}</p>
-			</div>
-			<button class="listen" type="button" onclick={hearMira} aria-pressed={speaking} aria-label={isFa ? 'شنیدن صدای میرا به انگلیسی' : 'Hear Mira say it'}>
-				{#if speaking}<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" /></svg>
-				{:else}<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z" fill="currentColor" /><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>{/if}
+	<section class="card" aria-labelledby="lesson-title">
+		<div class="card-head">
+			<h2 id="lesson-title" class="label">{lessonLabel}</h2>
+			<button class="mira" class:speaking type="button" onclick={hearMira} aria-pressed={speaking} aria-label={speaking ? (isFa ? 'قطع صدای میرا' : 'Stop Mira') : (isFa ? 'شنیدن صدای میرا' : 'Hear Mira')}>
+				<span class="avatar" aria-hidden="true">M</span>
+				<svg class="wave" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z" fill="currentColor" /><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
 			</button>
-		</section>
-	{/if}
+		</div>
+		<p class="big">{dayName(data.lesson.number)}</p>
+		<p class="theme">{isFa ? data.lesson.theme.fa : data.lesson.theme.en}</p>
+		{#if lessonNote}<p class="note">{lessonNote}</p>{/if}
+	</section>
 
-	{#if firstVisit}
-		<!-- The first visit: nothing to count yet, so only today's lesson and the button. -->
-	{:else if data.finished}
-		<a class="card link" href="/practice/english/finished">
-			<span class="label">{isFa ? 'درس‌های تمام‌شده' : 'Lessons finished'}</span>
-			<span class="row"><span class="big">{n(data.finished)}</span><span class="see">{isFa ? 'ببین' : 'See them'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></span></span>
-		</a>
-	{:else}
-		<section class="card" aria-labelledby="lessons-title">
-			<h2 id="lessons-title" class="label">{isFa ? 'درس‌های تمام‌شده' : 'Lessons finished'}</h2>
-			<p class="big">{n(0)}</p>
-			<p class="note">{isFa ? 'وقتی اولین درس را تمام کنی، این‌جا می‌بینی‌اش.' : 'Finish your first lesson to see it here.'}</p>
-		</section>
-	{/if}
-
-	{#if !firstVisit}
 	<section class="card" aria-labelledby="week-title">
 		<h2 id="week-title" class="label">{isFa ? 'این هفته' : 'This week'}</h2>
 		{#if data.eventsLoaded && week.length}
@@ -129,30 +128,37 @@
 			<p class="note">{isFa ? 'الان نشد این هفته را نشان بدهیم. بعداً دوباره سر بزن.' : 'We couldn’t load this week right now. Check back later.'}</p>
 		{/if}
 	</section>
+
+	{#if data.finished}
+		<a class="card link" href="/practice/english/finished" onclick={stopAllAudio}>
+			<span class="label">{isFa ? 'درس‌های تمام‌شده' : 'Lessons finished'}</span>
+			<span class="row"><span class="big">{n(data.finished)}</span><span class="see">{isFa ? 'ببین' : 'See them'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></span></span>
+		</a>
+	{:else}
+		<section class="card" aria-labelledby="lessons-title">
+			<h2 id="lessons-title" class="label">{isFa ? 'درس‌های تمام‌شده' : 'Lessons finished'}</h2>
+			<p class="big">{n(0)}</p>
+			<p class="note">{isFa ? 'وقتی اولین درس را تمام کنی، این‌جا می‌بینی‌اش.' : 'Finish your first lesson to see it here.'}</p>
+		</section>
 	{/if}
 
-	<section class="card" aria-labelledby="lesson-title">
-		<h2 id="lesson-title" class="label">{lessonLabel}</h2>
-		<p class="big">{dayName(data.lesson.number)}</p>
-		<p class="theme">{isFa ? data.lesson.theme.fa : data.lesson.theme.en}</p>
-		{#if lessonNote}<p class="note">{lessonNote}</p>{/if}
-	</section>
-
 	<div class="bar-space" aria-hidden="true"></div>
-	<ActionBar label={button.label} onclick={() => void goto(button.href)} />
+	<ActionBar label={button.label} onclick={() => go(button.href)} />
 </main>
 
 <style>
 	.progress { max-width: 680px; margin: 0 auto; padding: 16px 16px 48px; color: var(--ink); }
-	.mira { display: flex; align-items: flex-start; gap: 10px; margin: 18px 0 16px; }
-	.avatar { display: grid; place-items: center; flex: none; inline-size: 44px; block-size: 44px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-family: var(--font-display); font-weight: 700; font-size: 1.2rem; }
-	.bubble { flex: 1; padding: 12px 14px; border-radius: 4px 18px 18px 18px; background: var(--accent-wash); }
-	[dir='rtl'] .bubble { border-radius: 18px 4px 18px 18px; }
-	.who { margin: 0 0 2px; font-weight: 700; font-size: .9rem; color: var(--accent-deep); }
-	.line { margin: 0; font-size: 1.05rem; line-height: 1.55; }
-	.listen { display: grid; place-items: center; flex: none; inline-size: 44px; block-size: 44px; border: 1px solid var(--control-border); border-radius: 50%; background: var(--paper-raised); color: var(--accent-deep); cursor: pointer; }
-	.listen:hover { border-color: var(--accent); }
-	.listen:focus-visible { outline: 3px solid var(--accent-deep); outline-offset: 2px; }
+	h1 { font-family: var(--font-display); font-weight: 600; font-size: 1.9rem; margin: 18px 0 14px; }
+	.card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+	/* Mira's button: her avatar with a sound mark; it pulses while she speaks. */
+	.mira { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 4px 12px 4px 4px; border: 1px solid var(--control-border); border-radius: 999px; background: var(--paper-raised); color: var(--accent-deep); cursor: pointer; }
+	[dir='rtl'] .mira { padding: 4px 4px 4px 12px; }
+	.mira:hover { border-color: var(--accent); }
+	.mira:focus-visible { outline: 3px solid var(--accent-deep); outline-offset: 2px; }
+	.avatar { display: grid; place-items: center; inline-size: 34px; block-size: 34px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-family: var(--font-display); font-weight: 700; }
+	.mira.speaking .avatar { animation: talk 1s ease-in-out infinite; }
+	@keyframes talk { 0%, 100% { box-shadow: 0 0 0 0 rgb(255 214 90 / .9); } 50% { box-shadow: 0 0 0 6px rgb(255 214 90 / .35); } }
+	@media (prefers-reduced-motion: reduce) { .mira.speaking .avatar { animation: none; box-shadow: 0 0 0 3px #ffd65a; } }
 	.card { display: block; padding: 18px; margin-bottom: 12px; border: 1px solid var(--control-border); border-radius: 18px; background: var(--paper-raised); box-shadow: var(--paper-shadow); color: inherit; text-decoration: none; }
 	.card.link { min-height: 44px; }
 	.card.link:hover { border-color: var(--accent); }

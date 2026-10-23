@@ -1,12 +1,9 @@
 /**
- * Mira's greeting at the top of the learner's dashboard (owner's request): a welcome back by name
- * with one line that moves them to today's lesson, or, the very first time, who she is and what to
- * tap. Rules only (no AI, nothing to pay for), in both languages. The button it names is the
- * dashboard's own ("Start Day N", "Continue Day N").
+ * Mira's spoken hello on the learner's dashboard (owner's decision: voice only, no text on screen).
+ * One short English line that fits the moment: the first visit, a lesson paused, a streak, a long
+ * break, a lesson done today, every lesson done. Each moment has a few lines and the day picks one,
+ * so she doesn't say the same thing every day. Rules only (no AI, nothing to pay for).
  */
-import { hello } from './coach';
-import type { DisplayText } from './hotel';
-
 export interface DashboardMoment {
 	/** The learner's name, or '' (the line then reads without it). */
 	name: string;
@@ -43,42 +40,49 @@ export function greetingKind(m: DashboardMoment): GreetingKind {
 	return 'welcome-back';
 }
 
-const fa = (n: number) => n.toLocaleString('fa-IR');
+/** Puts the name in, or drops it cleanly ("Welcome back, Sam!" / "Welcome back!"). */
+const named = (line: string, name: string) => (name ? line.replaceAll('{name}', name) : line.replace(/,? ?\{name\}/g, ''));
 
-export function dashboardGreeting(m: DashboardMoment): DisplayText {
+/** The day's pick from a moment's lines (the same all day, a different one most days). */
+function pick(lines: string[], date: string): string {
+	let hash = 0;
+	for (const char of date) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+	return lines[hash % lines.length];
+}
+
+/** Mira's line for the moment, in English (she says it; nothing is shown). */
+export function dashboardGreeting(m: DashboardMoment, date: string): string {
 	const n = m.lessonNumber;
-	switch (greetingKind(m)) {
-		case 'first':
-			return hello(m.name,
-				`Hi {name}, I’m Mira, your English coach. Every day, we do one short lesson together. It takes about 15 minutes. You listen, then you speak. When you’re ready, tap “Start Day ${n}” below.`,
-				`سلام {name}، من میرا هستم، مربی انگلیسی تو. هر روز با هم یک درس کوتاه کار می‌کنیم، حدود ۱۵ دقیقه: اول گوش می‌دهی، بعد حرف می‌زنی. هر وقت آماده بودی، دکمهٔ «شروع روز ${fa(n)}» را پایین صفحه بزن.`);
-		case 'in-progress':
-			return hello(m.name,
-				`Welcome back, {name}! You started Day ${n}. Let’s finish it. Tap “Resume Day ${n}” below.`,
-				`دوباره خوش آمدی {name}! درس روز ${fa(n)} را شروع کرده‌ای. بیا تمامش کنیم: دکمهٔ «ادامهٔ روز ${fa(n)}» را پایین صفحه بزن.`);
-		case 'done-today':
-			return m.caughtUp
-				? hello(m.name, 'Well done today, {name}! There’s no new lesson yet, so enjoy your break.', 'امروز عالی کار کردی {name}! هنوز درس تازه‌ای نیامده، پس از استراحتت لذت ببر.')
-				: hello(m.name, `Well done, {name}! You finished today’s lesson. See you tomorrow for Day ${n}.`, `آفرین {name}! درس امروز را تمام کردی. فردا برای روز ${fa(n)} منتظرت هستم.`);
-		case 'caught-up':
-			return hello(m.name,
-				`Welcome back, {name}! The next lesson isn’t ready yet. You can practice Day ${n} one more time: tap “Do Day ${n} again” below.`,
-				`دوباره خوش آمدی {name}! درس بعدی هنوز آماده نیست. می‌توانی روز ${fa(n)} را یک بار دیگر تمرین کنی: دکمهٔ «روز ${fa(n)} را دوباره انجام بده» را پایین صفحه بزن.`);
-		case 'streak':
-			return hello(m.name,
-				`Welcome back, {name}! You’ve practiced ${m.streak} days in a row. Nice work! Day ${n} is ready when you are.`,
-				`دوباره خوش آمدی {name}! ${fa(m.streak)} روز پشت سر هم تمرین کرده‌ای. آفرین! هر وقت آماده بودی، روز ${fa(n)} منتظرت است.`);
-		case 'keep-going':
-			return hello(m.name,
-				`Welcome back, {name}! You practiced yesterday. Let’s do Day ${n} today.`,
-				`دوباره خوش آمدی {name}! دیروز تمرین کردی. بیا امروز روز ${fa(n)} را انجام بدهیم.`);
-		case 'long-break':
-			return hello(m.name,
-				`Good to see you again, {name}! Let’s keep going with Day ${n}. It takes about 15 minutes.`,
-				`خوشحالم که دوباره می‌بینمت {name}! بیا با روز ${fa(n)} ادامه بدهیم. حدود ۱۵ دقیقه طول می‌کشد.`);
-		default:
-			return hello(m.name,
-				`Welcome back, {name}! Day ${n} is ready for you. It takes about 15 minutes. A little speaking every day really helps.`,
-				`دوباره خوش آمدی {name}! روز ${fa(n)} آماده است. حدود ۱۵ دقیقه طول می‌کشد. هر روز کمی حرف زدن واقعاً کمک می‌کند.`);
-	}
+	const lines: Record<GreetingKind, string[]> = {
+		first: [`Hi {name}, this is Mira, your English coach. Let’s start your first lesson!`],
+		'in-progress': [
+			`Welcome back, {name}! Day ${n} is waiting right where you left it.`,
+			`Hey {name}! Let’s finish Day ${n}. You’re almost there.`,
+			`There you are, {name}! Ready to pick up Day ${n}?`
+		],
+		'done-today': m.caughtUp
+			? [`Great job today, {name}! New lessons are on the way.`, `You did it, {name}! I’m getting the next lesson ready for you.`]
+			: [`You did it today, {name}! High five! See you tomorrow for Day ${n}.`, `Nice work today, {name}! Day ${n} opens tomorrow.`],
+		'caught-up': [
+			`Hey {name}! You’ve done every lesson so far. Want to try Day ${n} again while I get the next one ready?`,
+			`Welcome back, {name}! New lessons are coming soon. Day ${n} again, just for fun?`
+		],
+		streak: m.streak >= 7
+			? [`${m.streak} days in a row, {name}! That’s amazing. Let’s keep it going!`, `Wow, {name}, ${m.streak} days in a row! You’re unstoppable. Day ${n} is next.`]
+			: [`${m.streak} days in a row, {name}! You’re on fire. Let’s keep it going with Day ${n}.`, `Look at you, {name}! ${m.streak} days in a row. Let’s make it ${m.streak + 1}!`],
+		'keep-going': [
+			`Welcome back, {name}! Let’s make it two days in a row with Day ${n}.`,
+			`Hi again, {name}! You practiced yesterday. One more today, and that’s a streak!`
+		],
+		'long-break': [
+			`Long time no see, {name}! I missed you. Let’s jump back in with Day ${n}.`,
+			`Hey {name}! It’s so good to see you again. Let’s start with Day ${n}.`
+		],
+		'welcome-back': [
+			`Welcome back, {name}! Ready for Day ${n}? Let’s go!`,
+			`Hi {name}! Day ${n} is ready for you. Shall we?`,
+			`Good to see you, {name}! Let’s start Day ${n}.`
+		]
+	};
+	return named(pick(lines[greetingKind(m)], date), m.name);
 }
