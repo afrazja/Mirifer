@@ -40,6 +40,7 @@
 	import { DAYS } from '$lib/practice/day';
 	import type { DayId, DayModule, DayPack } from '$lib/practice/day';
 	import ActionBar from '$lib/components/ActionBar.svelte';
+	import LearnerTabs from '$lib/components/LearnerTabs.svelte';
 	import { goto } from '$app/navigation';
 
 	let { data }: PageProps = $props();
@@ -285,7 +286,7 @@
 <main id="main-content" class="today" dir={isFa ? 'rtl' : 'ltr'}>
 	<AppHeader backHref={data.labAccess ? "/practice/english/days" : "/languages"} backLabel={data.labAccess ? (isFa ? "درس‌ها" : "Lessons") : (isFa ? "زبان‌ها" : "Languages")} direction={isFa ? 'rtl' : 'ltr'} />
 	<!-- The section switch, off the focused flow: only before a session starts and once it's done. -->
-	{#if !session || session.stage === 'done'}<EnglishModuleTabs current="today" {isFa} />{/if}
+	{#if !session || session.stage === 'done'}<EnglishModuleTabs current="today" {isFa} /><LearnerTabs current="today" {isFa} />{/if}
 
 	<!-- A finished session waits for the device's own date before showing the done screen or a new start. -->
 	{#if !settled}
