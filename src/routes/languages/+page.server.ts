@@ -1,11 +1,27 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { COURSES, getCourse, isAvailableCourse } from '$lib/courses';
+import { COURSES, getCourse, isAvailableCourse, onlyOpenCourse } from '$lib/courses';
 import { learningList, myLanguages } from '$lib/server/my-languages';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.session || !locals.user) redirect(303, '/login');
 	const { data: { user } } = await locals.supabase.auth.getUser();
+	// English is the only course open: no list to choose from, straight into English (its
+	// onboarding the first time, then the dashboard). The course is saved first, so the course
+	// guard lets the learner in; if that save fails, the list shows as before.
+	if (user && onlyOpenCourse() === 'en') {
+		const meta = user.user_metadata ?? {};
+		let ready = meta.target_language === 'en';
+		if (!ready) {
+			const learning = new Set(learningList(meta.learning));
+			learning.add('en');
+			try {
+				const { error: saveError } = await locals.supabase.auth.updateUser({ data: { target_language: 'en', learning: [...learning] } });
+				ready = !saveError;
+			} catch { /* show the list */ }
+		}
+		if (ready) redirect(303, courseHome('en'));
+	}
 	const languages = user ? await myLanguages(locals.supabase, user) : [];
 	const started = new Set<string>(languages.map(language => language.code));
 	return {

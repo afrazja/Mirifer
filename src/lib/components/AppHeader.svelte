@@ -12,6 +12,7 @@
 	import type { Snippet } from "svelte";
 	import BrandLogo from "./BrandLogo.svelte";
 	import AccountMenu from "./AccountMenu.svelte";
+	import { onlyOpenCourse } from "$lib/courses";
 
 	let {
 		title,
@@ -67,7 +68,7 @@
 <div class="header-stack" class:sticky dir={direction}>
 	<header class="app-header" class:connected={secondary} class:has-actions={!!actions} class:has-center={!!center}>
 		{#if logo}
-			<a class="brand" href="/languages" aria-label={isFa ? "میریفر: زبان‌های من" : "Mirifer: my languages"}>
+			<a class="brand" href="/languages" aria-label={onlyOpenCourse() ? (isFa ? "میریفر: صفحهٔ اصلی" : "Mirifer: home") : (isFa ? "میریفر: زبان‌های من" : "Mirifer: my languages")}>
 				<BrandLogo />
 			</a>
 		{/if}

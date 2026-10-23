@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import AppHeader from '$lib/components/AppHeader.svelte';
+	import { onlyOpenCourse } from '$lib/courses';
 	import { getLanguage } from '$services/data-layer';
 
 	let language = $state<'en' | 'fa'>('en');
@@ -18,7 +19,7 @@
 </svelte:head>
 
 <main id="main-content" class="home" dir={isFa ? 'rtl' : 'ltr'}>
-	<AppHeader backHref="/languages" backLabel={isFa ? 'زبان‌ها' : 'Languages'} direction={isFa ? 'rtl' : 'ltr'} />
+	<AppHeader backHref={onlyOpenCourse() ? undefined : '/languages'} backLabel={isFa ? 'زبان‌ها' : 'Languages'} direction={isFa ? 'rtl' : 'ltr'} />
 	<h1>{isFa ? 'انگلیسی' : 'English'}</h1>
 	<ul class="parts">
 		{#each parts as part}<li><a class="part" href={part.href}>{isFa ? part.fa : part.en} <span aria-hidden="true">{isFa ? '←' : '→'}</span></a></li>{/each}

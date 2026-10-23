@@ -6,6 +6,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { signOut } from '$services/auth';
+	import { onlyOpenCourse } from '$lib/courses';
 
 	let { isFa = false }: { isFa?: boolean } = $props();
 	let open = $state(false), signingOut = $state(false);
@@ -39,7 +40,8 @@
 		{#if open}
 			<div class="menu" role="menu" dir={isFa ? 'rtl' : 'ltr'}>
 				{#if name}<p class="who">{name}</p>{/if}
-				<a role="menuitem" href="/languages" onclick={() => (open = false)}>{isFa ? 'زبان‌های من' : 'My languages'}</a>
+				<!-- No language list while only one course is open (the app opens straight on it). -->
+				{#if !onlyOpenCourse()}<a role="menuitem" href="/languages" onclick={() => (open = false)}>{isFa ? 'زبان‌های من' : 'My languages'}</a>{/if}
 				<a role="menuitem" href="/settings" onclick={() => (open = false)}>{isFa ? 'تنظیمات' : 'Settings'}</a>
 				<button role="menuitem" type="button" onclick={leave} disabled={signingOut}>{signingOut ? (isFa ? 'در حال خروج…' : 'Signing out…') : (isFa ? 'خروج از حساب' : 'Sign out')}</button>
 			</div>

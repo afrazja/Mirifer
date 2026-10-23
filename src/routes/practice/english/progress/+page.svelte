@@ -13,6 +13,7 @@
 	import { goto } from '$app/navigation';
 	import AppHeader from '$lib/components/AppHeader.svelte';
 	import ActionBar from '$lib/components/ActionBar.svelte';
+	import { onlyOpenCourse } from '$lib/courses';
 	import { getLanguage } from '$services/data-layer';
 	import { lastSevenDays, streak } from '$lib/practice/learner-stats';
 	import { dashboardGreeting, greetingKind, type DashboardMoment } from '$lib/practice/dashboard-greeting';
@@ -96,7 +97,8 @@
 </svelte:head>
 
 <main id="main-content" class="progress" dir={isFa ? 'rtl' : 'ltr'}>
-	<AppHeader backHref="/languages" backLabel={isFa ? 'زبان‌ها' : 'Languages'} direction={isFa ? 'rtl' : 'ltr'} />
+	<!-- The English home: nothing to go back to (the language list steps aside while English is the only course). -->
+	<AppHeader backHref={onlyOpenCourse() ? undefined : '/languages'} backLabel={isFa ? 'زبان‌ها' : 'Languages'} direction={isFa ? 'rtl' : 'ltr'} />
 	<h1>{isFa ? 'پیشرفت تو' : 'Your progress'}</h1>
 
 	<section class="card" aria-labelledby="lesson-title">
