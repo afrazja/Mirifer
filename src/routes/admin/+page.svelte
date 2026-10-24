@@ -1,7 +1,8 @@
 <script lang="ts">
 	/**
 	 * Admin: the English app at a glance (src/lib/analytics/english-insights.ts). Five views:
-	 * Overview (the funnel and day by day), Learners (each one: visits, sign-ins, where they are),
+	 * Overview (the funnel and day by day), Learners (one sortable, filterable table of every account,
+	 * with its details and the account actions: test account, reset password, delete),
 	 * Lessons (steps done, skipped, where lessons stop), AI cost, Audience (levels, reasons, sources).
 	 */
 	import type { PageData, ActionData } from './$types';
@@ -14,7 +15,34 @@
 	const report = $derived(data.insights?.report ?? null);
 	let search = $state('');
 	let selectedId = $state('');
-	const learners = $derived((report?.learners ?? []).filter(l => `${l.name} ${l.email}`.toLowerCase().includes(search.toLowerCase())));
+	/** The learners table: filters, then the chosen sort (most recently active first by default). */
+	type Learner = NonNullable<typeof report>['learners'][number];
+	const STAGES = ['Not onboarded', 'Not started', 'In a lesson', 'Between lessons', 'Caught up'];
+	const stageOf = (l: Learner) => (l.status.startsWith('In Day') ? 'In a lesson' : l.status.startsWith('Next:') ? 'Between lessons' : l.status === 'Not finished a lesson' ? 'Not started' : l.status);
+	let stage = $state(''), level = $state(''), activeOnly = $state(false);
+	const COLUMNS: { key: keyof Learner; label: string }[] = [
+		{ key: 'name', label: 'Learner' }, { key: 'status', label: 'Where they are' }, { key: 'level', label: 'Level' }, { key: 'reason', label: 'Reason' },
+		{ key: 'signedUp', label: 'Signed up' }, { key: 'lastActive', label: 'Last visit' }, { key: 'visits', label: 'Visits' }, { key: 'daysActive', label: 'Days' },
+		{ key: 'finished', label: 'Lessons' }, { key: 'streak', label: 'Streak' }, { key: 'cost', label: 'AI cost' }, { key: 'source', label: 'Source' }
+	];
+	let sortKey = $state<keyof Learner>('lastActive'), sortDir = $state<1 | -1>(-1);
+	function sortBy(key: keyof Learner) {
+		if (sortKey === key) sortDir = sortDir === 1 ? -1 : 1;
+		else { sortKey = key; sortDir = typeof report?.learners[0]?.[key] === 'number' || ['signedUp', 'lastActive'].includes(key) ? -1 : 1; }
+	}
+	const value = (l: Learner, key: keyof Learner) => (key === 'name' ? (l.name || l.email).toLowerCase() : l[key]);
+	const learners = $derived((report?.learners ?? [])
+		.filter(l => `${l.name} ${l.email}`.toLowerCase().includes(search.trim().toLowerCase()))
+		.filter(l => !stage || stageOf(l) === stage)
+		.filter(l => !level || (level === 'none' ? !l.level : l.level === level))
+		.filter(l => !activeOnly || (report && Date.parse(l.lastActive) >= Date.parse(report.now) - report.days * 86_400_000))
+		.sort((a, b) => {
+			const x = value(a, sortKey), y = value(b, sortKey);
+			if (x === y) return 0;
+			if (x === null || x === undefined || x === '') return 1;
+			if (y === null || y === undefined || y === '') return -1;
+			return (x > y ? 1 : -1) * sortDir;
+		}));
 	const selected = $derived(report?.learners.find(l => l.id === selectedId) ?? null);
 	const TABS = [{ id: 'overview', name: 'Overview' }, { id: 'learners', name: 'Learners' }, { id: 'lessons', name: 'Lessons' }, { id: 'cost', name: 'AI cost' }, { id: 'audience', name: 'Audience' }];
 
@@ -121,25 +149,47 @@
 			</div>
 
 		{:else if tab === 'learners'}
-			<input class="search" type="search" placeholder="Search name or email" aria-label="Search learners" bind:value={search} />
-			<p class="muted">{learners.length} accounts, most recently active first. Visits count each time the app is opened after 30 minutes away, signed in again or not.</p>
-			<ul class="learners">
-				{#each learners as l (l.id)}
-					<li>
-						<button class="learner" class:current={selectedId === l.id} onclick={() => open(l.id)}>
-							<span class="who"><b>{l.name || l.email}</b>{#if l.test}<em class="tag">{l.admin ? 'admin' : 'test'}</em>{/if}<small>{l.name ? l.email : ''}</small></span>
-							<span class="status">{l.status}</span>
-							<span class="facts">
-								<span><b>{l.visits}</b> visits</span>
-								<span><b>{l.daysActive}</b> days</span>
-								<span>Last visit <b>{when(l.lastVisit ?? l.lastSignIn)}</b></span>
-								<span><b>{l.finished}</b> lessons</span>
-								{#if l.streak}<span><b>{l.streak}</b>-day streak</span>{/if}
-							</span>
-						</button>
-					</li>
-				{:else}<li class="muted">No accounts match.</li>{/each}
-			</ul>
+			<div class="table-filters">
+				<input type="search" placeholder="Search name or email" aria-label="Search learners" bind:value={search} />
+				<select aria-label="Where they are" bind:value={stage}>
+					<option value="">Anywhere in the course</option>
+					{#each STAGES as s}<option value={s}>{s}</option>{/each}
+				</select>
+				<select aria-label="Level" bind:value={level}>
+					<option value="">Any level</option><option>Intermediate</option><option>Professional</option><option value="none">No level yet</option>
+				</select>
+				<label class="check"><input type="checkbox" bind:checked={activeOnly} /> Active in the last {report.days} days</label>
+			</div>
+			<p class="muted">{learners.length} of {report.learners.length} accounts. Tap a column to sort, a row to see the details and account actions. A visit is each time the app is opened after 30 minutes away, signed in again or not.</p>
+			<div class="table-wrap learners-table">
+				<table>
+					<thead><tr>
+						{#each COLUMNS as col}
+							<th aria-sort={sortKey === col.key ? (sortDir === 1 ? 'ascending' : 'descending') : undefined}>
+								<button class="sort" onclick={() => sortBy(col.key)}>{col.label}{#if sortKey === col.key}<span aria-hidden="true">{sortDir === 1 ? ' ▲' : ' ▼'}</span>{/if}</button>
+							</th>
+						{/each}
+					</tr></thead>
+					<tbody>
+						{#each learners as l (l.id)}
+							<tr class:current={selectedId === l.id} onclick={() => open(l.id)}>
+								<td class="who"><button class="row-link" onclick={e => { e.stopPropagation(); void open(l.id); }}><b>{l.name || l.email}</b></button>{#if l.test}<em class="tag">{l.admin ? 'admin' : 'test'}</em>{/if}<small>{l.name ? l.email : ''}</small></td>
+								<td>{l.status}</td>
+								<td>{l.level ?? '–'}</td>
+								<td>{l.reason ?? '–'}</td>
+								<td>{when(l.signedUp)}</td>
+								<td>{when(l.lastVisit ?? l.lastSignIn)}</td>
+								<td class="num">{l.visits}</td>
+								<td class="num">{l.daysActive}</td>
+								<td class="num">{l.finished}</td>
+								<td class="num">{l.streak}</td>
+								<td class="num">{l.cost ? money(l.cost) : '–'}</td>
+								<td>{l.source ?? '–'}</td>
+							</tr>
+						{:else}<tr><td colspan={COLUMNS.length} class="muted">No accounts match.</td></tr>{/each}
+					</tbody>
+				</table>
+			</div>
 			{#if selected}
 				<section class="panel learner-detail">
 					<span class="eyebrow">LEARNER</span>
@@ -147,7 +197,7 @@
 					<p class="muted">{selected.email}</p>
 					<dl class="details">
 						<div><dt>Status</dt><dd>{selected.status}</dd></div>
-						<div><dt>Signed up</dt><dd>{when(selected.signedUp)}</dd></div>
+						<div><dt>Signed up</dt><dd>{stamp(selected.signedUp)}</dd></div>
 						<div><dt>Visits (all time)</dt><dd>{selected.visits} · {selected.visitsInPeriod} in the period</dd></div>
 						<div><dt>Days with a visit</dt><dd>{selected.daysActive}</dd></div>
 						<div><dt>Last visit</dt><dd>{selected.lastVisit ? stamp(selected.lastVisit) : '–'}</dd></div>
@@ -162,13 +212,37 @@
 					<ol class="timeline">
 						{#each selected.timeline as e}<li><time>{stamp(e.at)}</time><span>{eventLabel(e)}</span></li>{:else}<li class="muted">Nothing recorded yet.</li>{/each}
 					</ol>
-					{#if !selected.admin}
-						<form method="POST" action="?/exclude">
-							<input type="hidden" name="user_id" value={selected.id} />
-							<input type="hidden" name="exclude" value={selected.test ? '0' : '1'} />
-							<button class="quiet">{selected.test ? 'Count this account again' : 'Mark as a test account'}</button>
-						</form>
-					{/if}
+
+					<h3>Account</h3>
+					<div class="account-actions">
+						{#if !selected.admin}
+							<form method="POST" action="?/exclude&tab=learners">
+								<input type="hidden" name="user_id" value={selected.id} />
+								<input type="hidden" name="exclude" value={selected.test ? '0' : '1'} />
+								<button class="quiet">{selected.test ? 'Count this account again' : 'Mark as a test account'}</button>
+							</form>
+						{/if}
+						<details>
+							<summary>Reset password</summary>
+							<form method="POST" action="?/setPassword&tab=learners" class="stack-form">
+								<input type="hidden" name="userId" value={selected.id} />
+								<label>New password <input name="password" type="password" minlength="6" required autocomplete="new-password" /></label>
+								<label>Type it again <input name="confirm" type="password" minlength="6" required autocomplete="new-password" /></label>
+								<button class="quiet">Set the new password</button>
+								<small>The learner isn’t told: let them know yourself.</small>
+							</form>
+						</details>
+						{#if !selected.admin && selected.id !== data.selfId}
+							<details>
+								<summary>Delete account</summary>
+								<form method="POST" action="?/deleteUser&tab=learners" class="stack-form" onsubmit={e => { if (!confirm(`Delete ${selected.email} and all of their data? This can’t be undone.`)) e.preventDefault(); }}>
+									<input type="hidden" name="userId" value={selected.id} />
+									<label>Type <b>{selected.email}</b> to confirm <input name="confirmEmail" type="email" required autocomplete="off" /></label>
+									<button class="danger">Delete forever</button>
+								</form>
+							</details>
+						{/if}
+					</div>
 				</section>
 			{/if}
 
@@ -256,15 +330,27 @@
 	.bar { flex: 1; background: #b6dd94; border-radius: 4px 4px 0 0; min-width: 2px; }
 	.bar:hover { background: #d9f0c4; }
 	.axis { display: flex; justify-content: space-between; font-size: .75rem; color: #a9b4b0; margin: 6px 0 0; }
-	.search { width: 100%; }
-	.learners { list-style: none; margin: 12px 0 18px; padding: 0; display: grid; gap: 8px; }
-	.learner { display: grid; gap: 6px; width: 100%; text-align: left; padding: 14px 16px; border: 1px solid #34443e; border-radius: 12px; background: #18231f; color: inherit; }
-	.learner:hover, .learner.current { border-color: #b6dd94; }
-	.who { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
-	.who small { flex-basis: 100%; }
+	.table-filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+	.table-filters input[type=search] { flex: 1 1 220px; }
+	.learners-table { border: 1px solid #34443e; border-radius: 12px; margin: 10px 0 16px; }
+	.learners-table th { padding: 0; white-space: nowrap; background: #1e2b24; position: sticky; top: 0; }
+	.learners-table td { white-space: nowrap; vertical-align: top; }
+	.learners-table th:first-child, .learners-table td:first-child { position: sticky; left: 0; background: #18231f; z-index: 1; }
+	.learners-table th:first-child { background: #1e2b24; z-index: 2; }
+	.learners-table tbody tr { cursor: pointer; }
+	.learners-table tbody tr:hover td, .learners-table tr.current td { background: #22312a; }
+	.learners-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+	.learners-table .who small { display: block; }
+	.sort { width: 100%; min-height: 44px; padding: 10px 8px; border: 0; background: transparent; color: #a9b4b0; font-size: .82rem; font-weight: 500; text-align: left; }
+	.sort:hover { color: #f0f3ed; }
+	.row-link { min-height: 0; padding: 0; border: 0; background: none; color: inherit; text-align: left; }
+	.account-actions { display: grid; gap: 12px; justify-items: start; }
+	.account-actions details { width: 100%; max-width: 420px; }
+	.account-actions summary { cursor: pointer; color: #b6dd94; min-height: 44px; display: flex; align-items: center; }
+	.stack-form { display: grid; gap: 10px; margin-top: 6px; }
+	.stack-form label { display: grid; gap: 6px; font-size: .88rem; }
+	.danger { background: #8f2f2f; color: #fff; border: 0; border-radius: 8px; padding: 8px 14px; }
 	.tag { font-style: normal; font-size: .72rem; color: #101b16; background: #e0c385; border-radius: 999px; padding: 1px 8px; }
-	.status { color: #b6dd94; font-size: .88rem; }
-	.facts { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: .84rem; color: #c2ccc6; }
 	.details { display: grid; gap: 8px; margin: 14px 0; }
 	.details div { display: grid; grid-template-columns: 11em 1fr; gap: 12px; font-size: .9rem; }
 	.details dt { color: #a9b4b0; }
