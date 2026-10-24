@@ -144,6 +144,12 @@ Reviewers judge every screen against this.
 
 ---
 
+## Bigger ideas (owner's rule)
+
+When you see a bigger product or strategy improvement, even outside the task, say it in one or two lines at the end of your reply.
+
+---
+
 ## Review agents
 
 Independent, read-only reviewers live in `.claude/agents/`. Before building or changing something significant, run the ones that fit, in parallel, and weigh their reports against the plan. They report; they never edit. Brief each one on every screen of the flow it is judging (for a lesson: warm-up, the dialogue with several steps on screen, exercises, completion), with screenshots; a reviewer only sees what it is given.
