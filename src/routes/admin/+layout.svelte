@@ -9,7 +9,6 @@
 			<div class="admin-brand">⚙️ Mirifer Admin</div>
 			<div class="admin-user">👤 {data.adminUser.displayName}</div>
 			<a href="/admin" class="nav-link">📊 English</a>
-			<a href="/admin/users" class="nav-link">👥 Accounts</a>
 			<a href="/" class="nav-link nav-back">← Back to App</a>
 		</nav>
 	{/if}
