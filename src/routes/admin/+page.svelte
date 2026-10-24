@@ -174,9 +174,9 @@
 						{#each learners as l (l.id)}
 							<tr class:current={selectedId === l.id} onclick={() => open(l.id)}>
 								<td class="who"><button class="row-link" onclick={e => { e.stopPropagation(); void open(l.id); }}><b>{l.name || l.email}</b></button>{#if l.test}<em class="tag">{l.admin ? 'admin' : 'test'}</em>{/if}<small>{l.name ? l.email : ''}</small></td>
-								<td>{l.status}</td>
+								<td class="wrap">{l.status}</td>
 								<td>{l.level ?? '–'}</td>
-								<td>{l.reason ?? '–'}</td>
+								<td class="wrap">{l.reason ?? '–'}</td>
 								<td>{when(l.signedUp)}</td>
 								<td>{when(l.lastVisit ?? l.lastSignIn)}</td>
 								<td class="num">{l.visits}</td>
@@ -289,7 +289,7 @@
 {/if}
 
 <style>
-	.insights { max-width: 1100px; margin: 0 auto; color: #f0f3ed; }
+	.insights { max-width: 1440px; margin: 0 auto; color: #f0f3ed; }
 	.heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
 	h1 { font-family: 'Newsreader Variable', Georgia, serif; font-weight: 500; font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1.1; margin: 8px 0 18px; }
 	h2 { font-size: 1.15rem; font-weight: 600; margin: 0 0 10px; }
@@ -334,14 +334,18 @@
 	.table-filters input[type=search] { flex: 1 1 220px; }
 	.learners-table { border: 1px solid #34443e; border-radius: 12px; margin: 10px 0 16px; }
 	.learners-table th { padding: 0; white-space: nowrap; background: #1e2b24; position: sticky; top: 0; }
-	.learners-table td { white-space: nowrap; vertical-align: top; }
+	.learners-table table { font-size: .85rem; }
+	.learners-table td { white-space: nowrap; vertical-align: top; padding: 9px 7px; }
+	/* Longer text wraps instead of widening the table. */
+	.learners-table td.wrap { white-space: normal; min-width: 7.5em; max-width: 11em; }
+	.learners-table .who small { max-width: 15em; overflow: hidden; text-overflow: ellipsis; }
 	.learners-table th:first-child, .learners-table td:first-child { position: sticky; left: 0; background: #18231f; z-index: 1; }
 	.learners-table th:first-child { background: #1e2b24; z-index: 2; }
 	.learners-table tbody tr { cursor: pointer; }
 	.learners-table tbody tr:hover td, .learners-table tr.current td { background: #22312a; }
 	.learners-table .num { text-align: right; font-variant-numeric: tabular-nums; }
 	.learners-table .who small { display: block; }
-	.sort { width: 100%; min-height: 44px; padding: 10px 8px; border: 0; background: transparent; color: #a9b4b0; font-size: .82rem; font-weight: 500; text-align: left; }
+	.sort { width: 100%; min-height: 44px; padding: 10px 7px; border: 0; background: transparent; color: #a9b4b0; font-size: .82rem; font-weight: 500; text-align: left; }
 	.sort:hover { color: #f0f3ed; }
 	.row-link { min-height: 0; padding: 0; border: 0; background: none; color: inherit; text-align: left; }
 	.account-actions { display: grid; gap: 12px; justify-items: start; }

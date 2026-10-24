@@ -2,14 +2,14 @@
 	let { children, data } = $props();
 </script>
 
-<!-- The admin interface stays English and LTR independently of the learner's language. -->
+<!-- The admin interface stays English and LTR independently of the learner's language.
+     One page now, so a slim top bar instead of a sidebar: the page keeps the full width. -->
 <div class="admin-shell" lang="en" dir="ltr">
 	{#if data.authorized}
-		<nav class="admin-nav">
-			<div class="admin-brand">⚙️ Mirifer Admin</div>
-			<div class="admin-user">👤 {data.adminUser.displayName}</div>
-			<a href="/admin" class="nav-link">📊 English</a>
-			<a href="/" class="nav-link nav-back">← Back to App</a>
+		<nav class="admin-nav" aria-label="Admin">
+			<a href="/admin" class="admin-brand">⚙️ Mirifer Admin</a>
+			<span class="admin-user">👤 {data.adminUser.displayName}</span>
+			<a href="/" class="nav-back">← Back to the app</a>
 		</nav>
 	{/if}
 	<main id="main-content" class="admin-main" dir="ltr">
@@ -18,78 +18,16 @@
 </div>
 
 <style>
-	.admin-shell {
-		display: flex;
-		min-height: 100vh;
-		text-align: left;
-		background: #101b16;
-		color: #f0f3ed;
-		font-family: 'IBM Plex Sans Variable', sans-serif;
-	}
-
-	.admin-nav {
-		width: 220px;
-		min-width: 220px;
-		background: rgba(255,255,255,0.05);
-		border-right: 1px solid rgba(255,255,255,0.1);
-		padding: 24px 16px;
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-	}
-
-	.admin-brand {
-		font-size: 1.2rem;
-		font-weight: 700;
-		color: #2ecc71;
-		margin-bottom: 8px;
-		padding-bottom: 12px;
-		border-bottom: 1px solid rgba(255,255,255,0.1);
-	}
-
-	.admin-user {
-		font-size: 0.85rem;
-		color: #888;
-		margin-bottom: 16px;
-		padding-bottom: 12px;
-		border-bottom: 1px solid rgba(255,255,255,0.1);
-	}
-
-	.nav-link {
-		display: block;
-		padding: 10px 14px;
-		border-radius: 8px;
-		color: #ccc;
-		text-decoration: none;
-		font-size: 0.95rem;
-		transition: all 0.2s;
-	}
-
-	.nav-link:hover {
-		background: rgba(46,204,113,0.15);
-		color: #2ecc71;
-	}
-
-	.nav-back {
-		margin-top: auto;
-		color: #888;
-		border-top: 1px solid rgba(255,255,255,0.1);
-		padding-top: 16px;
-	}
-
-	.admin-main {
-		flex: 1;
-		min-width: 0;
-		padding: 32px;
-		overflow-y: auto;
-	}
-
+	.admin-shell { min-height: 100vh; text-align: left; background: #101b16; color: #f0f3ed; font-family: 'IBM Plex Sans Variable', sans-serif; }
+	.admin-nav { display: flex; align-items: center; gap: 16px; padding: 10px 24px; border-bottom: 1px solid rgba(255, 255, 255, .1); background: rgba(255, 255, 255, .04); }
+	.admin-brand { font-weight: 700; color: #2ecc71; text-decoration: none; min-height: 44px; display: flex; align-items: center; }
+	.admin-user { color: #888; font-size: .85rem; }
+	.nav-back { margin-left: auto; color: #aaa; text-decoration: none; font-size: .9rem; min-height: 44px; display: flex; align-items: center; }
+	.nav-back:hover, .admin-brand:hover { text-decoration: underline; }
+	.admin-main { min-width: 0; padding: 28px 32px; }
 	@media (max-width: 700px) {
-		.admin-main { padding: 20px 14px; }
-		.admin-shell { flex-direction: column; }
-		.admin-nav { width: 100%; min-width: unset; flex-direction: row; flex-wrap: wrap; padding: 12px; gap: 4px; }
-		.admin-brand { width: 100%; margin-bottom: 0; padding-bottom: 8px; }
+		.admin-nav { padding: 6px 14px; gap: 10px; }
 		.admin-user { display: none; }
-		.nav-back { margin-top: 0; border-top: none; padding-top: 0; }
+		.admin-main { padding: 20px 14px; }
 	}
 </style>
