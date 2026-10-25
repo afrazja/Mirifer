@@ -262,7 +262,7 @@
 	{#if mod.id === 'listen-act' && mod.built && session}
 		{#key mod.id}<ListenConnect {isFa} {onSkip} set={dayConnect} initial={asConnectRecord(loadRecord(session.startedAt, mod.id), dayConnect)} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} {onDone} />{/key}
 	{:else if mod.id === 'phrases' && mod.built && session}
-		{#key mod.id}<PhrasePractice {isFa} {onSkip} phrases={dayPhrases} initial={asPhraseRecord(loadRecord(session.startedAt, mod.id), dayPhrases)} afterIntro={introPlay} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} onStep={index => (phraseStep = index)} {onDone} />{/key}
+		{#key mod.id}<PhrasePractice {isFa} {onSkip} phrases={dayPhrases} tapWords={data.labAccess} initial={asPhraseRecord(loadRecord(session.startedAt, mod.id), dayPhrases)} afterIntro={introPlay} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} onStep={index => (phraseStep = index)} {onDone} />{/key}
 	{:else if mod.id === 'traps' && mod.built && session}
 		{#key mod.id}<Traps {isFa} {onSkip} traps={dayTraps} initial={asTrapsRecord(loadRecord(session.startedAt, mod.id), dayTraps)} onFocus={mode => (intro = mode)} onSave={record => session && saveRecord(session.startedAt, mod.id, record)} {onDone} />{/key}
 	{:else if mod.id === 'say-in-english' && mod.built && session}
