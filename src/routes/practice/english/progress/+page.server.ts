@@ -26,8 +26,11 @@ export const load: PageServerLoad = async ({ locals }) => {
 			.select('event_name, occurred_at, metadata')
 			.eq('user_id', user.id)
 			.eq('event_name', 'lesson_completed')
-			.order('occurred_at', { ascending: true })
-			.limit(5000);
+			// English only (the paused German course writes the same event), newest first so a long
+			// history never pushes out the recent days the week strip and the streak need.
+			.eq('metadata->>course', 'en')
+			.order('occurred_at', { ascending: false })
+			.limit(1000);
 		if (readError) eventsLoaded = false;
 		else rows = (data ?? []) as LessonEventRow[];
 	} catch { eventsLoaded = false; }
