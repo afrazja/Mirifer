@@ -1,4 +1,4 @@
-# Step-by-step path (plan, before review)
+# Step-by-step path (plan, revised after review)
 
 Owner's decisions (2026-10-25):
 - Replace the fixed daily lesson with a **path of short steps** that a learner does at their own pace,
@@ -98,7 +98,65 @@ becomes a short **chapter ending** after the last step.
 The plan screen, the daily recap and done screens, "come back tomorrow", the Lessons finished list
 (replaced by the path), the 15/20-minute lesson lengths.
 
-## Questions for the reviewers
+## After review (2026-10-25)
+
+Reviewed by the learning-UX and system-design reviewers. What changed:
+
+**Kept as the owner decided (reviewers suggested otherwise):**
+- Dashboard keeps its three parts in the owner's order: the Next step card on top, This week, then
+  Steps done (tap: the path). One button.
+- Done steps can be replayed from the path (the owner wants learners to review steps).
+
+**Rules made exact**
+- Next step: in the first released chapter not finished, the first step neither done nor skipped.
+  A chapter is finished when every step is done or skipped and at least one is done (as a daily
+  lesson was). A chapter with every step skipped comes back.
+- Skipped steps come back by themselves: once just before the chapter ending ("You skipped Traps.
+  Do it now?" Do it / Later), then first in line for replays.
+- Replays: skipped steps first, then the step done longest ago (speaking first on a tie). A replay
+  moves that step's date, so replays take turns; it never changes progress. Replays count toward the
+  daily goal once finished.
+- Steps done = unique steps done, in any version; replays don't add.
+- Days finished before the path count as all five steps done (the 15-minute set left one out).
+- The daily AI limits: when the next step would hit them, the Step finished screen says so instead of
+  starting it.
+
+**Screens**
+- Chapter ending: no ticked list (that was the recap again); one Mira line from the chapter's goal
+  ("Now you can tell a taxi driver where you're going.") and the button.
+- A step: the eyebrow reads "TAXI · STEP 3 OF 5"; the in-step "Back: …" link and the labelled strip go
+  (the back arrow pauses). Step 1 of a chapter opens with the chapter's story line (`checkIn.story`).
+- Intros that say "today" or open with "Now…" are rewritten in English and Persian, since a step may be
+  done on its own.
+- Every button has a "nothing new left" version ("Practice again: <step>").
+
+**Data (src/lib/practice/path.ts)**
+- `english_path_v1 = { done: { [step]: [version letter, last local day] }, skipped, current }`;
+  `lastStepAt` and the per-day map are dropped (events hold those). Capped; under 1.5 KB.
+- Older records are read on every load, never migrated by a script: `finishedDays` and a lesson under
+  way (`english_day_v1`, its start kept so the answers in the browser still match). Safe after a
+  rollback or from a tab on old code.
+- The server takes one step's result at a time and merges it into a fresh read; it checks the step is
+  released for the learner's version.
+- `english_progress_v1` keeps being written (`recordStep`): Mira's greeting, the coach and the course
+  list read it; `finishedDays` grows when a chapter ends.
+- Streak and daily goal: from `lesson_progress` done events (English only, local day); old
+  `lesson_completed` days still count. A same-day check on the path covers a lost event.
+- Answers kept in the browser: one entry per step, so a replay never wipes another step's answers.
+- Events: `lesson_progress` per step (adds `replay`), new `step_started` and `chapter_completed`;
+  admin readers accept old and new names. Admin funnel: signed up → onboarded → first step → first
+  step done → chapters 1–3 finished.
+
+**Build order (each ships on its own)**
+1. Path logic and tests, no screen change; the streak reads English rows only, newest first.
+2. The old lesson also writes the path (both records stay in step).
+3. Streak from steps; admin reads old and new events.
+4. The switch: step screen, Step finished, chapter ending, dashboard card; `/today` keeps accepting
+   old saves for a few weeks. Owner first, then everyone.
+5. The path screen with replays.
+6. Cleanup after 2–4 weeks: the plan, recap, 15/20 lengths and old reads.
+
+## Questions the reviewers answered
 
 1. Is "Step finished → Next step / Done for now" the right rhythm, or should the app suggest stopping
    after N steps (fatigue, cost)?

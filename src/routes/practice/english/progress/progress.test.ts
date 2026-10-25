@@ -22,6 +22,7 @@ describe('The learner’s dashboard', () => {
 		expect(data).toEqual({ name: '', finished: 2, lesson: { id: 'day-3', number: 3, theme: expect.any(Object) }, caughtUp: false, lastDoneAt: null, dates: ['2026-10-20', '2026-10-21'], eventsLoaded: true, inProgress: false, resume: null });
 		expect(l.query.eq).toHaveBeenCalledWith('user_id', 'u1');
 		expect(l.query.eq).toHaveBeenCalledWith('event_name', 'lesson_completed');
+		expect(l.query.eq).toHaveBeenCalledWith('metadata->>course', 'en');
 	});
 	it('names the lesson the button opens: the one under way, the next one, or the last when caught up', async () => {
 		const busy = await load({ locals: locals(english({ english_progress_v1: progress, english_day_v1: startSession(15, new Date(), DAY_TWO) })) } as any) as any;
