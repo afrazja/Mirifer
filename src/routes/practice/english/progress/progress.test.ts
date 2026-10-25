@@ -61,8 +61,9 @@ describe('The lessons finished list', () => {
 		expect(data.inProgress).toBe(false);
 		// Nothing about the lessons ahead.
 		expect(JSON.stringify(data)).not.toMatch(/day-3|day-4/);
+		expect(data.underWay).toBeNull();
 		const busy = await loadFinished({ locals: locals(english({ english_progress_v1: progress, english_day_v1: startSession(15, new Date(), DAY_TWO) })) } as any) as any;
-		expect(busy.inProgress).toBe(true);
+		expect(busy).toMatchObject({ inProgress: true, underWay: 'day-2' });
 	});
 	it('sends others away', async () => {
 		await expect(loadFinished({ locals: locals(null) } as any)).rejects.toMatchObject({ location: '/login' });

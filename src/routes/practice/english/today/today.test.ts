@@ -74,6 +74,10 @@ describe('English today page', () => {
 		expect(await load(fixture('en', { english_progress_v1: done, english_day_v1: finishedToday }, undefined, false, '?day=day-1').event())).toMatchObject({ requestedDay: 'day-1', session: null });
 		const underWay = startSession(15, new Date(), DAY_TWO);
 		expect(await load(fixture('en', { english_progress_v1: done, english_day_v1: underWay }, undefined, false, '?day=day-1').event())).toMatchObject({ requestedDay: null, session: underWay });
+		// After confirming on the finished list (replace=1), the earlier lesson opens; the one under way is set aside.
+		expect(await load(fixture('en', { english_progress_v1: done, english_day_v1: underWay }, undefined, false, '?day=day-1&replace=1').event())).toMatchObject({ requestedDay: 'day-1', session: null });
+		// Never a day ahead, even with replace.
+		expect(await load(fixture('en', { english_progress_v1: done, english_day_v1: underWay }, undefined, false, '?day=day-4&replace=1').event())).toMatchObject({ requestedDay: null, session: underWay });
 	});
 	it('a Day 1 session saved before Day 1 had two versions carries on in the learner’s version', async () => {
 		const { track: _dropped, ...legacy } = startSession(15);
