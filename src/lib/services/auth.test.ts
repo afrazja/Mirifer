@@ -22,6 +22,8 @@ import {
 	signIn,
 	signUp,
 	signOut,
+	sendPasswordReset,
+	updatePassword,
 	getTargetLanguage,
 	updateLanguagePreferences
 } from './auth';
@@ -184,7 +186,7 @@ describe('signIn', () => {
 
 	it('signs in through our server when the call to Supabase fails on the network', async () => {
 		mockClient({ signInWithPassword: vi.fn().mockResolvedValue({ data: { user: null }, error: { message: 'Failed to fetch', status: 0, name: 'AuthRetryableFetchError' } }) });
-		expect(await signIn('a@b.com', 'pw')).toEqual({ user: { id: 'u1' }, error: null, viaServer: true });
+		expect(await signIn('a@b.com', 'pw')).toEqual({ user: { id: 'u1' }, error: null, viaServer: true, signedIn: true });
 		expect(server).toHaveBeenCalledWith('/auth/sign-in', expect.objectContaining({ method: 'POST', body: JSON.stringify({ email: 'a@b.com', password: 'pw' }) }));
 	});
 
@@ -230,13 +232,58 @@ describe('signUp', () => {
 		expect(signUpFn.mock.calls[0][0].options.data.display_name).toBe('Learner');
 	});
 
-	it('surfaces the error message on failure', async () => {
+	it('surfaces Supabase’s answer on failure', async () => {
 		mockClient({
-			signUp: vi.fn().mockResolvedValue({ data: { user: null }, error: { message: 'User already registered' } })
+			signUp: vi.fn().mockResolvedValue({ data: { user: null }, error: { message: 'User already registered', status: 422 } })
 		});
 
 		const result = await signUp('a@b.com', 'pw');
 		expect(result).toEqual({ user: null, error: 'User already registered' });
+	});
+
+	describe('when the call to Supabase is lost', () => {
+		const server = vi.fn();
+		beforeEach(() => { server.mockReset(); vi.stubGlobal('fetch', server); });
+		afterEach(() => vi.unstubAllGlobals());
+		const lost = () => mockClient({ signUp: vi.fn().mockRejectedValue(new Error('network')) });
+
+		it('signs up through our server: confirmation email, or signed in straight away', async () => {
+			lost();
+			server.mockResolvedValue({ ok: true, json: async () => ({ user: { id: 'new' }, signedIn: false }) });
+			expect(await signUp('a@b.com', 'secret1', 'Ada')).toEqual({ user: { id: 'new' }, error: null, viaServer: true, signedIn: false });
+			expect(server).toHaveBeenCalledWith('/auth/sign-up', expect.objectContaining({ body: JSON.stringify({ email: 'a@b.com', password: 'secret1', name: 'Ada' }) }));
+			server.mockResolvedValue({ ok: true, json: async () => ({ user: { id: 'new' }, signedIn: true }) });
+			expect((await signUp('a@b.com', 'secret1')).signedIn).toBe(true);
+		});
+		it('shows our server’s answer', async () => {
+			lost();
+			server.mockResolvedValue({ ok: false, json: async () => ({ error: 'User already registered' }) });
+			expect(await signUp('a@b.com', 'secret1')).toEqual({ user: null, error: 'User already registered' });
+		});
+	});
+});
+
+describe('password reset and new password, when the call to Supabase is lost', () => {
+	const server = vi.fn();
+	beforeEach(() => { server.mockReset().mockResolvedValue({ ok: true, json: async () => ({}) }); vi.stubGlobal('fetch', server); });
+	afterEach(() => vi.unstubAllGlobals());
+
+	it('sends the reset email through our server', async () => {
+		mockClient({ resetPasswordForEmail: vi.fn().mockResolvedValue({ error: { message: 'Failed to fetch', status: 0 } }) });
+		expect(await sendPasswordReset('a@b.com')).toEqual({ error: null });
+		expect(server).toHaveBeenCalledWith('/auth/reset', expect.objectContaining({ body: JSON.stringify({ email: 'a@b.com' }) }));
+	});
+	it('keeps Supabase’s own answer for the reset (no retry)', async () => {
+		mockClient({ resetPasswordForEmail: vi.fn().mockResolvedValue({ error: { message: 'Email rate limit exceeded', status: 429 } }) });
+		expect(await sendPasswordReset('a@b.com')).toEqual({ error: 'Email rate limit exceeded' });
+		expect(server).not.toHaveBeenCalled();
+	});
+	it('sets the new password through our server', async () => {
+		mockClient({ updateUser: vi.fn().mockRejectedValue(new Error('network')) });
+		expect(await updatePassword('secret1')).toEqual({ error: null });
+		expect(server).toHaveBeenCalledWith('/auth/new-password', expect.objectContaining({ body: JSON.stringify({ password: 'secret1' }) }));
+		server.mockResolvedValue({ ok: false, json: async () => ({ error: 'The reset link has expired. Ask for a new one.' }) });
+		expect((await updatePassword('secret1')).error).toMatch(/expired/);
 	});
 });
 

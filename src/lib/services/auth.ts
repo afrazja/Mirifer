@@ -81,68 +81,81 @@ export async function isAuthenticated(): Promise<boolean> {
 }
 
 /** Sign up with email, password, and display name */
+/**
+ * The browser's own calls to Supabase can be lost on a filtered or unstable connection (the request
+ * never arrives). Each auth call below tries Supabase directly first, waiting at most 8 s; if
+ * Supabase answers (a wrong password, an email already used…), that's the answer. If the call is
+ * lost, the same action goes through our own server (src/routes/auth/*), which sets the cookies.
+ */
+type Direct<T> = { kind: 'ok'; value: T } | { kind: 'answer'; message: string } | { kind: 'lost' };
+const DIRECT_WAIT_MS = 8000;
+async function direct<T extends { error: unknown }>(call: (() => Promise<T>) | null): Promise<Direct<T>> {
+	if (!call) return { kind: 'lost' };
+	try {
+		const result = await Promise.race([call(), new Promise<null>(resolve => setTimeout(() => resolve(null), DIRECT_WAIT_MS))]);
+		if (!result) return { kind: 'lost' };
+		if (!result.error) return { kind: 'ok', value: result };
+		const error = result.error as { message?: string; status?: number };
+		// Supabase's own answer (4xx) is final; no answer, a network error or a server error: try our server.
+		if (error.status && error.status >= 400 && error.status < 500) return { kind: 'answer', message: error.message ?? 'Something went wrong.' };
+		return { kind: 'lost' };
+	} catch { return { kind: 'lost' }; }
+}
+async function throughServer(path: string, body: unknown): Promise<{ ok: boolean; body: Record<string, unknown> }> {
+	const response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+	return { ok: response.ok, body: await response.json().catch(() => ({})) };
+}
+const OFFLINE = 'Can’t reach Mirifer right now. Check your connection and try again.';
+const serverError = (body: Record<string, unknown>, fallback: string) => (typeof body.error === 'string' ? body.error : fallback);
+
 export async function signUp(
 	email: string,
 	password: string,
 	displayName?: string
-): Promise<{ user: User | null; error: string | null }> {
+): Promise<{ user: User | null; error: string | null; viaServer?: boolean; signedIn?: boolean }> {
 	const client = sb();
-	if (!client) return { user: null, error: 'Supabase not configured' };
+	const name = displayName || 'Learner';
+	const tried = await direct(client ? () => client.auth.signUp({
+		email,
+		password,
+		options: {
+			data: { display_name: name },
+			// Through the auth callback and into the app, not onto the
+			// landing page. This used to point at '/?confirmed=true', so
+			// confirming your email dropped you on the English marketing
+			// page — and for someone who arrived from the Persian level
+			// test, that is the wrong language AND the wrong place, with
+			// no route onward except starting over.
+			//
+			// The callback already exchanges the code and honours `next`;
+			// it is the same path Google sign-in takes.
+			emailRedirectTo: window.location.origin + '/proxy/auth/callback?next=/languages'
+		}
+	}) : null);
+	if (tried.kind === 'ok') return { user: tried.value.data.user, error: null };
+	if (tried.kind === 'answer') return { user: null, error: tried.message };
 	try {
-		const { data, error } = await client.auth.signUp({
-			email,
-			password,
-			options: {
-				data: { display_name: displayName || 'Learner' },
-				// Through the auth callback and into the app, not onto the
-				// landing page. This used to point at '/?confirmed=true', so
-				// confirming your email dropped you on the English marketing
-				// page — and for someone who arrived from the Persian level
-				// test, that is the wrong language AND the wrong place, with
-				// no route onward except starting over.
-				//
-				// The callback already exchanges the code and honours `next`;
-				// it is the same path Google sign-in takes.
-				emailRedirectTo: window.location.origin + '/proxy/auth/callback?next=/languages'
-			}
-		});
-		if (error) return { user: null, error: error.message };
-		return { user: data.user, error: null };
-	} catch (e: any) {
-		return { user: null, error: e.message };
-	}
+		const server = await throughServer('/auth/sign-up', { email, password, name });
+		if (!server.ok) return { user: null, error: serverError(server.body, 'Sign-up failed. Check your connection and try again.') };
+		return { user: (server.body.user as User) ?? null, error: null, viaServer: true, signedIn: server.body.signedIn === true };
+	} catch { return { user: null, error: OFFLINE }; }
 }
 
 /** Sign in with email and password */
-/**
- * Email sign-in. Tries Supabase directly (waiting at most 8 s); if that call fails on the network or
- * never comes back (a filtered or unstable connection), signs in through our own server instead
- * (/auth/sign-in), which sets the sign-in cookies. `viaServer`: the page should do a full load, so
- * the browser picks the session up from the cookies. A wrong password is answered by Supabase
- * directly and never retried.
- */
+/** Email sign-in, with the fallback above. `viaServer`: the page should do a full load (the session is in the cookies). */
 export async function signIn(
 	email: string,
 	password: string
-): Promise<{ user: User | null; error: string | null; viaServer?: boolean }> {
+): Promise<{ user: User | null; error: string | null; viaServer?: boolean; signedIn?: boolean }> {
 	const client = sb();
-	if (client) {
-		try {
-			const result = await Promise.race([client.auth.signInWithPassword({ email, password }), new Promise<null>(resolve => setTimeout(() => resolve(null), 8000))]);
-			if (result && !result.error) return { user: result.data.user, error: null };
-			// Supabase answered (wrong password, unconfirmed email…): that's the answer.
-			const status = (result?.error as { status?: number } | undefined)?.status;
-			if (result?.error && status && status >= 400 && status < 500) return { user: null, error: result.error.message };
-		} catch { /* the network: try our server */ }
-	}
+	const tried = await direct(client ? () => client.auth.signInWithPassword({ email, password }) : null);
+	if (tried.kind === 'ok') return { user: tried.value.data.user, error: null };
+	if (tried.kind === 'answer') return { user: null, error: tried.message };
 	try {
-		const response = await fetch('/auth/sign-in', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
-		const body = await response.json().catch(() => ({}));
-		if (!response.ok) return { user: null, error: typeof body.error === 'string' ? body.error : 'Sign-in failed. Check your connection and try again.' };
-		return { user: body.user ?? null, error: null, viaServer: true };
-	} catch {
-		return { user: null, error: 'Can’t reach Mirifer right now. Check your connection and try again.' };
-	}
+		const server = await throughServer('/auth/sign-in', { email, password });
+		if (!server.ok) return { user: null, error: serverError(server.body, 'Sign-in failed. Check your connection and try again.') };
+		return { user: (server.body.user as User) ?? null, error: null, viaServer: true, signedIn: true };
+	} catch { return { user: null, error: OFFLINE }; }
 }
 
 /** Sign out current user */
@@ -318,28 +331,26 @@ export async function signInWithGoogle(next = '/languages'): Promise<{ error: st
  */
 export async function sendPasswordReset(email: string): Promise<{ error: string | null }> {
 	const client = sb();
-	if (!client) return { error: 'Supabase not configured' };
+	const tried = await direct(client ? () => client.auth.resetPasswordForEmail(email, {
+		redirectTo: window.location.origin + '/proxy/auth/callback?next=/reset-password'
+	}) : null);
+	if (tried.kind === 'ok') return { error: null };
+	if (tried.kind === 'answer') return { error: tried.message };
 	try {
-		const { error } = await client.auth.resetPasswordForEmail(email, {
-			redirectTo: window.location.origin + '/proxy/auth/callback?next=/reset-password'
-		});
-		if (error) return { error: error.message };
-		return { error: null };
-	} catch (e: any) {
-		return { error: e.message };
-	}
+		const server = await throughServer('/auth/reset', { email });
+		return { error: server.ok ? null : serverError(server.body, 'The email couldn’t be sent. Try again.') };
+	} catch { return { error: OFFLINE }; }
 }
 
 export async function updatePassword(newPassword: string): Promise<{ error: string | null }> {
 	const client = sb();
-	if (!client) return { error: 'Supabase not configured' };
+	const tried = await direct(client ? () => client.auth.updateUser({ password: newPassword }) : null);
+	if (tried.kind === 'ok') return { error: null };
+	if (tried.kind === 'answer') return { error: tried.message };
 	try {
-		const { error } = await client.auth.updateUser({ password: newPassword });
-		if (error) return { error: error.message };
-		return { error: null };
-	} catch (e: any) {
-		return { error: e.message };
-	}
+		const server = await throughServer('/auth/new-password', { password: newPassword });
+		return { error: server.ok ? null : serverError(server.body, 'The password couldn’t be changed. Try again.') };
+	} catch { return { error: OFFLINE }; }
 }
 
 /** Update display name in auth metadata + user_profiles */
