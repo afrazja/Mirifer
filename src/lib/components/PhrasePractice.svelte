@@ -9,9 +9,11 @@
 	import { playAudioPromise, stopAllAudio, ttsIsPlaying } from '$services/tts';
 	import ActionBar from '$lib/components/ActionBar.svelte';
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
+	import TapSentence from '$lib/components/TapSentence.svelte';
+	import { hasGlosses } from '$lib/practice/word-glosses';
 	import { MAX_CLIP_SECONDS, MAX_TRIES, PHRASES, caught, emptyPhraseRecord, shownParts, tipParts, type Phrase, type PhraseRecord } from '$lib/practice/phrases';
 
-	let { isFa = false, phrases = PHRASES, initial = null, afterIntro = null, onSave, onFocus, onStep, onSkip, onDone }: {
+	let { isFa = false, phrases = PHRASES, initial = null, afterIntro = null, tapWords = false, onSave, onFocus, onStep, onSkip, onDone }: {
 		isFa?: boolean;
 		/** The day's sentences (Day 1's by default). */
 		phrases?: Phrase[];
@@ -27,6 +29,8 @@
 		onDone: (score: undefined, record: PhraseRecord) => void;
 		/** "Skip this step", shown under the main button on the start screen (the daily lesson). */
 		onSkip?: () => void;
+		/** Tap a word for its meaning (owner preview, where the sentence has meanings written). */
+		tapWords?: boolean;
 	} = $props();
 
 	type Stage = 'listen' | 'recording' | 'result';
@@ -152,7 +156,11 @@
 
 <section class="phrases" aria-live="polite">
 		<p class="situation">{isFa ? phrase.situation.fa : phrase.situation.en}</p>
-		<p class="sentence" lang="en" dir="ltr">{#each shownParts(phrase.shown) as part}{#if part.tie}<span class="tie" aria-hidden="true"></span>{:else if part.bold}<strong>{part.text}</strong>{:else}{part.text}{/if}{/each}</p>
+		{#if tapWords && hasGlosses(phrase.sentence)}
+			<TapSentence shown={phrase.shown} sentence={phrase.sentence} {isFa} />
+		{:else}
+			<p class="sentence" lang="en" dir="ltr">{#each shownParts(phrase.shown) as part}{#if part.tie}<span class="tie" aria-hidden="true"></span>{:else if part.bold}<strong>{part.text}</strong>{:else}{part.text}{/if}{/each}</p>
+		{/if}
 		<p class="tip">{#each tipParts(isFa ? phrase.tip.fa : phrase.tip.en) as part}{#if part.english}<bdi class="en" lang="en" dir="ltr">{part.text}</bdi>{:else}{part.text}{/if}{/each}</p>
 		{#if stage !== 'recording'}
 			<p class="row">
