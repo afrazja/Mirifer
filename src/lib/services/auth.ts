@@ -130,19 +130,31 @@ export async function signIn(
 }
 
 /** Sign out current user */
+/**
+ * Signs out. Never depends on the call to Supabase alone: if it fails or hangs (a slow or filtered
+ * connection), Supabase keeps the session and its cookies, and the app would still be signed in. So:
+ * clear this browser's app data, ask Supabase (waiting at most 3 s), then have our own server delete
+ * the sign-in cookies (/auth/sign-out). The caller then does a full page load.
+ */
 export async function signOut(): Promise<{ error: string | null }> {
-	const client = sb();
-	if (!client) return { error: null };
+	let message: string | null = null;
 	try {
 		// Import data-layer dynamically to avoid circular deps
 		const { clearAllLocal } = await import('./data-layer');
 		clearAllLocal();
-
-		const { error } = await client.auth.signOut();
-		return { error: error ? error.message : null };
-	} catch (e: any) {
-		return { error: e.message };
+	} catch { /* nothing saved to clear */ }
+	const client = sb();
+	if (client) {
+		try {
+			const result = await Promise.race([client.auth.signOut(), new Promise<null>(resolve => setTimeout(() => resolve(null), 3000))]);
+			if (result?.error) message = result.error.message;
+		} catch (e: any) { message = e?.message ?? 'Sign-out failed'; }
 	}
+	try {
+		const response = await fetch('/auth/sign-out', { method: 'POST' });
+		if (response.ok) return { error: null };
+	} catch { /* offline: report Supabase's answer below */ }
+	return { error: message };
 }
 
 /** Listen for auth state changes */

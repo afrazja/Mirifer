@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { afterEach, describe, it, expect, vi, beforeEach } from 'vitest';
 // German is paused (src/lib/courses.ts). These tests cover its flows for when it comes back, so they
 // run with German switched on; src/lib/courses.test.ts covers the paused state.
 vi.mock('$lib/courses', async importOriginal => {
@@ -223,27 +223,44 @@ describe('signUp', () => {
 });
 
 describe('signOut', () => {
-	it('clears local data and revokes the session', async () => {
+	const server = vi.fn();
+	beforeEach(() => { server.mockReset().mockResolvedValue({ ok: true }); vi.stubGlobal('fetch', server); });
+	afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
+
+	it('clears local data, ends the Supabase session and has our server delete the cookies', async () => {
 		const signOutFn = vi.fn().mockResolvedValue({ error: null });
 		mockClient({ signOut: signOutFn });
-
 		const result = await signOut();
 		expect(clearAllLocal).toHaveBeenCalledOnce();
 		expect(signOutFn).toHaveBeenCalledOnce();
+		expect(server).toHaveBeenCalledWith('/auth/sign-out', { method: 'POST' });
 		expect(result).toEqual({ error: null });
 	});
 
-	it('returns the error message if Supabase signOut fails', async () => {
+	it('still signs out when the call to Supabase fails (the server deletes the cookies)', async () => {
 		mockClient({ signOut: vi.fn().mockResolvedValue({ error: { message: 'network' } }) });
-
-		const result = await signOut();
-		expect(result).toEqual({ error: 'network' });
+		expect(await signOut()).toEqual({ error: null });
+		expect(server).toHaveBeenCalledOnce();
 	});
 
-	it('is a no-op (no error) when not configured', async () => {
+	it('doesn’t wait for ever when the call to Supabase hangs', async () => {
+		vi.useFakeTimers();
+		mockClient({ signOut: vi.fn(() => new Promise(() => {})) });
+		const pending = signOut();
+		await vi.advanceTimersByTimeAsync(3000);
+		expect(await pending).toEqual({ error: null });
+		expect(server).toHaveBeenCalledOnce();
+	});
+
+	it('reports Supabase’s error only when our server can’t be reached either', async () => {
+		server.mockRejectedValue(new Error('offline'));
+		mockClient({ signOut: vi.fn().mockResolvedValue({ error: { message: 'network' } }) });
+		expect(await signOut()).toEqual({ error: 'network' });
+	});
+
+	it('works without a configured client (the server still signs out)', async () => {
 		mockUnconfigured();
-		const result = await signOut();
-		expect(result).toEqual({ error: null });
-		expect(clearAllLocal).not.toHaveBeenCalled();
+		expect(await signOut()).toEqual({ error: null });
+		expect(server).toHaveBeenCalledOnce();
 	});
 });
