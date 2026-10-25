@@ -8,6 +8,7 @@
 import { getSupabaseBrowserClient } from '$lib/supabase/client';
 import { isAuthenticated, getUser, updateDisplayName as authUpdateDisplayName } from './auth';
 import { cloudWrite, flushQueue } from './sync-queue';
+import { fetchMe } from './me';
 import { trackObstacle } from './analytics';
 import { logError, logWarn } from '$utils/error';
 import { getCourse, isAvailableCourse } from '$lib/courses';
@@ -51,27 +52,13 @@ export function applyDocumentLanguage(lang: string | null | undefined): void {
 }
 
 export async function getLanguage(): Promise<string | null> {
+	// The profile, through our server (src/lib/services/me.ts): the browser's own call to Supabase can be
+	// lost, and the page then waited for ever before falling back to this browser's choice.
 	if (await isAuthenticated()) {
-		try {
-			const user = await getUser();
-			if (!user) throw new Error('No user');
-			const client = getSupabaseBrowserClient();
-			const { data } = await client
-				.from('user_profiles')
-				.select('language')
-				.eq('id', user.id)
-				.maybeSingle();
-			if (data) {
-				const parsed = UserProfileLanguageRowSchema.safeParse(data);
-				if (parsed.success && parsed.data.language) {
-					localStorage.setItem('mirifer_language', parsed.data.language);
-					return parsed.data.language;
-				} else if (!parsed.success) {
-					logWarn('data-layer:getLanguage', `Profile language row failed validation: ${parsed.error.message}`);
-				}
-			}
-		} catch (e) {
-			logError('data-layer:getLanguage', e);
+		const me = await fetchMe();
+		if (me?.language) {
+			localStorage.setItem('mirifer_language', me.language);
+			return me.language;
 		}
 	}
 	return localStorage.getItem('mirifer_language') || null;
@@ -200,26 +187,10 @@ export function examDeadline(
 
 export async function getVoiceSpeed(): Promise<number | null> {
 	if (await isAuthenticated()) {
-		try {
-			const user = await getUser();
-			if (!user) throw new Error('No user');
-			const client = getSupabaseBrowserClient();
-			const { data } = await client
-				.from('user_profiles')
-				.select('voice_speed')
-				.eq('id', user.id)
-				.maybeSingle();
-			if (data) {
-				const parsed = UserProfileVoiceSpeedRowSchema.safeParse(data);
-				if (parsed.success && parsed.data.voice_speed != null) {
-					localStorage.setItem('mirifer_voice_speed', parsed.data.voice_speed.toString());
-					return parsed.data.voice_speed;
-				} else if (!parsed.success) {
-					logWarn('data-layer:getVoiceSpeed', `Profile voice_speed row failed validation: ${parsed.error.message}`);
-				}
-			}
-		} catch (e) {
-			logError('data-layer:getVoiceSpeed', e);
+		const me = await fetchMe();
+		if (me?.voiceSpeed != null) {
+			localStorage.setItem('mirifer_voice_speed', me.voiceSpeed.toString());
+			return me.voiceSpeed;
 		}
 	}
 	const v = localStorage.getItem('mirifer_voice_speed');
