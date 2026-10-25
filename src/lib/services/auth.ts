@@ -114,18 +114,34 @@ export async function signUp(
 }
 
 /** Sign in with email and password */
+/**
+ * Email sign-in. Tries Supabase directly (waiting at most 8 s); if that call fails on the network or
+ * never comes back (a filtered or unstable connection), signs in through our own server instead
+ * (/auth/sign-in), which sets the sign-in cookies. `viaServer`: the page should do a full load, so
+ * the browser picks the session up from the cookies. A wrong password is answered by Supabase
+ * directly and never retried.
+ */
 export async function signIn(
 	email: string,
 	password: string
-): Promise<{ user: User | null; error: string | null }> {
+): Promise<{ user: User | null; error: string | null; viaServer?: boolean }> {
 	const client = sb();
-	if (!client) return { user: null, error: 'Supabase not configured' };
+	if (client) {
+		try {
+			const result = await Promise.race([client.auth.signInWithPassword({ email, password }), new Promise<null>(resolve => setTimeout(() => resolve(null), 8000))]);
+			if (result && !result.error) return { user: result.data.user, error: null };
+			// Supabase answered (wrong password, unconfirmed email…): that's the answer.
+			const status = (result?.error as { status?: number } | undefined)?.status;
+			if (result?.error && status && status >= 400 && status < 500) return { user: null, error: result.error.message };
+		} catch { /* the network: try our server */ }
+	}
 	try {
-		const { data, error } = await client.auth.signInWithPassword({ email, password });
-		if (error) return { user: null, error: error.message };
-		return { user: data.user, error: null };
-	} catch (e: any) {
-		return { user: null, error: e.message };
+		const response = await fetch('/auth/sign-in', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+		const body = await response.json().catch(() => ({}));
+		if (!response.ok) return { user: null, error: typeof body.error === 'string' ? body.error : 'Sign-in failed. Check your connection and try again.' };
+		return { user: body.user ?? null, error: null, viaServer: true };
+	} catch {
+		return { user: null, error: 'Can’t reach Mirifer right now. Check your connection and try again.' };
 	}
 }
 

@@ -163,35 +163,53 @@ describe('getSession / isAuthenticated', () => {
 });
 
 describe('signIn', () => {
-	it('returns the user on success', async () => {
-		const signInWithPassword = vi
-			.fn()
-			.mockResolvedValue({ data: { user: { id: 'u1' } }, error: null });
-		mockClient({ signInWithPassword });
+	const server = vi.fn();
+	beforeEach(() => { server.mockReset().mockResolvedValue({ ok: true, json: async () => ({ user: { id: 'u1' } }) }); vi.stubGlobal('fetch', server); });
+	afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
+	it('returns the user on success, straight from Supabase', async () => {
+		const signInWithPassword = vi.fn().mockResolvedValue({ data: { user: { id: 'u1' } }, error: null });
+		mockClient({ signInWithPassword });
 		const result = await signIn('a@b.com', 'pw');
 		expect(signInWithPassword).toHaveBeenCalledWith({ email: 'a@b.com', password: 'pw' });
 		expect(result).toEqual({ user: { id: 'u1' }, error: null });
+		expect(server).not.toHaveBeenCalled();
 	});
 
-	it('surfaces the error message on failure', async () => {
-		mockClient({
-			signInWithPassword: vi
-				.fn()
-				.mockResolvedValue({ data: { user: null }, error: { message: 'Invalid login credentials' } })
-		});
-
-		const result = await signIn('a@b.com', 'wrong');
-		expect(result).toEqual({ user: null, error: 'Invalid login credentials' });
+	it('takes Supabase’s answer for a wrong password, without trying our server', async () => {
+		mockClient({ signInWithPassword: vi.fn().mockResolvedValue({ data: { user: null }, error: { message: 'Invalid login credentials', status: 400 } }) });
+		expect(await signIn('a@b.com', 'wrong')).toEqual({ user: null, error: 'Invalid login credentials' });
+		expect(server).not.toHaveBeenCalled();
 	});
 
-	it('returns a configured-error when Supabase is unavailable', async () => {
+	it('signs in through our server when the call to Supabase fails on the network', async () => {
+		mockClient({ signInWithPassword: vi.fn().mockResolvedValue({ data: { user: null }, error: { message: 'Failed to fetch', status: 0, name: 'AuthRetryableFetchError' } }) });
+		expect(await signIn('a@b.com', 'pw')).toEqual({ user: { id: 'u1' }, error: null, viaServer: true });
+		expect(server).toHaveBeenCalledWith('/auth/sign-in', expect.objectContaining({ method: 'POST', body: JSON.stringify({ email: 'a@b.com', password: 'pw' }) }));
+	});
+
+	it('signs in through our server when the call to Supabase never comes back', async () => {
+		vi.useFakeTimers();
+		mockClient({ signInWithPassword: vi.fn(() => new Promise(() => {})) });
+		const pending = signIn('a@b.com', 'pw');
+		await vi.advanceTimersByTimeAsync(8000);
+		expect(await pending).toMatchObject({ error: null, viaServer: true });
+	});
+
+	it('shows our server’s answer, or a connection message when it can’t be reached', async () => {
+		mockClient({ signInWithPassword: vi.fn().mockRejectedValue(new Error('network')) });
+		server.mockResolvedValue({ ok: false, json: async () => ({ error: 'Invalid login credentials' }) });
+		expect(await signIn('a@b.com', 'pw')).toEqual({ user: null, error: 'Invalid login credentials' });
+		server.mockRejectedValue(new Error('offline'));
+		expect((await signIn('a@b.com', 'pw')).error).toMatch(/Can’t reach Mirifer/);
+	});
+
+	it('uses our server when the browser client isn’t configured', async () => {
 		mockUnconfigured();
-		const result = await signIn('a@b.com', 'pw');
-		expect(result.user).toBeNull();
-		expect(result.error).toBe('Supabase not configured');
+		expect(await signIn('a@b.com', 'pw')).toMatchObject({ error: null, viaServer: true });
 	});
 });
+
 
 describe('signUp', () => {
 	it('returns the user on success', async () => {
