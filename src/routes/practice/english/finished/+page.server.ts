@@ -6,7 +6,8 @@ import { readEnglishProfile } from '$lib/practice/english-profile';
 
 /**
  * The lessons a learner has finished, from the dashboard. Each one opens again (only finished
- * days: never one ahead). While a lesson is under way they can't, so its progress is never lost.
+ * days: never one ahead). The lesson already under way opens where the learner left it; another one,
+ * while a lesson is under way, asks first (its place would be lost).
  */
 export const load: PageServerLoad = async ({ locals }) => {
 	const { data: { user }, error } = await locals.supabase.auth.getUser();
@@ -16,6 +17,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const saved = DaySessionSchema.safeParse(user.user_metadata?.english_day_v1);
 	return {
 		finished: finishedDays(readEnglishProgress(user.user_metadata)).map(day => ({ id: day.id, number: day.number, theme: day.theme })),
-		inProgress: saved.success && saved.data.stage !== 'done'
+		inProgress: saved.success && saved.data.stage !== 'done',
+		/** The lesson under way, if any (it opens where the learner left it). */
+		underWay: saved.success && saved.data.stage !== 'done' ? saved.data.day : null
 	};
 };
