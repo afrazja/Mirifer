@@ -88,6 +88,9 @@
 			}
 			if (result.error) {
 				error = result.error;
+			} else if ("viaServer" in result && result.viaServer) {
+				// Signed in through our server: a full load picks the session up from its cookies.
+				window.location.assign("/languages");
 			} else if (mode === "signup" && !(await auth.getSession())) {
 				// Email confirmation required — no active session yet
 				emailSent = true;
