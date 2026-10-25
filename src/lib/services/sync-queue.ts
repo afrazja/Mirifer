@@ -3,6 +3,7 @@
  * Extracted from data-layer.js retry queue logic.
  */
 
+import { patchMe } from './me';
 import { getSupabaseBrowserClient } from '$lib/supabase/client';
 import { syncStore } from '$stores/sync';
 import type { SyncStatus } from '$stores/sync';
@@ -73,10 +74,12 @@ async function executeCloudWrite(uid: string, op: SyncOperation): Promise<void> 
 
 	switch (op.type) {
 		case 'profile_update':
-			await checkedWrite(client
-				.from('user_profiles')
-				.update({ ...op.data, updated_at: new Date().toISOString() })
-				.eq('id', uid));
+			// Through our server (src/routes/api/me): the browser's own call to Supabase can be lost.
+			await patchMe({
+				...(typeof op.data.language === 'string' ? { language: op.data.language } : {}),
+				...(typeof op.data.voice_speed === 'number' ? { voiceSpeed: op.data.voice_speed } : {}),
+				...(typeof op.data.display_name === 'string' ? { displayName: op.data.display_name } : {})
+			});
 			break;
 
 		case 'progress_upsert':

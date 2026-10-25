@@ -3,6 +3,7 @@
  * Ported from supabase-client.js (window.miriferAuth IIFE).
  */
 
+import { fetchMe, forgetMe, patchMe } from './me';
 import { getSupabaseBrowserClient } from '$lib/supabase/client';
 import type { SupabaseClient, User } from '@supabase/supabase-js';
 import { getCourse, isAvailableCourse, type TargetLanguage } from '$lib/courses';
@@ -39,7 +40,8 @@ export async function getUser(): Promise<User | null> {
 	const client = sb();
 	if (!client) return null;
 	try {
-		const token = (await client.auth.getSession()).data.session?.access_token;
+		const session = (await client.auth.getSession()).data.session;
+		const token = session?.access_token;
 		if (token) {
 			if (userCache?.token === token && Date.now() - userCache.at < USER_CACHE_MS) {
 				return userCache.user;
@@ -47,10 +49,16 @@ export async function getUser(): Promise<User | null> {
 			// Concurrent callers share one request instead of queueing behind it.
 			if (userInflight?.token === token) return userInflight.promise;
 		}
-		const promise = client.auth.getUser().then(({ data: { user } }) => {
-			if (token && user) userCache = { token, user, at: Date.now() };
-			return user;
-		});
+		// Supabase checks the session; on a connection that loses that call, wait at most 4 s and use the
+		// user from the session saved in this browser (our server still checks every request itself).
+		const saved = session?.user ?? null;
+		const promise = Promise.race([
+			client.auth.getUser().then(({ data: { user } }) => {
+				if (token && user) userCache = { token, user, at: Date.now() };
+				return user;
+			}),
+			new Promise<User | null>(resolve => setTimeout(() => resolve(saved), 4000))
+		]);
 		if (token) userInflight = { token, promise };
 		try {
 			return await promise;
@@ -167,6 +175,7 @@ export async function signIn(
  */
 export async function signOut(): Promise<{ error: string | null }> {
 	let message: string | null = null;
+	forgetMe();
 	try {
 		// Import data-layer dynamically to avoid circular deps
 		const { clearAllLocal } = await import('./data-layer');
@@ -198,38 +207,17 @@ export function onAuthStateChange(
 
 /** Get the user's display name */
 export async function getDisplayName(): Promise<string> {
-	const client = sb();
-	if (!client) return 'Learner';
 	try {
 		const user = await getUser();
 		if (!user) return 'Learner';
-
-		// Try user_profiles table first
-		const { data } = await client
-			.from('user_profiles')
-			.select('display_name')
-			.eq('id', user.id)
-			.maybeSingle();
-
-		if (data?.display_name) return data.display_name;
-
-		// Fallback: whatever the provider gave us. Same chain as
-		// ensureProfile, so a Google user is not "Learner" here and their
-		// real name there.
+		// The profile, through our server (src/lib/services/me.ts); then whatever the provider gave us.
+		const me = await fetchMe();
+		if (me?.displayName && me.displayName !== 'Learner') return me.displayName;
 		const metaName = nameFromMetadata(user);
-		if (metaName && metaName !== 'Learner') {
-			await ensureProfile(user);
-			return metaName;
-		}
-
-		return user.email?.split('@')[0] || 'Learner';
+		if (metaName && metaName !== 'Learner') return metaName;
+		return me?.displayName || user.email?.split('@')[0] || 'Learner';
 	} catch {
-		try {
-			const user = await getUser();
-			return user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Learner';
-		} catch {
-			return 'Learner';
-		}
+		return 'Learner';
 	}
 }
 
@@ -355,26 +343,12 @@ export async function updatePassword(newPassword: string): Promise<{ error: stri
 
 /** Update display name in auth metadata + user_profiles */
 export async function updateDisplayName(newName: string): Promise<{ error: string | null }> {
-	const client = sb();
-	if (!client) return { error: 'Supabase not configured' };
+	// Through our server: the profile and the account's name together (src/routes/api/me).
 	try {
-		const user = await getUser();
-		if (!user) return { error: 'Not authenticated' };
-
-		const { error: authError } = await client.auth.updateUser({
-			data: { display_name: newName }
-		});
-		if (authError) return { error: authError.message };
-
-		const { error: dbError } = await client
-			.from('user_profiles')
-			.update({ display_name: newName, updated_at: new Date().toISOString() })
-			.eq('id', user.id);
-		if (dbError) return { error: dbError.message };
-
+		await patchMe({ displayName: newName });
 		return { error: null };
 	} catch (e: any) {
-		return { error: e.message };
+		return { error: e?.message ?? 'Couldn’t save your name. Try again.' };
 	}
 }
 
@@ -382,85 +356,33 @@ export async function updateDisplayName(newName: string): Promise<{ error: strin
 export async function uploadAvatar(
 	file: File
 ): Promise<{ url: string | null; error: string | null; warning?: string }> {
-	const client = sb();
-	if (!client) return { url: null, error: 'Supabase not configured' };
+	if (file.size > 5 * 1024 * 1024) return { url: null, error: 'Image must be less than 5MB' };
+	if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
+		return { url: null, error: 'Only JPG, PNG, GIF, or WebP images are allowed' };
+	}
+	// Through our server (src/routes/api/me/avatar): the browser's own upload to Supabase can be lost.
 	try {
-		const user = await getUser();
-		if (!user) return { url: null, error: 'Not authenticated' };
-
-		if (file.size > 5 * 1024 * 1024) {
-			return { url: null, error: 'Image must be less than 5MB' };
-		}
-
-		const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-		if (!allowedTypes.includes(file.type)) {
-			return { url: null, error: 'Only JPG, PNG, GIF, or WebP images are allowed' };
-		}
-
-		const mimeToExt: Record<string, string> = {
-			'image/jpeg': 'jpg',
-			'image/png': 'png',
-			'image/gif': 'gif',
-			'image/webp': 'webp'
-		};
-		const ext = mimeToExt[file.type] || 'png';
-		const filePath = `${user.id}/avatar.${ext}`;
-
-		const { error: uploadError } = await client.storage
-			.from('avatars')
-			.upload(filePath, file, { upsert: true });
-
-		if (uploadError) {
-			console.warn('Storage upload failed:', uploadError.message);
-			const blobUrl = URL.createObjectURL(file);
-			return {
-				url: blobUrl,
-				error: null,
-				warning: 'Saved locally only. ' + uploadError.message
-			};
-		}
-
-		const { data: urlData } = client.storage.from('avatars').getPublicUrl(filePath);
-		const publicUrl = urlData.publicUrl + '?t=' + Date.now();
-
-		try {
-			await client
-				.from('user_profiles')
-				.update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
-				.eq('id', user.id);
-		} catch (dbErr: any) {
-			console.warn('Could not save avatar_url to DB:', dbErr.message);
-		}
-
-		return { url: publicUrl, error: null };
-	} catch (e: any) {
-		return { url: null, error: e.message };
+		const body = new FormData();
+		body.set('file', file);
+		const response = await fetch('/api/me/avatar', { method: 'POST', body });
+		const result = await response.json().catch(() => ({}));
+		forgetMe();
+		if (!response.ok || typeof result.url !== 'string') return { url: null, error: typeof result.error === 'string' ? result.error : 'The photo couldn’t be saved. Try again.' };
+		return { url: result.url, error: null };
+	} catch {
+		return { url: URL.createObjectURL(file), error: null, warning: 'Saved on this device only: Mirifer couldn’t be reached.' };
 	}
 }
 
 /** Remove avatar from storage and clear avatar_url */
 export async function removeAvatar(): Promise<{ error: string | null }> {
-	const client = sb();
-	if (!client) return { error: 'Supabase not configured' };
 	try {
-		const user = await getUser();
-		if (!user) return { error: 'Not authenticated' };
-
-		const { data: files } = await client.storage.from('avatars').list(user.id);
-		if (files && files.length > 0) {
-			const paths = files.map((f) => `${user.id}/${f.name}`);
-			await client.storage.from('avatars').remove(paths);
-		}
-
-		const { error: dbError } = await client
-			.from('user_profiles')
-			.update({ avatar_url: null, updated_at: new Date().toISOString() })
-			.eq('id', user.id);
-		if (dbError) return { error: dbError.message };
-
+		const response = await fetch('/api/me/avatar', { method: 'DELETE' });
+		forgetMe();
+		if (!response.ok) { const body = await response.json().catch(() => ({})); return { error: typeof body.error === 'string' ? body.error : 'The photo couldn’t be removed.' }; }
 		return { error: null };
-	} catch (e: any) {
-		return { error: e.message };
+	} catch {
+		return { error: 'Can’t reach Mirifer right now. Check your connection and try again.' };
 	}
 }
 
@@ -522,20 +444,6 @@ export async function updateLanguagePreferences(
 
 /** Get avatar URL from user_profiles */
 export async function getAvatarUrl(): Promise<string | null> {
-	const client = sb();
-	if (!client) return null;
-	try {
-		const user = await getUser();
-		if (!user) return null;
-
-		const { data } = await client
-			.from('user_profiles')
-			.select('avatar_url')
-			.eq('id', user.id)
-			.maybeSingle();
-
-		return data?.avatar_url || null;
-	} catch {
-		return null;
-	}
+	if (!(await getSession())) return null;
+	return (await fetchMe())?.avatarUrl ?? null;
 }

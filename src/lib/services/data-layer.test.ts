@@ -10,6 +10,7 @@ vi.mock('./auth', () => ({
 	updateDisplayName: vi.fn().mockResolvedValue(undefined)
 }));
 
+vi.mock('./me', () => ({ fetchMe: vi.fn().mockResolvedValue(null) }));
 vi.mock('./sync-queue', () => ({
 	cloudWrite: vi.fn().mockResolvedValue(undefined),
 	flushQueue: vi.fn().mockResolvedValue(undefined)
@@ -37,6 +38,7 @@ import {
 import { getSupabaseBrowserClient } from '$lib/supabase/client';
 import { isAuthenticated, getUser } from './auth';
 import { cloudWrite } from './sync-queue';
+import { fetchMe } from './me';
 
 // ─── Offline mode (no auth) ──────────────────────────────────────────────────
 
@@ -399,14 +401,15 @@ describe('authenticated mode', () => {
 	});
 
 	describe('getLanguage', () => {
-		it('fetches language from Supabase and caches it in localStorage', async () => {
-			setupAuthMock('user_profiles', { language: 'fa' });
+		it('reads the language through our server and caches it in localStorage', async () => {
+			setupAuthMock('user_profiles', null);
+			vi.mocked(fetchMe).mockResolvedValueOnce({ language: 'fa', voiceSpeed: null, displayName: null, avatarUrl: null });
 
 			expect(await getLanguage()).toBe('fa');
 			expect(localStorage.getItem('mirifer_language')).toBe('fa');
 		});
 
-		it('falls back to localStorage when Supabase returns no profile data', async () => {
+		it('falls back to localStorage when our server has no answer', async () => {
 			localStorage.setItem('mirifer_language', 'en');
 			setupAuthMock('user_profiles', null);
 
@@ -422,14 +425,15 @@ describe('authenticated mode', () => {
 	});
 
 	describe('getVoiceSpeed', () => {
-		it('fetches voice speed from Supabase and caches it in localStorage', async () => {
-			setupAuthMock('user_profiles', { voice_speed: 1.5 });
+		it('reads the voice speed through our server and caches it in localStorage', async () => {
+			setupAuthMock('user_profiles', null);
+			vi.mocked(fetchMe).mockResolvedValueOnce({ language: null, voiceSpeed: 1.5, displayName: null, avatarUrl: null });
 
 			expect(await getVoiceSpeed()).toBe(1.5);
 			expect(localStorage.getItem('mirifer_voice_speed')).toBe('1.5');
 		});
 
-		it('falls back to localStorage when Supabase returns no data', async () => {
+		it('falls back to localStorage when our server has no answer', async () => {
 			localStorage.setItem('mirifer_voice_speed', '0.8');
 			setupAuthMock('user_profiles', null);
 

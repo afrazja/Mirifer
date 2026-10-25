@@ -15,6 +15,7 @@ vi.mock('./auth', () => ({
 	getUser: vi.fn()
 }));
 
+vi.mock('./me', () => ({ patchMe: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('$utils/error', () => ({
 	logError: vi.fn(),
 	logWarn: vi.fn()
@@ -22,6 +23,7 @@ vi.mock('$utils/error', () => ({
 
 // ─── Import module under test after mocks ────────────────────────────────────
 
+import { patchMe } from './me';
 import {
 	enqueue,
 	flushQueue,
@@ -234,16 +236,16 @@ describe('flushQueue', () => {
 		expect(readQueue()).toHaveLength(0);
 	});
 
-	it('executes profile_update via .update().eq()', async () => {
+	it('saves profile_update through our server (the browser’s own call can be lost)', async () => {
 		const sb = makeSbClient();
 		vi.mocked(getSupabaseBrowserClient).mockReturnValue(sb as any);
-		seedQueue([{ type: 'profile_update', key: 'language', data: { language: 'en' } }]);
+		seedQueue([{ type: 'profile_update', key: 'language', data: { language: 'en' } }, { type: 'profile_update', key: 'voice_speed', data: { voice_speed: 1.2 } }]);
 
 		await flushQueue();
 
-		expect(sb.from).toHaveBeenCalledWith('user_profiles');
-		expect(sb.update).toHaveBeenCalledWith(expect.objectContaining({ language: 'en' }));
-		expect(sb.eq).toHaveBeenCalledWith('id', USER_ID);
+		expect(patchMe).toHaveBeenCalledWith({ language: 'en' });
+		expect(patchMe).toHaveBeenCalledWith({ voiceSpeed: 1.2 });
+		expect(sb.from).not.toHaveBeenCalledWith('user_profiles');
 	});
 
 	it('executes progress_upsert via .upsert()', async () => {
@@ -405,7 +407,8 @@ describe('flushQueue', () => {
 
 		await flushQueue();
 
-		expect(sb.from).toHaveBeenCalledTimes(2);
+		expect(sb.from).toHaveBeenCalledTimes(1);
+		expect(patchMe).toHaveBeenCalledWith({ language: 'fa' });
 		expect(readQueue()).toHaveLength(0);
 	});
 });
