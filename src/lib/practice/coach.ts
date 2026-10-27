@@ -38,7 +38,7 @@ export function greetingMode(progress: EnglishProgress, now = new Date()): Greet
 
 /** The end of the learner's first sentence, from their onboarding reason. */
 const REASON_ENDING: Record<NonNullable<EnglishProfile['reason']>, string> = {
-	travel: 'for travel', work: 'for work', exam: 'for an exam', abroad: 'to live abroad', everyday: 'to speak with more confidence'
+	travel: 'for travel', work: 'for work', exam: 'for an exam', abroad: 'to live abroad', everyday: 'to speak with more confidence', unsure: 'to speak better'
 };
 
 /**

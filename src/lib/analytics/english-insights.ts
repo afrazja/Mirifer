@@ -42,7 +42,7 @@ export interface InsightInput {
 const at = (e: { occurred_at: string }) => Date.parse(e.occurred_at);
 const utcDate = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 const isLesson = (e: StoredEvent) => e.metadata.course === 'en' && ['lesson_started', 'lesson_progress', 'lesson_completed'].includes(e.event_name);
-const REASONS: Record<string, string> = { travel: 'Travel', work: 'Work and interviews', exam: 'A speaking exam', abroad: 'Living abroad', everyday: 'Everyday confidence' };
+const REASONS: Record<string, string> = { travel: 'Travel', work: 'Work and interviews', exam: 'A speaking exam', abroad: 'Living abroad', everyday: 'Everyday confidence', unsure: 'Not sure yet' };
 
 /** Where a learner is in the course right now, in a few words. */
 function status(meta: Record<string, unknown>): string {

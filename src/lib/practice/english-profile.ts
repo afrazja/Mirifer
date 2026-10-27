@@ -10,7 +10,8 @@
  */
 import { z } from 'zod';
 
-export const REASONS = ['travel', 'work', 'exam', 'abroad', 'everyday'] as const;
+/** `unsure`: "Not sure yet: I just want to speak better"; the journey then starts as for `everyday`. */
+export const REASONS = ['travel', 'work', 'exam', 'abroad', 'everyday', 'unsure'] as const;
 export const COMFORT = ['hard', 'simple', 'natural'] as const;
 export const MINUTES = [15, 20] as const;
 

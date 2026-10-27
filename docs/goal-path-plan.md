@@ -47,11 +47,43 @@ everyday conversations it doesn't have; that copy is fixed in the first build st
 **Changing the goal:** in Settings. Done steps stay done; the next new step comes from the new goal's
 arc.
 
+## Two kinds of journeys
+
+- **Story journeys** (Travel, Everyday, Living abroad): situations the learner will meet, joined by
+  one story so they stick.
+- **"About you" journeys** (Work and interviews, a speaking exam): no story; the content is the
+  learner's own answers. Interview chapters are the stages of an interview (tell me about yourself,
+  your experience, why this job, your questions, a full practice interview with Mira); the learner
+  types the job they want once, at their first interview chapter. Exam chapters are the exam's parts,
+  built mostly from the modules already in the lab (quick-fire questions, the speaking card, free
+  talk, say it again better); no exam brand is named.
+
+Order to build: **Everyday** (story), **Exam** (cheapest: most of it exists), **Living abroad**
+(story), **Interview** (nobody has chosen Work yet).
+
+## Onboarding (owner's decision, 2026-10-27)
+
+Three questions, one per screen, about a minute; a fixed "1 of 3" count; answers kept in the browser
+so a learner who leaves resumes on the same screen.
+
+1. **Name**: "Hi, I'm Mira, your English coach. What should I call you?" Prefilled from sign-up
+   (ours or Google's); Next under the field (the keyboard covers the screen's foot).
+2. **Goal**: "What do you want English for?" Everyday confidence first (most chosen), Travel, Living
+   abroad, Work and interviews, A speaking exam, and "Not sure yet: I just want to speak better"
+   (journey as Everyday). No Skip.
+3. **Level**: "How's your English speaking now?" Three plain answers, plus "I'm not sure. Let's find
+   out (2 min)" → the spoken level check (`docs/english-level-check-spec.md`): listen, repeat, talk
+   for 30 seconds; it asks for the microphone in its own Start tap and can be skipped at every point.
+4. **Ready**: where the journey starts, honest about arcs not built yet; the first lesson's minutes;
+   one button.
+
+Removed: the "15 or 20 minutes" question and the Skip button. Asked later, not in onboarding: a
+reminder time (after the first step), the target job (interview learners), the exam date (exam
+learners).
+
 ## What the learner sees
 
-1. **Onboarding** (two questions, as now): Mira asks "What do you want English for?" by voice, five
-   choices plus "I'm not sure" (counts as Everyday). Then the level question. Then "Your journey
-   starts with: <arc>" and one button.
+1. **Onboarding**: as above.
 2. **Dashboard** (owner's layout kept): the Next step card on top (arc and chapter, "Step 3 of 5", the
    step's name and minutes), This week with "Today's goal: 1 step", Steps done (tap: your path), one
    button. A quiet line under the card names the goal: "Your goal: Everyday confidence".
@@ -82,14 +114,16 @@ arc.
 
 ## Build order (each ships on its own)
 
-1. **Honest onboarding + arcs in code.** Fix the onboarding promises; add `arc` to chapters and
-   `journeyFor`; Travel is the only arc, so nothing else changes for learners. (S)
+1. **Onboarding**: name, goal (with "Not sure yet"), level, an honest ready screen. (S, done)
+1b. **The level check** for "I'm not sure" (`docs/english-level-check-spec.md`). (M)
+1c. **Arcs in code**: `arc` on chapters and `journeyFor(goal)`; Travel is the only arc, so nothing
+   changes for learners. (S)
 2. **Both records in step.** The current daily lesson also saves the step path. (S)
 3. **Streak from steps; admin reads old and new events.** (M)
 4. **The switch to steps:** step screen, Step finished, chapter ending, the dashboard's Next step card,
    intros rewritten for steps done on their own. Owner first, then everyone. (L)
 5. **Your path** with replays. (M)
-6. **Goal in Settings; Mira asks the goal by voice in onboarding.** (S)
+6. **Goal and level in Settings.** (S)
 7. **Everyday arc, chapter 1** → released alone as soon as it passes review; chapters 2–4 follow. (Content)
 8. **Life abroad**, then **Work**. (Content)
 9. **Cleanup** of the daily-lesson code after 2–4 weeks. (S)
