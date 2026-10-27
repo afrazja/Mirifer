@@ -30,9 +30,30 @@
 		getTargetLanguage,
 	} from "$services/auth";
 	import type { TargetLanguage } from "$lib/stores/preferences";
+	import type { PageProps } from "./$types";
+	import { forgetMe } from "$services/me";
 
 	// ============ STATE ============
+	let { data }: PageProps = $props();
 	let isLoading = $state(true);
+	/** Test accounts only: clear the English progress to replay the new-learner flow. */
+	let resetOpen = $state(false), resetHistory = $state(false), resetting = $state(false), resetError = $state("");
+	async function resetEnglish() {
+		if (resetting) return;
+		resetting = true; resetError = "";
+		try {
+			const res = await fetch("/settings/reset-english", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ history: resetHistory }) });
+			if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? "The reset didn’t work.");
+			// What this browser kept for the lesson, the onboarding and Mira's daily hello.
+			for (const key of ["mirifer_en_onboarding_v1", "mirifer_en_level_check_v1", "mirifer_en_day_records_v1", "mirifer_mira_hello"]) {
+				try { localStorage.removeItem(key); } catch { /* nothing kept */ }
+			}
+			forgetMe();
+			window.location.href = "/practice/english/start";
+		} catch (e) {
+			resetError = (e as Error).message; resetting = false;
+		}
+	}
 	let email = $state("");
 	let displayName = $state("");
 	let avatarUrl: string | null = $state(null);
@@ -504,6 +525,25 @@
 					<span class="pref-label">{currentLang === "fa" ? "هدف و سطح انگلیسی" : "Your English goal and level"}</span>
 					<a class="change-link" href="/practice/english/start?edit=1">{currentLang === "fa" ? "تغییر" : "Change"}</a>
 				</div>
+				{#if data.canResetEnglish}
+					<div class="pref-row reset-row">
+						<span class="pref-label">Test account: start English again as a new learner</span>
+						{#if !resetOpen}
+							<button type="button" class="change-link plain" onclick={() => (resetOpen = true)}>Reset</button>
+						{/if}
+					</div>
+					{#if resetOpen}
+						<div class="reset-confirm">
+							<p>This clears your English answers, progress and the lesson under way, then opens the onboarding.</p>
+							<label class="reset-check"><input type="checkbox" bind:checked={resetHistory} /> Also clear my activity history (this week, streak; can’t be undone)</label>
+							{#if resetError}<p class="reset-error" role="alert">{resetError}</p>{/if}
+							<div class="reset-actions">
+								<button type="button" class="reset-go" onclick={resetEnglish} disabled={resetting}>{resetting ? "Resetting…" : "Reset my English progress"}</button>
+								<button type="button" class="change-link plain" onclick={() => { resetOpen = false; resetError = ""; }} disabled={resetting}>Cancel</button>
+							</div>
+						</div>
+					{/if}
+				{/if}
 			{/if}
 
 			<div class="pref-row">
@@ -911,6 +951,15 @@
 		border: 1px solid rgba(231, 76, 60, 0.35);
 	}
 
+	.change-link.plain { background: none; border: 0; font: inherit; cursor: pointer; }
+	.reset-confirm { display: grid; gap: 10px; padding: 12px 0 16px; border-bottom: 1px solid var(--line); }
+	.reset-confirm p { margin: 0; line-height: 1.6; }
+	.reset-check { display: flex; gap: 10px; align-items: flex-start; line-height: 1.5; }
+	.reset-check input { margin-top: 4px; inline-size: 18px; block-size: 18px; }
+	.reset-error { color: var(--attention); font-weight: 600; }
+	.reset-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+	.reset-go { min-height: 44px; padding: 0 16px; border: 0; border-radius: 12px; background: var(--attention); color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+	.reset-go:disabled { opacity: .6; }
 	.change-link {
 		display: inline-flex;
 		align-items: center;
