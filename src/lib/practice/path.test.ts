@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DAYS, DAY_ONE, DAY_TWO, DAY_THREE, DAY_FOUR, startSession, finishModule } from './day';
 import { EMPTY_PROGRESS } from './english-progress';
 import {
-	EMPTY_PATH, MAX_DONE, PathSchema, applyStep, chapterFinished, chapterSteps, doneOn, isOpenStep, isStepId, localDay,
+	EMPTY_PATH, MAX_DONE, PathSchema, arcOrder, chapterNumber, applyStep, chapterFinished, chapterSteps, doneOn, isOpenStep, isStepId, localDay,
 	nextStep, readPath, recordStep, releasedChapters, replayPick, startStep, stepId, stepsDone, type Path, type StepId
 } from './path';
 
@@ -197,5 +197,20 @@ describe('size', () => {
 		const done = Object.fromEntries(Array.from({ length: MAX_DONE }, (_, i) => [`k${i}`, ['i', 1]]));
 		const path = applyStep({ ...EMPTY_PATH, done } as Path, { step: stepId(DAY_ONE, 'phrases'), outcome: 'done' }, 'intermediate', 1);
 		expect(stepsDone(path)).toBe(MAX_DONE);
+	});
+});
+
+describe('the journey by goal', () => {
+	it('puts the goal’s story first, then the others', () => {
+		expect(arcOrder('abroad')[0]).toBe('abroad');
+		expect(arcOrder('unsure')[0]).toBe('everyday');
+		expect(arcOrder(null)[0]).toBe('travel');
+		expect(arcOrder('nonsense')).toEqual(arcOrder('travel'));
+	});
+	it('only has Travel until another story is ready, whatever the goal', () => {
+		for (const reason of ['travel', 'everyday', 'unsure', 'abroad', 'work', 'exam', null]) {
+			expect(releasedChapters(false, reason)).toEqual(releasedChapters());
+			expect(chapterNumber(DAY_TWO, false, reason)).toBe(2);
+		}
 	});
 });

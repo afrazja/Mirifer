@@ -5,7 +5,7 @@ import { readEnglishProgress } from '$lib/practice/english-progress';
 import { readEnglishProfile } from '$lib/practice/english-profile';
 import { lessonDates, stepDates, type LessonEventRow } from '$lib/practice/learner-stats';
 import { trackFor } from '$lib/practice/day';
-import { nextStep, readPath, replayPick, stepsDone, type NextStep } from '$lib/practice/path';
+import { chapterNumber, nextStep, readPath, replayPick, stepsDone, type NextStep } from '$lib/practice/path';
 import { minutesOf } from '$lib/practice/day';
 import { usesStepPath } from '$lib/server/step-path';
 
@@ -66,9 +66,9 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 	};
 };
 
-/** A step, as the dashboard's card shows it. */
-const stepCard = (next: NextStep) => ({
-	id: next.step, chapter: next.day.number, theme: next.day.theme, title: next.module.title,
+/** A step, as the dashboard's card shows it (the chapter numbered in this learner's journey). */
+const stepCard = (next: NextStep, preview: boolean, reason: string | null) => ({
+	id: next.step, chapter: chapterNumber(next.day, preview, reason), theme: next.day.theme, title: next.module.title,
 	index: next.index, total: next.total, minutes: minutesOf(next.module, 20)
 });
 
@@ -80,8 +80,9 @@ async function pathDashboard(locals: App.Locals, user: { id: string; user_metada
 	const profile = readEnglishProfile(user.user_metadata);
 	const track = trackFor(profile);
 	const path = readPath(user.user_metadata, track);
-	const next = nextStep(path, track, preview);
-	const shown = next ?? replayPick(path, track, preview);
+	const reason = profile?.reason ?? null;
+	const next = nextStep(path, track, preview, reason);
+	const shown = next ?? replayPick(path, track, preview, reason);
 	let rows: LessonEventRow[] = [];
 	let eventsLoaded = true;
 	try {
@@ -103,7 +104,7 @@ async function pathDashboard(locals: App.Locals, user: { id: string; user_metada
 		eventsLoaded,
 		path: {
 			stepsDone: stepsDone(path),
-			step: shown ? stepCard(shown) : null,
+			step: shown ? stepCard(shown, preview, reason) : null,
 			/** Nothing new left: the card offers a step to practise again. */
 			replay: !next && !!shown,
 			/** The step on the card was opened and not finished. */
