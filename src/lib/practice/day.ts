@@ -10,9 +10,10 @@
  */
 import { z } from 'zod';
 import type { DisplayText } from './hotel';
+import { EVERYDAY_ONE } from './days/everyday-1/pack';
 
 /** Every day's id, in order. */
-export const DAY_IDS = ['day-1', 'day-2', 'day-3', 'day-4'] as const;
+export const DAY_IDS = ['day-1', 'day-2', 'day-3', 'day-4', 'everyday-1'] as const;
 export type DayId = (typeof DAY_IDS)[number];
 /** Day 1's id (kept for older callers). */
 export const DAY_ID: DayId = 'day-1';
@@ -341,7 +342,8 @@ export const DAY_FOUR: DayPack = {
 	}
 };
 
-export const DAYS: DayPack[] = [DAY_ONE, DAY_TWO, DAY_THREE, DAY_FOUR];
+/** Every chapter, Travel's first (the daily lessons only ever use Travel's). */
+export const DAYS: DayPack[] = [DAY_ONE, DAY_TWO, DAY_THREE, DAY_FOUR, EVERYDAY_ONE];
 /** A chapter's story. */
 export const arcOf = (day: DayPack): ArcId => day.arc ?? 'travel';
 export function dayById(id: string | null | undefined): DayPack | null {
@@ -353,10 +355,12 @@ export function dayById(id: string | null | undefined): DayPack | null {
  */
 export function nextDay(lastDayId: string | null | undefined, preview = false): DayPack {
 	// The days tell one story, so learners never skip a day that isn't ready: they get the days up to it.
-	const firstClosed = DAYS.findIndex(day => !day.ready);
-	const open = preview || firstClosed === -1 ? DAYS : DAYS.slice(0, Math.max(1, firstClosed));
-	const lastIndex = DAYS.findIndex(day => day.id === lastDayId);
-	return open.find(day => DAYS.indexOf(day) > lastIndex) ?? open.at(-1) ?? DAY_ONE;
+	// The daily lessons are the Travel story's days; other stories live on the step path only.
+	const travel = DAYS.filter(day => (day.arc ?? 'travel') === 'travel');
+	const firstClosed = travel.findIndex(day => !day.ready);
+	const open = preview || firstClosed === -1 ? travel : travel.slice(0, Math.max(1, firstClosed));
+	const lastIndex = travel.findIndex(day => day.id === lastDayId);
+	return open.find(day => travel.indexOf(day) > lastIndex) ?? open.at(-1) ?? DAY_ONE;
 }
 /**
  * The daily lessons a learner has passed, in course order. Older progress records only kept the last

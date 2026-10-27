@@ -61,7 +61,7 @@ describe('step page', () => {
 		expect(f.inserted[1].metadata).toMatchObject({ done: 4, skipped: 1, total: 5 });
 	});
 	it('marks a replay, and offers the next replay when nothing new is left', async () => {
-		const all = ['day-1', 'day-2', 'day-3'];
+		const all = ['day-1', 'day-2', 'day-3', 'everyday-1']; // the test accounts also see the pilot Everyday chapter
 		const meta = { english_progress_v1: { ...EMPTY_PROGRESS, lastThemeId: 'day-3', finishedDays: all } };
 		const f = fixture(meta, { step: intermediate[1], outcome: 'done' });
 		const result = await actions.result(f.event()) as any;

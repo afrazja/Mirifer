@@ -95,7 +95,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		?? (scene.banned && typeof line === 'string' && scene.banned.pattern.test(line) ? scene.banned.reason : null)
 		?? (scene.twist && !twistBefore && typeof line === 'string' && scene.twist.leak.test(line)
 			? `it gave away the surprise too early: ${character} says nothing about it until that news is in the conversation` : null);
-	const system = scene.prompt(variant, met);
+	// First-try goals: a refusal before the goal was reached misses it for this run (worked out from
+	// what the learner said each time, so nothing extra needs signing; it can only cost them a goal).
+	const learnerLines = turns.filter(turn => turn.speaker === 'learner').map(turn => turn.text);
+	const missed = missedGoals(scene, met, learnerLines);
+	const twistDue = !!scene.twist && !twistBefore && scene.twist.after.every(goal => met.includes(goal) || missed.includes(goal));
+	const system = scene.prompt(variant, met, { missed, twistDue });
 	let result = await converse(scene, system, transcript);
 	if (!result) return json({ error: 'AI temporarily unavailable' }, { status: 502 });
 	// A line that fails the checks gets one rewrite with the reason, so the character
@@ -116,12 +121,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	let twistNow = false;
 	if (scene.twist && !twistBefore) {
 		for (const goal of scene.twist.unlocks) reached.delete(goal);
-		twistNow = scene.twist.after.every(goal => reached.has(goal));
+		// A first-try goal missed counts as settled here, so the twist still comes after a first "no".
+		twistNow = scene.twist.after.every(goal => reached.has(goal) || missed.includes(goal));
 	}
-	// First-try goals: a refusal before the goal was reached misses it for this run (worked out from
-	// what the learner said each time, so nothing extra needs signing; it can only cost them a goal).
-	const learnerLines = turns.filter(turn => turn.speaker === 'learner').map(turn => turn.text);
-	const missed = missedGoals(scene, met, learnerLines);
 	for (const goal of missed) reached.delete(goal);
 	const goals = ids.filter(id => reached.has(id));
 	// The learner's reply to the twist (the turn right after it): its outcome is decided in code,

@@ -24,8 +24,11 @@ export interface RoleScene {
 	fallback: Record<string, string>;
 	/** Everything the character may know. */
 	facts: (variant: string) => string;
-	/** The character's instructions for the model. */
-	prompt: (variant: string, met: readonly string[]) => string;
+	/**
+	 * The character's instructions for the model. `turn`: first-try goals already missed, and whether
+	 * the twist may come after this reply (so the character answers briefly, with no question).
+	 */
+	prompt: (variant: string, met: readonly string[], turn?: { missed?: readonly string[]; twistDue?: boolean }) => string;
 	/** How each side is labelled in the transcript the model reads. */
 	labels: { learner: string; character: string };
 	/** A goal that only counts once another one is reached (the hotel's confirm needs a solution). */
@@ -60,7 +63,14 @@ export interface RoleScene {
 	/** Words the character must never say (e.g. amounts of money written out); a line with them is rewritten. */
 	banned?: { pattern: RegExp; reason: string };
 	/** Mira's one note on the result screen: for a missed goal, else for the twist's outcome. */
-	notes?: { missed?: Record<string, DisplayText>; twist?: Record<string, DisplayText> };
+	notes?: {
+		missed?: Record<string, DisplayText>;
+		twist?: Record<string, DisplayText>;
+		/** For goals not reached (and not missed). */
+		notMet?: Record<string, DisplayText>;
+		/** Which note wins: 'missed:<goal>', 'twist:<outcome>', 'unmet:<goal>', in order. */
+		order?: string[];
+	};
 	/** The voice route's direction for the character. */
 	voiceDirection: string;
 	/** A fixed voice letter, or none (the hotel picks one at random each run). */
@@ -171,9 +181,18 @@ export function missedGoals(scene: RoleScene, met: readonly string[], learnerLin
 	return Object.entries(scene.firstTry ?? {}).filter(([goal, refusal]) => !met.includes(goal) && learnerLines.some(line => refusal.test(line.toLowerCase().replace(/[’‘]/g, "'")))).map(([goal]) => goal);
 }
 /** Mira's one note for a finished run: a missed goal first, then the twist's outcome. */
-export function resultNote(scene: RoleScene, record: Pick<RolePlayRecord, 'missed' | 'twistOutcome'>): DisplayText | null {
-	for (const goal of record.missed ?? []) { const note = scene.notes?.missed?.[goal]; if (note) return note; }
-	return record.twistOutcome ? scene.notes?.twist?.[record.twistOutcome] ?? null : null;
+export function resultNote(scene: RoleScene, record: Pick<RolePlayRecord, 'missed' | 'twistOutcome'> & { goals?: string[] }): DisplayText | null {
+	const notes = scene.notes;
+	if (!notes) return null;
+	const missed = record.missed ?? [], met = record.goals ?? [];
+	const order = notes.order ?? [...missed.map(goal => `missed:${goal}`), ...(record.twistOutcome ? [`twist:${record.twistOutcome}`] : [])];
+	for (const key of order) {
+		const [kind, id] = key.split(':');
+		if (kind === 'missed' && missed.includes(id) && notes.missed?.[id]) return notes.missed[id];
+		if (kind === 'twist' && record.twistOutcome === id && notes.twist?.[id]) return notes.twist[id];
+		if (kind === 'unmet' && !met.includes(id) && !missed.includes(id) && notes.notMet?.[id]) return notes.notMet[id];
+	}
+	return null;
 }
 
 /** One run of a scene, as the lesson keeps it in this browser (reload, Back). */

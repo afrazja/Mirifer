@@ -72,7 +72,10 @@ describe('more than one day', () => {
 			expect(new Set(ids).size).toBe(ids.length);
 		}
 		expect(new Set(DAYS.map(d => d.id)).size).toBe(DAYS.length);
-		expect(DAYS.map(d => d.number)).toEqual(DAYS.map((_, i) => i + 1));
+		// Travel days are numbered 1, 2, 3…; other stories' chapters have their own range (Everyday: 101…).
+		const travel = DAYS.filter(d => (d.arc ?? 'travel') === 'travel');
+		expect(travel.map(d => d.number)).toEqual(travel.map((_, i) => i + 1));
+		expect(new Set(DAYS.map(d => d.number)).size).toBe(DAYS.length);
 	});
 	it('a day-2 session runs on its version’s modules and validates', () => {
 		for (const track of TRACKS) {
@@ -105,7 +108,7 @@ describe('more than one day', () => {
 	it('the next day follows the last finished one; a day that isn’t ready is only for the owner', () => {
 		expect(nextDay(null).id).toBe('day-1');
 		// Days 1–3 are released (owner, 2026-10-21); Day 4 waits for the owner's phone test.
-		for (const day of DAYS) expect(day.ready, day.id).toBe(day.id !== 'day-4');
+		for (const day of DAYS) expect(day.ready, day.id).toBe(day.id !== 'day-4' && day.id !== 'everyday-1');
 		expect(nextDay('day-1').id).toBe('day-2');
 		expect(nextDay('day-2').id).toBe('day-3');
 		// Not ready: learners stay on the last ready day; the owner goes on.
