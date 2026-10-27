@@ -29,7 +29,7 @@ generated per learner.
 | Everyday confidence | **Everyday**: small talk and errands | Meeting a neighbour · Booking by phone · A café or shop problem · Making plans with a friend | To build first (most chosen goal) |
 | Living abroad | **Life abroad**: settling in | Renting a flat · The doctor · Opening a bank account · A problem with the landlord | Second |
 | Work and interviews | **Work**: getting the job | The job interview · First day · A team meeting · A call with a client | Third |
-| A speaking exam | Not a story: exam-style speaking (timed answers) | Later, a separate track | Not now (owner's earlier decision) |
+| A speaking exam | Not a story: practice in the style of the best-known face-to-face speaking test | You and your life · Describe something · Give and defend an opinion · Paraphrase and keep going · Full mock test | Second (mostly step types that exist); skills map in `docs/goal-content-framework.md` |
 | Skipped the question | The first arc that is built for "everyday"; Travel until then | | |
 
 **One character across arcs:** Sara travels, then settles in the city, makes friends, then finds a
