@@ -29,8 +29,8 @@
 	const TRAPS = traps;
 
 	const INTRO = {
-		en: `Here are ${TRAPS.length} sentences. Each one has a mistake that Persian speakers often make. First tap the wrong word and see why. Then say the sentence correctly.`,
-		fa: `${TRAPS.length.toLocaleString('fa-IR')} جمله می‌بینی که هر کدام یک اشتباه رایج دارد. اول روی کلمهٔ غلط بزن و ببین چرا. بعد جمله را درست بگو.`
+		en: `Here are ${TRAPS.length} sentences. Each one has a mistake that Persian speakers often make. First find the mistake and see why. Then say it correctly.`,
+		fa: `${TRAPS.length.toLocaleString('fa-IR')} جمله می‌بینی که هر کدام یک اشتباه رایج دارد. اول اشتباه را پیدا کن و ببین چرا. بعد درستش را بگو.`
 	};
 	/** Mira reads the correct sentence (the wrong one is never read aloud: it would model the mistake). */
 	const RIGHT_VOICE = 'b';
@@ -85,7 +85,7 @@
 	function say(text: string) { announce = ''; queueMicrotask(() => (announce = text)); }
 	function closeMic() { level?.stop(); level = null; stream?.getTracks().forEach(t => t.stop()); stream = null; }
 
-	async function hear(text: string, voice: 'b' | 'c') {
+	async function hear(text: string, voice: 'a' | 'b' | 'c' | 'd') {
 		if (playing) return;
 		stopAllAudio(); playing = true;
 		const { url, playback } = ttsUrl(text.replace(/[’‘]/g, "'"), 'en-US', 1, voice);
@@ -96,6 +96,14 @@
 	/** A tap on a word: the mistake, or not (after MAX_WRONG_TAPS wrong taps, the mistake is shown). */
 	function tap(i: number) {
 		if (revealed || mine.wrongTaps.includes(i)) return;
+		if (trap.reply) {
+			// "Which reply?": the best reply, or not (shown after MAX_WRONG_TAPS wrong picks).
+			if (i === trap.reply.answer) { update({ found: true }); announce = ''; focus(() => whyBox); return; }
+			const wrongTaps = [...mine.wrongTaps, i];
+			if (wrongTaps.length >= MAX_WRONG_TAPS) { update({ wrongTaps, found: false }); announce = ''; focus(() => whyBox); }
+			else { update({ wrongTaps }); say(T('Not that one. Try again.', 'این نه. دوباره امتحان کن.')); }
+			return;
+		}
 		if (i === trap.wrong || trap.alsoOk?.some(a => a.index === i)) { alsoTapped = i === trap.wrong ? null : i; update({ found: true }); announce = ''; focus(() => whyBox); return; }
 		const wrongTaps = [...mine.wrongTaps, i];
 		if (wrongTaps.length >= MAX_WRONG_TAPS) { update({ wrongTaps, found: false }); announce = ''; focus(() => whyBox); }
@@ -195,6 +203,8 @@
 		{#if alsoSentence}
 			<p class="whyhead">{T('That works too:', 'این هم درست است:')} {@render q(alsoSentence)}</p>
 			<p class="whyhead">{T('But the usual mistake is', 'ولی اشتباه رایج این است:')} {@render q(trap.words[trap.wrong])}</p>
+		{:else if trap.reply}
+			<p class="whyhead">{mine.found ? T('✓ That’s the one:', '✓ همین است:') : T('The best reply:', 'بهترین جواب:')} {@render q(trap.reply.options[trap.reply.answer])}</p>
 		{:else}
 			<p class="whyhead">{mine.found ? T('✓ You found it:', '✓ درست پیدا کردی:') : T('Here’s the mistake:', 'اشتباه این‌جاست:')} {@render q(trap.words[trap.wrong])}</p>
 		{/if}
@@ -214,8 +224,25 @@
 		<p class="label" aria-hidden="true">{label}</p>
 		<div class="dots" aria-hidden="true">{#each TRAPS as _, i}<span class:done={i < index} class:now={i === index}></span>{/each}</div>
 
-		{#if record.step === 'spot'}
-			<h2 id="trap-task" tabindex="-1" bind:this={heading}><span class="sr-only">{label}: </span>{T('Tap the wrong word.', 'روی کلمهٔ اشتباه بزن.')}</h2>
+		{#if record.step === 'spot' && trap.reply}
+			<h2 id="trap-task" tabindex="-1" bind:this={heading}><span class="sr-only">{label}: </span>{#if isFa}<MixedText text={trap.reply.prompt.fa} />{:else}{trap.reply.prompt.en}{/if}</h2>
+			<p class="line" lang="en" dir="ltr">“{trap.reply.line}” <button class="link" type="button" onclick={() => hear(trap.reply!.line, 'a')} aria-label={T('Hear it', 'بشنو')}><span aria-hidden="true">▶</span></button></p>
+			<div class="options" role="group" aria-labelledby="trap-task" lang="en" dir="ltr">
+				{#each trap.reply.options as option, i}
+					{@const best = i === trap.reply.answer}
+					<button type="button" class="option" class:miss={mine.wrongTaps.includes(i)} class:found={revealed && best} onclick={() => tap(i)}
+						aria-disabled={revealed || mine.wrongTaps.includes(i)}>{option}{#if revealed && best}<span class="sr-only" lang={isFa ? 'fa' : 'en'}>: {T('the best reply', 'بهترین جواب')}</span>{:else if mine.wrongTaps.includes(i)}<span class="sr-only" lang={isFa ? 'fa' : 'en'}>: {T('not this one', 'این نه')}</span>{/if}</button>
+				{/each}
+			</div>
+			{#if revealed}{@render why()}
+			{:else}
+				{#if mine.wrongTaps.length}<p class="note" aria-hidden="true">{T('Not that one. Try again.', 'این نه. دوباره امتحان کن.')}</p>{/if}
+				<button class="link quiet" type="button" onclick={showMe}>{T('Show me the best reply', 'بهترین جواب را نشانم بده')}</button>
+			{/if}
+			{#if revealed}<ActionBar label={T('Now say it', 'حالا بگو')} onclick={toSay} />{/if}
+
+		{:else if record.step === 'spot'}
+			<h2 id="trap-task" tabindex="-1" bind:this={heading}><span class="sr-only">{label}: </span>{T('Tap the mistake.', 'روی اشتباه بزن.')}</h2>
 			<div class="sentence" role="group" aria-labelledby="trap-task" lang="en" dir="ltr">
 				{#each trap.words as word, i}
 					{@const isWrong = i === trap.wrong}
@@ -231,8 +258,9 @@
 			{#if revealed}<ActionBar label={T('Now say it correctly', 'حالا درستش را بگو')} onclick={toSay} />{/if}
 
 		{:else}
-			<h2 tabindex="-1" bind:this={heading}><span class="sr-only">{label}: </span>{T('Say the whole sentence correctly.', 'کل جمله را درست بگو.')}</h2>
-			<p class="sentence plain" lang="en" dir="ltr">{#each trap.words as word, i}{#if i > 0}{' '}{/if}{#if i === trap.wrong}<del>{word}</del><span class="sr-only" lang={isFa ? 'fa' : 'en'}> ({T('wrong word', 'کلمهٔ اشتباه')})</span>{:else}{word}{/if}{/each}</p>
+			<h2 tabindex="-1" bind:this={heading}><span class="sr-only">{label}: </span>{trap.reply ? T('Now say your reply.', 'حالا جوابت را بگو.') : T('Say the whole sentence correctly.', 'کل جمله را درست بگو.')}</h2>
+			{#if trap.reply}<p class="line" lang="en" dir="ltr">“{trap.reply.line}”</p>{:else}
+			<p class="sentence plain" lang="en" dir="ltr">{#each trap.words as word, i}{#if i > 0}{' '}{/if}{#if i === trap.wrong}<del>{word}</del><span class="sr-only" lang={isFa ? 'fa' : 'en'}> ({T('wrong word', 'کلمهٔ اشتباه')})</span>{:else}{word}{/if}{/each}</p>{/if}
 
 			{#if status === 'result'}
 				<p class="result" class:ok={mine.said} class:neutral={check === 'selfFixed' || check === 'alsoGood'} tabindex="-1" bind:this={resultLine}>
@@ -298,6 +326,12 @@
 	h2:focus { outline: none; }
 	.big { font-family: var(--font-display); font-size: clamp(1.6rem, 7vw, 2.1rem); color: var(--accent-deep); }
 	.sentence { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }
+	.line { margin: 6px 0 12px; font-size: 1.15rem; font-weight: 600; }
+	.options { display: grid; gap: 10px; margin: 6px 0 12px; }
+	.option { min-block-size: 52px; padding: 12px 16px; border: 2px solid var(--line); border-radius: 12px; background: var(--paper-raised); color: var(--ink); font: inherit; font-size: 1.05rem; text-align: start; cursor: pointer; }
+	.option.miss { border-color: var(--attention); opacity: .6; text-decoration: line-through; }
+	.option.found { border-color: var(--leaf, var(--accent)); background: var(--leaf-wash, var(--accent-wash)); font-weight: 600; }
+	.option:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 	.word { min-block-size: 48px; min-inline-size: 44px; padding: 8px 14px; border: 2px solid var(--line); border-radius: 12px; background: var(--paper-raised); color: var(--ink); font: inherit; font-size: 1.25rem; cursor: pointer; }
 	.word[aria-disabled='true'] { cursor: default; }
 	.word.miss { border-style: dashed; color: var(--ink-soft); text-decoration: line-through; }

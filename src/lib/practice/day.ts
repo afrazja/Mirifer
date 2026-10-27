@@ -59,6 +59,8 @@ export interface DayModule {
 	built: boolean;
 	/** Mira's spoken introduction, as a teacher would say it (shown and read aloud). */
 	intro: DisplayText;
+	/** Say it again, better: the chapter's question (`SAY_PROMPTS`; Day 1's trip problem when missing). */
+	sayPrompt?: string;
 }
 
 /**

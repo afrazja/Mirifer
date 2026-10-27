@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { TRAPS, asTrapsRecord, checkSaid, emptyTrapsRecord, missedOf, normalise, saidRight, summarize } from './traps';
+import type { Trap } from './traps';
 
 describe('Persian-speaker traps content', () => {
 	it('has 8 traps; each wrong word is in the sentence, and the right sentence passes its own check', () => {
@@ -99,5 +100,21 @@ describe('Persian-speaker traps, Day 2', () => {
 		expect(summarize(r).total).toBe(5);
 		expect(asTrapsRecord(r, trapsFor('day-2'))).not.toBeNull();
 		expect(asTrapsRecord(r)).toBeNull();
+	});
+});
+
+describe('a "which reply?" item', () => {
+	const reply: Trap = {
+		id: 'yes-help', kind: { en: 'taarof', fa: 'تعارف' }, words: [], wrong: -1,
+		reply: { prompt: { en: 'You’d like help. What do you say?', fa: 'کمک می‌خواهی. چه می‌گویی؟' }, line: 'Here, let me help you with that.', options: ['Oh, no, no. It’s fine.', 'Yes, please! Thank you.', 'Please, don’t trouble yourself.'], answer: 1 },
+		right: 'Yes, please! Thank you.',
+		why: { en: 'Say yes the first time.', fa: 'همان بار اول بله بگو.' },
+		accept: [/\b(?:yes|yeah|sure)\b.*\b(?:please|thanks|thank you)\b|\bthank you so much\b/], reject: [/\bno\b|\bit's fine\b/]
+	};
+	it('says right only for the reply, never "fixed it yourself"', () => {
+		expect(checkSaid(reply, 'Yes, please! Thank you.')).toBe('right');
+		expect(checkSaid(reply, 'Oh, thank you so much!')).toBe('right');
+		expect(checkSaid(reply, "No, no, it's fine… yes, please, thank you")).toBe('wrong');
+		expect(checkSaid(reply, "Oh no, it's fine")).toBe('wrong');
 	});
 });

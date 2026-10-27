@@ -207,7 +207,7 @@
 		{:else if mod.id === 'scenario'}
 			<RolePlay {isFa} {onSkip} scene={content.scene} initial={asRolePlayRecord(loaded(), content.scene)} {onFocus} onSave={keep} {onDone} />
 		{:else if mod.id === 'say-it-better'}
-			<SayItBetter {isFa} {onSkip} initial={asSayRecord(loaded())} {onFocus} onSave={keep} {onDone} />
+			<SayItBetter {isFa} {onSkip} prompt={mod.sayPrompt} initial={asSayRecord(loaded())} {onFocus} onSave={keep} {onDone} />
 		{:else}
 			<p>{T('This step is not ready yet.', 'این مرحله هنوز آماده نیست.')}</p>
 			<ActionBar label={T('Continue', 'ادامه')} onclick={() => onDone()} />

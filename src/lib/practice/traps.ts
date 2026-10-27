@@ -31,6 +31,20 @@ export interface Trap {
 	reject: RegExp[];
 	/** Good English that avoids the point of the drill: praised, then asked for the target word. */
 	alsoGood?: { patterns: RegExp[]; word: string };
+	/**
+	 * A "which reply?" item (taarof, compliments: docs/english-everyday-1): the learner hears someone's
+	 * line, picks the best reply of three, reads Mira's note (`why`), then says the reply (`right`).
+	 * `words` is empty and `wrong` unused. Only right / not yet: no "fixed it yourself".
+	 */
+	reply?: {
+		/** The situation and the question, in one line. */
+		prompt: DisplayText;
+		/** What the other person says (heard, and shown). */
+		line: string;
+		options: string[];
+		/** The index of the best reply. */
+		answer: number;
+	};
 }
 
 export const TRAPS: Trap[] = [
@@ -111,6 +125,8 @@ export function checkSaid(trap: Trap, transcript: string): SaidCheck {
 	const said = normalise(transcript);
 	const fixed = trap.accept.some(r => r.test(said)), mistake = trap.reject.some(r => r.test(said));
 	if (fixed && !mistake) return 'right';
+	// A reply that starts with the habit and then switches ("No, it's fine… yes, please") is the point missed.
+	if (trap.reply) return 'wrong';
 	if (fixed && mistake) return 'selfFixed';
 	if (!mistake && trap.alsoGood?.patterns.some(r => r.test(said))) return 'alsoGood';
 	return 'wrong';
