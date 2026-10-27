@@ -115,7 +115,7 @@ learners).
 ## Build order (each ships on its own)
 
 1. **Onboarding**: name, goal (with "Not sure yet"), level, an honest ready screen. (S, done)
-1b. **The level check** for "I'm not sure" (`docs/english-level-check-spec.md`). (M)
+1b. **The level check** for "I'm not sure" (`docs/english-level-check-spec.md`). (M, done)
 1c. **Arcs in code**: `arc` on chapters and `journeyFor(goal)`; Travel is the only arc, so nothing
    changes for learners. (S)
 2. **Both records in step.** The current daily lesson also saves the step path. (S)

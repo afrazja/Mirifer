@@ -1,7 +1,7 @@
 /**
  * The English learner's profile from onboarding: the least we keep on our
  * server to fit practice to them. Three answers and when they gave them,
- * nothing typed or spoken.
+ * nothing typed or spoken (the level check adds only its result, `levelSource`).
  *
  * - reason: which situations to practise first, and the gist for the AI coach.
  * - comfort: only a starting point. Difficulty then follows how the learner
@@ -20,6 +20,8 @@ export const EnglishProfileSchema = z.object({
 	comfort: z.enum(COMFORT).nullable(),
 	minutes: z.union([z.literal(15), z.literal(20)]),
 	skipped: z.boolean(),
+	/** Where `comfort` came from: their own answer, the level check, or the check left early. */
+	levelSource: z.enum(['self', 'check', 'skipped']).optional(),
 	completedAt: z.string().datetime()
 }).strict();
 export type EnglishProfile = z.infer<typeof EnglishProfileSchema>;

@@ -8,6 +8,7 @@
 	import type { EnglishProfileAnswers } from '$lib/practice/english-profile';
 	import type { DisplayText } from '$lib/practice/hotel';
 	import { DAY_ONE, lessonMinutes, trackFor } from '$lib/practice/day';
+	import LevelCheck from '$lib/components/LevelCheck.svelte';
 
 	let { data }: PageProps = $props();
 	let language = $state<'en' | 'fa'>('en');
@@ -52,6 +53,10 @@
 	let name = $state(data.name);
 	let reason = $state<Reason | null>(saved?.reason ?? null);
 	let comfort = $state<Comfort | null>(saved?.comfort ?? null);
+	type LevelSource = NonNullable<EnglishProfileAnswers['levelSource']>;
+	let levelSource = $state<LevelSource>(saved?.levelSource ?? 'self');
+	/** "I'm not sure": the level check runs inside question 3. */
+	let checking = $state(false);
 	const cleanName = $derived(name.trim().slice(0, 40));
 	/** Day 1's length in the version the answers lead to (the same number its Start button shows). */
 	const firstMinutes = $derived(lessonMinutes(DAY_ONE, trackFor({ comfort })));
@@ -71,14 +76,16 @@
 				if (typeof draft.name === 'string') name = draft.name.slice(0, 40);
 				if (REASON_OPTIONS.some(option => option.id === draft.reason)) reason = draft.reason;
 				if (COMFORT_OPTIONS.some(option => option.id === draft.comfort)) comfort = draft.comfort;
-				const furthest = reason ? (comfort ? QUESTIONS + 1 : 3) : 2;
+				if (['self', 'check', 'skipped'].includes(draft.levelSource)) levelSource = draft.levelSource;
+				const furthest = reason ? (comfort || levelSource === 'skipped' ? QUESTIONS + 1 : 3) : 2;
+				checking = draft.checking === true && furthest === 3;
 				if (Number.isInteger(draft.step)) step = Math.max(1, Math.min(draft.step, furthest));
 			}
 		} catch { /* nothing kept: start at the first question */ }
 		restored = true;
 	});
 	$effect(() => {
-		const draft = JSON.stringify({ step, name, reason, comfort });
+		const draft = JSON.stringify({ step, name, reason, comfort, levelSource, checking });
 		if (!restored) return;
 		try { localStorage.setItem(DRAFT_KEY, draft); } catch { /* private mode: no resume */ }
 	});
@@ -95,13 +102,24 @@
 		event.preventDefault();
 		step = 2; focusHeading();
 	}
-	function back() { if (step > 1 && !saving) { step -= 1; focusHeading(); } }
+	function back() {
+		if (saving) return;
+		if (checking) { checking = false; focusHeading(); return; }
+		if (step > 1) { step -= 1; focusHeading(); }
+	}
+	function chooseLevel(id: Comfort) { levelSource = 'self'; choose(() => (comfort = id)); }
+	function startCheck() { comfort = null; checking = true; }
+	/** The check's band, or none when the learner left it ("Not now": the easier version). */
+	function checked(band: Comfort | null) {
+		comfort = band; levelSource = band ? 'check' : 'skipped'; checking = false;
+		step = QUESTIONS + 1; focusHeading();
+	}
 
 	async function save() {
 		saving = true; saveFailed = false;
 		try {
 			const body = new FormData();
-			body.set('answers', JSON.stringify({ reason, comfort, minutes, skipped: false } satisfies EnglishProfileAnswers));
+			body.set('answers', JSON.stringify({ reason, comfort, minutes, skipped: false, levelSource } satisfies EnglishProfileAnswers));
 			if (cleanName) body.set('name', cleanName);
 			const response = await fetch('?/save', { method: 'POST', body, headers: { 'x-sveltekit-action': 'true' } });
 			const result = await response.json().catch(() => null);
@@ -160,13 +178,17 @@
 			<p class="note">{isFa ? 'این تعیین می‌کند مسیرت از کجا شروع شود.' : 'This decides where your journey starts.'}</p>
 		</section>
 
+	{:else if step === 3 && checking}
+		<LevelCheck {language} onDone={band => checked(band)} onLeave={() => checked(null)} />
+
 	{:else if step === 3}
 		<section class="screen" aria-labelledby="q3">
 			<h1 id="q3" tabindex="-1" bind:this={heading}>{isFa ? 'الان انگلیسی حرف زدنت چطور است؟' : 'How’s your English speaking now?'}</h1>
 			<div class="options" role="group" aria-labelledby="q3">
 				{#each COMFORT_OPTIONS as option}
-					<button class="option" class:selected={comfort === option.id} type="button" aria-pressed={comfort === option.id} onclick={() => choose(() => (comfort = option.id))}>{text(option.label)}</button>
+					<button class="option" class:selected={comfort === option.id && levelSource === 'self'} type="button" aria-pressed={comfort === option.id && levelSource === 'self'} onclick={() => chooseLevel(option.id)}>{text(option.label)}</button>
 				{/each}
+				<button class="option unsure" type="button" onclick={startCheck}>{isFa ? 'مطمئن نیستم؛ بیا با هم ببینیم (۲ دقیقه)' : 'I’m not sure. Let’s find out (2 min)'}</button>
 			</div>
 			<p class="reassure">{isFa ? 'لازم نیست دقیق جواب بدهی. این فقط نقطهٔ شروع است.' : 'You don’t need to get this exactly right. It’s only a starting point.'}</p>
 		</section>
@@ -209,6 +231,7 @@
 	.options { display: grid; gap: 10px; }
 	.option { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 14px 16px; border: 1.5px solid var(--control-border); border-radius: 14px; background: var(--paper-raised); color: var(--ink); font: inherit; font-size: 1.02rem; font-weight: 500; text-align: start; cursor: pointer; transition: border-color .15s, background .15s; }
 	.option:hover { border-color: var(--accent); }
+	.option.unsure { border-style: dashed; color: var(--accent-deep); }
 	.option.selected { border-color: var(--accent); background: var(--accent-wash); font-weight: 600; }
 	.icon { font-size: 1.3rem; }
 	.note { margin: 4px 0 0; color: var(--ink-soft); font-size: .9rem; line-height: 1.6; }

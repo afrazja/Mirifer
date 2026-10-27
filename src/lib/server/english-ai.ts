@@ -96,7 +96,7 @@ export async function recordClip(locals: Locals, user: User, route: string, audi
  */
 export async function meteredTranscribe(
 	locals: Locals, user: User, route: string, audio: File, reportedSeconds: number,
-	label: string, context?: string, options: { splitAtPauses?: boolean } = {}
+	label: string, context?: string, options: { splitAtPauses?: boolean; anyLanguage?: boolean } = {}
 ): Promise<string | Response> {
 	const refused = await checkClipBudget(locals, user);
 	if (refused) return refused;

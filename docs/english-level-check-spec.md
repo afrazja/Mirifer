@@ -2,7 +2,7 @@
 
 Owner's decision (2026-10-27): onboarding asks only name, goal and level; a learner who doesn't know
 their level gets a short spoken check. Reviewed by the english-coach and learning-UX reviewers before
-building. Status: to build (the second onboarding step in `docs/goal-path-plan.md`).
+building. Status: built (onboarding step 1b in `docs/goal-path-plan.md`).
 
 ## What it decides
 
