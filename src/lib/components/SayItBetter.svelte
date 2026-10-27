@@ -251,7 +251,7 @@
 		{@render bottom(fixIndex + 1 < feedback.fixes.length ? T('Next fix', 'اصلاح بعدی') : T('See the better version', 'دیدن نسخهٔ بهتر'), () => (fixIndex + 1 < feedback.fixes.length ? (fixIndex += 1) : (stage = 'better')))}
 
 	{:else if stage === 'better' && feedback?.better}
-		<p class="label">{T('Your story, a bit better', 'داستانت، کمی بهتر')}</p>
+		<p class="label">{sayPrompt(prompt).betterLabel ? (isFa ? sayPrompt(prompt).betterLabel!.fa : sayPrompt(prompt).betterLabel!.en) : T('Your story, a bit better', 'داستانت، کمی بهتر')}</p>
 		<p class="said better" lang="en" dir="ltr">{feedback.better}</p>
 		<button class="hear" type="button" onclick={() => hear(feedback.better ?? '')} aria-label={T('Hear Mira read it', 'بشنو که میرا می‌خواندش')}><span aria-hidden="true">{playing ? '■' : '▶'}</span></button>
 		{@render bottom(T('Try again', 'دوباره امتحان کن'), toSecondTry)}

@@ -86,6 +86,8 @@ export interface DayPack {
 	/** The coach's theme-linked warm-up question for this day (Day 2+ greeting). */
 	question: string;
 	goal: DisplayText;
+	/** The chapter ending's line per version, when it differs ("You've practiced…"); else from `goal`. */
+	goals?: Partial<Record<Track, DisplayText>>;
 	/** Mira's check-in for this day; Day 1 has its own first-session welcome instead. */
 	checkIn?: DayCheckIn;
 	/** False until every module is built and checked: learners never get it; the owner can try it. */

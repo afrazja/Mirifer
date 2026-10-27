@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { HOTEL_SCENE, asRolePlayRecord, missedGoals, resultNote, fallbackFor, goalIdsOf, preparedLines, startRolePlay, twistSaid } from './roleplay';
+import { HOTEL_SCENE, asRolePlayRecord, missedGoals, resultNote, twistWithLead, fallbackFor, goalIdsOf, preparedLines, startRolePlay, twistSaid } from './roleplay';
 import { ALL_ROLE_SCENES, roleSceneById, roleSceneFor } from './day-content';
 import { sceneLineProblem } from '$lib/server/jamie-line';
 
@@ -73,5 +73,15 @@ describe('first-try goals and the result note', () => {
 		expect(resultNote(scene, { missed: ['solution'], twistOutcome: 'no' })?.en).toBe('Say yes the first time.');
 		expect(resultNote(scene, { missed: [], twistOutcome: 'no' })?.en).toBe('Just say "Sorry?"');
 		expect(resultNote(scene, { missed: [], twistOutcome: 'asked' })).toBeNull();
+	});
+});
+
+describe('the twist after the character’s own short answer', () => {
+	const twist = 'Oh, and trash goes out Tuesday morning by eight.';
+	it('keeps the model’s first sentence when it is short and asks nothing', () => {
+		expect(twistWithLead('Nice to meet you, Ali! So how long…?', twist, false)).toBe(`Nice to meet you, Ali! ${twist}`);
+		expect(twistWithLead('Where are you from? I am Jake.', twist, false)).toBe(`Great! ${twist}`);
+		expect(twistWithLead('Nice to meet you.', twist, true)).toBe(`Great! ${twist}`);
+		expect(twistWithLead(null, twist, false)).toBe(twist);
 	});
 });

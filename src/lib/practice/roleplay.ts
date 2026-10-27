@@ -46,12 +46,19 @@ export interface RoleScene {
 		check?: (reply: string) => string;
 		/** The character's fixed answer to some outcomes (the slow repeat); the model answers the rest. */
 		replies?: Record<string, string>;
+		/**
+		 * The twist follows a short sentence from the model that answers what the learner just said
+		 * ("Nice to meet you, Ali!"), so the character doesn't ignore them; "Great!" if it doesn't fit.
+		 */
+		lead?: boolean;
 	};
 	/**
 	 * Goals that count only on the first try (say yes to help the first time): a refusal matching the
 	 * pattern before the goal is reached marks it missed for this run.
 	 */
 	firstTry?: Record<string, RegExp>;
+	/** Words the character must never say (e.g. amounts of money written out); a line with them is rewritten. */
+	banned?: { pattern: RegExp; reason: string };
 	/** Mira's one note on the result screen: for a missed goal, else for the twist's outcome. */
 	notes?: { missed?: Record<string, DisplayText>; twist?: Record<string, DisplayText> };
 	/** The voice route's direction for the character. */
@@ -146,10 +153,18 @@ export function fallbackFor(scene: RoleScene, goals: readonly string[]): string 
 }
 /** Whether the scene's twist line is already in the conversation. */
 export const twistSaid = (scene: RoleScene, variant: string, turns: readonly Turn[]) =>
-	!!scene.twist && turns.some(turn => turn.speaker === 'reception' && turn.text === scene.twist!.lines[variant]);
+	!!scene.twist && turns.some(turn => turn.speaker === 'reception' && turn.text.endsWith(scene.twist!.lines[variant]));
 
 /** Every line the character says that is written by us (the voice route voices these without a signature). */
 export const preparedLines = (scene: RoleScene) => [scene.greeting, ...Object.values(scene.fallback), ...Object.values(scene.twist?.lines ?? {}), ...Object.values(scene.twist?.replies ?? {})];
+
+/** The twist after the model's own short answer to the learner (its first sentence, no question), else "Great!". */
+export function twistWithLead(modelReply: string | null, twist: string, rejected: boolean): string {
+	if (modelReply === null) return twist;
+	const first = modelReply.replace(/\s+/g, ' ').trim().match(/^[^.!?]*[.!]/)?.[0]?.trim() ?? '';
+	const ok = !rejected && first && !first.includes('?') && first.split(' ').length <= 12;
+	return `${ok ? first : 'Great!'} ${twist}`;
+}
 
 /** First-try goals the learner has refused before reaching them (from what they said; `met` are proven). */
 export function missedGoals(scene: RoleScene, met: readonly string[], learnerLines: readonly string[]): string[] {

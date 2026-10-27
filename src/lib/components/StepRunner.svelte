@@ -132,7 +132,7 @@
 		return parts ? { id: id!, module: chapterModules(parts.day, track).find(item => item.id === parts.module) ?? null } : null;
 	});
 	/** The chapter's goal, said as done: "Now you can …". */
-	const nowYouCan = $derived({
+	const nowYouCan = $derived(day.goals?.[track] ?? {
 		en: day.goal.en.replace(/^By the end, you can/, 'Now you can'),
 		fa: day.goal.fa.replace(/^در پایان می‌توانی/, 'حالا می‌توانی')
 	});

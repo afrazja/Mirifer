@@ -28,6 +28,8 @@ export interface SayPrompt {
 	rules?: string;
 	/** "Need ideas?" */
 	ideas: string[];
+	/** The heading over the corrected answer ("Your story, a bit better" by default). */
+	betterLabel?: DisplayText;
 }
 export const SAY_PROMPTS = {
 	'trip-problem': {
@@ -43,7 +45,8 @@ export const SAY_PROMPTS = {
 		onTopic: 'says something about themselves (where they are from or live, what they do, or something they like), in any place, job or situation',
 		priorities: 'no "am" before a verb ("I work", not "I am work"), a/an with a job ("I\'m an engineer", not "My job is engineer"), present perfect for how long ("I\'ve lived here for two years"), "like" + -ing, he/she, prepositions, word order',
 		rules: 'Never "fix" a name, a place or a job title, and never comment on where they are from, what they do or what they chose to share.',
-		ideas: ['Where are you from?', 'What do you do?', 'What do you like doing?']
+		ideas: ['Where are you from?', 'What do you do?', 'What do you like doing?'],
+		betterLabel: { en: 'What you said, a bit better', fa: 'حرف‌هایت، کمی بهتر' }
 	}
 } satisfies Record<string, SayPrompt>;
 export type SayPromptId = keyof typeof SAY_PROMPTS;

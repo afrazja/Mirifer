@@ -58,7 +58,7 @@
 	const closed = $derived(record.done || !!record.settled);
 	/** The twist that is heard, not read, until the learner has answered it. */
 	const hiddenLine = $derived(scene.twist?.audioOnly ? scene.twist.lines[record.variant] : null);
-	const isHidden = (index: number) => !!hiddenLine && record.turns[index]?.text === hiddenLine && index === record.turns.length - 1;
+	const isHidden = (index: number) => !!hiddenLine && !!record.turns[index]?.text.endsWith(hiddenLine) && index === record.turns.length - 1;
 	const note = $derived(resultNote(scene, record));
 	const lastLine = $derived([...record.turns].reverse().find(turn => turn.speaker === 'reception')?.text ?? '');
 
@@ -79,7 +79,7 @@
 		stopAllAudio();
 		const sig = record.voiceSigs[line];
 		// The heard-only twist is said a little fast, as people really say it.
-		const pace = line === hiddenLine ? 1.15 : 1;
+		const pace = hiddenLine && line.endsWith(hiddenLine) ? 1.15 : 1;
 		const url = `/api/english/voice?v=1&voice=${voice}&scene=${encodeURIComponent(scene.id)}&text=${encodeURIComponent(line)}${sig ? `&sig=${encodeURIComponent(sig)}` : ''}`;
 		if (!(await playAudioUrl(url, undefined, RECORDED_ENGLISH_RATE * pace)) && alive) void playAudioPromise(line, ENGLISH_RATE * pace, 'en-US', undefined, voice).catch(() => {});
 	}
