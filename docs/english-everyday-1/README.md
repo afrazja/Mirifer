@@ -144,8 +144,10 @@ a mistake of character.
 5. **Voice messages in a Professional set** (today Intermediate only).
 6. **The learner's first name in role-plays** (from onboarding), instead of "Karimi".
 7. **The chapter ending from the checks passed** (today it is built from the chapter's `goal`).
-8. **Mira's first line on iPhone**: the step's sound starts after a page change, which iPhones may
-   block; give the brief screen a "Hear Mira" button.
+8. **Mira's first line on iPhone**: a "Hear Mira" button on the brief screen (done, #232).
+9. **Listen and retell with two voices**: optional `speakers` and `lines` on `RetellPiece` (the same
+   shape as Listen and connect), so the Professional step can play the meeting itself.
+10. **Listen and connect with two parts**: the type allows it; the per-chapter test must expect two.
 
 ## Files to draft (as for Days 1–4)
 

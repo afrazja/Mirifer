@@ -47,16 +47,19 @@ chapter; later chapters add it here first.
 
 **Part 1, at the door:**
 
-1. Sara is carrying a big box to the front door. Jake comes out with Biscuit and holds the door.
+1. Sara is carrying a big box (mostly books) to the front door. Jake is coming back from a walk with
+   Biscuit and holds the door.
 2. Jake: "Here, let me help you with that." Sara: "Oh, no, it's fine!"
 3. Jake takes her first no: "Oh, OK, no problem!" and starts up the stairs.
 4. The box slips. Sara: "Actually… yes, please. That'd be great!" Jake: "Ha! Sure. Here."
 5. They introduce themselves (first names). Biscuit barks: "That's Biscuit. He's friendly, just loud."
+   Sara asks how long he's lived here: "Six years. You'll love it here."
 
 **Part 2, upstairs:**
 
 6. Jake tells her trash goes out Tuesday morning, by eight; the truck comes really early.
-7. He sees her plant: "Nice plant!" Sara: "Thanks! I love it too." (No refusing the compliment.)
+7. He sees her plant (it survived the move): "Nice plant!" Sara: "Thanks! I love it too." (No
+   refusing the compliment.)
 8. He invites her to the building barbecue in the backyard, a week from today at four. She'd love
    to come.
 9. "See you around!"
