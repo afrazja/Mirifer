@@ -28,13 +28,13 @@ export function billedSeconds(usage: unknown): number | null {
  * the model what the learner is talking about, which helps a lot with accented
  * speech; it is also told to keep the learner's mistakes, not tidy them.
  */
-export async function transcribe(audio: File, label: string, context?: string, options: { splitAtPauses?: boolean; /** The billed audio length, when the service reports it. */ onUsage?: (seconds: number | null) => void } = {}): Promise<string | null> {
+export async function transcribe(audio: File, label: string, context?: string, options: { splitAtPauses?: boolean; /** Don't force English: a Persian answer then comes back in Persian, not translated (the level check). */ anyLanguage?: boolean; /** The billed audio length, when the service reports it. */ onUsage?: (seconds: number | null) => void } = {}): Promise<string | null> {
 	const type = audio.type.split(';')[0];
 	const body = new FormData();
 	body.set('file', audio, `speech.${AUDIO_EXTENSIONS[type] ?? 'webm'}`);
 	body.set('model', env.OPENAI_TRANSCRIBE_MODEL || 'gpt-4o-transcribe');
-	body.set('language', 'en');
-	body.set('prompt', `${context ? `${context} ` : ''}The speaker is an adult Persian speaker learning English. Write exactly what they say, word for word, keeping their grammar mistakes; never correct or improve them.`);
+	if (!options.anyLanguage) body.set('language', 'en');
+	body.set('prompt', `${context ? `${context} ` : ''}The speaker is an adult Persian speaker learning English. Write exactly what they say, word for word, keeping their grammar mistakes; never correct or improve them.${options.anyLanguage ? ' If they speak Persian, write it in Persian script; never translate it.' : ''}`);
 	body.set('response_format', 'json');
 	// Speech with pauses ("Hi. … What time…?"): let the service cut it at the pauses, so nothing after the first one is dropped.
 	if (options.splitAtPauses) body.set('chunking_strategy', 'auto');
@@ -47,7 +47,7 @@ export async function transcribe(audio: File, label: string, context?: string, o
 		if (response.status === 400 && options.splitAtPauses) {
 			// The service refused the pause setting: ask once more without it rather than lose the turn.
 			clearTimeout(timeout);
-			return transcribe(audio, label, context, { onUsage: options.onUsage });
+			return transcribe(audio, label, context, { anyLanguage: options.anyLanguage, onUsage: options.onUsage });
 		}
 		if (!response.ok) { console.error(`${label}: transcription failed: ${response.status}`); return null; }
 		const data = await response.json();

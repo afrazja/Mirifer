@@ -41,6 +41,12 @@ describe('English onboarding', () => {
 		expect(f.supabase.auth.updateUser).toHaveBeenCalledWith({ data: { english_profile_v1: expect.objectContaining({ reason: 'unsure' }), display_name: 'Ali' } });
 		expect(f.supabase.upsert).toHaveBeenCalledWith({ id: 'u1', display_name: 'Ali' }, { onConflict: 'id' });
 	});
+	it('saves where the level came from', async () => {
+		const f = fixture({}, { reason: 'travel', comfort: 'natural', minutes: 15, skipped: false, levelSource: 'check' });
+		expect(await actions.save(f.event())).toMatchObject({ profile: { comfort: 'natural', levelSource: 'check' } });
+		expect(await actions.save(fixture({}, { reason: 'travel', comfort: null, minutes: 15, skipped: false, levelSource: 'skipped' }).event())).toMatchObject({ profile: { comfort: null, levelSource: 'skipped' } });
+		expect(await actions.save(fixture({}, { reason: 'travel', comfort: null, minutes: 15, skipped: false, levelSource: 'guess' }).event())).toMatchObject({ status: 400 });
+	});
 	it('rejects an empty or long name when one is sent', async () => {
 		const answers = { reason: 'travel', comfort: 'simple', minutes: 15, skipped: false };
 		expect(await actions.save(fixture({}, answers, undefined, '   ').event())).toMatchObject({ status: 400 });
