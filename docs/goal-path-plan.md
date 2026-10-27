@@ -114,6 +114,11 @@ learners).
 
 ## Build order (each ships on its own)
 
+Status (2026-10-27): onboarding, the level check, goal and level in Settings, and the step path
+(step screen, Step finished, chapter ending, dashboard card, Your path with replays) are built. The
+step path is on for the owner's two test accounts (`usesStepPath`); everyone else keeps the daily
+lessons until the owner has tried it on a phone. Arcs in code (1c) come with the second arc.
+
 1. **Onboarding**: name, goal (with "Not sure yet"), level, an honest ready screen. (S, done)
 1b. **The level check** for "I'm not sure" (`docs/english-level-check-spec.md`). (M, done)
 1c. **Arcs in code**: `arc` on chapters and `journeyFor(goal)`; Travel is the only arc, so nothing

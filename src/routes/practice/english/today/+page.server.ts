@@ -5,6 +5,7 @@ import { readEnglishProgress, recordSession, type EnglishProgress } from '$lib/p
 import { readEnglishProfile } from '$lib/practice/english-profile';
 import { canUseLab } from '$lib/server/lab-access';
 import { lessonEvents } from '$lib/server/lesson-events';
+import { usesStepPath } from '$lib/server/step-path';
 
 export const load: PageServerLoad = async ({ locals, url, parent }) => {
 	const { data: { user }, error } = await locals.supabase.auth.getUser();
@@ -13,6 +14,8 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 	// First visit: the three onboarding questions come before the first session.
 	const profile = readEnglishProfile(user.user_metadata);
 	if (!profile) redirect(303, '/practice/english/start');
+	// The step path replaces the daily lesson (the owner can still open a day with ?day=).
+	if (usesStepPath(user) && !url.searchParams.has('day')) redirect(303, '/practice/english/step');
 	const saved = DaySessionSchema.safeParse(user.user_metadata?.english_day_v1);
 	const name = typeof user.user_metadata?.display_name === 'string' ? user.user_metadata.display_name.slice(0, 40) : '';
 	const progress = readEnglishProgress(user.user_metadata);

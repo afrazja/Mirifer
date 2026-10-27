@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { lastSevenDays, lessonDates, localDate, streak, type LessonEventRow } from './learner-stats';
+import { lastSevenDays, lessonDates, stepDates, localDate, streak, type LessonEventRow } from './learner-stats';
 
 const row = (event_name: string, occurred_at: string, metadata: Record<string, unknown> = {}): LessonEventRow => ({ event_name, occurred_at, metadata });
 
@@ -35,5 +35,16 @@ describe('the learner’s progress numbers', () => {
 		expect(week[0].date).toBe('2026-10-16');
 		expect(week.at(-1)).toEqual({ date: '2026-10-22', active: true });
 		expect(week.filter(d => d.active).map(d => d.date)).toEqual(['2026-10-20', '2026-10-22']);
+	});
+});
+
+describe('stepDates', () => {
+	it('counts days with a step done or a lesson finished, never a skip', () => {
+		expect(stepDates([
+			{ event_name: 'lesson_progress', occurred_at: '2026-10-25T22:00:00Z', metadata: { outcome: 'done', utc_offset_min: 210 } },
+			{ event_name: 'lesson_progress', occurred_at: '2026-10-24T10:00:00Z', metadata: { outcome: 'skipped' } },
+			{ event_name: 'lesson_completed', occurred_at: '2026-10-20T10:00:00Z', metadata: { done: 0 } },
+			{ event_name: 'lesson_completed', occurred_at: '2026-10-21T10:00:00Z', metadata: { done: 2 } }
+		])).toEqual(['2026-10-21', '2026-10-26']);
 	});
 });

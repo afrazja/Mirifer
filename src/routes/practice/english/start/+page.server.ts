@@ -2,6 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { Actions, PageServerLoad } from './$types';
 import { EnglishProfileAnswersSchema, readEnglishProfile } from '$lib/practice/english-profile';
+import { usesStepPath } from '$lib/server/step-path';
 
 /** The name sign-up gave us (ours, or Google's), for the first question. */
 function nameOf(meta: Record<string, unknown> | undefined): string {
@@ -20,7 +21,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	if (user.user_metadata?.target_language !== 'en') redirect(303, '/languages');
 	const profile = readEnglishProfile(user.user_metadata);
 	if (profile && url.searchParams.get('edit') !== '1') redirect(303, '/practice/english/today');
-	return { name: nameOf(user.user_metadata), profile };
+	// After the questions: the first step on the step path, else the first daily lesson.
+	return { name: nameOf(user.user_metadata), profile, next: usesStepPath(user) ? '/practice/english/step' : '/practice/english/today' };
 };
 
 export const actions: Actions = {

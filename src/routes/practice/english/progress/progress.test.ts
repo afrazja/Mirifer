@@ -71,3 +71,32 @@ describe('The lessons finished list', () => {
 		await expect(loadFinished({ locals: locals({ target_language: 'en' }) } as any)).rejects.toMatchObject({ location: '/practice/english/start' });
 	});
 });
+
+describe('The dashboard on the step path', () => {
+	const tester = (meta: Record<string, unknown>, rows: unknown[] = []) => {
+		const l = locals(meta, rows);
+		const user = { id: 'u1', email: 'afraz.jva@gmail.com', email_confirmed_at: '2026-01-01T00:00:00Z', user_metadata: meta };
+		l.supabase.auth.getUser = async () => ({ data: { user: user as any }, error: null });
+		return { l, event: { locals: l, parent: async () => ({ labAccess: false }) } as any };
+	};
+	it('shows the next step, the steps done and the days with a step done', async () => {
+		const { event } = tester(english({ english_progress_v1: progress }), [
+			{ event_name: 'lesson_progress', occurred_at: '2026-10-25T08:20:00Z', metadata: { outcome: 'done' } },
+			{ event_name: 'lesson_progress', occurred_at: '2026-10-26T08:20:00Z', metadata: { outcome: 'skipped' } },
+			{ event_name: 'lesson_completed', occurred_at: '2026-10-20T08:20:00Z', metadata: { done: 4 } }
+		]);
+		const data = await load(event) as any;
+		expect(data.dates).toEqual(['2026-10-20', '2026-10-25']);
+		expect(data.path).toMatchObject({ stepsDone: 10, replay: false, underWay: false, step: { id: 'day-3:listen-act', chapter: 3, index: 0, total: 5 } });
+	});
+	it('offers a step to practise again when every released step is done', async () => {
+		const all = { ...progress, lastThemeId: 'day-3', finishedDays: ['day-1', 'day-2', 'day-3'] };
+		const data = await load(tester(english({ english_progress_v1: all })).event) as any;
+		expect(data.path).toMatchObject({ replay: true, stepsDone: 15 });
+		expect(data.path.step).not.toBeNull();
+	});
+	it('the finished-lessons list leads to the path', async () => {
+		const { l } = tester(english());
+		await expect(loadFinished({ locals: l, url: new URL('https://m.test/practice/english/finished') } as any)).rejects.toMatchObject({ location: '/practice/english/path' });
+	});
+});

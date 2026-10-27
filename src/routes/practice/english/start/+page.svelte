@@ -127,7 +127,7 @@
 			forgetMe();
 			try { localStorage.removeItem(DRAFT_KEY); } catch { /* nothing kept */ }
 			// A learner changing their answers goes back to their dashboard; a new one starts lesson 1.
-			await goto(saved ? '/practice/english/progress' : '/practice/english/today', { invalidateAll: true });
+			await goto(saved ? '/practice/english/progress' : data.next, { invalidateAll: true });
 		} catch { saveFailed = true; saving = false; }
 	}
 </script>
