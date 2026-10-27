@@ -1,6 +1,6 @@
 # Everyday, Chapter 1: "Meeting a neighbor" (brief v2)
 
-Status: **brief v2, for the owner's approval.** v1 was reviewed by the english-coach and learning-UX
+Status: **brief v2, approved (owner's decisions below); content being drafted.** v1 was reviewed by the english-coach and learning-UX
 reviewers; their fixes are in (see "What changed" at the end). Then: draft the content, review
 (english-coach, learning-UX, Persian), the owner's phone test, release.
 
@@ -75,7 +75,7 @@ skipped role-play) is "You've practised…":
 ## The five steps
 
 Every intro for steps 2–5 opens with one "who and where" clause, since steps are often done on
-different days: "Remember Jake, your neighbor upstairs? You've just moved into 3C." (fa likewise).
+different days: "Remember Jake, your neighbor upstairs? Imagine you've just moved into 3C." (fa likewise).
 
 | | Intermediate (A2) | Professional (B1+) |
 |---|---|---|
@@ -157,14 +157,16 @@ a mistake of character.
 - `conversation.md`: both role-plays (goals, moment, twist, fallback lines, Jake's AI rules), Mr.
   Patel's voice message and its reply checks.
 
-## Questions for the owner
+## Owner's decisions (2026-10-27)
 
-1. **Sara as the thread** of the Everyday arc (she moves to Riverton)? Recommended: yes.
-2. **"Why did you leave Iran?"** moved out of chapter 1 (it assumes every learner left Iran, and can
-   touch painful ground in a first session). Later chapters ask "So where are you from originally?
-   What made you move here?" with the same rules. Agree?
-3. **Learners who live in Iran**: the arc is set in Riverton, so "your apartment" is role-play for
-   them. Fine as practice, or ask "Where do you live now?" at onboarding to set it?
+1. **Sara is the thread** of the Everyday arc (she has moved to Riverton). Yes.
+2. **"Why did you leave Iran?"** is out of chapter 1. Later chapters ask "So where are you from
+   originally? What made you move here?" with Jake's rules. Yes.
+3. **No "Where do you live now?" question** in onboarding (it would double every story chapter, and
+   location is a sensitive question). Instead the role-plays are framed as pretend: Mira says
+   "**Imagine** you've just moved into 3C." Personal questions stay true anywhere (where you're from,
+   what you do, what you like). If "Living abroad" learners later need more, the useful question is
+   *which country*, not abroad or not.
 
 ## What changed from v1 (the reviews)
 
