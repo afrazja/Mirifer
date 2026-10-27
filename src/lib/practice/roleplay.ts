@@ -40,7 +40,20 @@ export interface RoleScene {
 		unlocks: string[];
 		/** Words that give the twist away before it is said. */
 		leak: RegExp;
+		/** Heard only: its text shows once the learner has replied (the "ask them to repeat" twist). */
+		audioOnly?: boolean;
+		/** How the learner's reply to the twist went, decided in code (e.g. 'asked', 'caught', 'no'). */
+		check?: (reply: string) => string;
+		/** The character's fixed answer to some outcomes (the slow repeat); the model answers the rest. */
+		replies?: Record<string, string>;
 	};
+	/**
+	 * Goals that count only on the first try (say yes to help the first time): a refusal matching the
+	 * pattern before the goal is reached marks it missed for this run.
+	 */
+	firstTry?: Record<string, RegExp>;
+	/** Mira's one note on the result screen: for a missed goal, else for the twist's outcome. */
+	notes?: { missed?: Record<string, DisplayText>; twist?: Record<string, DisplayText> };
 	/** The voice route's direction for the character. */
 	voiceDirection: string;
 	/** A fixed voice letter, or none (the hotel picks one at random each run). */
@@ -64,6 +77,8 @@ export interface RoleScene {
 		limit?: DisplayText;
 		/** A quiet line under the reply box (e.g. how to spell a name if it isn't heard). */
 		hint?: DisplayText;
+		/** Mira's note already set the scene: open on the goals (with the card), no separate mission screen. */
+		skipMission?: boolean;
 	};
 }
 
@@ -124,6 +139,7 @@ export const HOTEL_SCENE: RoleScene = {
 };
 
 export const goalIdsOf = (scene: RoleScene) => scene.goals.map(goal => goal.id);
+/** A prepared line for the first goal still open (`goals` met or missed), or the closing line. */
 export function fallbackFor(scene: RoleScene, goals: readonly string[]): string {
 	const open = goalIdsOf(scene).find(id => !goals.includes(id));
 	return scene.fallback[open ?? 'done'];
@@ -133,7 +149,17 @@ export const twistSaid = (scene: RoleScene, variant: string, turns: readonly Tur
 	!!scene.twist && turns.some(turn => turn.speaker === 'reception' && turn.text === scene.twist!.lines[variant]);
 
 /** Every line the character says that is written by us (the voice route voices these without a signature). */
-export const preparedLines = (scene: RoleScene) => [scene.greeting, ...Object.values(scene.fallback), ...Object.values(scene.twist?.lines ?? {})];
+export const preparedLines = (scene: RoleScene) => [scene.greeting, ...Object.values(scene.fallback), ...Object.values(scene.twist?.lines ?? {}), ...Object.values(scene.twist?.replies ?? {})];
+
+/** First-try goals the learner has refused before reaching them (from what they said; `met` are proven). */
+export function missedGoals(scene: RoleScene, met: readonly string[], learnerLines: readonly string[]): string[] {
+	return Object.entries(scene.firstTry ?? {}).filter(([goal, refusal]) => !met.includes(goal) && learnerLines.some(line => refusal.test(line.toLowerCase().replace(/[’‘]/g, "'")))).map(([goal]) => goal);
+}
+/** Mira's one note for a finished run: a missed goal first, then the twist's outcome. */
+export function resultNote(scene: RoleScene, record: Pick<RolePlayRecord, 'missed' | 'twistOutcome'>): DisplayText | null {
+	for (const goal of record.missed ?? []) { const note = scene.notes?.missed?.[goal]; if (note) return note; }
+	return record.twistOutcome ? scene.notes?.twist?.[record.twistOutcome] ?? null : null;
+}
 
 /** One run of a scene, as the lesson keeps it in this browser (reload, Back). */
 export interface RolePlayRecord {
@@ -146,6 +172,12 @@ export interface RolePlayRecord {
 	voiceSigs: Record<string, string>;
 	done: boolean;
 	upgrades: { original: string; better: string; why: DisplayText }[] | null;
+	/** First-try goals refused (the call can still close; the result says so). */
+	missed?: string[];
+	/** Every goal met or missed and the chat closed: it can end without being "done". */
+	settled?: boolean;
+	/** How the learner answered the twist (the scene's own outcomes). */
+	twistOutcome?: string | null;
 }
 export const startRolePlay = (scene: RoleScene, variant = scene.variants[0]): RolePlayRecord =>
 	({ variant, turns: [{ speaker: 'reception', text: scene.greeting }], goals: [], proof: null, corrections: [], voiceSigs: {}, done: false, upgrades: null });
@@ -161,6 +193,8 @@ export function asRolePlayRecord(value: unknown, scene: RoleScene): RolePlayReco
 	if (r.proof !== null && typeof r.proof !== 'string') return null;
 	if (!Array.isArray(r.corrections) || !r.corrections.every(c => c && typeof c.original === 'string' && typeof c.improved === 'string' && isText(c.note))) return null;
 	if (!r.voiceSigs || typeof r.voiceSigs !== 'object') return null;
+	if (r.missed !== undefined && (!Array.isArray(r.missed) || !r.missed.every(g => typeof g === 'string'))) return null;
+	if (r.twistOutcome !== undefined && r.twistOutcome !== null && typeof r.twistOutcome !== 'string') return null;
 	if (r.upgrades !== null && (!Array.isArray(r.upgrades) || !r.upgrades.every(u => u && typeof u.original === 'string' && typeof u.better === 'string' && isText(u.why)))) return null;
 	return r as RolePlayRecord;
 }

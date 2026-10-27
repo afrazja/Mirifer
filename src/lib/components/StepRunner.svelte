@@ -151,7 +151,7 @@
 	// svelte-ignore state_referenced_locally
 	const content = {
 		connect: connectSetFor(day.id, track), phrases: phrasesFor(day.id, track), traps: trapsFor(day.id), say: sayItemsFor(day.id, track),
-		messages: voiceMessagesFor(day.id), story: retellPieceFor(day.id), choice: persuadeSetFor(day.id), scene: roleSceneFor(day.id)
+		messages: voiceMessagesFor(day.id), story: retellPieceFor(day.id), choice: persuadeSetFor(day.id), scene: roleSceneFor(day.id, track)
 	};
 	const keep = (record: unknown) => { if (startedAt) saveRecord(startedAt, mod.id, record); };
 	const loaded = () => (startedAt ? loadRecord(startedAt, mod.id) : null);

@@ -32,6 +32,8 @@ export interface DayContent {
 	RETELL?: RetellPiece;
 	PERSUADE?: PersuadeSet;
 	CALL?: RoleScene;
+	/** A role-play per version, when they differ (Everyday 1); else `CALL` for both. */
+	CALLS?: Partial<Record<Track, RoleScene>>;
 }
 
 /** Every later day's content, by day id. */
@@ -104,11 +106,12 @@ export function persuadeSetById(id: string | null | undefined): PersuadeSet | nu
 }
 
 /** Role-play with a twist: the day's scene (Day 1 and the pilot: the hotel). */
-export function roleSceneFor(dayId: string): RoleScene {
-	return contentOf(dayId).CALL ?? HOTEL_SCENE;
+export function roleSceneFor(dayId: string, track: Track = 'intermediate'): RoleScene {
+	const { CALLS, CALL } = contentOf(dayId);
+	return CALLS?.[track] ?? CALL ?? HOTEL_SCENE;
 }
 /** Any scene, by its id (the hotel when none is given): what the routes play, voice and review. */
-export const ALL_ROLE_SCENES: RoleScene[] = [HOTEL_SCENE, ...LATER.flatMap(day => (day.CALL ? [day.CALL] : []))];
+export const ALL_ROLE_SCENES: RoleScene[] = [HOTEL_SCENE, ...LATER.flatMap(day => [...(day.CALL ? [day.CALL] : []), ...Object.values(day.CALLS ?? {})])];
 export function roleSceneById(id: string | null | undefined): RoleScene | null {
 	return ALL_ROLE_SCENES.find(scene => scene.id === (id ?? HOTEL_SCENE.id)) ?? null;
 }
