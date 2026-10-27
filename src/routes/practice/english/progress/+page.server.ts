@@ -3,20 +3,25 @@ import type { PageServerLoad } from './$types';
 import { DaySessionSchema, caughtUp, currentModule, dayById, finishedDays, furthestDayId, nextDay, sessionModules } from '$lib/practice/day';
 import { readEnglishProgress } from '$lib/practice/english-progress';
 import { readEnglishProfile } from '$lib/practice/english-profile';
-import { lessonDates, type LessonEventRow } from '$lib/practice/learner-stats';
+import { lessonDates, stepDates, type LessonEventRow } from '$lib/practice/learner-stats';
+import { trackFor } from '$lib/practice/day';
+import { nextStep, readPath, replayPick, stepsDone, type NextStep } from '$lib/practice/path';
+import { minutesOf } from '$lib/practice/day';
+import { usesStepPath } from '$lib/server/step-path';
 
 /**
  * The learner's dashboard, the first page of the English section (owner's decision): Mira's
  * greeting, the lessons finished, this week's days with the streak, and one button to today's lesson. Only what they did
  * (owner's rule): never a total, the lessons ahead, or a level.
  */
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, parent }) => {
 	const { data: { user }, error } = await locals.supabase.auth.getUser();
 	if (error || !user) redirect(303, '/login');
 	if (user.user_metadata?.target_language !== 'en') redirect(303, '/languages');
 	// First visit: the three onboarding questions come first.
 	if (!readEnglishProfile(user.user_metadata)) redirect(303, '/practice/english/start');
 	const progress = readEnglishProgress(user.user_metadata);
+	if (usesStepPath(user)) return pathDashboard(locals, user, (await parent()).labAccess);
 	const saved = DaySessionSchema.safeParse(user.user_metadata?.english_day_v1);
 	// The learner's own lesson events (row-level security: they can only read their own).
 	let rows: LessonEventRow[] = [];
@@ -60,3 +65,51 @@ export const load: PageServerLoad = async ({ locals }) => {
 		resume
 	};
 };
+
+/** A step, as the dashboard's card shows it. */
+const stepCard = (next: NextStep) => ({
+	id: next.step, chapter: next.day.number, theme: next.day.theme, title: next.module.title,
+	index: next.index, total: next.total, minutes: minutesOf(next.module, 20)
+});
+
+/**
+ * The dashboard on the step path (docs/goal-path-plan.md): the next step (or, with nothing new left,
+ * the app's pick to practise again), this week from the days with a step done, and the steps done.
+ */
+async function pathDashboard(locals: App.Locals, user: { id: string; user_metadata: Record<string, unknown> }, preview: boolean) {
+	const profile = readEnglishProfile(user.user_metadata);
+	const track = trackFor(profile);
+	const path = readPath(user.user_metadata, track);
+	const next = nextStep(path, track, preview);
+	const shown = next ?? replayPick(path, track, preview);
+	let rows: LessonEventRow[] = [];
+	let eventsLoaded = true;
+	try {
+		const { data, error } = await locals.supabase.from('events')
+			.select('event_name, occurred_at, metadata')
+			.eq('user_id', user.id)
+			.in('event_name', ['lesson_progress', 'lesson_completed'])
+			.eq('metadata->>course', 'en')
+			.order('occurred_at', { ascending: false })
+			.limit(1000);
+		if (error) eventsLoaded = false;
+		else rows = (data ?? []) as LessonEventRow[];
+	} catch { eventsLoaded = false; }
+	const name = typeof user.user_metadata?.display_name === 'string' ? user.user_metadata.display_name.trim().slice(0, 40) : '';
+	const lastDays = Object.values(path.done).map(entry => entry?.[1] ?? 0);
+	return {
+		name,
+		dates: stepDates(rows),
+		eventsLoaded,
+		path: {
+			stepsDone: stepsDone(path),
+			step: shown ? stepCard(shown) : null,
+			/** Nothing new left: the card offers a step to practise again. */
+			replay: !next && !!shown,
+			/** The step on the card was opened and not finished. */
+			underWay: !!shown && path.current?.step === shown.step,
+			/** The learner's local day of their latest step (the goal shows done even if its event was lost). */
+			lastDoneDay: lastDays.length ? Math.max(...lastDays) : null
+		}
+	};
+}

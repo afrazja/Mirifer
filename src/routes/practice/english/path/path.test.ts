@@ -1,0 +1,27 @@
+import { describe, it, expect } from 'vitest';
+import { load } from './+page.server';
+import { EMPTY_PROGRESS } from '$lib/practice/english-progress';
+
+const profile = { reason: 'travel', comfort: 'simple', minutes: 15, skipped: false, completedAt: '2026-10-01T10:00:00.000Z' };
+function event(meta: Record<string, unknown>, email = 'afraz.jva@gmail.com') {
+	const user = { id: 'u1', email, email_confirmed_at: '2026-01-01T00:00:00Z', user_metadata: { target_language: 'en', english_profile_v1: profile, ...meta } };
+	return { locals: { supabase: { auth: { getUser: async () => ({ data: { user }, error: null }) } } }, parent: async () => ({ labAccess: false }) } as any;
+}
+
+describe('Your path', () => {
+	it('shows the chapters reached, with done, skipped, next and locked steps', async () => {
+		const data = await load(event({
+			english_progress_v1: { ...EMPTY_PROGRESS, lastThemeId: 'day-1', finishedDays: ['day-1'] },
+			english_path_v1: { done: { 'day-2:listen-act': ['i', 3] }, skipped: ['day-2:phrases'], current: null }
+		})) as any;
+		expect(data.chapters.map((c: any) => c.id)).toEqual(['day-1', 'day-2']);
+		expect(data.chapters[0].finished).toBe(true);
+		expect(data.chapters[1].steps.map((s: any) => s.state)).toEqual(['done', 'skipped', 'next', 'locked', 'locked']);
+	});
+	it('shows a new learner Chapter 1 only, and sends learners not on the path to their lessons', async () => {
+		const data = await load(event({})) as any;
+		expect(data.chapters).toHaveLength(1);
+		expect(data.chapters[0].steps[0].state).toBe('next');
+		await expect(load(event({}, 'someone@m.test'))).rejects.toMatchObject({ location: '/practice/english/finished' });
+	});
+});

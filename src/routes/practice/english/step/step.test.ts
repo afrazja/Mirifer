@@ -1,0 +1,76 @@
+import { describe, it, expect, vi } from 'vitest';
+vi.mock('$env/dynamic/private', () => ({ env: { ADMIN_EMAIL: 'owner@m.test' } }));
+import { load, actions } from './+page.server';
+import { EMPTY_PROGRESS } from '$lib/practice/english-progress';
+import { chapterSteps } from '$lib/practice/path';
+import { DAY_ONE } from '$lib/practice/day';
+
+const PROFILE = { reason: 'travel', comfort: 'simple', minutes: 15, skipped: false, completedAt: '2026-10-01T10:00:00.000Z' };
+function fixture(meta: Record<string, unknown> = {}, form: Record<string, string> = {}, { email = 'afraz.jva@gmail.com', query = '' } = {}) {
+	const user = { id: 'u1', email, email_confirmed_at: '2026-01-01T00:00:00Z', user_metadata: { target_language: 'en', display_name: 'Sam', english_profile_v1: PROFILE, ...meta } };
+	const inserted: any[] = [];
+	const supabase = {
+		auth: { getUser: vi.fn().mockResolvedValue({ data: { user }, error: null }), updateUser: vi.fn().mockResolvedValue({ error: null }) },
+		from: vi.fn(() => ({ insert: vi.fn(async (rows: any[]) => { inserted.push(...rows); return { error: null }; }) }))
+	};
+	const body = new FormData(); for (const [k, v] of Object.entries(form)) body.set(k, v);
+	return { supabase, inserted, saved: () => supabase.auth.updateUser.mock.calls.at(-1)?.[0]?.data, event: () => ({ locals: { supabase }, url: new URL(`https://mirifer.test/practice/english/step${query}`), parent: async () => ({ labAccess: false }), request: new Request('https://mirifer.test/practice/english/step', { method: 'POST', body }) }) as any };
+}
+const intermediate = chapterSteps(DAY_ONE, 'intermediate');
+const doneAll = (steps: string[], day = 1) => Object.fromEntries(steps.map(s => [s, ['i', day]]));
+
+describe('step page', () => {
+	it('is only for learners on the step path; others keep the daily lesson', async () => {
+		await expect(load(fixture({}, {}, { email: 'someone@m.test' }).event())).rejects.toMatchObject({ location: '/practice/english/today' });
+		expect(await actions.result(fixture({}, { step: intermediate[0], outcome: 'done' }, { email: 'someone@m.test' }).event())).toMatchObject({ status: 403 });
+	});
+	it('opens a new learner’s first step', async () => {
+		expect(await load(fixture().event())).toMatchObject({ step: 'day-1:listen-act', index: 0, total: 5, replay: false, startedAt: null });
+	});
+	it('opens a done step again as a replay, but never one ahead', async () => {
+		const meta = { english_path_v1: { done: doneAll(intermediate.slice(0, 2)), skipped: [], current: null } };
+		expect(await load(fixture(meta, {}, { query: `?step=${intermediate[0]}` }).event())).toMatchObject({ step: intermediate[0], replay: true });
+		expect(await load(fixture(meta, {}, { query: `?step=${intermediate[4]}` }).event())).toMatchObject({ step: intermediate[2] });
+	});
+	it('starts a step once, keeping its start', async () => {
+		const f = fixture({}, { step: intermediate[0] });
+		const first = await actions.start(f.event()) as { startedAt: string };
+		expect(f.saved().english_path_v1.current).toMatchObject({ step: intermediate[0], replay: false });
+		const again = fixture({ english_path_v1: f.saved().english_path_v1 }, { step: intermediate[0] });
+		expect(await actions.start(again.event())).toEqual({ startedAt: first.startedAt });
+		expect(again.supabase.auth.updateUser).not.toHaveBeenCalled();
+		expect(await actions.start(fixture({}, { step: intermediate[3] }).event())).toMatchObject({ status: 400 });
+	});
+	it('saves a step done, meets the daily goal once, and keeps the old progress record current', async () => {
+		const f = fixture({}, { step: intermediate[0], outcome: 'done', score: JSON.stringify({ correct: 5, total: 6 }), utcOffset: '210' });
+		expect(await actions.result(f.event())).toEqual({ goalJustMet: true, chapterDone: false, skippedHere: [], next: intermediate[1], nextIsReplay: false });
+		const data = f.saved();
+		expect(data.english_path_v1.done[intermediate[0]][0]).toBe('i');
+		expect(data.english_progress_v1).toMatchObject({ sessionsCompleted: 1, lastThemeId: 'day-1', finishedDays: [] });
+		expect(f.inserted.map(row => row.event_name)).toEqual(['lesson_started', 'lesson_progress']);
+		expect(f.inserted[1].metadata).toMatchObject({ course: 'en', module: 'listen-act', outcome: 'done', index: 0, utc_offset_min: 210 });
+		const second = fixture({ english_path_v1: data.english_path_v1, english_progress_v1: data.english_progress_v1 }, { step: intermediate[1], outcome: 'done', utcOffset: '210' });
+		expect(await actions.result(second.event())).toMatchObject({ goalJustMet: false });
+	});
+	it('ends the chapter, adds it to the finished days, and offers a step skipped in it', async () => {
+		const meta = { english_path_v1: { done: doneAll([intermediate[0], intermediate[1], intermediate[3]]), skipped: [intermediate[2]], current: null }, english_progress_v1: EMPTY_PROGRESS };
+		const f = fixture(meta, { step: intermediate[4], outcome: 'done' });
+		expect(await actions.result(f.event())).toMatchObject({ chapterDone: true, skippedHere: [intermediate[2]], next: 'day-2:listen-act' });
+		expect(f.saved().english_progress_v1.finishedDays).toEqual(['day-1']);
+		expect(f.inserted.map(row => row.event_name)).toEqual(['lesson_progress', 'lesson_completed']);
+		expect(f.inserted[1].metadata).toMatchObject({ done: 4, skipped: 1, total: 5 });
+	});
+	it('marks a replay, and offers the next replay when nothing new is left', async () => {
+		const all = ['day-1', 'day-2', 'day-3'];
+		const meta = { english_progress_v1: { ...EMPTY_PROGRESS, lastThemeId: 'day-3', finishedDays: all } };
+		const f = fixture(meta, { step: intermediate[1], outcome: 'done' });
+		const result = await actions.result(f.event()) as any;
+		expect(result).toMatchObject({ goalJustMet: true, chapterDone: false, nextIsReplay: true });
+		expect(result.next).not.toBe(intermediate[1]);
+		expect(f.inserted[0].metadata).toMatchObject({ replay: true });
+	});
+	it('refuses a bad result', async () => {
+		expect(await actions.result(fixture({}, { step: intermediate[0], outcome: 'maybe' }).event())).toMatchObject({ status: 400 });
+		expect(await actions.result(fixture({}, { step: 'day-9:phrases', outcome: 'done' }).event())).toMatchObject({ status: 400 });
+	});
+});

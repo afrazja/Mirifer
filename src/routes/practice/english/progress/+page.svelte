@@ -21,6 +21,13 @@
 	import { playAudioPromise, stopAllAudio } from '$services/tts';
 
 	let { data } = $props();
+	/** The step path (owner's test accounts first): the next step instead of today's lesson. */
+	const path = $derived('path' in data ? data.path : null);
+	type LessonData = { [K in 'lesson' | 'finished' | 'inProgress' | 'caughtUp' | 'resume' | 'lastDoneAt']-?: Exclude<(typeof data)[K], undefined> };
+	/** The daily lessons (everyone else, until the step path is rolled out). */
+	const lesson = $derived(path ? null : (data as unknown as LessonData));
+	/** The learner's local day as a number (the path saves each step's day this way). */
+	const localDayNumber = () => { const now = new Date(); return Math.floor((now.getTime() - now.getTimezoneOffset() * 60_000) / 86_400_000); };
 	let language = $state<'en' | 'fa'>('en');
 	const isFa = $derived(language === 'fa');
 	const n = (value: number) => (isFa ? value.toLocaleString('fa-IR') : String(value));
@@ -31,40 +38,48 @@
 		const now = new Date();
 		today = new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
 	});
-	const week = $derived(today ? lastSevenDays(data.dates, today) : []);
-	const inARow = $derived(today ? streak(data.dates, today) : 0);
+	/** A step saved today counts even if its event was lost. */
+	const goalDone = $derived(!!path && !!today && (data.dates.includes(today) || path.lastDoneDay === localDayNumber()));
+	const dates = $derived(goalDone && today && !data.dates.includes(today) ? [...data.dates, today] : data.dates);
+	const week = $derived(today ? lastSevenDays(dates, today) : []);
+	const inARow = $derived(today ? streak(dates, today) : 0);
 	const weekday = (date: string) => new Date(`${date}T12:00:00Z`).toLocaleDateString(isFa ? 'fa-IR' : 'en-US', { weekday: 'narrow', timeZone: 'UTC' });
 	const weekdayLong = (date: string) => new Date(`${date}T12:00:00Z`).toLocaleDateString(isFa ? 'fa-IR' : 'en-US', { weekday: 'long', timeZone: 'UTC' });
 	const streakLine = $derived(inARow > 1
 		? (isFa ? `${n(inARow)} روز پشت سر هم` : `${inARow} days in a row`)
-		: inARow === 1 ? (today && data.dates.includes(today) ? (isFa ? 'امروز تمرین کردی' : 'You practiced today') : (isFa ? 'دیروز تمرین کردی' : 'You practiced yesterday'))
+		: inARow === 1 ? (today && dates.includes(today) ? (isFa ? 'امروز تمرین کردی' : 'You practiced today') : (isFa ? 'دیروز تمرین کردی' : 'You practiced yesterday'))
+		: path ? (isFa ? 'یک مرحله امروز، شروع یک زنجیره' : 'One step today starts a streak')
 		: (isFa ? 'یک درس امروز، شروع یک زنجیره' : 'A lesson today starts a streak'));
 	/** The device's calendar date for a stored time. */
 	const localOf = (iso: string) => { const at = new Date(iso); return new Date(at.getTime() - at.getTimezoneOffset() * 60_000).toISOString().slice(0, 10); };
 	/** Today's lesson is already done (on this device's calendar): the next one opens tomorrow. */
-	const doneToday = $derived(!data.inProgress && !!today && !!data.lastDoneAt && localOf(data.lastDoneAt) === today);
+	const doneToday = $derived(path ? goalDone : !lesson!.inProgress && !!today && !!lesson!.lastDoneAt && localOf(lesson!.lastDoneAt) === today);
 	const dayName = (number: number) => (isFa ? `روز ${n(number)}` : `Day ${number}`);
-	const lessonLabel = $derived(data.caughtUp ? (isFa ? 'آخرین درس' : 'Latest lesson') : doneToday ? (isFa ? 'درس بعدی' : 'Next lesson') : (isFa ? 'درس امروز' : 'Today’s lesson'));
-	const lessonNote = $derived(data.resume
-		? (data.resume.recap
+	const lessonLabel = $derived(!lesson ? '' : lesson.caughtUp ? (isFa ? 'آخرین درس' : 'Latest lesson') : doneToday ? (isFa ? 'درس بعدی' : 'Next lesson') : (isFa ? 'درس امروز' : 'Today’s lesson'));
+	const lessonNote = $derived(!lesson ? null : lesson.resume
+		? (lesson.resume.recap
 			? (isFa ? 'فقط مرور کوتاه آخر مانده.' : 'Only the short recap is left.')
-			: isFa ? `جایی که ماندی: مرحلهٔ ${n(data.resume.step)} از ${n(data.resume.steps)}${data.resume.title ? `، ${data.resume.title.fa}` : ''}.` : `You stopped at step ${data.resume.step} of ${data.resume.steps}${data.resume.title ? `: ${data.resume.title.en}` : ''}.`)
-		: data.caughtUp
+			: isFa ? `جایی که ماندی: مرحلهٔ ${n(lesson.resume.step)} از ${n(lesson.resume.steps)}${lesson.resume.title ? `، ${lesson.resume.title.fa}` : ''}.` : `You stopped at step ${lesson.resume.step} of ${lesson.resume.steps}${lesson.resume.title ? `: ${lesson.resume.title.en}` : ''}.`)
+		: lesson.caughtUp
 		? (isFa ? 'همهٔ درس‌ها را تا این‌جا تمام کرده‌ای. درس بعدی به‌زودی آماده می‌شود.' : 'You’ve finished every lesson so far. The next one is coming soon.')
 		: doneToday ? (isFa ? 'درس امروز تمام شد. این درس فردا باز می‌شود.' : 'Today’s lesson is done. This one opens tomorrow.')
 		: null);
-	const button = $derived(data.inProgress
-		? { label: isFa ? `ادامهٔ ${dayName(data.lesson.number)}` : `Resume ${dayName(data.lesson.number)}`, href: '/practice/english/today' }
+	const button = $derived(path
+		? (!path.step ? { label: isFa ? 'شروع' : 'Start', href: '/practice/english/step' }
+			: { label: path.underWay ? (isFa ? 'ادامه' : 'Continue') : path.replay ? (isFa ? 'دوباره تمرین کن' : 'Practice again') : (isFa ? `شروع مرحلهٔ ${n(path.step.index + 1)}` : `Start step ${path.step.index + 1}`), href: `/practice/english/step?step=${encodeURIComponent(path.step.id)}` })
+		: lesson!.inProgress
+		? { label: isFa ? `ادامهٔ ${dayName(lesson!.lesson.number)}` : `Resume ${dayName(lesson!.lesson.number)}`, href: '/practice/english/today' }
 		: doneToday ? { label: isFa ? 'درس امروز را ببین' : 'See today’s lesson', href: '/practice/english/today' }
-		: data.caughtUp ? { label: isFa ? `${dayName(data.lesson.number)} را دوباره انجام بده` : `Do ${dayName(data.lesson.number)} again`, href: `/practice/english/today?day=${data.lesson.id}` }
-		: { label: isFa ? `شروع ${dayName(data.lesson.number)}` : `Start ${dayName(data.lesson.number)}`, href: '/practice/english/today' });
+		: lesson!.caughtUp ? { label: isFa ? `${dayName(lesson!.lesson.number)} را دوباره انجام بده` : `Do ${dayName(lesson!.lesson.number)} again`, href: `/practice/english/today?day=${lesson!.lesson.id}` }
+		: { label: isFa ? `شروع ${dayName(lesson!.lesson.number)}` : `Start ${dayName(lesson!.lesson.number)}`, href: '/practice/english/today' });
 
 	/** Days since the learner's last day with a lesson (null if none). */
-	const daysAway = $derived(today && data.dates.length ? Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${data.dates.at(-1)}T00:00:00Z`)) / 86_400_000) : null);
-	const moment = $derived<DashboardMoment>({
-		name: data.name, finished: data.finished, activeDays: data.dates.length, inProgress: data.inProgress, doneToday, caughtUp: data.caughtUp,
-		streak: inARow, activeToday: !!today && data.dates.includes(today), daysAway, lessonNumber: data.lesson.number
-	});
+	const daysAway = $derived(today && dates.length ? Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${dates.at(-1)}T00:00:00Z`)) / 86_400_000) : null);
+	const moment = $derived<DashboardMoment>(path
+		? { name: data.name, finished: path.stepsDone, activeDays: dates.length, inProgress: path.underWay, doneToday, caughtUp: path.replay,
+			streak: inARow, activeToday: !!today && dates.includes(today), daysAway, lessonNumber: path.step?.chapter ?? 1 }
+		: { name: data.name, finished: lesson!.finished, activeDays: dates.length, inProgress: lesson!.inProgress, doneToday, caughtUp: lesson!.caughtUp,
+			streak: inARow, activeToday: !!today && dates.includes(today), daysAway, lessonNumber: lesson!.lesson.number });
 	const greeting = $derived(today ? dashboardGreeting(moment, today) : '');
 	let speaking = $state(false);
 	function say() {
@@ -101,22 +116,42 @@
 	<AppHeader backHref={onlyOpenCourse() ? undefined : '/languages'} backLabel={isFa ? 'زبان‌ها' : 'Languages'} direction={isFa ? 'rtl' : 'ltr'} />
 	<h1>{isFa ? 'پیشرفت تو' : 'Your progress'}</h1>
 
+	{#snippet miraButton()}
+		<button class="mira" class:speaking type="button" onclick={hearMira} aria-pressed={speaking} aria-label={speaking ? (isFa ? 'قطع صدای میرا' : 'Stop Mira') : (isFa ? 'شنیدن صدای میرا' : 'Hear Mira')}>
+			<span class="avatar" aria-hidden="true">M</span>
+			<svg class="wave" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z" fill="currentColor" /><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+		</button>
+	{/snippet}
+
+	{#if path}
+	<section class="card" aria-labelledby="lesson-title">
+		<div class="card-head">
+			<h2 id="lesson-title" class="label">{path.replay ? (isFa ? 'دوباره تمرین کن' : 'Practice again') : path.underWay ? (isFa ? 'جایی که ماندی' : 'Where you stopped') : (isFa ? 'مرحلهٔ بعد' : 'Next step')}</h2>
+			{@render miraButton()}
+		</div>
+		{#if path.step}
+			<p class="theme">{isFa ? `فصل ${n(path.step.chapter)}: ${path.step.theme.fa}` : `Chapter ${path.step.chapter} · ${path.step.theme.en}`}</p>
+			{#if !path.replay}<p class="big">{isFa ? `مرحلهٔ ${n(path.step.index + 1)} از ${n(path.step.total)}` : `Step ${path.step.index + 1} of ${path.step.total}`}</p>{/if}
+			<p class={path.replay ? 'big small-big' : 'note'}>{isFa ? `${path.step.title.fa} · ${n(path.step.minutes)} دقیقه` : `${path.step.title.en} · ${path.step.minutes} min`}</p>
+			{#if path.replay}<p class="note">{isFa ? 'همهٔ مرحله‌ها را تا این‌جا انجام داده‌ای. فصل تازه به‌زودی می‌آید.' : 'You’ve done every step so far. A new chapter is coming soon.'}</p>{/if}
+		{/if}
+	</section>
+	{:else}
 	<section class="card" aria-labelledby="lesson-title">
 		<div class="card-head">
 			<h2 id="lesson-title" class="label">{lessonLabel}</h2>
-			<button class="mira" class:speaking type="button" onclick={hearMira} aria-pressed={speaking} aria-label={speaking ? (isFa ? 'قطع صدای میرا' : 'Stop Mira') : (isFa ? 'شنیدن صدای میرا' : 'Hear Mira')}>
-				<span class="avatar" aria-hidden="true">M</span>
-				<svg class="wave" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z" fill="currentColor" /><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
-			</button>
+			{@render miraButton()}
 		</div>
-		<p class="big">{dayName(data.lesson.number)}</p>
-		<p class="theme">{isFa ? data.lesson.theme.fa : data.lesson.theme.en}</p>
+		<p class="big">{dayName(lesson!.lesson.number)}</p>
+		<p class="theme">{isFa ? lesson!.lesson.theme.fa : lesson!.lesson.theme.en}</p>
 		{#if lessonNote}<p class="note">{lessonNote}</p>{/if}
 	</section>
+	{/if}
 
 	<section class="card" aria-labelledby="week-title">
 		<h2 id="week-title" class="label">{isFa ? 'این هفته' : 'This week'}</h2>
 		{#if data.eventsLoaded && week.length}
+			{#if path}<p class="goal-line" class:met={goalDone}>{goalDone ? (isFa ? 'هدف امروز: انجام شد ✓' : 'Today’s goal: done ✓') : (isFa ? 'هدف امروز: ۱ مرحله' : 'Today’s goal: 1 step')}</p>{/if}
 			<p class="streak">{streakLine}</p>
 			<ol class="week">
 				{#each week as day (day.date)}
@@ -131,10 +166,15 @@
 		{/if}
 	</section>
 
-	{#if data.finished}
+	{#if path}
+		<a class="card link" href="/practice/english/path" onclick={stopAllAudio}>
+			<span class="label">{isFa ? 'مرحله‌های انجام‌شده' : 'Steps done'}</span>
+			<span class="row"><span class="big">{n(path.stepsDone)}</span><span class="see">{isFa ? 'مسیرت را ببین' : 'See your path'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></span></span>
+		</a>
+	{:else if lesson!.finished}
 		<a class="card link" href="/practice/english/finished" onclick={stopAllAudio}>
 			<span class="label">{isFa ? 'درس‌های تمام‌شده' : 'Lessons finished'}</span>
-			<span class="row"><span class="big">{n(data.finished)}</span><span class="see">{isFa ? 'ببین' : 'See them'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></span></span>
+			<span class="row"><span class="big">{n(lesson!.finished)}</span><span class="see">{isFa ? 'ببین' : 'See them'} <span aria-hidden="true">{isFa ? '←' : '→'}</span></span></span>
 		</a>
 	{:else}
 		<section class="card" aria-labelledby="lessons-title">
@@ -182,5 +222,8 @@
 	.weekday { font-size: .8rem; color: var(--ink-soft); }
 	.week li.today .weekday { color: var(--ink); font-weight: 700; }
 	.theme { margin: 0; font-weight: 600; }
+	.small-big { font-size: 1.6rem; }
+	.goal-line { margin: 6px 0 0; font-weight: 700; color: var(--ink); }
+	.goal-line.met { color: var(--accent-deep); }
 	.bar-space { block-size: 120px; }
 </style>

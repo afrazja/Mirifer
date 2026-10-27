@@ -35,6 +35,22 @@ export function lessonDates(rows: LessonEventRow[]): string[] {
 	return [...dates].sort();
 }
 
+/**
+ * The days the learner did a step, oldest first, each once: the step path's daily goal is one step
+ * done (not skipped). Lessons finished before the path count too, so no streak resets on the switch.
+ */
+export function stepDates(rows: LessonEventRow[]): string[] {
+	const dates = new Set<string>();
+	for (const row of rows) {
+		const step = row.event_name === 'lesson_progress' && row.metadata?.outcome === 'done';
+		const lesson = row.event_name === 'lesson_completed' && !(typeof row.metadata?.done === 'number' && row.metadata.done < 1);
+		if (!step && !lesson) continue;
+		const date = localDate(row);
+		if (date) dates.add(date);
+	}
+	return [...dates].sort();
+}
+
 const dayBefore = (date: string) => new Date(Date.parse(`${date}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
 
 /**
