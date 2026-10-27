@@ -498,6 +498,14 @@
 
 			<CourseSwitcher language={currentLang} targetLanguage={currentTargetLang} />
 
+			{#if currentTargetLang === "en"}
+				<!-- The onboarding questions again (name, goal, level, or the level check), with the answers filled in. -->
+				<div class="pref-row">
+					<span class="pref-label">{currentLang === "fa" ? "هدف و سطح انگلیسی" : "Your English goal and level"}</span>
+					<a class="change-link" href="/practice/english/start?edit=1">{currentLang === "fa" ? "تغییر" : "Change"}</a>
+				</div>
+			{/if}
+
 			<div class="pref-row">
 				<label for="pref-speed">Voice Speed (German audio)</label>
 				<div class="speed-control">
@@ -903,6 +911,14 @@
 		border: 1px solid rgba(231, 76, 60, 0.35);
 	}
 
+	.change-link {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		padding: 0 4px;
+		color: var(--accent-deep);
+		font-weight: 600;
+	}
 	.pref-row {
 		display: flex;
 		align-items: center;

@@ -126,7 +126,8 @@
 			if (!response.ok || result?.type !== 'success') throw new Error('save');
 			forgetMe();
 			try { localStorage.removeItem(DRAFT_KEY); } catch { /* nothing kept */ }
-			await goto('/practice/english/today', { invalidateAll: true });
+			// A learner changing their answers goes back to their dashboard; a new one starts lesson 1.
+			await goto(saved ? '/practice/english/progress' : '/practice/english/today', { invalidateAll: true });
 		} catch { saveFailed = true; saving = false; }
 	}
 </script>
@@ -198,7 +199,7 @@
 			<p class="check" aria-hidden="true">✓</p>
 			<h1 id="done" tabindex="-1" bind:this={heading}>{#if cleanName}{isFa ? 'همه‌چیز آماده است، ' : 'You’re all set, '}<bdi>{cleanName}</bdi>.{:else}{isFa ? 'همه‌چیز آماده است.' : 'You’re all set.'}{/if}</h1>
 			{#if reason}<p class="lead">{text(JOURNEY[reason])}</p>{/if}
-			<p class="minutes">{isFa ? `اولین درس: حدود ${num(firstMinutes)} دقیقه.` : `First lesson: about ${firstMinutes} minutes.`}</p>
+			{#if !saved}<p class="minutes">{isFa ? `اولین درس: حدود ${num(firstMinutes)} دقیقه.` : `First lesson: about ${firstMinutes} minutes.`}</p>{/if}
 			<button class="text-link" type="button" onclick={() => { step = 1; focusHeading(); }} disabled={saving}>{isFa ? 'تغییر پاسخ‌ها' : 'Change my answers'}</button>
 		</section>
 	{/if}
@@ -207,7 +208,7 @@
 
 	{#if step > QUESTIONS}
 		<div class="bottom">
-			<button class="primary" type="button" onclick={save} disabled={saving}>{saving ? (isFa ? 'در حال ذخیره…' : 'Saving…') : (isFa ? 'شروع اولین درس' : 'Start my first lesson')} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
+			<button class="primary" type="button" onclick={save} disabled={saving}>{saving ? (isFa ? 'در حال ذخیره…' : 'Saving…') : saved ? (isFa ? 'ذخیره' : 'Save') : (isFa ? 'شروع اولین درس' : 'Start my first lesson')} <span aria-hidden="true">{isFa ? '←' : '→'}</span></button>
 		</div>
 	{/if}
 </main>
