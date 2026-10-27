@@ -72,6 +72,11 @@ at some point. Intermediate: Jake says the trash line fast (audio only; the lear
 repeat). Professional: Jake asks a nosy question about the rent; the learner answers briefly or
 steps around it. Details in `conversation.md`.
 
+## Details some modules may use
+
+- The learner is also carrying a heavy box, and a plant of their own (the compliment trap).
+- In the phrases, the learner may ask Jake whether it's a nice neighborhood.
+
 ## Topics for the learner's own speech (personal, true anywhere)
 
 - Where you're from, what you do, one thing you like doing (Professional "Say it again, better").

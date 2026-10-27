@@ -148,6 +148,10 @@ a mistake of character.
 9. **Listen and retell with two voices**: optional `speakers` and `lines` on `RetellPiece` (the same
    shape as Listen and connect), so the Professional step can play the meeting itself.
 10. **Listen and connect with two parts**: the type allows it; the per-chapter test must expect two.
+11. **Natural phrases: an optional `note`** (Mira's taarof note on a phrase).
+12. **Say it in English: `{name}` in model answers and a hidden `check`** per item (any name; "3C"
+    heard as "3 see"; "yes" first).
+13. **Bidi isolation** for "3C" inside Persian lines.
 
 ## Files to draft (as for Days 1–4)
 
