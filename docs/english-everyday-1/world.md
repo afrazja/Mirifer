@@ -1,5 +1,7 @@
 # Everyday Chapter 1 world: "Meeting a neighbor"
 
+Status: **draft v2, reviews applied** (the role-play has no "Nice jacket!" in v1; wording aligned with the modules).
+
 The shared source for every module of Everyday Chapter 1 (`README.md`, brief v2, approved). Every
 fact a module uses must come from here (or be added here first). It must work as a learner's very
 first chapter: few facts, nothing assumed from the travel chapters. US English ("neighbor",
@@ -51,7 +53,7 @@ chapter; later chapters add it here first.
    Biscuit and holds the door.
 2. Jake: "Here, let me help you with that." Sara: "Oh, no, it's fine!"
 3. Jake takes her first no: "Oh, OK, no problem!" and starts up the stairs.
-4. The box slips. Sara: "Actually… yes, please. That'd be great!" Jake: "Ha! Sure. Here."
+4. The box starts to fall. Sara: "Actually… yes, please. That'd be great!" Jake: "Ha! Sure. Here."
 5. They introduce themselves (first names). Biscuit barks: "That's Biscuit. He's friendly, just loud."
    Sara asks how long he's lived here: "Six years. You'll love it here."
 
@@ -67,18 +69,16 @@ chapter; later chapters add it here first.
 ## The learner's role-play (Imagine…, both versions)
 
 The same meeting, with the learner instead of Sara: on the stairs, box in hand, Biscuit barking.
-Jake offers to help; the learner would like help (the goal card says so). Jake says "Nice jacket!"
-at some point. Intermediate: Jake says the trash line fast (audio only; the learner should ask him to
+Jake offers to help; the learner would like help (the goal card says so). Intermediate: Jake says the trash line fast (audio only; the learner should ask him to
 repeat). Professional: Jake asks a nosy question about the rent; the learner answers briefly or
-steps around it. Details in `conversation.md`.
+steps around it. Details in `conversation.md`. (A compliment in the role-play, "Nice jacket!", is
+kept for a later version; in v1 the compliment is in Traps and Listening.)
 
 ## Details some modules may use
 
 - The learner is also carrying a heavy box, and a plant of their own (the compliment trap).
-- In the phrases, the learner may ask Jake whether it's a nice neighborhood.
-- Jake grew up in Riverton and works at the hospital downtown (so he can answer the likeliest
-  questions back).
-- People bring something small to the barbecue (a snack or drinks).
+- Jake grew up in Riverton and works at the hospital downtown.
+- At the barbecue, people bring something small to eat or drink.
 - Jake thinks he pays too much rent (no amount is ever said).
 - Mr. Patel's welcome message arrives on moving day (Professional step 4).
 

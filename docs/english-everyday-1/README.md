@@ -198,3 +198,13 @@ a mistake of character.
 - Professional step 4 is a message from the manager (Jake can't have the learner's number before
   they meet); step 3 is one shorter talk with the top fixes only.
 - The chapter ending is built from the checks passed; US spelling throughout.
+
+## Review v1 applied (2026-10-27)
+
+The english-coach and learning-UX reviews of the drafts are applied (drafts v2): one opening line
+(in Mira's story line only); a one-voice B1 narration for step 1 (two voices later); "which reply?"
+traps with three options; three Say-it items; the role-play opens on its goals, shows one note on the
+result, and closes when every goal is met or missed ("Done." only when all are met); deterministic
+twist checks (A2 counts asking and checking back, with a "caught" outcome; B1 short, redirect, long,
+sharp); "Nice jacket!" moved to a later version; the v1 ending says "You've practiced…". The decisions
+above are unchanged. What code v1 needs: `conversation.md`, §5 "v1 build list".
