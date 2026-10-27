@@ -94,6 +94,8 @@ export interface DayPack {
 	ready: boolean;
 	/** The story it belongs to (Travel when missing: Days 1–4). */
 	arc?: ArcId;
+	/** Not ready, but shown to the owner's test accounts on the step path (a pilot before release). */
+	pilot?: boolean;
 	checkInMinutes: number;
 	recapMinutes: number;
 	/** The modules, for a day with one version (Day 1). */

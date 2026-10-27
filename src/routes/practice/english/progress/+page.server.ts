@@ -5,9 +5,9 @@ import { readEnglishProgress } from '$lib/practice/english-progress';
 import { readEnglishProfile } from '$lib/practice/english-profile';
 import { lessonDates, stepDates, type LessonEventRow } from '$lib/practice/learner-stats';
 import { trackFor } from '$lib/practice/day';
-import { chapterNumber, nextStep, readPath, replayPick, stepsDone, type NextStep } from '$lib/practice/path';
+import { chapterNumber, nextStep, readPath, replayPick, stepsDone, type NextStep, type Preview } from '$lib/practice/path';
 import { minutesOf } from '$lib/practice/day';
-import { usesStepPath } from '$lib/server/step-path';
+import { previewFor, usesStepPath } from '$lib/server/step-path';
 
 /**
  * The learner's dashboard, the first page of the English section (owner's decision): Mira's
@@ -21,7 +21,7 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 	// First visit: the three onboarding questions come first.
 	if (!readEnglishProfile(user.user_metadata)) redirect(303, '/practice/english/start');
 	const progress = readEnglishProgress(user.user_metadata);
-	if (usesStepPath(user)) return pathDashboard(locals, user, (await parent()).labAccess);
+	if (usesStepPath(user)) return pathDashboard(locals, user, previewFor(user, (await parent()).labAccess));
 	const saved = DaySessionSchema.safeParse(user.user_metadata?.english_day_v1);
 	// The learner's own lesson events (row-level security: they can only read their own).
 	let rows: LessonEventRow[] = [];
@@ -67,7 +67,7 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 };
 
 /** A step, as the dashboard's card shows it (the chapter numbered in this learner's journey). */
-const stepCard = (next: NextStep, preview: boolean, reason: string | null) => ({
+const stepCard = (next: NextStep, preview: Preview, reason: string | null) => ({
 	id: next.step, chapter: chapterNumber(next.day, preview, reason), theme: next.day.theme, title: next.module.title,
 	index: next.index, total: next.total, minutes: minutesOf(next.module, 20)
 });
@@ -76,7 +76,7 @@ const stepCard = (next: NextStep, preview: boolean, reason: string | null) => ({
  * The dashboard on the step path (docs/goal-path-plan.md): the next step (or, with nothing new left,
  * the app's pick to practise again), this week from the days with a step done, and the steps done.
  */
-async function pathDashboard(locals: App.Locals, user: { id: string; user_metadata: Record<string, unknown> }, preview: boolean) {
+async function pathDashboard(locals: App.Locals, user: { id: string; user_metadata: Record<string, unknown> }, preview: Preview) {
 	const profile = readEnglishProfile(user.user_metadata);
 	const track = trackFor(profile);
 	const path = readPath(user.user_metadata, track);

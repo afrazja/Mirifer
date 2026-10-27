@@ -12,8 +12,13 @@ import { SCHEMA_VERSION, safeMetadata, type AnalyticsRecord } from '$lib/analyti
 import { canResetEnglish } from '$lib/server/test-accounts';
 import { lessonAttemptId } from '$lib/server/lesson-events';
 import type { DayPack, ModuleId, Track } from '$lib/practice/day';
+import type { Preview } from '$lib/practice/path';
 
 export const usesStepPath = (user: Pick<User, 'email' | 'email_confirmed_at'> | null | undefined): boolean => canResetEnglish(user);
+
+/** Which unreleased chapters a learner sees: the owner's tools show them all; the test accounts see pilots. */
+export const previewFor = (user: Pick<User, 'email' | 'email_confirmed_at'> | null | undefined, ownerTools: boolean): Preview =>
+	ownerTools ? true : canResetEnglish(user) ? 'pilot' : false;
 
 export interface StepEventInput {
 	day: DayPack; track: Track; module: ModuleId; index: number; total: number;
