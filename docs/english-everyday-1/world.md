@@ -76,6 +76,11 @@ steps around it. Details in `conversation.md`.
 
 - The learner is also carrying a heavy box, and a plant of their own (the compliment trap).
 - In the phrases, the learner may ask Jake whether it's a nice neighborhood.
+- Jake grew up in Riverton and works at the hospital downtown (so he can answer the likeliest
+  questions back).
+- People bring something small to the barbecue (a snack or drinks).
+- Jake thinks he pays too much rent (no amount is ever said).
+- Mr. Patel's welcome message arrives on moving day (Professional step 4).
 
 ## Topics for the learner's own speech (personal, true anywhere)
 

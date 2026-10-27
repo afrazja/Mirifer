@@ -174,6 +174,17 @@ a mistake of character.
    what you do, what you like). If "Living abroad" learners later need more, the useful question is
    *which country*, not abroad or not.
 
+## Decisions on the drafts (2026-10-27)
+
+- The role-play writer's new facts are accepted (see `world.md`, "Details some modules may use").
+- **Rent twist:** a short answer or a redirect passes "step around a nosy question"; a long, honest
+  answer is not a fail, but the ending then says "You've practised…" for that line. A sharp answer
+  ("That's none of your business") doesn't pass; Mira notes a friendlier way.
+- **"Try again"** after a role-play restarts the whole short meeting (not a single turn).
+- **One voice message** is enough for the Professional step 4.
+- The role-play needs (first-time yes, the "moment", the audio-only line, per-line pace, the twist's
+  own check, Mira's notes) are built as general role-play features, so later chapters reuse them.
+
 ## What changed from v1 (the reviews)
 
 - Professional step 1 now hears the meeting itself (at natural speed) instead of a separate story.
