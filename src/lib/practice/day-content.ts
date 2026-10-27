@@ -15,6 +15,7 @@ import type { DisplayText } from './hotel';
 import * as dayOne from './days/day-1';
 import * as dayTwo from './days/day-2';
 import * as dayThree from './days/day-3';
+import * as everydayOne from './days/everyday-1';
 import * as dayFour from './days/day-4';
 import type { Track } from './day';
 
@@ -32,10 +33,12 @@ export interface DayContent {
 	RETELL?: RetellPiece;
 	PERSUADE?: PersuadeSet;
 	CALL?: RoleScene;
+	/** A role-play per version, when they differ (Everyday 1); else `CALL` for both. */
+	CALLS?: Partial<Record<Track, RoleScene>>;
 }
 
 /** Every later day's content, by day id. */
-export const DAY_CONTENT: Record<string, DayContent> = { 'day-1': dayOne, 'day-2': dayTwo, 'day-3': dayThree, 'day-4': dayFour };
+export const DAY_CONTENT: Record<string, DayContent> = { 'day-1': dayOne, 'day-2': dayTwo, 'day-3': dayThree, 'day-4': dayFour, 'everyday-1': everydayOne };
 const contentOf = (dayId: string): DayContent => DAY_CONTENT[dayId] ?? {};
 const LATER: DayContent[] = Object.values(DAY_CONTENT);
 /** This version's set, or the day's other version's. */
@@ -104,11 +107,12 @@ export function persuadeSetById(id: string | null | undefined): PersuadeSet | nu
 }
 
 /** Role-play with a twist: the day's scene (Day 1 and the pilot: the hotel). */
-export function roleSceneFor(dayId: string): RoleScene {
-	return contentOf(dayId).CALL ?? HOTEL_SCENE;
+export function roleSceneFor(dayId: string, track: Track = 'intermediate'): RoleScene {
+	const { CALLS, CALL } = contentOf(dayId);
+	return CALLS?.[track] ?? CALL ?? HOTEL_SCENE;
 }
 /** Any scene, by its id (the hotel when none is given): what the routes play, voice and review. */
-export const ALL_ROLE_SCENES: RoleScene[] = [HOTEL_SCENE, ...LATER.flatMap(day => (day.CALL ? [day.CALL] : []))];
+export const ALL_ROLE_SCENES: RoleScene[] = [HOTEL_SCENE, ...LATER.flatMap(day => [...(day.CALL ? [day.CALL] : []), ...Object.values(day.CALLS ?? {})])];
 export function roleSceneById(id: string | null | undefined): RoleScene | null {
 	return ALL_ROLE_SCENES.find(scene => scene.id === (id ?? HOTEL_SCENE.id)) ?? null;
 }

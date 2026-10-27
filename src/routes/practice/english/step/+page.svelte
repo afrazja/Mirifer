@@ -25,7 +25,7 @@
 	<AppHeader backHref="/practice/english/progress" backLabel={isFa ? 'پیشرفت' : 'Progress'} direction={isFa ? 'rtl' : 'ltr'} onBack={pause} logo={false} />
 	{#key data.step}
 		<StepRunner step={data.step} dayId={data.dayId} moduleId={data.moduleId} index={data.index} total={data.total} replay={data.replay}
-			track={data.track} startedAt={data.startedAt} {isFa} labAccess={data.labAccess} />
+			track={data.track} startedAt={data.startedAt} {isFa} labAccess={data.labAccess} name={data.name} />
 	{/key}
 </main>
 

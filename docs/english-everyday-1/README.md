@@ -144,8 +144,14 @@ a mistake of character.
 5. **Voice messages in a Professional set** (today Intermediate only).
 6. **The learner's first name in role-plays** (from onboarding), instead of "Karimi".
 7. **The chapter ending from the checks passed** (today it is built from the chapter's `goal`).
-8. **Mira's first line on iPhone**: the step's sound starts after a page change, which iPhones may
-   block; give the brief screen a "Hear Mira" button.
+8. **Mira's first line on iPhone**: a "Hear Mira" button on the brief screen (done, #232).
+9. **Listen and retell with two voices**: optional `speakers` and `lines` on `RetellPiece` (the same
+   shape as Listen and connect), so the Professional step can play the meeting itself.
+10. **Listen and connect with two parts**: the type allows it; the per-chapter test must expect two.
+11. **Natural phrases: an optional `note`** (Mira's taarof note on a phrase).
+12. **Say it in English: `{name}` in model answers and a hidden `check`** per item (any name; "3C"
+    heard as "3 see"; "yes" first).
+13. **Bidi isolation** for "3C" inside Persian lines.
 
 ## Files to draft (as for Days 1–4)
 
@@ -168,6 +174,17 @@ a mistake of character.
    what you do, what you like). If "Living abroad" learners later need more, the useful question is
    *which country*, not abroad or not.
 
+## Decisions on the drafts (2026-10-27)
+
+- The role-play writer's new facts are accepted (see `world.md`, "Details some modules may use").
+- **Rent twist:** a short answer or a redirect passes "step around a nosy question"; a long, honest
+  answer is not a fail, but the ending then says "You've practised…" for that line. A sharp answer
+  ("That's none of your business") doesn't pass; Mira notes a friendlier way.
+- **"Try again"** after a role-play restarts the whole short meeting (not a single turn).
+- **One voice message** is enough for the Professional step 4.
+- The role-play needs (first-time yes, the "moment", the audio-only line, per-line pace, the twist's
+  own check, Mira's notes) are built as general role-play features, so later chapters reuse them.
+
 ## What changed from v1 (the reviews)
 
 - Professional step 1 now hears the meeting itself (at natural speed) instead of a separate story.
@@ -181,3 +198,13 @@ a mistake of character.
 - Professional step 4 is a message from the manager (Jake can't have the learner's number before
   they meet); step 3 is one shorter talk with the top fixes only.
 - The chapter ending is built from the checks passed; US spelling throughout.
+
+## Review v1 applied (2026-10-27)
+
+The english-coach and learning-UX reviews of the drafts are applied (drafts v2): one opening line
+(in Mira's story line only); a one-voice B1 narration for step 1 (two voices later); "which reply?"
+traps with three options; three Say-it items; the role-play opens on its goals, shows one note on the
+result, and closes when every goal is met or missed ("Done." only when all are met); deterministic
+twist checks (A2 counts asking and checking back, with a "caught" outcome; B1 short, redirect, long,
+sharp); "Nice jacket!" moved to a later version; the v1 ending says "You've practiced…". The decisions
+above are unchanged. What code v1 needs: `conversation.md`, §5 "v1 build list".

@@ -17,14 +17,15 @@ import { transcriptionConfigured } from '$lib/server/transcribe';
 import { createLimiter, tooMany } from '$lib/server/rate-limit';
 import { readEnglishProfile } from '$lib/practice/english-profile';
 import { levelFor } from '$lib/server/coach-ai';
-import { MAX_SECONDS } from '$lib/practice/say-better';
-import { QUESTION, RawFeedbackSchema, asAnswer, checkFeedback, feedbackPrompt, feedbackSchemas, type RawFeedback } from '$lib/server/say-better-ai';
+import { MAX_SECONDS, SAY_PROMPT_IDS, sayPrompt } from '$lib/practice/say-better';
+import { RawFeedbackSchema, asAnswer, checkFeedback, feedbackPrompt, feedbackSchemas, type RawFeedback } from '$lib/server/say-better-ai';
 
 export const config = { maxDuration: 60 };
 /** A minute at 32 kbps is about 0.25 MB; this leaves room for other codecs. */
 const MAX_AUDIO_BYTES = 1_500_000;
 const perMinute = createLimiter(12, 60_000);
-const FeedbackRequest = z.object({ kind: z.literal('feedback'), transcript: z.string().trim().min(1).max(2_000) }).strict();
+/** `prompt`: the chapter's question (Day 1's trip problem when missing). */
+const FeedbackRequest = z.object({ kind: z.literal('feedback'), transcript: z.string().trim().min(1).max(2_000), prompt: z.enum(SAY_PROMPT_IDS as [string, ...string[]]).optional() }).strict();
 
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const user = await englishLearner(request, locals);
@@ -41,7 +42,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		if (!Number.isFinite(seconds) || seconds < 0 || seconds > MAX_SECONDS + 10) return json({ error: 'Invalid recording' }, { status: 400 });
 		const refused = await checkAllowance(locals, user);
 		if (refused) return refused;
-		const transcript = await meteredTranscribe(locals, user, 'say-better', audio, seconds, 'English say-better', `They are answering: "${QUESTION}"`);
+		const promptId = form.get('prompt');
+		const transcript = await meteredTranscribe(locals, user, 'say-better', audio, seconds, 'English say-better', `They are answering: "${sayPrompt(typeof promptId === 'string' ? promptId : null).question}"`);
 		if (transcript instanceof Response) return transcript;
 		return json({ transcript });
 	}
@@ -54,7 +56,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (refused) return refused;
 
 	const { transcript } = parsed.data;
-	const system = feedbackPrompt(levelFor(readEnglishProfile(user.user_metadata ?? {})));
+	const system = feedbackPrompt(levelFor(readEnglishProfile(user.user_metadata ?? {})), sayPrompt(parsed.data.prompt));
 	const ask = (note = '') => askChain<RawFeedback>({ label: 'English say-better', system, user: asAnswer(transcript) + note, schema: RawFeedbackSchema, ...feedbackSchemas, temperature: 0.3, maxTokens: 1500 });
 	let raw = await ask();
 	let checked = raw ? checkFeedback(raw, transcript) : { problem: 'no reply' };

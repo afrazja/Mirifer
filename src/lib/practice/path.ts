@@ -57,6 +57,9 @@ export function localDay(now: Date, utcOffsetMin: number | null = 0): number {
 export const chapterModules = (day: DayPack, track: Track): DayModule[] => modulesFor(20, day, track);
 export const chapterSteps = (day: DayPack, track: Track): StepId[] => chapterModules(day, track).map(module => stepId(day, module));
 
+/** Who sees chapters before their release: the owner (all of them), the test accounts (`pilot` ones), or no one. */
+export type Preview = boolean | 'pilot';
+
 /**
  * The order of the stories for each goal (docs/goal-path-plan.md): the goal's own story first, then
  * the others. "Not sure yet" starts like Everyday; no goal (older profiles) like Travel.
@@ -76,19 +79,20 @@ export const arcOrder = (reason: string | null | undefined): ArcId[] => ARC_ORDE
  * ready (the owner, `preview`, gets them all). A story with nothing ready isn't there yet. The
  * travel story always opens with its first chapter.
  */
-export function releasedChapters(preview = false, reason: string | null = null): DayPack[] {
+export function releasedChapters(preview: Preview = false, reason: string | null = null): DayPack[] {
 	return arcOrder(reason).flatMap(arc => {
 		const days = DAYS.filter(day => arcOf(day) === arc);
-		const firstClosed = days.findIndex(day => !day.ready);
-		if (preview || firstClosed === -1) return days;
+		// 'pilot': the owner's test accounts also get chapters marked `pilot`, before their release.
+		const firstClosed = days.findIndex(day => !day.ready && !(preview === 'pilot' && day.pilot));
+		if (preview === true || firstClosed === -1) return days;
 		return days.slice(0, arc === 'travel' ? Math.max(1, firstClosed) : firstClosed);
 	});
 }
 /** A chapter's number in this learner's journey (1 for the first story's first chapter). */
-export const chapterNumber = (day: DayPack, preview = false, reason: string | null = null) => releasedChapters(preview, reason).indexOf(day) + 1 || day.number;
+export const chapterNumber = (day: DayPack, preview: Preview = false, reason: string | null = null) => releasedChapters(preview, reason).indexOf(day) + 1 || day.number;
 
 /** Whether a step can be opened: a released chapter, and a module of that chapter in this version. */
-export function isOpenStep(step: StepId, track: Track, preview = false, reason: string | null = null): boolean {
+export function isOpenStep(step: StepId, track: Track, preview: Preview = false, reason: string | null = null): boolean {
 	const parts = splitStep(step);
 	return !!parts && releasedChapters(preview, reason).includes(parts.day) && chapterSteps(parts.day, track).includes(step);
 }
@@ -145,7 +149,7 @@ function describe(day: DayPack, track: Track, step: StepId): NextStep {
  * skipped. A chapter with every step skipped brings its first step back. Null when every released
  * chapter is finished (then the app offers a replay).
  */
-export function nextStep(path: Path, track: Track, preview = false, reason: string | null = null): NextStep | null {
+export function nextStep(path: Path, track: Track, preview: Preview = false, reason: string | null = null): NextStep | null {
 	for (const day of releasedChapters(preview, reason)) {
 		if (chapterFinished(path, day, track)) continue;
 		const steps = chapterSteps(day, track);
@@ -159,7 +163,7 @@ export function nextStep(path: Path, track: Track, preview = false, reason: stri
  * The step to practise again when nothing new is left: a skipped step first, then the step done
  * longest ago (a replay moves its day, so the replays take turns). On a tie, speaking steps first.
  */
-export function replayPick(path: Path, track: Track, preview = false, reason: string | null = null): NextStep | null {
+export function replayPick(path: Path, track: Track, preview: Preview = false, reason: string | null = null): NextStep | null {
 	const all = releasedChapters(preview, reason).flatMap(day => chapterModules(day, track).map(module => ({ day, module, step: stepId(day, module) })));
 	const skipped = all.find(item => path.skipped.includes(item.step));
 	if (skipped) return describe(skipped.day, track, skipped.step);

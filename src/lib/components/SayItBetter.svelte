@@ -10,11 +10,13 @@
 	import { playAudioPromise, stopAllAudio, ttsIsPlaying } from '$services/tts';
 	import ActionBar from '$lib/components/ActionBar.svelte';
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
-	import { MAX_SECONDS, MIN_SECONDS, clampSeconds, fixUse, scoreFor, type Feedback, type SayRecord } from '$lib/practice/say-better';
+	import { MAX_SECONDS, MIN_SECONDS, sayPrompt, clampSeconds, fixUse, scoreFor, type Feedback, type SayRecord } from '$lib/practice/say-better';
 	import type { DisplayText } from '$lib/practice/hotel';
 
-	let { isFa = false, initial = null, onSave, onFocus, onSkip, onDone }: {
+	let { isFa = false, prompt = 'trip-problem', initial = null, onSave, onFocus, onSkip, onDone }: {
 		isFa?: boolean;
+		/** The chapter's question (Day 1's trip problem by default). */
+		prompt?: string;
 		/** What was saved earlier today (reload). */
 		initial?: SayRecord | null;
 		onSave?: (record: SayRecord) => void;
@@ -94,6 +96,7 @@
 		body.set('audio', blob, 'speech'); body.set('seconds', String(clampSeconds(elapsed)));
 		let transcript: string | null = null;
 		try {
+			body.set('prompt', prompt);
 			const response = await fetch('/api/english/say-better', { method: 'POST', body });
 			const data = response.ok ? await response.json() : null;
 			transcript = typeof data?.transcript === 'string' ? data.transcript : null;
@@ -117,7 +120,7 @@
 		const wait = setTimeout(() => controller.abort(), 20_000);
 		let result: Feedback | null = null;
 		try {
-			const response = await fetch('/api/english/say-better', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind: 'feedback', transcript: record.transcript1 }), signal: controller.signal });
+			const response = await fetch('/api/english/say-better', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind: 'feedback', transcript: record.transcript1, prompt }), signal: controller.signal });
 			result = response.ok ? await response.json() : null;
 		} catch { result = null; }
 		finally { clearTimeout(wait); }
@@ -176,13 +179,13 @@
 <section class="say" aria-live="polite">
 	{#if stage === 'task' || stage === 'retry'}
 		{#if stage === 'retry' && feedback?.fixes.length}
-			<p class="lead">{T('Tell it again in your own words. Try to use these:', 'دوباره با کلمات خودت تعریف کن. سعی کن از این‌ها استفاده کنی:')}</p>
+			<p class="lead">{T('Say it again in your own words. Try to use these:', 'دوباره با کلمات خودت بگو. سعی کن از این‌ها استفاده کنی:')}</p>
 			<ul class="chips">{#each feedback.fixes as fix}<li lang="en" dir="ltr">{fix.better}</li>{/each}</ul>
 		{:else if stage === 'retry'}
-			<p class="lead">{T('Tell it once more, in your own words.', 'یک بار دیگر با کلمات خودت تعریف کن.')}</p>
+			<p class="lead">{T('Say it once more, in your own words.', 'یک بار دیگر با کلمات خودت بگو.')}</p>
 		{:else}
 			<button class="link" type="button" onclick={() => (showIdeas = !showIdeas)} aria-expanded={showIdeas}>{T('Need ideas?', 'ایده می‌خواهی؟')}</button>
-			{#if showIdeas}<ul class="ideas" lang="en" dir="ltr"><li>Where were you?</li><li>What went wrong?</li><li>What did you do?</li></ul>{/if}
+			{#if showIdeas}<ul class="ideas" lang="en" dir="ltr">{#each sayPrompt(prompt).ideas as idea}<li>{idea}</li>{/each}</ul>{/if}
 		{/if}
 		{@render bottom(T('Start talking · 1 minute', 'شروع صحبت · ۱ دقیقه'), startRecording, false, null, 'mic')}
 
@@ -248,7 +251,7 @@
 		{@render bottom(fixIndex + 1 < feedback.fixes.length ? T('Next fix', 'اصلاح بعدی') : T('See the better version', 'دیدن نسخهٔ بهتر'), () => (fixIndex + 1 < feedback.fixes.length ? (fixIndex += 1) : (stage = 'better')))}
 
 	{:else if stage === 'better' && feedback?.better}
-		<p class="label">{T('Your story, a bit better', 'داستانت، کمی بهتر')}</p>
+		<p class="label">{sayPrompt(prompt).betterLabel ? (isFa ? sayPrompt(prompt).betterLabel!.fa : sayPrompt(prompt).betterLabel!.en) : T('Your story, a bit better', 'داستانت، کمی بهتر')}</p>
 		<p class="said better" lang="en" dir="ltr">{feedback.better}</p>
 		<button class="hear" type="button" onclick={() => hear(feedback.better ?? '')} aria-label={T('Hear Mira read it', 'بشنو که میرا می‌خواندش')}><span aria-hidden="true">{playing ? '■' : '▶'}</span></button>
 		{@render bottom(T('Try again', 'دوباره امتحان کن'), toSecondTry)}

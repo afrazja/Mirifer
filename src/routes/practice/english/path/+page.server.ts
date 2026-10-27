@@ -3,7 +3,7 @@ import type { PageServerLoad } from './$types';
 import { minutesOf, trackFor } from '$lib/practice/day';
 import { readEnglishProfile } from '$lib/practice/english-profile';
 import { chapterFinished, chapterModules, nextStep, readPath, releasedChapters, stepId } from '$lib/practice/path';
-import { usesStepPath } from '$lib/server/step-path';
+import { previewFor, usesStepPath } from '$lib/server/step-path';
 
 /**
  * The learner's path (docs/goal-path-plan.md): every released chapter with its steps, done,
@@ -17,12 +17,12 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 	const profile = readEnglishProfile(user.user_metadata);
 	if (!profile) redirect(303, '/practice/english/start');
 	if (!usesStepPath(user)) redirect(303, '/practice/english/finished');
-	const { labAccess } = await parent();
+	const preview = previewFor(user, (await parent()).labAccess);
 	const track = trackFor(profile);
 	const path = readPath(user.user_metadata, track);
-	const next = nextStep(path, track, labAccess, profile.reason)?.step ?? null;
+	const next = nextStep(path, track, preview, profile.reason)?.step ?? null;
 	// Numbered in this learner's journey: their goal's story comes first.
-	const chapters = releasedChapters(labAccess, profile.reason).map((day, index) => ({
+	const chapters = releasedChapters(preview, profile.reason).map((day, index) => ({
 		id: day.id, number: index + 1, theme: day.theme, finished: chapterFinished(path, day, track),
 		steps: chapterModules(day, track).map(module => {
 			const id = stepId(day, module);

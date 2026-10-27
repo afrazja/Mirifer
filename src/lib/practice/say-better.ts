@@ -12,6 +12,48 @@ export const STRONG_MIN_WORDS = 40;
 /** Under this, or off-topic/Persian, Mira asks for a bit more. */
 export const TOO_SHORT_WORDS = 15;
 
+/**
+ * What the learner talks about, per chapter: the question, what counts as on topic, which mistakes
+ * come first, and the idea hints. Day 1 tells a trip problem; Everyday 1 says a little about yourself.
+ */
+export interface SayPrompt {
+	id: string;
+	/** The question, as the AI and the transcriber see it. */
+	question: string;
+	/** "onTopic": true only if the answer, in English, … */
+	onTopic: string;
+	/** The mistakes to teach first, in order. */
+	priorities: string;
+	/** Extra rules for this question (never fix names, …). */
+	rules?: string;
+	/** "Need ideas?" */
+	ideas: string[];
+	/** The heading over the corrected answer ("Your story, a bit better" by default). */
+	betterLabel?: DisplayText;
+}
+export const SAY_PROMPTS = {
+	'trip-problem': {
+		id: 'trip-problem',
+		question: 'Tell me about a problem you had on a trip.',
+		onTopic: 'tells about a problem they had while traveling',
+		priorities: 'past tense kept steady through the story, he/she, articles, prepositions, word order, wrong word',
+		ideas: ['Where were you?', 'What went wrong?', 'What did you do?']
+	},
+	'about-you': {
+		id: 'about-you',
+		question: 'Tell your new neighbor a little about yourself: where you\'re from, what you do, and one thing you like doing.',
+		onTopic: 'says something about themselves (where they are from or live, what they do, or something they like), in any place, job or situation',
+		priorities: 'no "am" before a verb ("I work", not "I am work"), a/an with a job ("I\'m an engineer", not "My job is engineer"), present perfect for how long ("I\'ve lived here for two years"), "like" + -ing, he/she, prepositions, word order',
+		rules: 'Never "fix" a name, a place or a job title, and never comment on where they are from, what they do or what they chose to share.',
+		ideas: ['Where are you from?', 'What do you do?', 'What do you like doing?'],
+		betterLabel: { en: 'What you said, a bit better', fa: 'حرف‌هایت، کمی بهتر' }
+	}
+} satisfies Record<string, SayPrompt>;
+export type SayPromptId = keyof typeof SAY_PROMPTS;
+export const SAY_PROMPT_IDS = Object.keys(SAY_PROMPTS) as SayPromptId[];
+/** The chapter's question (Day 1's trip problem when none or unknown). */
+export const sayPrompt = (id: string | null | undefined): SayPrompt => SAY_PROMPTS[id as SayPromptId] ?? SAY_PROMPTS['trip-problem'];
+
 export interface Fix { type: 'mistake' | 'natural'; original: string; better: string; why: DisplayText }
 export type FeedbackCase = 'mistakes' | 'natural' | 'strong' | 'more';
 export interface Feedback { case: FeedbackCase; fixes: Fix[]; better: string | null; praise: DisplayText | null }

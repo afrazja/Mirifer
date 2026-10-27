@@ -11,7 +11,7 @@
 	import MixedText from '$lib/components/MixedText.svelte';
 	import { ENGLISH_RATE, RECORDED_ENGLISH_RATE } from '$lib/practice/english-voice';
 	import {
-		MAX_REPLY, MAX_TURNS, goalIdsOf, startRolePlay,
+		MAX_REPLY, MAX_TURNS, goalIdsOf, resultNote, startRolePlay,
 		type Correction, type DisplayText, type RolePlayRecord, type RoleScene
 	} from '$lib/practice/roleplay';
 	import { wordCount } from '$lib/practice/hotel';
@@ -41,7 +41,7 @@
 	/** The details card on the first screen stays folded (one thing per screen); it's also in the call. */
 	let showCard = $state(false);
 	// svelte-ignore state_referenced_locally
-	let stage = $state<'mission' | 'goals' | 'call' | 'end'>(initial?.done ? 'end' : initial && initial.turns.length > 1 ? 'call' : 'mission');
+	let stage = $state<'mission' | 'goals' | 'call' | 'end'>(initial?.done || initial?.settled ? 'end' : initial && initial.turns.length > 1 ? 'call' : scene.screen.skipMission ? 'goals' : 'mission');
 	let draft = $state(''), pending = $state(''), checking = $state(false);
 	let problem = $state<DisplayText | null>(null), latest = $state<Correction | null>(null);
 	let review = $state<'idle' | 'loading' | 'ready' | 'failed' | 'limit'>('idle');
@@ -53,7 +53,13 @@
 
 	const replies = $derived(record.turns.filter(turn => turn.speaker === 'learner').map(turn => turn.text));
 	const averageWords = $derived(replies.length ? Math.round(replies.reduce((sum, reply) => sum + wordCount(reply), 0) / replies.length * 10) / 10 : 0);
-	const outOfTurns = $derived(!record.done && replies.length >= MAX_TURNS);
+	const outOfTurns = $derived(!record.done && !record.settled && replies.length >= MAX_TURNS);
+	/** The chat closed: every goal reached, or reached or missed. */
+	const closed = $derived(record.done || !!record.settled);
+	/** The twist that is heard, not read, until the learner has answered it. */
+	const hiddenLine = $derived(scene.twist?.audioOnly ? scene.twist.lines[record.variant] : null);
+	const isHidden = (index: number) => !!hiddenLine && !!record.turns[index]?.text.endsWith(hiddenLine) && index === record.turns.length - 1;
+	const note = $derived(resultNote(scene, record));
 	const lastLine = $derived([...record.turns].reverse().find(turn => turn.speaker === 'reception')?.text ?? '');
 
 	onMount(() => {
@@ -72,8 +78,10 @@
 		if ((!voiceOn && !always) || !line) return;
 		stopAllAudio();
 		const sig = record.voiceSigs[line];
+		// The heard-only twist is said a little fast, as people really say it.
+		const pace = hiddenLine && line.endsWith(hiddenLine) ? 1.15 : 1;
 		const url = `/api/english/voice?v=1&voice=${voice}&scene=${encodeURIComponent(scene.id)}&text=${encodeURIComponent(line)}${sig ? `&sig=${encodeURIComponent(sig)}` : ''}`;
-		if (!(await playAudioUrl(url, undefined, RECORDED_ENGLISH_RATE)) && alive) void playAudioPromise(line, ENGLISH_RATE, 'en-US', undefined, voice).catch(() => {});
+		if (!(await playAudioUrl(url, undefined, RECORDED_ENGLISH_RATE * pace)) && alive) void playAudioPromise(line, ENGLISH_RATE * pace, 'en-US', undefined, voice).catch(() => {});
 	}
 	function toggleVoice() { voiceOn = !voiceOn; if (!voiceOn) stopAllAudio(); else void speak(lastLine); }
 
@@ -95,7 +103,7 @@
 
 	async function send() {
 		const reply = draft.trim();
-		if (record.done || checking || outOfTurns || !reply) return;
+		if (closed || checking || outOfTurns || !reply) return;
 		if (reply.length > MAX_REPLY) { problem = { en: `Keep each reply under ${MAX_REPLY} characters.`, fa: `هر پاسخ باید کمتر از ${N(MAX_REPLY)} نویسه باشد.` }; return; }
 		problem = null; latest = null; stopAllAudio();
 		const turns = [...record.turns, { speaker: 'learner' as const, text: reply }];
@@ -115,6 +123,9 @@
 				...record, turns: [...turns, { speaker: 'reception', text: result.reply }],
 				goals: IDS.filter(id => result.goals.includes(id)), proof: typeof result.proof === 'string' ? result.proof : null,
 				done: result.done === true, corrections: correction ? [...record.corrections, correction] : record.corrections,
+				settled: result.settled === true || result.done === true,
+				missed: Array.isArray(result.missed) ? IDS.filter(id => result.missed.includes(id)) : record.missed ?? [],
+				twistOutcome: typeof result.twistOutcome === 'string' ? result.twistOutcome : record.twistOutcome ?? null,
 				voiceSigs: typeof result.voiceSig === 'string' ? { ...record.voiceSigs, [result.reply]: result.voiceSig } : record.voiceSigs
 			};
 			latest = correction; draft = ''; persist();
@@ -166,7 +177,8 @@
 	<ul class="goals">
 		{#each scene.goals as goal}
 			{@const met = record.goals.includes(goal.id)}
-			<li class:met><span class="mark" aria-hidden="true">{met ? '✓' : '○'}</span><span>{text(goal.label)}{#if met}<span class="sr-only">{T(' (done)', ' (انجام شد)')}</span>{/if}</span></li>
+			{@const missed = !met && (record.missed ?? []).includes(goal.id)}
+			<li class:met class:missed><span class="mark" aria-hidden="true">{met ? '✓' : missed ? '–' : '○'}</span><span>{text(goal.label)}{#if met}<span class="sr-only">{T(' (done)', ' (انجام شد)')}</span>{:else if missed}<span class="sr-only">{T(' (missed this time)', ' (این بار نشد)')}</span>{/if}</span></li>
 		{/each}
 	</ul>
 {/snippet}
@@ -188,8 +200,12 @@
 	{:else if stage === 'goals'}
 		<h2 class="title" tabindex="-1" bind:this={heading}>{text(scene.screen.missionHeading)}</h2>
 		{@render goalList()}
+		{#if scene.screen.skipMission}{@render card()}{/if}
 		<p class="small">{text(scene.screen.instructions)}</p>
-		<ActionBar label={scene.screen.start ? text(scene.screen.start) : T('Start the call', 'شروع تماس')} onclick={() => start(record.variant)} secondary={{ label: T('Back to your card', 'برگشت به کارتت'), onclick: () => { onFocus?.('full'); go('mission'); } }} />
+		<ActionBar label={scene.screen.start ? text(scene.screen.start) : T('Start the call', 'شروع تماس')} onclick={() => start(record.variant)}
+			secondary={scene.screen.skipMission
+				? (onSkip ? { label: T('Skip this step', 'این مرحله را رد کن'), onclick: () => { stopAllAudio(); onSkip?.(); } } : null)
+				: { label: T('Back to your card', 'برگشت به کارتت'), onclick: () => { onFocus?.('full'); go('mission'); } }} />
 
 	{:else if stage === 'call'}
 		<div class="who">
@@ -207,7 +223,8 @@
 			{#each record.turns as turn, index (index)}
 				<div class="turn" class:you={turn.speaker === 'learner'}>
 					<small>{turn.speaker === 'learner' ? 'You' : NAME}</small>
-					<p lang="en">{turn.text}</p>
+					{#if isHidden(index)}<p class="hidden-line" dir={isFa ? 'rtl' : 'ltr'}>{T(`${NAME} said something fast. (No text this time.)`, 'یک چیزی را تند گفت. (این بار متنی نیست.)')}</p>
+					{:else}<p lang="en">{turn.text}</p>{/if}
 					{#if turn.speaker === 'reception'}<button type="button" class="listen" onclick={() => void speak(turn.text, true)}>{T('Listen', 'شنیدن')}</button>{/if}
 				</div>
 			{/each}
@@ -217,6 +234,8 @@
 		{#if problem}<p class="note" role="alert">{text(problem)}</p>{/if}
 		{#if record.done}
 			<p class="note good" role="status">{T('You reached every goal.', 'به همهٔ هدف‌ها رسیدی.')}</p>
+		{:else if record.settled}
+			<p class="note" role="status">{T('That’s the end of the chat.', 'گفت‌وگو تمام شد.')}</p>
 		{:else if outOfTurns}
 			<p class="note" role="status">{scene.screen.limit ? text(scene.screen.limit) : T('This call has reached its turn limit.', 'این تماس به سقف نوبت‌ها رسیده است.')}</p>
 		{:else}
@@ -229,7 +248,7 @@
 			<p class="small">{T(`${NAME} is played by AI: each reply goes to an AI provider with the conversation so far.`, 'این نقش را هوش مصنوعی بازی می‌کند: هر پاسخت همراه با گفت‌وگوی قبلی به ارائه‌دهندهٔ هوش مصنوعی فرستاده می‌شود.')}</p>
 		{/if}
 		<div bind:this={bottom}></div>
-		{#if record.done || outOfTurns}
+		{#if closed || outOfTurns}
 			<ActionBar label={T('See how you did', 'دیدن نتیجه')} onclick={toEnd} />
 		{:else}
 			<ActionBar label={checking ? T('Sending…', 'در حال ارسال…') : T('Send', 'ارسال')} icon={checking ? null : 'send'} disabled={!draft.trim() || checking} onclick={send}
@@ -239,6 +258,7 @@
 	{:else}
 		<h2 class="title" tabindex="-1" bind:this={heading}>{record.done ? T('Done.', 'انجام شد.') : T(`You reached ${record.goals.length} of ${IDS.length} goals.`, `به ${N(record.goals.length)} هدف از ${N(IDS.length)} رسیدی.`)}</h2>
 		{#if record.done}<p class="lead">{text(scene.screen.resultLead)}</p>{/if}
+		{#if note}<p class="mira-note">{#if isFa}<MixedText text={note.fa} />{:else}{note.en}{/if}</p>{/if}
 		<p class="small">{T(`${replies.length} replies · ${averageWords} words per reply on average`, `${N(replies.length)} پاسخ، به‌طور میانگین ${N(averageWords)} کلمه در هر پاسخ`)}</p>
 		{#if record.done}
 			<p class="label">{T('Say it more naturally', 'طبیعی‌تر بگو')}</p>
@@ -267,6 +287,9 @@
 </section>
 
 <style>
+	.hidden-line { font-style: italic; color: var(--ink-soft); }
+	.goals li.missed { color: var(--ink-soft); }
+	.mira-note { margin: 8px 0 12px; padding: 12px 14px; border-radius: 14px; background: var(--paper-raised); border-inline-start: 4px solid var(--accent); line-height: 1.6; }
 	.roleplay { display: grid; gap: 12px; padding-block-end: 140px; }
 	.title { margin: 0; font-family: var(--font-display); font-size: 1.4rem; line-height: 1.3; }
 	.title:focus { outline: none; }

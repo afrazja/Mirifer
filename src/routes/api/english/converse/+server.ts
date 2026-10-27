@@ -21,7 +21,7 @@ import { json } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { RequestHandler } from './$types';
 import { MAX_REPLY, MAX_TURNS } from '$lib/practice/hotel';
-import { HOTEL_SCENE, fallbackFor, goalIdsOf, twistSaid, type RoleScene } from '$lib/practice/roleplay';
+import { HOTEL_SCENE, fallbackFor, goalIdsOf, missedGoals, twistSaid, twistWithLead, type RoleScene } from '$lib/practice/roleplay';
 import { roleSceneById } from '$lib/practice/day-content';
 import { askChain, englishLearner, spendAllowance } from '$lib/server/english-ai';
 import { provenGoals, sceneLineProblem, signGoals, signJamieLine } from '$lib/server/jamie-line';
@@ -92,9 +92,15 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const previous = [...turns].reverse().find(turn => turn.speaker === 'reception')?.text;
 	const twistBefore = twistSaid(scene, variant, turns);
 	const problemOf = (line: unknown) => sceneLineProblem(scene, line, variant, previous)
+		?? (scene.banned && typeof line === 'string' && scene.banned.pattern.test(line) ? scene.banned.reason : null)
 		?? (scene.twist && !twistBefore && typeof line === 'string' && scene.twist.leak.test(line)
 			? `it gave away the surprise too early: ${character} says nothing about it until that news is in the conversation` : null);
-	const system = scene.prompt(variant, met);
+	// First-try goals: a refusal before the goal was reached misses it for this run (worked out from
+	// what the learner said each time, so nothing extra needs signing; it can only cost them a goal).
+	const learnerLines = turns.filter(turn => turn.speaker === 'learner').map(turn => turn.text);
+	const missed = missedGoals(scene, met, learnerLines);
+	const twistDue = !!scene.twist && !twistBefore && scene.twist.after.every(goal => met.includes(goal) || missed.includes(goal));
+	const system = scene.prompt(variant, met, { missed, twistDue });
 	let result = await converse(scene, system, transcript);
 	if (!result) return json({ error: 'AI temporarily unavailable' }, { status: 502 });
 	// A line that fails the checks gets one rewrite with the reason, so the character
@@ -115,13 +121,24 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	let twistNow = false;
 	if (scene.twist && !twistBefore) {
 		for (const goal of scene.twist.unlocks) reached.delete(goal);
-		twistNow = scene.twist.after.every(goal => reached.has(goal));
+		// A first-try goal missed counts as settled here, so the twist still comes after a first "no".
+		twistNow = scene.twist.after.every(goal => reached.has(goal) || missed.includes(goal));
 	}
+	for (const goal of missed) reached.delete(goal);
 	const goals = ids.filter(id => reached.has(id));
+	// The learner's reply to the twist (the turn right after it): its outcome is decided in code,
+	// and some outcomes get the character's fixed answer (the slow repeat).
+	const lastCharacter = [...turns].reverse().find(turn => turn.speaker === 'reception')?.text;
+	const answeringTwist = !!scene.twist?.check && !!lastCharacter?.endsWith(scene.twist.lines[variant]) && turns.at(-1)?.speaker === 'learner';
+	const twistOutcome = answeringTwist ? scene.twist!.check!(turns.at(-1)!.text) : null;
+	const fixedAnswer = twistOutcome ? scene.twist!.replies?.[twistOutcome] ?? null : null;
 	const done = !twistNow && result.done && goals.length === ids.length;
-	const reply = twistNow ? scene.twist!.lines[variant]
-		: problem ? fallbackFor(scene, done ? ids : goals) : result.reply.replace(/\s+/g, ' ').trim();
-	const correction = result.improved && result.noteEn && result.noteFa && result.improved.trim() !== turns.at(-1)!.text.trim()
+	// The chat may also close with a goal missed, once the twist (if any) has been said.
+	const settled = done || (!twistNow && result.done && (!scene.twist || twistBefore) && ids.every(id => goals.includes(id) || missed.includes(id)));
+	const reply = twistNow ? twistWithLead(scene.twist!.lead ? result.reply : null, scene.twist!.lines[variant], !!problem)
+		: fixedAnswer ?? (problem ? fallbackFor(scene, settled ? ids : [...goals, ...missed]) : result.reply.replace(/\s+/g, ' ').trim());
+	// No correction on the reply to the twist: that turn is about asking, not grammar.
+	const correction = !answeringTwist && result.improved && result.noteEn && result.noteFa && result.improved.trim() !== turns.at(-1)!.text.trim()
 		? { improved: result.improved.trim(), note: { en: result.noteEn, fa: result.noteFa } } : null;
-	return json({ reply, voiceSig: signJamieLine(reply), goals, proof: signGoals(user.id, variant, goals, ids, scope), done, correction });
+	return json({ reply, voiceSig: signJamieLine(reply), goals, proof: signGoals(user.id, variant, goals, ids, scope), done, settled, missed, twistOutcome, correction });
 };

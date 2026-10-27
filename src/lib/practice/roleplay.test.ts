@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { HOTEL_SCENE, asRolePlayRecord, fallbackFor, goalIdsOf, preparedLines, startRolePlay, twistSaid } from './roleplay';
+import { HOTEL_SCENE, asRolePlayRecord, missedGoals, resultNote, twistWithLead, fallbackFor, goalIdsOf, preparedLines, startRolePlay, twistSaid } from './roleplay';
 import { ALL_ROLE_SCENES, roleSceneById, roleSceneFor } from './day-content';
 import { sceneLineProblem } from '$lib/server/jamie-line';
 
@@ -54,5 +54,34 @@ describe('Role-play scenes', () => {
 		expect(asRolePlayRecord({ ...run, variant: 'lift' }, call)).toBeNull();
 		expect(asRolePlayRecord({ ...run, turns: [{ speaker: 'system', text: 'x' }] }, call)).toBeNull();
 		expect(asRolePlayRecord(null, call)).toBeNull();
+	});
+});
+
+describe('first-try goals and the result note', () => {
+	const scene = {
+		...HOTEL_SCENE,
+		firstTry: { solution: /\bno\b|\bit's fine\b/ },
+		notes: { missed: { solution: { en: 'Say yes the first time.', fa: 'همان بار اول بله بگو.' } }, twist: { no: { en: 'Just say "Sorry?"', fa: 'فقط بگو «Sorry?»' } } }
+	};
+	it('misses a first-try goal refused before it was reached, never one already reached', () => {
+		expect(missedGoals(scene, [], ['Oh, no, it’s fine!'])).toEqual(['solution']);
+		expect(missedGoals(scene, [], ['Hi, I’m Ali.'])).toEqual([]);
+		expect(missedGoals(scene, ['solution'], ['Yes please', 'No, it’s fine'])).toEqual([]);
+		expect(missedGoals(HOTEL_SCENE, [], ['no'])).toEqual([]);
+	});
+	it('gives one note: a missed goal first, then the twist', () => {
+		expect(resultNote(scene, { missed: ['solution'], twistOutcome: 'no' })?.en).toBe('Say yes the first time.');
+		expect(resultNote(scene, { missed: [], twistOutcome: 'no' })?.en).toBe('Just say "Sorry?"');
+		expect(resultNote(scene, { missed: [], twistOutcome: 'asked' })).toBeNull();
+	});
+});
+
+describe('the twist after the character’s own short answer', () => {
+	const twist = 'Oh, and trash goes out Tuesday morning by eight.';
+	it('keeps the model’s first sentence when it is short and asks nothing', () => {
+		expect(twistWithLead('Nice to meet you, Ali! So how long…?', twist, false)).toBe(`Nice to meet you, Ali! ${twist}`);
+		expect(twistWithLead('Where are you from? I am Jake.', twist, false)).toBe(`Great! ${twist}`);
+		expect(twistWithLead('Nice to meet you.', twist, true)).toBe(`Great! ${twist}`);
+		expect(twistWithLead(null, twist, false)).toBe(twist);
 	});
 });

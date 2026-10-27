@@ -1,3 +1,4 @@
+import { SAY_PROMPTS } from '$lib/practice/say-better';
 import { describe, it, expect } from 'vitest';
 import { asAnswer, checkFeedback, feedbackPrompt } from './say-better-ai';
 
@@ -30,6 +31,16 @@ describe('Say it again, better: checking the AI', () => {
 	it('the better version fixes every mistake, not only the three shown', () => {
 		expect(feedbackPrompt('B1')).toContain('list EVERY mistake');
 		expect(feedbackPrompt('B1')).toContain('applies EVERY item of "allMistakes"');
+	});
+	it('asks each chapter’s own question, with its own priorities and rules', () => {
+		const trip = feedbackPrompt('A2');
+		expect(trip).toContain('Tell me about a problem you had on a trip.');
+		expect(trip).toContain('past tense kept steady');
+		const you = feedbackPrompt('B1', SAY_PROMPTS['about-you']);
+		expect(you).toContain('Tell your new neighbor a little about yourself');
+		expect(you).toContain('no "am" before a verb');
+		expect(you).toContain('Never "fix" a name');
+		expect(you).not.toContain('problem they had while traveling');
 		const said = 'Last time I went to a beach city and I found the weather was very hot and moody, and I didn\'t take the proper clothes with me, so I had to go there and buy some clothes from the local shop. And unfortunately it was very expensive and I didn\'t use those clothes when I came back.';
 		const fixes = [
 			{ type: 'mistake' as const, original: 'it was very expensive', better: 'they were very expensive', whyEn: 'Clothes is plural.', whyFa: 'لباس‌ها جمع است.' },

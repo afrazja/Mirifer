@@ -31,12 +31,15 @@
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
 	import { dayById, minutesOf, DAY_ONE, type DayModule, type ModuleId, type Track } from '$lib/practice/day';
 	import { chapterModules, splitStep, type StepId } from '$lib/practice/path';
+	import { withName } from '$lib/practice/learner-name';
 	import type { DisplayText } from '$lib/practice/hotel';
 	import { playAudioPromise, stopAllAudio } from '$services/tts';
 
-	let { step, dayId, moduleId, index, total, replay, track, startedAt: savedStart, isFa, labAccess = false }: {
+	let { step, dayId, moduleId, index, total, replay, track, startedAt: savedStart, isFa, labAccess = false, name = '' }: {
 		step: StepId; dayId: string; moduleId: ModuleId; index: number; total: number; replay: boolean; track: Track;
 		startedAt: string | null; isFa: boolean; labAccess?: boolean;
+		/** The learner's first name, for "{name}" in model answers (Everyday chapters). */
+		name?: string;
 	} = $props();
 
 	const T = (en: string, fa: string) => (isFa ? fa : en);
@@ -132,7 +135,7 @@
 		return parts ? { id: id!, module: chapterModules(parts.day, track).find(item => item.id === parts.module) ?? null } : null;
 	});
 	/** The chapter's goal, said as done: "Now you can …". */
-	const nowYouCan = $derived({
+	const nowYouCan = $derived(day.goals?.[track] ?? {
 		en: day.goal.en.replace(/^By the end, you can/, 'Now you can'),
 		fa: day.goal.fa.replace(/^در پایان می‌توانی/, 'حالا می‌توانی')
 	});
@@ -150,8 +153,8 @@
 	// The module's content for this chapter and version.
 	// svelte-ignore state_referenced_locally
 	const content = {
-		connect: connectSetFor(day.id, track), phrases: phrasesFor(day.id, track), traps: trapsFor(day.id), say: sayItemsFor(day.id, track),
-		messages: voiceMessagesFor(day.id), story: retellPieceFor(day.id), choice: persuadeSetFor(day.id), scene: roleSceneFor(day.id)
+		connect: connectSetFor(day.id, track), phrases: phrasesFor(day.id, track), traps: trapsFor(day.id), say: withName(sayItemsFor(day.id, track), name),
+		messages: withName(voiceMessagesFor(day.id), name), story: retellPieceFor(day.id), choice: persuadeSetFor(day.id), scene: roleSceneFor(day.id, track)
 	};
 	const keep = (record: unknown) => { if (startedAt) saveRecord(startedAt, mod.id, record); };
 	const loaded = () => (startedAt ? loadRecord(startedAt, mod.id) : null);
@@ -207,7 +210,7 @@
 		{:else if mod.id === 'scenario'}
 			<RolePlay {isFa} {onSkip} scene={content.scene} initial={asRolePlayRecord(loaded(), content.scene)} {onFocus} onSave={keep} {onDone} />
 		{:else if mod.id === 'say-it-better'}
-			<SayItBetter {isFa} {onSkip} initial={asSayRecord(loaded())} {onFocus} onSave={keep} {onDone} />
+			<SayItBetter {isFa} {onSkip} prompt={mod.sayPrompt} initial={asSayRecord(loaded())} {onFocus} onSave={keep} {onDone} />
 		{:else}
 			<p>{T('This step is not ready yet.', 'این مرحله هنوز آماده نیست.')}</p>
 			<ActionBar label={T('Continue', 'ادامه')} onclick={() => onDone()} />

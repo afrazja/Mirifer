@@ -6,10 +6,10 @@ import { readEnglishProgress, type EnglishProgress } from '$lib/practice/english
 import { readEnglishProfile } from '$lib/practice/english-profile';
 import {
 	applyStep, chapterFinished, chapterSteps, doneOn, isOpenStep, isStepId, localDay, nextStep, readPath, recordStep,
-	replayPick, splitStep, startStep, chapterModules, type Path, type StepId
+	replayPick, splitStep, startStep, chapterModules, type Path, type Preview, type StepId
 } from '$lib/practice/path';
 import { canUseLab } from '$lib/server/lab-access';
-import { stepEvents, usesStepPath } from '$lib/server/step-path';
+import { previewFor, stepEvents, usesStepPath } from '$lib/server/step-path';
 
 /**
  * One step of the English path (docs/goal-path-plan.md). The app chooses it: the step under way,
@@ -26,7 +26,7 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 	const { labAccess } = await parent();
 	const track = trackFor(profile);
 	const path = readPath(user.user_metadata, track);
-	const step = chooseStep(path, track, labAccess, url.searchParams.get('step'), profile.reason);
+	const step = chooseStep(path, track, previewFor(user, labAccess), url.searchParams.get('step'), profile.reason);
 	// Nothing new left and no replay asked for: the dashboard offers one.
 	if (!step) redirect(303, '/practice/english/progress');
 	const parts = splitStep(step)!;
@@ -43,7 +43,7 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 };
 
 /** The step this page shows: an allowed `asked` step, else the one under way, else the next. */
-function chooseStep(path: Path, track: Track, preview: boolean, asked: string | null, reason: string | null): StepId | null {
+function chooseStep(path: Path, track: Track, preview: Preview, asked: string | null, reason: string | null): StepId | null {
 	const next = nextStep(path, track, preview, reason);
 	if (isStepId(asked) && isOpenStep(asked, track, preview, reason) && (path.done[asked] || path.skipped.includes(asked) || next?.step === asked)) return asked;
 	if (path.current && isOpenStep(path.current.step, track, preview, reason)) return path.current.step;
@@ -60,11 +60,11 @@ async function learner(locals: App.Locals) {
 	const profile = readEnglishProfile(user.user_metadata);
 	if (!profile || !usesStepPath(user)) return fail(403, { error: 'not_available' });
 	const track = trackFor(profile);
-	return { user, track, reason: profile.reason, path: readPath(user.user_metadata, track), preview: canUseLab(user) };
+	return { user, track, reason: profile.reason, path: readPath(user.user_metadata, track), preview: previewFor(user, canUseLab(user)) };
 }
 
 /** A step this learner may work on: open in their version, and not ahead of their next step. */
-function allowed(path: Path, track: Track, preview: boolean, value: unknown, reason: string | null): StepId | null {
+function allowed(path: Path, track: Track, preview: Preview, value: unknown, reason: string | null): StepId | null {
 	if (!isStepId(value) || !isOpenStep(value, track, preview, reason)) return null;
 	return chooseStep(path, track, preview, value, reason) === value ? value : null;
 }
