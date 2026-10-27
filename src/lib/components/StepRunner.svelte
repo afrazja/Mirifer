@@ -144,7 +144,7 @@
 	}
 	const nextLabel = $derived(!nextInfo ? T('Back to your progress', 'برگشت به پیشرفتت')
 		: result?.nextIsReplay ? T(`Practice again: ${nextInfo.module.title.en}`, `دوباره تمرین کن: ${nextInfo.module.title.fa}`)
-		: nextInfo.day.id !== day.id ? T(`Start Chapter ${nextInfo.day.number}`, `شروع فصل ${num(nextInfo.day.number)}`)
+		: nextInfo.day.id !== day.id ? T('Start the next chapter', 'شروع فصل بعد')
 		: T(`Next: ${nextInfo.module.title.en} · ${nextInfo.minutes} min`, `بعدی: ${nextInfo.module.title.fa} · ${num(nextInfo.minutes)} دقیقه`));
 
 	// The module's content for this chapter and version.
@@ -181,6 +181,8 @@
 {:else if stage === 'brief'}
 	<h1>{text(mod.title)}</h1>
 	{@render note(mod)}
+	<!-- Phones may block Mira's voice when the step opens on its own; this tap always plays it. -->
+	<button class="hear" type="button" onclick={say}><span aria-hidden="true">🔊</span> {T('Hear Mira', 'شنیدن صدای میرا')}</button>
 	<ActionBar label={T('Next', 'بعدی')} onclick={endBrief} secondary={{ label: T('Skip this step', 'این مرحله را رد کن'), onclick: onSkip }} />
 
 {:else if stage === 'module' || stage === 'saving'}
@@ -251,4 +253,6 @@
 	.done-mark { display: grid; place-items: center; inline-size: 64px; block-size: 64px; margin: 28px 0 8px; border-radius: 50%; background: var(--leaf-wash); color: var(--leaf-deep); font-size: 1.8rem; font-weight: 700; }
 	.done-mark.big { inline-size: 80px; block-size: 80px; font-size: 2.2rem; background: var(--gold-wash, var(--leaf-wash)); }
 	.bar-space { block-size: 110px; }
+	.hear { display: inline-flex; gap: 8px; align-items: center; min-height: 44px; padding: 8px 14px; border: 1.5px solid var(--control-border); border-radius: 999px; background: var(--paper-raised); color: var(--accent-deep); font: inherit; font-weight: 600; cursor: pointer; }
+	.hear:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 </style>

@@ -27,6 +27,12 @@ export const DEFAULT_LENGTH: Length = 15;
  * From Day 2 a day comes in two versions (owner's decision): the same story, different modules and
  * content. Day 1 has one version for everyone.
  */
+/**
+ * The stories a goal starts with (docs/goal-path-plan.md): each chapter belongs to one. A learner's
+ * goal decides which arc comes first; the others follow. Only Travel exists so far.
+ */
+export const ARCS = ['travel', 'everyday', 'abroad', 'work', 'exam'] as const;
+export type ArcId = (typeof ARCS)[number];
 export const TRACKS = ['intermediate', 'professional'] as const;
 export type Track = (typeof TRACKS)[number];
 export const TRACK_NAMES: Record<Track, DisplayText> = {
@@ -82,6 +88,8 @@ export interface DayPack {
 	checkIn?: DayCheckIn;
 	/** False until every module is built and checked: learners never get it; the owner can try it. */
 	ready: boolean;
+	/** The story it belongs to (Travel when missing: Days 1–4). */
+	arc?: ArcId;
 	checkInMinutes: number;
 	recapMinutes: number;
 	/** The modules, for a day with one version (Day 1). */
@@ -328,6 +336,8 @@ export const DAY_FOUR: DayPack = {
 };
 
 export const DAYS: DayPack[] = [DAY_ONE, DAY_TWO, DAY_THREE, DAY_FOUR];
+/** A chapter's story. */
+export const arcOf = (day: DayPack): ArcId => day.arc ?? 'travel';
 export function dayById(id: string | null | undefined): DayPack | null {
 	return DAYS.find(day => day.id === id) ?? null;
 }

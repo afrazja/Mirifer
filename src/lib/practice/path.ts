@@ -11,7 +11,7 @@
  * The old fields only grow, so reading them again is safe after a rollback or from a tab on old code.
  */
 import { z } from 'zod';
-import { DAYS, DAY_IDS, DaySessionSchema, MODULE_IDS, TRACKS, currentModule, dayById, finishedDays, modulesFor, type DayModule, type DayPack, type ModuleId, type Track } from './day';
+import { DAYS, arcOf, type ArcId, DAY_IDS, DaySessionSchema, MODULE_IDS, TRACKS, currentModule, dayById, finishedDays, modulesFor, type DayModule, type DayPack, type ModuleId, type Track } from './day';
 import { RECENT_SESSIONS, readEnglishProgress, resultBand, type EnglishProgress, type FinishedModule } from './english-progress';
 
 /** `day-2:phrases`: a chapter and one of its modules. */
@@ -57,16 +57,40 @@ export function localDay(now: Date, utcOffsetMin: number | null = 0): number {
 export const chapterModules = (day: DayPack, track: Track): DayModule[] => modulesFor(20, day, track);
 export const chapterSteps = (day: DayPack, track: Track): StepId[] => chapterModules(day, track).map(module => stepId(day, module));
 
-/** The chapters learners can open, in order: up to the first one not ready (the owner, `preview`, gets them all). */
-export function releasedChapters(preview = false): DayPack[] {
-	const firstClosed = DAYS.findIndex(day => !day.ready);
-	return preview || firstClosed === -1 ? DAYS : DAYS.slice(0, Math.max(1, firstClosed));
+/**
+ * The order of the stories for each goal (docs/goal-path-plan.md): the goal's own story first, then
+ * the others. "Not sure yet" starts like Everyday; no goal (older profiles) like Travel.
+ */
+const ARC_ORDER: Record<string, ArcId[]> = {
+	travel: ['travel', 'everyday', 'abroad', 'work', 'exam'],
+	everyday: ['everyday', 'travel', 'abroad', 'work', 'exam'],
+	unsure: ['everyday', 'travel', 'abroad', 'work', 'exam'],
+	abroad: ['abroad', 'everyday', 'travel', 'work', 'exam'],
+	work: ['work', 'everyday', 'travel', 'abroad', 'exam'],
+	exam: ['exam', 'everyday', 'travel', 'abroad', 'work']
+};
+export const arcOrder = (reason: string | null | undefined): ArcId[] => ARC_ORDER[reason ?? 'travel'] ?? ARC_ORDER.travel;
+
+/**
+ * The chapters a learner can open, in their journey's order: each story up to its first chapter not
+ * ready (the owner, `preview`, gets them all). A story with nothing ready isn't there yet. The
+ * travel story always opens with its first chapter.
+ */
+export function releasedChapters(preview = false, reason: string | null = null): DayPack[] {
+	return arcOrder(reason).flatMap(arc => {
+		const days = DAYS.filter(day => arcOf(day) === arc);
+		const firstClosed = days.findIndex(day => !day.ready);
+		if (preview || firstClosed === -1) return days;
+		return days.slice(0, arc === 'travel' ? Math.max(1, firstClosed) : firstClosed);
+	});
 }
+/** A chapter's number in this learner's journey (1 for the first story's first chapter). */
+export const chapterNumber = (day: DayPack, preview = false, reason: string | null = null) => releasedChapters(preview, reason).indexOf(day) + 1 || day.number;
 
 /** Whether a step can be opened: a released chapter, and a module of that chapter in this version. */
-export function isOpenStep(step: StepId, track: Track, preview = false): boolean {
+export function isOpenStep(step: StepId, track: Track, preview = false, reason: string | null = null): boolean {
 	const parts = splitStep(step);
-	return !!parts && releasedChapters(preview).includes(parts.day) && chapterSteps(parts.day, track).includes(step);
+	return !!parts && releasedChapters(preview, reason).includes(parts.day) && chapterSteps(parts.day, track).includes(step);
 }
 
 function markDone(path: Path, step: StepId, track: Track, day: number): Path {
@@ -121,8 +145,8 @@ function describe(day: DayPack, track: Track, step: StepId): NextStep {
  * skipped. A chapter with every step skipped brings its first step back. Null when every released
  * chapter is finished (then the app offers a replay).
  */
-export function nextStep(path: Path, track: Track, preview = false): NextStep | null {
-	for (const day of releasedChapters(preview)) {
+export function nextStep(path: Path, track: Track, preview = false, reason: string | null = null): NextStep | null {
+	for (const day of releasedChapters(preview, reason)) {
 		if (chapterFinished(path, day, track)) continue;
 		const steps = chapterSteps(day, track);
 		const step = steps.find(item => !handled(path, item)) ?? steps[0];
@@ -135,8 +159,8 @@ export function nextStep(path: Path, track: Track, preview = false): NextStep | 
  * The step to practise again when nothing new is left: a skipped step first, then the step done
  * longest ago (a replay moves its day, so the replays take turns). On a tie, speaking steps first.
  */
-export function replayPick(path: Path, track: Track, preview = false): NextStep | null {
-	const all = releasedChapters(preview).flatMap(day => chapterModules(day, track).map(module => ({ day, module, step: stepId(day, module) })));
+export function replayPick(path: Path, track: Track, preview = false, reason: string | null = null): NextStep | null {
+	const all = releasedChapters(preview, reason).flatMap(day => chapterModules(day, track).map(module => ({ day, module, step: stepId(day, module) })));
 	const skipped = all.find(item => path.skipped.includes(item.step));
 	if (skipped) return describe(skipped.day, track, skipped.step);
 	const done = all.filter(item => path.done[item.step]);

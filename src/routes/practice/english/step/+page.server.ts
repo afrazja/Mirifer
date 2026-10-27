@@ -26,7 +26,7 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 	const { labAccess } = await parent();
 	const track = trackFor(profile);
 	const path = readPath(user.user_metadata, track);
-	const step = chooseStep(path, track, labAccess, url.searchParams.get('step'));
+	const step = chooseStep(path, track, labAccess, url.searchParams.get('step'), profile.reason);
 	// Nothing new left and no replay asked for: the dashboard offers one.
 	if (!step) redirect(303, '/practice/english/progress');
 	const parts = splitStep(step)!;
@@ -43,10 +43,10 @@ export const load: PageServerLoad = async ({ locals, url, parent }) => {
 };
 
 /** The step this page shows: an allowed `asked` step, else the one under way, else the next. */
-function chooseStep(path: Path, track: Track, preview: boolean, asked: string | null): StepId | null {
-	const next = nextStep(path, track, preview);
-	if (isStepId(asked) && isOpenStep(asked, track, preview) && (path.done[asked] || path.skipped.includes(asked) || next?.step === asked)) return asked;
-	if (path.current && isOpenStep(path.current.step, track, preview)) return path.current.step;
+function chooseStep(path: Path, track: Track, preview: boolean, asked: string | null, reason: string | null): StepId | null {
+	const next = nextStep(path, track, preview, reason);
+	if (isStepId(asked) && isOpenStep(asked, track, preview, reason) && (path.done[asked] || path.skipped.includes(asked) || next?.step === asked)) return asked;
+	if (path.current && isOpenStep(path.current.step, track, preview, reason)) return path.current.step;
 	return next?.step ?? null;
 }
 
@@ -60,13 +60,13 @@ async function learner(locals: App.Locals) {
 	const profile = readEnglishProfile(user.user_metadata);
 	if (!profile || !usesStepPath(user)) return fail(403, { error: 'not_available' });
 	const track = trackFor(profile);
-	return { user, track, path: readPath(user.user_metadata, track), preview: canUseLab(user) };
+	return { user, track, reason: profile.reason, path: readPath(user.user_metadata, track), preview: canUseLab(user) };
 }
 
 /** A step this learner may work on: open in their version, and not ahead of their next step. */
-function allowed(path: Path, track: Track, preview: boolean, value: unknown): StepId | null {
-	if (!isStepId(value) || !isOpenStep(value, track, preview)) return null;
-	return chooseStep(path, track, preview, value) === value ? value : null;
+function allowed(path: Path, track: Track, preview: boolean, value: unknown, reason: string | null): StepId | null {
+	if (!isStepId(value) || !isOpenStep(value, track, preview, reason)) return null;
+	return chooseStep(path, track, preview, value, reason) === value ? value : null;
 }
 
 export const actions: Actions = {
@@ -74,7 +74,7 @@ export const actions: Actions = {
 	start: async ({ locals, request }) => {
 		const me = await learner(locals);
 		if ('status' in me) return me;
-		const step = allowed(me.path, me.track, me.preview, (await request.formData()).get('step'));
+		const step = allowed(me.path, me.track, me.preview, (await request.formData()).get('step'), me.reason);
 		if (!step) return fail(400, { error: 'invalid' });
 		if (me.path.current?.step === step) return { startedAt: me.path.current.startedAt };
 		const path = startStep(me.path, step, me.track);
@@ -93,7 +93,7 @@ export const actions: Actions = {
 		const me = await learner(locals);
 		if ('status' in me) return me;
 		const form = await request.formData();
-		const step = allowed(me.path, me.track, me.preview, form.get('step'));
+		const step = allowed(me.path, me.track, me.preview, form.get('step'), me.reason);
 		const outcome = form.get('outcome');
 		if (!step || (outcome !== 'done' && outcome !== 'skipped')) return fail(400, { error: 'invalid' });
 		let score: z.infer<typeof ScoreSchema> | null = null;
@@ -135,8 +135,8 @@ export const actions: Actions = {
 			await locals.supabase.from('events').insert(rows.map(row => ({ ...row, user_id: me.user.id })));
 		} catch { /* best effort */ }
 
-		const next = nextStep(path, me.track, me.preview);
-		const again = next ? null : replayPick(path, me.track, me.preview);
+		const next = nextStep(path, me.track, me.preview, me.reason);
+		const again = next ? null : replayPick(path, me.track, me.preview, me.reason);
 		return {
 			goalJustMet: outcome === 'done' && !goalBefore,
 			chapterDone: finishedNow,
