@@ -14,7 +14,7 @@ import { strongerSkill, type EnglishProgress } from '$lib/practice/english-progr
 const THEME_NAMES: Record<string, string> = { 'day-1': 'dealing with lost luggage', 'day-2': 'taking a taxi', 'day-3': 'checking in at a hotel', 'day-4': 'asking the way' };
 const REASON_PHRASES: Record<NonNullable<EnglishProfile['reason']>, string> = {
 	travel: 'is learning English for travel', work: 'is learning English for work', exam: 'is preparing for an English exam',
-	abroad: 'is learning English to live abroad', everyday: 'wants to feel more confident speaking English'
+	abroad: 'is learning English to live abroad', everyday: 'wants to feel more confident speaking English', unsure: 'wants to speak English better'
 };
 
 /** Letters, spaces, apostrophes and hyphens only, so a "name" can't carry instructions. */
