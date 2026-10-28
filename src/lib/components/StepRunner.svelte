@@ -19,6 +19,7 @@
 	import ChoosePersuade from '$lib/components/ChoosePersuade.svelte';
 	import RolePlay from '$lib/components/RolePlay.svelte';
 	import SayItBetter from '$lib/components/SayItBetter.svelte';
+	import GroupChat from '$lib/components/GroupChat.svelte';
 	import { loadRecord, saveRecord } from '$lib/practice/day-records';
 	import { asConnectRecord } from '$lib/practice/listen-connect';
 	import { asPhraseRecord } from '$lib/practice/phrases';
@@ -29,7 +30,8 @@
 	import { asPersuadeRecord } from '$lib/practice/persuade';
 	import { asRolePlayRecord } from '$lib/practice/roleplay';
 	import { asSayRecord } from '$lib/practice/say-better';
-	import { connectSetFor, persuadeSetFor, phrasesFor, roleSceneFor, retellPieceFor, sayItemsFor, trapsFor, voiceMessagesFor } from '$lib/practice/day-content';
+	import { asChatRecord } from '$lib/practice/group-chat';
+	import { chatSceneFor, connectSetFor, persuadeSetFor, phrasesFor, roleSceneFor, retellPieceFor, sayItemsFor, trapsFor, voiceMessagesFor } from '$lib/practice/day-content';
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
 	import { dayById, minutesOf, DAY_ONE, type DayModule, type ModuleId, type Track } from '$lib/practice/day';
 	import { chapterModules, splitStep, type StepId } from '$lib/practice/path';
@@ -57,7 +59,7 @@
 	/** Where the chapter's story is now: Mira's first line at a chapter's first step. */
 	const story = first ? day.checkIn?.story ?? null : null;
 	/** Crowded modules (and a chapter's first step) open with Mira's note on its own screen. */
-	const BRIEF_FIRST = new Set(['phrases', 'choose-persuade', 'scenario']);
+	const BRIEF_FIRST = new Set(['phrases', 'choose-persuade', 'scenario', 'group-chat']);
 
 	type Stage = 'loading' | 'brief' | 'module' | 'saving' | 'finished' | 'offer' | 'chapter';
 	let stage = $state<Stage>('loading');
@@ -162,7 +164,8 @@
 	// svelte-ignore state_referenced_locally
 	const content = {
 		connect: connectSetFor(day.id, track), phrases: phrasesFor(day.id, track), traps: trapsFor(day.id), say: withName(sayItemsFor(day.id, track), name),
-		messages: withName(voiceMessagesFor(day.id), name), story: retellPieceFor(day.id), choice: persuadeSetFor(day.id), scene: roleSceneFor(day.id, track)
+		messages: withName(voiceMessagesFor(day.id), name), story: retellPieceFor(day.id), choice: persuadeSetFor(day.id), scene: roleSceneFor(day.id, track),
+		chat: chatSceneFor(day.id, track)
 	};
 	const keep = (record: unknown) => { if (startedAt) saveRecord(startedAt, mod.id, record); };
 	const loaded = () => (startedAt ? loadRecord(startedAt, mod.id) : null);
@@ -225,6 +228,8 @@
 			<ChoosePersuade {isFa} {onSkip} set={content.choice} initial={asPersuadeRecord(loaded())} {onFocus} onSave={keep} {onDone} />
 		{:else if mod.id === 'scenario'}
 			<RolePlay {isFa} {onSkip} scene={content.scene} initial={asRolePlayRecord(loaded(), content.scene)} {onFocus} onSave={keep} {onDone} />
+		{:else if mod.id === 'group-chat'}
+			<GroupChat {isFa} {onSkip} scene={content.chat} initial={asChatRecord(loaded(), content.chat)} {onFocus} onSave={keep} {onDone} />
 		{:else if mod.id === 'say-it-better'}
 			<SayItBetter {isFa} {onSkip} prompt={mod.sayPrompt} initial={asSayRecord(loaded())} {onFocus} onSave={keep} {onDone} />
 		{:else}

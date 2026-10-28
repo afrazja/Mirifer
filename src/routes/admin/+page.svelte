@@ -55,7 +55,7 @@
 		return days <= 0 ? `Today` : days === 1 ? `Yesterday` : days < 7 ? `${days} days ago` : date;
 	};
 	const stamp = (iso: string) => new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) + ' UTC';
-	const MODULES: Record<string, string> = { 'listen-act': 'Listen and connect', 'listen-retell': 'Listen and retell', phrases: 'Natural phrases', traps: 'Persian-speaker traps', 'say-in-english': 'Say it in English', 'voice-messages': 'Voice messages', 'say-it-better': 'Tell your story', 'choose-persuade': 'Choose and persuade', scenario: 'Role-play' };
+	const MODULES: Record<string, string> = { 'listen-act': 'Listen and connect', 'listen-retell': 'Listen and retell', phrases: 'Natural phrases', traps: 'Persian-speaker traps', 'say-in-english': 'Say it in English', 'voice-messages': 'Voice messages', 'say-it-better': 'Tell your story', 'choose-persuade': 'Choose and persuade', scenario: 'Role-play', 'group-chat': 'Group chat' };
 	function eventLabel(e: { name: string; day: number | null; track: unknown; module: unknown; outcome: unknown; done: unknown; skipped: unknown }) {
 		const version = e.track === 'professional' ? 'Professional' : 'Intermediate';
 		if (e.name === 'visit_started') return 'Opened the app';
