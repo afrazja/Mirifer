@@ -5,7 +5,7 @@
  * messages from the friends it plays, the goals the learner has reached (each with the learner's own
  * words as evidence), and the plan agreed so far. The server keeps it honest, as in the role-plays:
  * - every message passes `chatLineProblem` (short, one emoji, no banned words, only the fact sheet's
- *   numbers and prices), at most one question per round and only in the last message, and only the
+ *   numbers, the learner's own and clock hours, and its prices), at most one asking message per round, and only the
  *   friends the model plays; a failing round gets one rewrite, then a prepared fallback;
  * - a goal counts only if its evidence is really in the learner's message (`evidencedGoals`); goals
  *   only accumulate, signed for the learner, so nothing needs to be stored;
@@ -37,11 +37,20 @@ const RequestSchema = z.object({
 	quiet: z.number().int().min(0).max(20).optional()
 }).strict();
 
+/**
+ * The model's round. Lenient where providers differ (DeepSeek has no strict schema): numbers may come
+ * as text, and goals or a plan in another shape count as none rather than losing the friends' messages.
+ */
+const GoalClaimSchema = z.object({ id: z.string().max(20), msg: z.coerce.number().int().min(1).max(30), quote: z.string().max(200) }).strip();
 const ReplySchema = z.object({
 	messages: z.array(z.object({ from: z.string().max(20), text: z.string().max(600) }).strip()).min(1).max(3),
-	goals: z.array(z.object({ id: z.string().max(20), msg: z.number().int().min(1).max(30), quote: z.string().max(200) }).strip()).max(6),
-	plan: z.object({ day: z.string().max(10).nullable(), time: z.number().min(0).max(24).nullable(), place: z.string().max(20).nullable() }).strip().nullable(),
-	close: z.boolean()
+	goals: z.array(z.unknown()).max(10).catch([]).transform(items => items.flatMap(item => { const claim = GoalClaimSchema.safeParse(item); return claim.success ? [claim.data] : []; })),
+	plan: z.object({
+		day: z.string().max(10).nullable().catch(null),
+		time: z.coerce.number().min(0).max(24).nullable().catch(null),
+		place: z.string().max(20).nullable().catch(null)
+	}).strip().nullable().catch(null),
+	close: z.boolean().catch(false)
 }).strip();
 const fields = ['messages', 'goals', 'plan', 'close'];
 const schemasFor = (ids: string[], played: string[]) => ({
@@ -64,17 +73,16 @@ const clean = (text: string) => text.replace(/\s+/g, ' ').trim();
 const asks = (text: string) => text.includes('?');
 
 /** Why the model's round can't be used, or null. */
-function roundProblem(scene: ChatScene, variant: string, lines: ChatLine[], previous: string | undefined, twistSaid: boolean): string | null {
+function roundProblem(scene: ChatScene, variant: string, lines: ChatLine[], previous: string | undefined, twistSaid: boolean, learnerSaid: string): string | null {
 	if (!lines.length || lines.length > 2) return 'write one or two messages';
 	for (const line of lines) {
 		if (!scene.played.includes(line.from)) return `"${line.from}" is not a friend you play`;
-		const problem = chatLineProblem(scene, line.text, variant, previous, twistSaid ? scene.twist?.news : '');
+		const problem = chatLineProblem(scene, line.text, variant, previous, `${twistSaid ? scene.twist?.news ?? '' : ''}\n${learnerSaid}`);
 		if (problem) return problem;
 		if (scene.twist && !twistSaid && scene.twist.leak.test(line.text)) return 'it gave away news nobody knows yet';
 	}
 	// One message may offer the choices ("What time on Saturday? 4 or 5?"); two asking messages are two questions.
 	if (lines.filter(line => asks(line.text)).length > 1) return 'it asked more than one question (one question at most, in the last message)';
-	if (lines.length === 2 && asks(lines[0].text)) return 'the question must be in the last message';
 	return null;
 }
 
@@ -122,11 +130,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	let result = await ask(transcript);
 	if (!result) return json({ error: 'AI temporarily unavailable' }, { status: 502 });
 	const linesOf = (r: NonNullable<typeof result>) => r.messages.map(m => ({ from: m.from, text: clean(m.text) }));
-	let problem = roundProblem(scene, variant, linesOf(result), previous, twistSaid);
+	// Numbers the learner said ("how about after 7?") may come back in the friends' answer.
+	const learnerSaid = said.map(m => m.text).join('\n');
+	let problem = roundProblem(scene, variant, linesOf(result), previous, twistSaid, learnerSaid);
 	if (problem) {
 		console.error(`English group chat: round rejected (${problem}); retrying`);
 		const retry = await ask(`${transcript}\n\n(Your last attempt could not be used because ${problem}. Write the friends' messages again, following every rule.)`);
-		if (retry) { result = retry; problem = roundProblem(scene, variant, linesOf(retry), previous, twistSaid); }
+		if (retry) { result = retry; problem = roundProblem(scene, variant, linesOf(retry), previous, twistSaid, learnerSaid); }
 		if (problem) console.error(`English group chat: retry rejected too (${problem}); using a fallback line`);
 	}
 
