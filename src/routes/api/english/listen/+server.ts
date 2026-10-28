@@ -22,7 +22,8 @@ const perMinute = createLimiter(20, 60_000);
 const CONTEXT: Record<ClipUse, string> = {
 	greeting: 'They are answering a friendly question from their coach, or saying one short sentence to check their microphone.',
 	'role-play': 'They are a traveler in a short role-play conversation with someone who works at a hotel, an airport or a taxi company.',
-	'say-again': 'They are repeating one short sentence after their coach.'
+	'say-again': 'They are repeating one short sentence after their coach.',
+	'group-chat': 'They are sending a short, casual voice note to a group chat with friends, about plans (a day, a time, a place, what to bring).'
 };
 
 export const POST: RequestHandler = async ({ request, locals }) => {

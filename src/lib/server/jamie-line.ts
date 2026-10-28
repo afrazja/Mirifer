@@ -15,6 +15,10 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { env } from '$env/dynamic/private';
 import { GOAL_IDS, hotelFacts, type GoalId, type Variant } from '$lib/practice/hotel';
 import type { RoleScene } from '$lib/practice/roleplay';
+import { FRIEND_WORDS, type ChatScene } from '$lib/practice/group-chat';
+
+/** The longest friend message (a chat line is short). */
+const MAX_FRIEND_MESSAGE = 200;
 
 export const MAX_JAMIE_WORDS = 60;
 /** The same as the longest character turn the conversation route accepts back. */
@@ -33,6 +37,26 @@ export function jamieLineProblem(value: unknown, variant: Variant, previous?: st
 /** The same checks for any scene's character: the numbers must come from that scene's fact sheet. */
 export function sceneLineProblem(scene: RoleScene, value: unknown, variant: string, previous?: string): string | null {
 	return characterLineProblem(value, scene.facts(variant), previous, scene.priceReason);
+}
+
+/**
+ * A friend's chat message: short (the level's word cap, with a little slack), one emoji at most, none
+ * of the scene's banned words, and only numbers from the fact sheet; the prices on it ("$20 each")
+ * may be said.
+ */
+export function chatLineProblem(scene: ChatScene, value: unknown, variant: string, previous?: string, news = ''): string | null {
+	if (typeof value !== 'string') return 'it was not text';
+	const line = value.replace(/\s+/g, ' ').trim();
+	const words = FRIEND_WORDS[scene.level];
+	if (line.length > MAX_FRIEND_MESSAGE || line.split(' ').length > words + 4) return `a message was too long for a chat (at most ${words} words each)`;
+	if ((line.match(/\p{Extended_Pictographic}/gu) ?? []).length > 1) return 'a message had more than one emoji';
+	const banned = scene.banned?.exec(line);
+	if (banned) return `a message used "${banned[0]}", which the friends never say here`;
+	const checked = scene.allowedPrices ? line.replace(new RegExp(scene.allowedPrices.source, 'gi'), 'the price') : line;
+	const sheet = `${scene.facts(variant)}\n${news}`;
+	const known = new Set(sheet.match(/\d+/g));
+	for (const number of checked.match(/\d+/g) ?? []) if (!known.has(number)) return `it mentioned ${number}, which is not on the fact sheet`;
+	return characterLineProblem(checked, sheet, previous, scene.priceReason);
 }
 
 function characterLineProblem(value: unknown, facts: string, previous: string | undefined, priceReason: string): string | null {
