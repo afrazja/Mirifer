@@ -18,7 +18,8 @@ const COUNTS: Partial<Record<ModuleId, DisplayText>> = {
 	'say-it-better': { en: 'fixes used on your second try', fa: 'اصلاح را در بار دوم به کار بردی' },
 	'voice-messages': { en: 'questions answered', fa: 'سؤال را جواب دادی' },
 	'choose-persuade': { en: 'points made', fa: 'نکته را گفتی' },
-	scenario: { en: 'goals reached', fa: 'هدف رسیدی' }
+	scenario: { en: 'goals reached', fa: 'هدف رسیدی' },
+	'group-chat': { en: 'goals reached', fa: 'هدف رسیدی' }
 };
 
 /** The score line for a step, or null when the step gives no score. */

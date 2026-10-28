@@ -12,9 +12,9 @@ const learner = { id: 'u1', email: 'a@b.c', email_confirmed_at: '2026-01-01T00:0
 const owner = { ...learner, id: 'u0', email: 'Owner@M.test' };
 
 describe('Module lab', () => {
-	it('lists the 18 module types once each', () => {
-		expect(LAB_MODULES).toHaveLength(18);
-		expect(new Set(LAB_MODULES.map(m => m.id)).size).toBe(18);
+	it('lists the 19 module types once each', () => {
+		expect(LAB_MODULES).toHaveLength(19);
+		expect(new Set(LAB_MODULES.map(m => m.id)).size).toBe(19);
 	});
 	it('opens a built module from every card', () => {
 		expect(LAB_MODULES.filter(m => !m.href).map(m => m.id)).toEqual([]);
@@ -66,5 +66,27 @@ describe('Module lab day sets', () => {
 		expect(labModule(pro, 'listen-act')?.intro.en).toContain('taxi');
 		expect(labModule(labSet('day-1'), 'listen-act')?.intro.en).toContain('airport');
 		expect(labModule(pro, 'phrases')?.intro.en).toContain('natural in a taxi');
+	});
+});
+
+import { load as chapterStepLoad } from './chapters/step/+page.server';
+import { LAB_CHAPTER_SETS } from '$lib/practice/lab-sets';
+describe('Module lab: any step of any chapter', () => {
+	const url = (q: string) => new URL(`http://localhost/practice/english/lab/chapters/step?${q}`);
+	const named = { ...owner, user_metadata: { target_language: 'en', display_name: 'Ali Rezaei' } };
+	it('opens a step of a chapter not yet released, in either version, for the owner only', async () => {
+		await expect(chapterStepLoad({ locals: locals(named), parent: async () => ({ labAccess: true }), url: url('day=everyday-1&track=professional&module=voice-messages') } as any))
+			.resolves.toEqual({ dayId: 'everyday-1', track: 'professional', moduleId: 'voice-messages', name: 'Ali Rezaei' });
+		await expect(chapterStepLoad({ locals: locals(learner), parent: async () => ({ labAccess: false }), url: url('day=everyday-1&module=traps') } as any))
+			.rejects.toMatchObject({ status: 303, location: '/practice/english/today' });
+	});
+	it('refuses a step the chapter or version doesn’t have', async () => {
+		for (const q of ['day=everyday-1&track=intermediate&module=voice-messages', 'day=nope&module=traps', 'day=day-2&module=nope']) {
+			await expect(chapterStepLoad({ locals: locals(owner), parent: async () => ({ labAccess: true }), url: url(q) } as any), q).rejects.toMatchObject({ status: 404 });
+		}
+	});
+	it('the per-chapter pickers list each chapter once, Everyday 1 included', () => {
+		expect(LAB_CHAPTER_SETS.map(s => s.day)).toEqual(['day-1', 'day-2', 'day-3', 'day-4', 'everyday-1']);
+		expect(LAB_CHAPTER_SETS.map(s => s.name.en)).toEqual(['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Everyday 1']);
 	});
 });

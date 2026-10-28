@@ -51,7 +51,7 @@ const choices: Record<string, readonly string[]> = {
 	course: ['en', 'de', 'fr'], scenario: ['hotel-quiet-room-v1'],
 	// The English daily lessons (src/lib/server/lesson-events.ts); a test keeps these in step with day.ts.
 	track: ['intermediate', 'professional'],
-	module: ['listen-act', 'scenario', 'phrases', 'say-it-better', 'say-in-english', 'traps', 'voice-messages', 'listen-retell', 'choose-persuade'],
+	module: ['listen-act', 'scenario', 'phrases', 'say-it-better', 'say-in-english', 'traps', 'voice-messages', 'listen-retell', 'choose-persuade', 'group-chat'],
 	outcome: ['done', 'skipped']
 };
 export function safeMetadata(input: unknown): AnalyticsRecord['metadata'] {

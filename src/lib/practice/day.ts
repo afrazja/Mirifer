@@ -18,7 +18,7 @@ export type DayId = (typeof DAY_IDS)[number];
 /** Day 1's id (kept for older callers). */
 export const DAY_ID: DayId = 'day-1';
 /** Every module type a day can use. */
-export const MODULE_IDS = ['listen-act', 'scenario', 'phrases', 'say-it-better', 'say-in-english', 'traps', 'voice-messages', 'listen-retell', 'choose-persuade'] as const;
+export const MODULE_IDS = ['listen-act', 'scenario', 'phrases', 'say-it-better', 'say-in-english', 'traps', 'voice-messages', 'listen-retell', 'choose-persuade', 'group-chat'] as const;
 export type ModuleId = (typeof MODULE_IDS)[number];
 export const LENGTHS = [15, 20] as const;
 export type Length = (typeof LENGTHS)[number];

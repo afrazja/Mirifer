@@ -8,7 +8,7 @@
 	const NAMES: Record<string, string> = {
 		'listen-act': 'Listen and connect', 'listen-retell': 'Listen and retell', phrases: 'Natural phrases', traps: 'Persian-speaker traps',
 		'say-in-english': 'Say it in English', 'voice-messages': 'Voice messages', 'say-it-better': 'Tell your story / Say it better',
-		'choose-persuade': 'Choose and persuade', scenario: 'Role-play'
+		'choose-persuade': 'Choose and persuade', scenario: 'Role-play', 'group-chat': 'Group chat'
 	};
 	const version = (track: string) => (track === 'professional' ? 'Professional' : 'Intermediate');
 </script>

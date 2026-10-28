@@ -11,6 +11,8 @@ import { MESSAGES as DAY_ONE_MESSAGES, type VoiceMessage } from './voice-message
 import { RETELL_PIECES, type RetellPiece } from './retell';
 import { APARTMENTS, type PersuadeSet } from './persuade';
 import { HOTEL_SCENE, type RoleScene } from './roleplay';
+import type { ChatScene } from './group-chat';
+import { BIRTHDAY_A2, BIRTHDAY_B1 } from './chats';
 import type { DisplayText } from './hotel';
 import * as dayOne from './days/day-1';
 import * as dayTwo from './days/day-2';
@@ -35,6 +37,8 @@ export interface DayContent {
 	CALL?: RoleScene;
 	/** A role-play per version, when they differ (Everyday 1); else `CALL` for both. */
 	CALLS?: Partial<Record<Track, RoleScene>>;
+	/** A group chat per version (group-chat.ts). */
+	CHATS?: Partial<Record<Track, ChatScene>>;
 }
 
 /** Every later day's content, by day id. */
@@ -115,4 +119,9 @@ export function roleSceneFor(dayId: string, track: Track = 'intermediate'): Role
 export const ALL_ROLE_SCENES: RoleScene[] = [HOTEL_SCENE, ...LATER.flatMap(day => [...(day.CALL ? [day.CALL] : []), ...Object.values(day.CALLS ?? {})])];
 export function roleSceneById(id: string | null | undefined): RoleScene | null {
 	return ALL_ROLE_SCENES.find(scene => scene.id === (id ?? HOTEL_SCENE.id)) ?? null;
+}
+
+/** Group chat: the chapter's chat for this version (Nina's 30th when the chapter has none). */
+export function chatSceneFor(dayId: string, track: Track = 'intermediate'): ChatScene {
+	return contentOf(dayId).CHATS?.[track] ?? (track === 'professional' ? BIRTHDAY_B1 : BIRTHDAY_A2);
 }

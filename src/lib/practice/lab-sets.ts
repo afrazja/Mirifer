@@ -14,8 +14,14 @@ export const LAB_SETS: LabSet[] = [
 	{ id: 'day-3-intermediate', day: 'day-3', track: 'intermediate', name: { en: 'Day 3 · Intermediate', fa: 'روز ۳، متوسط' } },
 	{ id: 'day-3-professional', day: 'day-3', track: 'professional', name: { en: 'Day 3 · Professional', fa: 'روز ۳، حرفه‌ای' } },
 	{ id: 'day-4-intermediate', day: 'day-4', track: 'intermediate', name: { en: 'Day 4 · Intermediate', fa: 'روز ۴، متوسط' } },
-	{ id: 'day-4-professional', day: 'day-4', track: 'professional', name: { en: 'Day 4 · Professional', fa: 'روز ۴، حرفه‌ای' } }
+	{ id: 'day-4-professional', day: 'day-4', track: 'professional', name: { en: 'Day 4 · Professional', fa: 'روز ۴، حرفه‌ای' } },
+	{ id: 'everyday-1-intermediate', day: 'everyday-1', track: 'intermediate', name: { en: 'Everyday 1 · Intermediate', fa: 'روزمره ۱، متوسط' } },
+	{ id: 'everyday-1-professional', day: 'everyday-1', track: 'professional', name: { en: 'Everyday 1 · Professional', fa: 'روزمره ۱، حرفه‌ای' } }
 ];
+/** One set per chapter (for modules whose content doesn't change with the version: traps, voice messages). */
+export const LAB_CHAPTER_SETS: LabSet[] = LAB_SETS.filter(set => set.track === 'intermediate' || set.id === 'day-1')
+	.filter((set, i, all) => all.findIndex(other => other.day === set.day) === i)
+	.map(set => ({ ...set, name: { en: set.name.en.replace(/ · .*$/, ''), fa: set.name.fa.replace(/، .*$/, '') } }));
 export const labSet = (id: string | null | undefined) => LAB_SETS.find(set => set.id === id) ?? LAB_SETS[0];
 
 const key = (module: string) => `mirifer_lab_set:${module}`;
