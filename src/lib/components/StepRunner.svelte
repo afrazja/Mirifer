@@ -8,6 +8,8 @@
 	import { goto } from '$app/navigation';
 	import { deserialize } from '$app/forms';
 	import ActionBar from '$lib/components/ActionBar.svelte';
+	import StepRating from '$lib/components/StepRating.svelte';
+	import { phraseScore, scoreLine, type StepScore } from '$lib/practice/step-feedback';
 	import ListenConnect from '$lib/components/ListenConnect.svelte';
 	import PhrasePractice from '$lib/components/PhrasePractice.svelte';
 	import Traps from '$lib/components/Traps.svelte';
@@ -96,8 +98,12 @@
 	}
 	function endBrief() { stopAllAudio(); stage = 'module'; }
 
-	async function finish(outcome: 'done' | 'skipped', score?: { correct: number; total: number }, record?: unknown) {
+	/** The learner's result for this step (shown on the next screen), when the step gives one. */
+	let shownScore = $state<StepScore | null>(null);
+	async function finish(outcome: 'done' | 'skipped', given?: { correct: number; total: number }, record?: unknown) {
 		stopAllAudio();
+		const score = outcome === 'done' ? given ?? (mod.id === 'phrases' ? phraseScore(record) ?? undefined : undefined) : undefined;
+		shownScore = score ?? null;
 		if (record && startedAt) saveRecord(startedAt, mod.id, record);
 		stage = 'saving'; saveFailed = false;
 		const body = new FormData();
@@ -163,6 +169,14 @@
 	const onFocus = (mode: 'full' | 'compact' | 'hidden') => (intro = mode);
 </script>
 
+{#snippet endOfStep()}
+	{@const line = scoreLine(mod.id, shownScore)}
+	{#if line}
+		<div class="score"><span class="score-value">{isFa ? line.valueFa : line.value}</span><span class="score-label">{text(line.label)}</span></div>
+	{/if}
+	<StepRating {step} {isFa} />
+{/snippet}
+
 {#snippet note(m: DayModule)}
 	<div class="brief">
 		<span class="avatar" aria-hidden="true">M</span>
@@ -222,6 +236,7 @@
 	<div class="done-mark" aria-hidden="true">{result.outcome === 'done' ? '✓' : '→'}</div>
 	<h1>{result.outcome === 'done' ? T('Step done.', 'این مرحله تمام شد.') : T('No problem. This step will come back later.', 'اشکالی ندارد. این مرحله بعداً برمی‌گردد.')}</h1>
 	{#if result.goalJustMet}<p class="goal">{T('That’s your goal for today ✓', 'هدف امروزت انجام شد ✓')}</p>{/if}
+	{#if result.outcome === 'done'}{@render endOfStep()}{/if}
 	<ActionBar label={nextLabel} onclick={goNext} secondary={nextInfo ? { label: T('Done for now', 'فعلاً کافی است'), onclick: home } : null} />
 
 {:else if stage === 'offer' && offered?.module}
@@ -235,6 +250,7 @@
 	<h1>{text(day.theme)}</h1>
 	<p class="goal">{text(nowYouCan)}</p>
 	{#if result.goalJustMet}<p class="small">{T('And that’s your goal for today ✓', 'و هدف امروزت هم انجام شد ✓')}</p>{/if}
+	{#if result.outcome === 'done'}{@render endOfStep()}{/if}
 	<ActionBar label={nextLabel} onclick={goNext} secondary={nextInfo ? { label: T('Done for now', 'فعلاً کافی است'), onclick: home } : null} />
 {/if}
 
@@ -256,6 +272,9 @@
 	.done-mark { display: grid; place-items: center; inline-size: 64px; block-size: 64px; margin: 28px 0 8px; border-radius: 50%; background: var(--leaf-wash); color: var(--leaf-deep); font-size: 1.8rem; font-weight: 700; }
 	.done-mark.big { inline-size: 80px; block-size: 80px; font-size: 2.2rem; background: var(--gold-wash, var(--leaf-wash)); }
 	.bar-space { block-size: 110px; }
+	.score { display: flex; align-items: baseline; gap: 10px; margin: 12px 0 0; }
+	.score-value { font-family: var(--font-display); font-size: 2rem; font-weight: 600; color: var(--accent-deep); }
+	.score-label { color: var(--ink-soft); }
 	.hear { display: inline-flex; gap: 8px; align-items: center; min-height: 44px; padding: 8px 14px; border: 1.5px solid var(--control-border); border-radius: 999px; background: var(--paper-raised); color: var(--accent-deep); font: inherit; font-weight: 600; cursor: pointer; }
 	.hear:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 </style>

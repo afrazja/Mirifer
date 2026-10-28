@@ -69,6 +69,19 @@ describe('step page', () => {
 		expect(result.next).not.toBe(intermediate[1]);
 		expect(f.inserted[0].metadata).toMatchObject({ replay: true });
 	});
+	it('saves a rating (1–5) only for a step the learner did', async () => {
+		const meta = { english_path_v1: { done: doneAll([intermediate[0]]), skipped: [], current: null } };
+		const f = fixture(meta, { step: intermediate[0], rating: '4' });
+		expect(await actions.rate(f.event())).toEqual({ rated: 4 });
+		expect(f.inserted[0]).toMatchObject({ event_name: 'step_rated', day: 1, metadata: { course: 'en', module: 'listen-act', track: 'intermediate', rating: 4 } });
+		expect(await actions.rate(fixture(meta, { step: intermediate[1], rating: '4' }).event())).toMatchObject({ status: 400 });
+		expect(await actions.rate(fixture(meta, { step: intermediate[0], rating: '9' }).event())).toMatchObject({ status: 400 });
+	});
+	it('keeps the step’s result on its event', async () => {
+		const f = fixture({}, { step: intermediate[0], outcome: 'done', score: JSON.stringify({ correct: 3, total: 4 }) });
+		await actions.result(f.event());
+		expect(f.inserted.find(row => row.event_name === 'lesson_progress').metadata.percentage).toBe(75);
+	});
 	it('refuses a bad result', async () => {
 		expect(await actions.result(fixture({}, { step: intermediate[0], outcome: 'maybe' }).event())).toMatchObject({ status: 400 });
 		expect(await actions.result(fixture({}, { step: 'day-9:phrases', outcome: 'done' }).event())).toMatchObject({ status: 400 });

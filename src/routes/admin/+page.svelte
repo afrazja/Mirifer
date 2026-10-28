@@ -247,7 +247,7 @@
 			{/if}
 
 		{:else if tab === 'lessons'}
-			<EnglishLessons report={report.lessons} />
+			<EnglishLessons report={report.lessons} ratings={report.ratings} />
 
 		{:else if tab === 'cost'}
 			<div class="metrics">

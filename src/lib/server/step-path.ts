@@ -23,6 +23,8 @@ export const previewFor = (user: Pick<User, 'email' | 'email_confirmed_at'> | nu
 export interface StepEventInput {
 	day: DayPack; track: Track; module: ModuleId; index: number; total: number;
 	outcome: 'done' | 'skipped'; replay: boolean;
+	/** The step's result, when it gives one (as a percentage on the event). */
+	score?: { correct: number; total: number } | null;
 	/** The chapter's first step, done or skipped for the first time. */
 	chapterStarted: boolean;
 	/** The chapter just finished with this step: its done and skipped counts. */
@@ -39,7 +41,17 @@ export function stepEvents(userId: string, input: StepEventInput, now: Date, utc
 	});
 	const rows: AnalyticsRecord[] = [];
 	if (input.chapterStarted && !input.replay) rows.push(event('lesson_started', { total: input.total }));
-	rows.push(event('lesson_progress', { module: input.module, outcome: input.outcome, index: input.index, ...(input.replay ? { replay: true } : {}) }));
+	const percentage = input.score && input.score.total > 0 ? Math.round(Math.min(input.score.correct, input.score.total) / input.score.total * 100) : null;
+	rows.push(event('lesson_progress', { module: input.module, outcome: input.outcome, index: input.index, ...(input.replay ? { replay: true } : {}), ...(percentage === null ? {} : { percentage }) }));
 	if (input.chapterCompleted) rows.push(event('lesson_completed', { ...input.chapterCompleted, total: input.total }));
 	return rows;
+}
+
+/** One learner's rating of a step they did (1–5, how much they liked it). */
+export function ratingEvent(userId: string, day: DayPack, track: Track, module: ModuleId, rating: number, now: Date): AnalyticsRecord {
+	const attempt = lessonAttemptId(userId, `path|${day.id}|${track}`);
+	return {
+		event_id: randomUUID(), session_id: attempt, attempt_id: attempt, event_name: 'step_rated', day: day.number,
+		occurred_at: now.toISOString(), schema_version: SCHEMA_VERSION, metadata: safeMetadata({ course: 'en', track, module, rating })
+	};
 }

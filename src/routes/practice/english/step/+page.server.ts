@@ -9,7 +9,8 @@ import {
 	replayPick, splitStep, startStep, chapterModules, type Path, type Preview, type StepId
 } from '$lib/practice/path';
 import { canUseLab } from '$lib/server/lab-access';
-import { previewFor, stepEvents, usesStepPath } from '$lib/server/step-path';
+import { previewFor, ratingEvent, stepEvents, usesStepPath } from '$lib/server/step-path';
+import { isRating } from '$lib/practice/step-feedback';
 
 /**
  * One step of the English path (docs/goal-path-plan.md). The app chooses it: the step under way,
@@ -70,6 +71,21 @@ function allowed(path: Path, track: Track, preview: Preview, value: unknown, rea
 }
 
 export const actions: Actions = {
+	/** How much the learner liked a step they did (1–5); optional, and a later rating replaces it in the admin. */
+	rate: async ({ locals, request }) => {
+		const me = await learner(locals);
+		if ('status' in me) return me;
+		const form = await request.formData();
+		const step = form.get('step'), rating = Number(form.get('rating'));
+		if (!isStepId(step) || !isOpenStep(step, me.track, me.preview, me.reason) || !me.path.done[step] || !isRating(rating)) return fail(400, { error: 'invalid' });
+		const { day, module } = splitStep(step)!;
+		try {
+			const { error } = await locals.supabase.from('events').insert([{ ...ratingEvent(me.user.id, day, me.track, module, rating, new Date()), user_id: me.user.id }]);
+			if (error) return fail(503, { error: 'save_failed' });
+		} catch { return fail(503, { error: 'save_failed' }); }
+		return { rated: rating };
+	},
+
 	/** The step opens: it becomes the one under way, with its start (which keys its answers in the browser). */
 	start: async ({ locals, request }) => {
 		const me = await learner(locals);
@@ -98,6 +114,7 @@ export const actions: Actions = {
 		if (!step || (outcome !== 'done' && outcome !== 'skipped')) return fail(400, { error: 'invalid' });
 		let score: z.infer<typeof ScoreSchema> | null = null;
 		const rawScore = form.get('score');
+		// The score also comes for steps without one of their own (Natural phrases: the phrases caught).
 		if (typeof rawScore === 'string' && rawScore) {
 			try { const parsed = ScoreSchema.safeParse(JSON.parse(rawScore)); if (parsed.success) score = parsed.data; } catch { /* no score */ }
 		}
@@ -128,7 +145,7 @@ export const actions: Actions = {
 		try {
 			const steps = chapterSteps(day, me.track);
 			const rows = stepEvents(me.user.id, {
-				day, track: me.track, module: moduleId, index: modules.indexOf(module), total: modules.length, outcome, replay,
+				day, track: me.track, module: moduleId, index: modules.indexOf(module), total: modules.length, outcome, replay, score,
 				chapterStarted: startedChapter,
 				chapterCompleted: finishedNow ? { done: steps.filter(item => path.done[item]).length, skipped: steps.filter(item => path.skipped.includes(item)).length } : null
 			}, now, utcOffsetMin);
