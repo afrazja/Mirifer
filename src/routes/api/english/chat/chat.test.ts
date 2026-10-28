@@ -72,7 +72,7 @@ describe('/api/english/chat', () => {
 			[{ from: 'nina', text: 'hi guys' }],
 			[{ from: 'maya', text: 'Rosa’s has great wine 🍷' }],
 			[{ from: 'maya', text: 'It is $50 each. Ok?' }],
-			[{ from: 'maya', text: 'How about 8 pm?' }],
+			[{ from: 'maya', text: 'It takes 45 minutes to get there' }],
 			[{ from: 'maya', text: 'gonna be fun lol' }]
 		];
 		for (const messages of bad) {
@@ -82,6 +82,29 @@ describe('/api/english/chat', () => {
 			expect(body.messages, JSON.stringify(messages)).toEqual([BIRTHDAY_A2.fallback('rosa').time]);
 			expect(JSON.stringify(sent(1))).toContain('could not be used because');
 		}
+	});
+
+	it('the owner’s chat: a later time the learner suggests comes back in the friends’ answer', async () => {
+		// "No let's do it a little later, how about after 7?" got the fallback, because Maya's "7" wasn't on the sheet.
+		const messages = [...A2_START, { from: 'maya', text: 'Are you free Saturday at 4 or 5?' }, you("No let's do it a little later, how about after 7?")];
+		respond({ messages: [{ from: 'maya', text: 'Sure! Saturday at 7:30?' }] });
+		expect((await (await POST(turn(BIRTHDAY_A2, messages).event)).json()).messages).toEqual([{ from: 'maya', text: 'Sure! Saturday at 7:30?' }]);
+		// A clock hour is fine even if nobody said it; another number is not.
+		respond({ messages: [{ from: 'maya', text: 'Hmm, how about 8?' }] });
+		expect((await (await POST(turn(BIRTHDAY_A2, messages).event)).json()).messages[0].text).toBe('Hmm, how about 8?');
+	});
+
+	it('takes a question before a reaction, and DeepSeek’s looser shapes', async () => {
+		respond({ messages: [{ from: 'maya', text: 'Rosa’s or the park?' }, { from: 'maya', text: 'Nina loves both 😄' }] });
+		expect((await (await POST(turn().event)).json()).messages).toHaveLength(2);
+		// Numbers as text, and a goal in another shape, don't throw the friends' messages away.
+		const messages = [...A2_START, { from: 'maya', text: 'What time on Saturday? 4 or 5?' }, you('5 is good')];
+		fetchMock.mockImplementation(() => Promise.resolve(new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({
+			messages: [{ from: 'maya', text: 'Great! Rosa’s or the park?' }], goals: [{ id: 'time', msg: '2', quote: '5 is good' }, { time: true }], plan: { day: 'sat', time: '17', place: null }, close: 'no'
+		}) } }] }), { status: 200 })));
+		const body = await (await POST(turn(BIRTHDAY_A2, messages).event)).json();
+		expect(body.messages.at(-1)).toEqual({ from: 'maya', text: 'Great! Rosa’s or the park?' });
+		expect(body.goals).toEqual(['time']);
 	});
 
 	it('B1: the twist comes when the plan clashes, and the time must be agreed again', async () => {
@@ -178,5 +201,26 @@ describe('/api/english/chat/review', () => {
 			{ msg: 3, original: 'I bring the cake', better: 'gonna bring the cake', whyFa: 'ف', whyEn: 'e', kind: 'future' }
 		]));
 		expect((await (await REVIEW(review(chat).event)).json()).upgrades).toEqual([]);
+	});
+});
+
+describe('the AI provider chain', () => {
+	it('when the configured Gemini model is gone (404), it uses Google’s current Flash model', async () => {
+		env.GEMINI_API_KEY = 'g'; env.GEMINI_MODEL = 'gemini-old-retired';
+		const reply = { messages: [{ from: 'maya', text: 'Yay! What time on Saturday? 4 or 5?' }], goals: [], plan: null, close: false };
+		fetchMock.mockImplementation((url: string) => Promise.resolve(url.includes('gemini-old-retired')
+			? new Response('{}', { status: 404 })
+			: new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify(reply) }] } }] }), { status: 200 })));
+		const body = await (await POST(turn().event)).json();
+		expect(body.messages).toEqual(reply.messages);
+		expect(fetchMock.mock.calls.map(call => String(call[0]))).toEqual([
+			expect.stringContaining('models/gemini-old-retired:'), expect.stringContaining('models/gemini-flash-latest:')
+		]);
+	});
+	it('another Gemini failure goes on down the chain, without a second Gemini try', async () => {
+		env.GEMINI_API_KEY = 'g'; env.GEMINI_MODEL = 'gemini-x';
+		fetchMock.mockImplementation((url: string) => Promise.resolve(url.includes('googleapis') ? new Response('{}', { status: 500 }) : openAi({})));
+		await POST(turn().event);
+		expect(fetchMock.mock.calls.filter(call => String(call[0]).includes('googleapis'))).toHaveLength(1);
 	});
 });

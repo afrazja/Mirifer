@@ -44,6 +44,7 @@ export function sceneLineProblem(scene: RoleScene, value: unknown, variant: stri
  * of the scene's banned words, and only numbers from the fact sheet; the prices on it ("$20 each")
  * may be said.
  */
+/** `news`: what else the friends may repeat (the twist's news once said, the learner's own words). */
 export function chatLineProblem(scene: ChatScene, value: unknown, variant: string, previous?: string, news = ''): string | null {
 	if (typeof value !== 'string') return 'it was not text';
 	const line = value.replace(/\s+/g, ' ').trim();
@@ -55,7 +56,9 @@ export function chatLineProblem(scene: ChatScene, value: unknown, variant: strin
 	const checked = scene.allowedPrices ? line.replace(new RegExp(scene.allowedPrices.source, 'gi'), 'the price') : line;
 	const sheet = `${scene.facts(variant)}\n${news}`;
 	const known = new Set(sheet.match(/\d+/g));
-	for (const number of checked.match(/\d+/g) ?? []) if (!known.has(number)) return `it mentioned ${number}, which is not on the fact sheet`;
+	// Clock hours are always fine (friends suggest times); any other number must be on the sheet or
+	// said by the learner (passed in `news`).
+	for (const number of checked.match(/\d+/g) ?? []) if (!known.has(number) && !(Number(number) >= 1 && Number(number) <= 12)) return `it mentioned ${number}, which is not on the fact sheet`;
 	return characterLineProblem(checked, sheet, previous, scene.priceReason);
 }
 

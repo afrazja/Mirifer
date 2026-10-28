@@ -164,12 +164,19 @@ export interface ChainRequest<T> {
 	maxTokens: number;
 }
 
-async function requestProvider<T>(req: ChainRequest<T>, name: string, url: string, headers: Record<string, string>, body: unknown, extract: (data: any) => string | undefined): Promise<T | null> {
+/** Google's always-current Flash model, used when the configured one is gone. */
+const GEMINI_FALLBACK_MODEL = 'gemini-flash-latest';
+/** A provider's answer when the model asked for doesn't exist (404). */
+const MODEL_GONE = Symbol('model gone');
+
+async function requestProvider<T>(req: ChainRequest<T>, name: string, url: string, headers: Record<string, string>, body: unknown, extract: (data: any) => string | undefined): Promise<T | null>;
+async function requestProvider<T>(req: ChainRequest<T>, name: string, url: string, headers: Record<string, string>, body: unknown, extract: (data: any) => string | undefined, reportGone: true): Promise<T | null | typeof MODEL_GONE>;
+async function requestProvider<T>(req: ChainRequest<T>, name: string, url: string, headers: Record<string, string>, body: unknown, extract: (data: any) => string | undefined, reportGone = false): Promise<T | null | typeof MODEL_GONE> {
 	const controller = new AbortController();
 	const timeout = setTimeout(() => controller.abort(), 12_000);
 	try {
 		const response = await fetch(url, { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: controller.signal });
-		if (!response.ok) { console.error(`${req.label}: ${name} failed: ${response.status}`); return null; }
+		if (!response.ok) { console.error(`${req.label}: ${name} failed: ${response.status}`); return reportGone && response.status === 404 ? MODEL_GONE : null; }
 		const raw = extract(await response.json());
 		const parsed = raw ? req.schema.safeParse(JSON.parse(raw)) : null;
 		if (!parsed?.success) { console.error(`${req.label}: ${name} returned an invalid reply`); return null; }
@@ -183,11 +190,18 @@ async function requestProvider<T>(req: ChainRequest<T>, name: string, url: strin
 /** Tries each configured provider in turn; null if none returned a valid reply. */
 export async function askChain<T>(req: ChainRequest<T>): Promise<T | null> {
 	if (env.GEMINI_API_KEY) {
-		const result = await requestProvider(req, 'Gemini', `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(env.GEMINI_MODEL || 'gemini-2.5-flash')}:generateContent`, { 'x-goog-api-key': env.GEMINI_API_KEY }, {
+		const gemini = (model: string) => requestProvider(req, 'Gemini', `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, { 'x-goog-api-key': env.GEMINI_API_KEY! }, {
 			systemInstruction: { parts: [{ text: req.system + req.shape }] }, contents: [{ role: 'user', parts: [{ text: req.user }] }],
 			generationConfig: { temperature: req.temperature, maxOutputTokens: req.maxTokens, responseMimeType: 'application/json', responseSchema: req.geminiSchema, thinkingConfig: { thinkingBudget: 0 } }
-		}, data => data?.candidates?.[0]?.content?.parts?.map((part: { text?: string }) => part.text ?? '').join(''));
-		if (result) return result;
+		}, data => data?.candidates?.[0]?.content?.parts?.map((part: { text?: string }) => part.text ?? '').join(''), true);
+		const configured = env.GEMINI_MODEL || GEMINI_FALLBACK_MODEL;
+		let result = await gemini(configured);
+		// Google retires model versions: when the configured one is gone (404), its current Flash model.
+		if (result === MODEL_GONE && configured !== GEMINI_FALLBACK_MODEL) {
+			console.error(`${req.label}: Gemini model "${configured}" not found; using ${GEMINI_FALLBACK_MODEL} (update GEMINI_MODEL)`);
+			result = await gemini(GEMINI_FALLBACK_MODEL);
+		}
+		if (result && result !== MODEL_GONE) return result;
 	}
 	if (env.DEEPSEEK_API_KEY) {
 		const result = await requestProvider(req, 'DeepSeek', 'https://api.deepseek.com/chat/completions', { Authorization: `Bearer ${env.DEEPSEEK_API_KEY}` }, {
