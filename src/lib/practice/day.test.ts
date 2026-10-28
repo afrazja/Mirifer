@@ -108,7 +108,7 @@ describe('more than one day', () => {
 	it('the next day follows the last finished one; a day that isn’t ready is only for the owner', () => {
 		expect(nextDay(null).id).toBe('day-1');
 		// Days 1–3 are released (owner, 2026-10-21); Day 4 waits for the owner's phone test.
-		for (const day of DAYS) expect(day.ready, day.id).toBe(day.id !== 'day-4' && day.id !== 'everyday-1');
+		for (const day of DAYS) expect(day.ready, day.id).toBe(!['day-4', 'everyday-1', 'everyday-2'].includes(day.id));
 		expect(nextDay('day-1').id).toBe('day-2');
 		expect(nextDay('day-2').id).toBe('day-3');
 		// Not ready: learners stay on the last ready day; the owner goes on.

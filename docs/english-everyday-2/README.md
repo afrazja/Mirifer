@@ -1,7 +1,39 @@
-# Everyday, Chapter 2: "Making plans" (brief and drafts v1)
+# Everyday, Chapter 2: "Making plans" (brief and drafts)
 
-Status: **v1, for review (english-coach, learning-UX); then build as a pilot for the owner's test
-accounts.** Owner's request (2026-10-28): build Everyday Chapter 2 with the group chat in it.
+Status: **v2, built as a pilot for the owner's test accounts** (`src/lib/practice/days/everyday-2/`).
+Owner's request (2026-10-28): build Everyday Chapter 2 with the group chat in it. The text below is
+v1; the content in code is v2, with the reviews applied (next section). Try any step in the Module
+lab → Chapters → Everyday 2.
+
+## What the reviews changed (v1 → v2)
+
+- **Never a date:** every invitation is a group's ("a few of us from the building"); Mira: "invites
+  her to a game night with a few neighbors". Part 2: Jake says "we're moving pizza to Saturday… Can
+  you still come?". Sara checks "Trivia? Like a quiz?" (trivia is above A2).
+- **Offering is taught before the chat** (its third goal): A2 phrase "Sounds great! I can bring
+  dessert."; B1 phrase "I'll take care of dessert." (instead of "Let me check and get back to you",
+  a hedge the chapter argues against).
+- **A2 phrase 1 is the invitation:** "We're getting pizza on Friday. Do you want to come?"
+- **Traps:** "I am agree" (stiff: nobody answers a plan with "I agree") became "Do you come?" →
+  "Do you want to come?"; "See you in Saturday" became "Let's meet in Saturday at seven" (needs
+  "on"; "Saturday at seven" alone is fine); "which reply?" options now include "I'll try to come!"
+  and "Both are fine, you choose!".
+- **B1 step 3** (Say it again, better, `weekend-plans`): Jake asks "Want to get pizza this weekend?";
+  tell him your plans, say which day doesn't work, and suggest one that does.
+- **The 15-minute lessons keep the steps where the learner says no in their own words:** they leave
+  out Traps (A2) and Say it again, better (B1).
+- **Voice message:** a clear no is required ("maybe"/"I'll try" don't count); pizza is on Friday, so
+  the learner's Saturday stays free for Nina's party; "Imagine you're busy on Wednesday" is in the
+  intro.
+- **Endings** claim only what every version practiced (no voice message, no twist).
+- **Leo's voice is Brian (c)**, not Andrew (Jake's).
+- The connect items no longer overlap; distractor "Jake is upset." (the fear a clear no offends).
+
+## Still open
+
+- A2 never says "no + another time" live: a card for the chat ("Imagine you're busy on Saturday
+  until 5") would check it (the chat spec's "Next").
+- The chapter ending screen repeats the last step's score (learning-UX, should).
 
 The second chapter of the **Everyday** arc (`docs/goal-path-plan.md`). Skills and checks from
 `docs/goal-content-framework.md`, Goal 1: "Invite, accept, decline and suggest another time, without

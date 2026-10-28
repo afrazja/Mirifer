@@ -11,9 +11,10 @@
 import { z } from 'zod';
 import type { DisplayText } from './hotel';
 import { EVERYDAY_ONE } from './days/everyday-1/pack';
+import { EVERYDAY_TWO } from './days/everyday-2/pack';
 
 /** Every day's id, in order. */
-export const DAY_IDS = ['day-1', 'day-2', 'day-3', 'day-4', 'everyday-1'] as const;
+export const DAY_IDS = ['day-1', 'day-2', 'day-3', 'day-4', 'everyday-1', 'everyday-2'] as const;
 export type DayId = (typeof DAY_IDS)[number];
 /** Day 1's id (kept for older callers). */
 export const DAY_ID: DayId = 'day-1';
@@ -343,7 +344,7 @@ export const DAY_FOUR: DayPack = {
 };
 
 /** Every chapter, Travel's first (the daily lessons only ever use Travel's). */
-export const DAYS: DayPack[] = [DAY_ONE, DAY_TWO, DAY_THREE, DAY_FOUR, EVERYDAY_ONE];
+export const DAYS: DayPack[] = [DAY_ONE, DAY_TWO, DAY_THREE, DAY_FOUR, EVERYDAY_ONE, EVERYDAY_TWO];
 /** A chapter's story. */
 export const arcOf = (day: DayPack): ArcId => day.arc ?? 'travel';
 export function dayById(id: string | null | undefined): DayPack | null {

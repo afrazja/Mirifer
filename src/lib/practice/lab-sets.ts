@@ -16,7 +16,9 @@ export const LAB_SETS: LabSet[] = [
 	{ id: 'day-4-intermediate', day: 'day-4', track: 'intermediate', name: { en: 'Day 4 · Intermediate', fa: 'روز ۴، متوسط' } },
 	{ id: 'day-4-professional', day: 'day-4', track: 'professional', name: { en: 'Day 4 · Professional', fa: 'روز ۴، حرفه‌ای' } },
 	{ id: 'everyday-1-intermediate', day: 'everyday-1', track: 'intermediate', name: { en: 'Everyday 1 · Intermediate', fa: 'روزمره ۱، متوسط' } },
-	{ id: 'everyday-1-professional', day: 'everyday-1', track: 'professional', name: { en: 'Everyday 1 · Professional', fa: 'روزمره ۱، حرفه‌ای' } }
+	{ id: 'everyday-1-professional', day: 'everyday-1', track: 'professional', name: { en: 'Everyday 1 · Professional', fa: 'روزمره ۱، حرفه‌ای' } },
+	{ id: 'everyday-2-intermediate', day: 'everyday-2', track: 'intermediate', name: { en: 'Everyday 2 · Intermediate', fa: 'روزمره ۲، متوسط' } },
+	{ id: 'everyday-2-professional', day: 'everyday-2', track: 'professional', name: { en: 'Everyday 2 · Professional', fa: 'روزمره ۲، حرفه‌ای' } }
 ];
 /** One set per chapter (for modules whose content doesn't change with the version: traps, voice messages). */
 export const LAB_CHAPTER_SETS: LabSet[] = LAB_SETS.filter(set => set.track === 'intermediate' || set.id === 'day-1')

@@ -8,7 +8,8 @@
 import { FRIEND_WORDS, type ChatLevel, type ChatLine, type ChatMember, type ChatScene, type ChatTurn } from '../group-chat';
 
 const MAYA: ChatMember = { id: 'maya', name: 'Maya', color: 'violet', voice: 'd' };
-const LEO: ChatMember = { id: 'leo', name: 'Leo', color: 'orange', voice: 'a' };
+// Brian: Andrew is Jake's voice in the same chapter (Everyday 2), and Emma (Sara's) has to stay for Maya.
+const LEO: ChatMember = { id: 'leo', name: 'Leo', color: 'orange', voice: 'c' };
 
 /** The two runs: the same plan, other places. */
 const PLACES: Record<string, { food: string; restaurant: string; restaurantLine: string; park: string; parkShort: string }> = {
