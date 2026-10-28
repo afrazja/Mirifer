@@ -9,7 +9,7 @@ import { buildEnglishInsights, type InsightUser } from '$lib/analytics/english-i
 import { isAdminEmail } from '$lib/server/admin-auth';
 
 /** The events the report reads (visits, the lessons, and the AI the lessons use). */
-const EVENT_NAMES = ['visit_started', 'lesson_started', 'lesson_progress', 'lesson_completed', 'english_clip_transcribed', 'english_ai_requested', 'english_practice_ai'];
+const EVENT_NAMES = ['visit_started', 'lesson_started', 'lesson_progress', 'lesson_completed', 'english_clip_transcribed', 'english_ai_requested', 'english_practice_ai', 'step_rated'];
 
 /** Reads every page of a query (Supabase returns at most 1,000 rows at a time). */
 async function readAll<T>(query: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>, cap = 200_000): Promise<T[]> {

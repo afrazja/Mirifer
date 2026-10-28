@@ -13,6 +13,7 @@ import { DaySessionSchema, caughtUp, dayById, finishedDays, furthestDayId, nextD
 import { readEnglishProgress } from '$lib/practice/english-progress';
 import { readEnglishProfile } from '$lib/practice/english-profile';
 import { lessonDates, streak } from '$lib/practice/learner-stats';
+import { summarizeRatings } from '$lib/practice/step-feedback';
 
 /** Rough prices, for an estimate only: speech to text per minute, and one AI feedback request. */
 export const COST = { transcribePerMinute: 0.006, aiRequest: 0.002 } as const;
@@ -176,6 +177,8 @@ export function buildEnglishInsights(input: InsightInput) {
 			cost: series.reduce((s, r) => s + r.cost, 0)
 		},
 		funnel, series, lessons, learners, periodLearners: periodLearners.length, limitHits,
+		/** How learners rate each step (latest rating per learner), lowest first. */
+		ratings: summarizeRatings(events.filter(e => e.event_name === 'step_rated' && e.metadata.course === 'en' && inPeriod(e))),
 		audience: { levels: count(learners.map(l => l.level)), reasons: count(learners.map(l => l.reason)) },
 		sources: count(cohort.map(u => source.get(u.id) ?? 'unknown'))
 	};
