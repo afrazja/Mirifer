@@ -95,11 +95,10 @@ describe('The dashboard on the step path', () => {
 		expect(data.dates).toEqual(['2026-10-20', '2026-10-25']);
 		expect(data.path).toMatchObject({ stepsDone: 10, replay: false, underWay: false, step: { id: 'day-3:listen-act', chapter: 3, index: 0, total: 5 } });
 	});
-	it('offers a step to practise again when every released step is done', async () => {
+	it('says new practice is coming soon when every released step is done', async () => {
 		const all = { ...progress, lastThemeId: 'everyday-1', finishedDays: ['day-1', 'day-2', 'day-3', 'everyday-1'] }; // incl. the pilot chapter
 		const data = await load(tester(english({ english_progress_v1: all })).event) as any;
-		expect(data.path).toMatchObject({ replay: true, stepsDone: 20 });
-		expect(data.path.step).not.toBeNull();
+		expect(data.path).toMatchObject({ comingSoon: true, step: null, stepsDone: 20 });
 	});
 	it('the finished-lessons list leads to the path', async () => {
 		const { l } = tester(english());

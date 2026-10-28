@@ -65,7 +65,7 @@
 		: doneToday ? (isFa ? 'درس امروز تمام شد. این درس فردا باز می‌شود.' : 'Today’s lesson is done. This one opens tomorrow.')
 		: null);
 	const button = $derived(path
-		? (!path.step ? { label: isFa ? 'شروع' : 'Start', href: '/practice/english/step' }
+		? (!path.step ? (path.comingSoon ? { label: isFa ? 'مسیرت را ببین' : 'See your path', href: '/practice/english/path' } : { label: isFa ? 'شروع' : 'Start', href: '/practice/english/step' })
 			: { label: path.underWay ? (isFa ? 'ادامه' : 'Continue') : path.replay ? (isFa ? 'دوباره تمرین کن' : 'Practice again') : (isFa ? `شروع مرحلهٔ ${n(path.step.index + 1)}` : `Start step ${path.step.index + 1}`), href: `/practice/english/step?step=${encodeURIComponent(path.step.id)}` })
 		: lesson!.inProgress
 		? { label: isFa ? `ادامهٔ ${dayName(lesson!.lesson.number)}` : `Resume ${dayName(lesson!.lesson.number)}`, href: '/practice/english/today' }
@@ -76,7 +76,7 @@
 	/** Days since the learner's last day with a lesson (null if none). */
 	const daysAway = $derived(today && dates.length ? Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${dates.at(-1)}T00:00:00Z`)) / 86_400_000) : null);
 	const moment = $derived<DashboardMoment>(path
-		? { name: data.name, finished: path.stepsDone, activeDays: dates.length, inProgress: path.underWay, doneToday, caughtUp: path.replay,
+		? { name: data.name, finished: path.stepsDone, activeDays: dates.length, inProgress: path.underWay, doneToday, caughtUp: path.comingSoon,
 			streak: inARow, activeToday: !!today && dates.includes(today), daysAway, lessonNumber: path.step?.chapter ?? 1 }
 		: { name: data.name, finished: lesson!.finished, activeDays: dates.length, inProgress: lesson!.inProgress, doneToday, caughtUp: lesson!.caughtUp,
 			streak: inARow, activeToday: !!today && dates.includes(today), daysAway, lessonNumber: lesson!.lesson.number });
@@ -126,14 +126,17 @@
 	{#if path}
 	<section class="card" aria-labelledby="lesson-title">
 		<div class="card-head">
-			<h2 id="lesson-title" class="label">{path.replay ? (isFa ? 'دوباره تمرین کن' : 'Practice again') : path.underWay ? (isFa ? 'جایی که ماندی' : 'Where you stopped') : (isFa ? 'مرحلهٔ بعد' : 'Next step')}</h2>
+			<h2 id="lesson-title" class="label">{path.underWay ? (isFa ? 'جایی که ماندی' : 'Where you stopped') : path.comingSoon ? (isFa ? 'همه را انجام دادی' : 'All caught up') : (isFa ? 'مرحلهٔ بعد' : 'Next step')}</h2>
 			{@render miraButton()}
 		</div>
-		{#if path.step}
+		{#if path.comingSoon && !path.step}
+			<p class="big small-big">{isFa ? 'تمرین‌های تازه به‌زودی می‌آیند.' : 'New practice is coming soon.'}</p>
+			<p class="note">{isFa ? 'همهٔ مرحله‌ها را تا این‌جا انجام داده‌ای. هر مرحله‌ای را که بخواهی، از مسیرت دوباره تمرین کن.' : 'You’ve done every step so far. You can practise any step again from your path.'}</p>
+		{:else if path.step}
 			<p class="theme">{isFa ? `فصل ${n(path.step.chapter)}: ${path.step.theme.fa}` : `Chapter ${path.step.chapter} · ${path.step.theme.en}`}</p>
 			{#if !path.replay}<p class="big">{isFa ? `مرحلهٔ ${n(path.step.index + 1)} از ${n(path.step.total)}` : `Step ${path.step.index + 1} of ${path.step.total}`}</p>{/if}
 			<p class={path.replay ? 'big small-big' : 'note'}>{isFa ? `${path.step.title.fa} · ${n(path.step.minutes)} دقیقه` : `${path.step.title.en} · ${path.step.minutes} min`}</p>
-			{#if path.replay}<p class="note">{isFa ? 'همهٔ مرحله‌ها را تا این‌جا انجام داده‌ای. فصل تازه به‌زودی می‌آید.' : 'You’ve done every step so far. A new chapter is coming soon.'}</p>{/if}
+			{#if path.replay}<p class="note">{isFa ? 'داری این مرحله را دوباره تمرین می‌کنی.' : 'You’re practising this step again.'}</p>{/if}
 		{/if}
 	</section>
 	{:else}

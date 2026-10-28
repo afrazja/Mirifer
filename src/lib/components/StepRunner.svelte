@@ -151,6 +151,8 @@
 		if (!result?.next) { home(); return; }
 		void open(result.next);
 	}
+	/** No new step is left: new practice is coming soon (replaying is a quiet option). */
+	const comingSoon = $derived(!!result && (!result.next || result.nextIsReplay));
 	const nextLabel = $derived(!nextInfo ? T('Back to your progress', 'برگشت به پیشرفتت')
 		: result?.nextIsReplay ? T(`Practice again: ${nextInfo.module.title.en}`, `دوباره تمرین کن: ${nextInfo.module.title.fa}`)
 		: nextInfo.day.id !== day.id ? T('Start the next chapter', 'شروع فصل بعد')
@@ -237,7 +239,9 @@
 	<h1>{result.outcome === 'done' ? T('Step done.', 'این مرحله تمام شد.') : T('No problem. This step will come back later.', 'اشکالی ندارد. این مرحله بعداً برمی‌گردد.')}</h1>
 	{#if result.goalJustMet}<p class="goal">{T('That’s your goal for today ✓', 'هدف امروزت انجام شد ✓')}</p>{/if}
 	{#if result.outcome === 'done'}{@render endOfStep()}{/if}
-	<ActionBar label={nextLabel} onclick={goNext} secondary={nextInfo ? { label: T('Done for now', 'فعلاً کافی است'), onclick: home } : null} />
+	{#if comingSoon}<p class="soon">{T('That’s every step for now. New practice is coming soon.', 'تا این‌جا همهٔ مرحله‌ها را انجام دادی. تمرین‌های تازه به‌زودی می‌آیند.')}</p>{/if}
+	<ActionBar label={comingSoon ? T('Done', 'تمام') : nextLabel} onclick={comingSoon ? home : goNext}
+		secondary={comingSoon ? (result?.next ? { label: T('Practise a step again', 'یک مرحله را دوباره تمرین کن'), onclick: goNext } : null) : nextInfo ? { label: T('Done for now', 'فعلاً کافی است'), onclick: home } : null} />
 
 {:else if stage === 'offer' && offered?.module}
 	<h1>{T(`You skipped ${offered.module.title.en}. Do it now?`, `«${offered.module.title.fa}» را رد کردی. همین حالا انجامش بدهی؟`)}</h1>
@@ -251,7 +255,9 @@
 	<p class="goal">{text(nowYouCan)}</p>
 	{#if result.goalJustMet}<p class="small">{T('And that’s your goal for today ✓', 'و هدف امروزت هم انجام شد ✓')}</p>{/if}
 	{#if result.outcome === 'done'}{@render endOfStep()}{/if}
-	<ActionBar label={nextLabel} onclick={goNext} secondary={nextInfo ? { label: T('Done for now', 'فعلاً کافی است'), onclick: home } : null} />
+	{#if comingSoon}<p class="soon">{T('That’s every step for now. New practice is coming soon.', 'تا این‌جا همهٔ مرحله‌ها را انجام دادی. تمرین‌های تازه به‌زودی می‌آیند.')}</p>{/if}
+	<ActionBar label={comingSoon ? T('Done', 'تمام') : nextLabel} onclick={comingSoon ? home : goNext}
+		secondary={comingSoon ? (result?.next ? { label: T('Practise a step again', 'یک مرحله را دوباره تمرین کن'), onclick: goNext } : null) : nextInfo ? { label: T('Done for now', 'فعلاً کافی است'), onclick: home } : null} />
 {/if}
 
 <div class="bar-space" aria-hidden="true"></div>
@@ -272,6 +278,7 @@
 	.done-mark { display: grid; place-items: center; inline-size: 64px; block-size: 64px; margin: 28px 0 8px; border-radius: 50%; background: var(--leaf-wash); color: var(--leaf-deep); font-size: 1.8rem; font-weight: 700; }
 	.done-mark.big { inline-size: 80px; block-size: 80px; font-size: 2.2rem; background: var(--gold-wash, var(--leaf-wash)); }
 	.bar-space { block-size: 110px; }
+	.soon { margin: 14px 0 0; padding: 12px 14px; border-radius: 14px; background: var(--accent-wash); color: var(--accent-deep); font-weight: 600; line-height: 1.5; }
 	.score { display: flex; align-items: baseline; gap: 10px; margin: 12px 0 0; }
 	.score-value { font-family: var(--font-display); font-size: 2rem; font-weight: 600; color: var(--accent-deep); }
 	.score-label { color: var(--ink-soft); }

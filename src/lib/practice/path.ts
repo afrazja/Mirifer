@@ -149,6 +149,15 @@ function describe(day: DayPack, track: Track, step: StepId): NextStep {
  * skipped. A chapter with every step skipped brings its first step back. Null when every released
  * chapter is finished (then the app offers a replay).
  */
+/** A step's place in its chapter, for the card that shows it. */
+export function stepInfo(step: StepId, track: Track): NextStep | null {
+	const parts = splitStep(step);
+	if (!parts) return null;
+	const modules = chapterModules(parts.day, track);
+	const index = modules.findIndex(module => module.id === parts.module);
+	return index < 0 ? null : { step, day: parts.day, module: modules[index], index, total: modules.length };
+}
+
 export function nextStep(path: Path, track: Track, preview: Preview = false, reason: string | null = null): NextStep | null {
 	for (const day of releasedChapters(preview, reason)) {
 		if (chapterFinished(path, day, track)) continue;
