@@ -23,6 +23,8 @@ import { env } from '$env/dynamic/private';
 import { verifyJamieLine } from '$lib/server/jamie-line';
 import { ALL_ROLE_SCENES, roleSceneById } from '$lib/practice/day-content';
 import { preparedLines } from '$lib/practice/roleplay';
+import { ALL_CHAT_SCENES, chatSceneById } from '$lib/practice/chats';
+import { chatPreparedLines } from '$lib/practice/group-chat';
 import { createLimiter, tooMany, verifiedUser } from '$lib/server/rate-limit';
 import { retellPieceById as getPiece } from '$lib/practice/day-content';
 
@@ -41,7 +43,7 @@ const NARRATION =
 export const config = { maxDuration: 60 };
 
 /** Every role-play character's prepared lines; everything else they say is AI-written and signed. */
-const ALLOWED = new Set<string>(ALL_ROLE_SCENES.flatMap(preparedLines));
+const ALLOWED = new Set<string>([...ALL_ROLE_SCENES.flatMap(preparedLines), ...ALL_CHAT_SCENES.flatMap(chatPreparedLines)]);
 
 const CACHE = 'public, max-age=31536000, s-maxage=31536000, immutable';
 
@@ -53,7 +55,8 @@ const perMinute = createLimiter(30, 60_000);
 export const GET: RequestHandler = async ({ url, locals, getClientAddress }) => {
 	if ([...url.searchParams.keys()].some(key => !PARAMS.has(key)) || url.searchParams.get('v') !== null && url.searchParams.get('v') !== '1') return new Response('Unknown parameter', { status: 400 });
 	const sceneId = url.searchParams.get('scene');
-	const scene = sceneId === null ? ALL_ROLE_SCENES[0] : roleSceneById(sceneId);
+	// A role-play's character, or a group chat's friends (their voice notes).
+	const scene = sceneId === null ? ALL_ROLE_SCENES[0] : roleSceneById(sceneId) ?? chatSceneById(sceneId);
 	if (!scene) return new Response('Unknown scene', { status: 400 });
 	const piece = url.searchParams.has('piece') ? getPiece(url.searchParams.get('piece') ?? '') : null;
 	if (url.searchParams.has('piece') && !piece) return new Response('Unknown piece', { status: 400 });
