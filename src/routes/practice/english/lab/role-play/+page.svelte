@@ -16,7 +16,7 @@
 	import { saveLabSet, savedLabSet, type LabSet } from '$lib/practice/lab-sets';
 
 	let set = $state<LabSet>(typeof localStorage === 'undefined' ? savedLabSet('') : savedLabSet('role-play'));
-	const scene = $derived(roleSceneFor(set.day));
+	const scene = $derived(roleSceneFor(set.day, set.track));
 	const ID = $derived(`role-play:${scene.id}`);
 	let language = $state<'en' | 'fa'>('en');
 	const isFa = $derived(language === 'fa');

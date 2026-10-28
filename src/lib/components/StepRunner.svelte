@@ -10,32 +10,11 @@
 	import ActionBar from '$lib/components/ActionBar.svelte';
 	import StepRating from '$lib/components/StepRating.svelte';
 	import { phraseScore, scoreLine, type StepScore } from '$lib/practice/step-feedback';
-	import ListenConnect from '$lib/components/ListenConnect.svelte';
-	import PhrasePractice from '$lib/components/PhrasePractice.svelte';
-	import Traps from '$lib/components/Traps.svelte';
-	import SayInEnglish from '$lib/components/SayInEnglish.svelte';
-	import VoiceMessages from '$lib/components/VoiceMessages.svelte';
-	import ListenRetell from '$lib/components/ListenRetell.svelte';
-	import ChoosePersuade from '$lib/components/ChoosePersuade.svelte';
-	import RolePlay from '$lib/components/RolePlay.svelte';
-	import SayItBetter from '$lib/components/SayItBetter.svelte';
-	import GroupChat from '$lib/components/GroupChat.svelte';
+	import ChapterModule from '$lib/components/ChapterModule.svelte';
 	import { loadRecord, saveRecord } from '$lib/practice/day-records';
-	import { asConnectRecord } from '$lib/practice/listen-connect';
-	import { asPhraseRecord } from '$lib/practice/phrases';
-	import { asTrapsRecord } from '$lib/practice/traps';
-	import { asSayRecord as asSayInEnglishRecord } from '$lib/practice/say-in-english';
-	import { asVoiceRecord } from '$lib/practice/voice-messages';
-	import { asRetellRun } from '$lib/practice/retell';
-	import { asPersuadeRecord } from '$lib/practice/persuade';
-	import { asRolePlayRecord } from '$lib/practice/roleplay';
-	import { asSayRecord } from '$lib/practice/say-better';
-	import { asChatRecord } from '$lib/practice/group-chat';
-	import { chatSceneFor, connectSetFor, persuadeSetFor, phrasesFor, roleSceneFor, retellPieceFor, sayItemsFor, trapsFor, voiceMessagesFor } from '$lib/practice/day-content';
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
 	import { dayById, minutesOf, DAY_ONE, type DayModule, type ModuleId, type Track } from '$lib/practice/day';
 	import { chapterModules, splitStep, type StepId } from '$lib/practice/path';
-	import { withName } from '$lib/practice/learner-name';
 	import type { DisplayText } from '$lib/practice/hotel';
 	import { playAudioPromise, stopAllAudio } from '$services/tts';
 
@@ -160,13 +139,6 @@
 		: nextInfo.day.id !== day.id ? T('Start the next chapter', 'شروع فصل بعد')
 		: T(`Next: ${nextInfo.module.title.en} · ${nextInfo.minutes} min`, `بعدی: ${nextInfo.module.title.fa} · ${num(nextInfo.minutes)} دقیقه`));
 
-	// The module's content for this chapter and version.
-	// svelte-ignore state_referenced_locally
-	const content = {
-		connect: connectSetFor(day.id, track), phrases: phrasesFor(day.id, track), traps: trapsFor(day.id), say: withName(sayItemsFor(day.id, track), name),
-		messages: withName(voiceMessagesFor(day.id), name), story: retellPieceFor(day.id), choice: persuadeSetFor(day.id), scene: roleSceneFor(day.id, track),
-		chat: chatSceneFor(day.id, track)
-	};
 	const keep = (record: unknown) => { if (startedAt) saveRecord(startedAt, mod.id, record); };
 	const loaded = () => (startedAt ? loadRecord(startedAt, mod.id) : null);
 	const onDone = (score?: { correct: number; total: number }, record?: unknown) => void finish('done', score, record);
@@ -212,30 +184,7 @@
 	{#if saveFailed}<p class="warn" role="alert">{T('That didn’t save. Check your connection and try again.', 'ذخیره نشد. اتصال اینترنت را بررسی کن و دوباره امتحان کن.')}</p>{/if}
 	{#if intro === 'full' && !BRIEF_FIRST.has(mod.id) && !first}{@render note(mod)}{/if}
 	<div class:busy={stage === 'saving'}>
-		{#if mod.id === 'listen-act'}
-			<ListenConnect {isFa} {onSkip} set={content.connect} initial={asConnectRecord(loaded(), content.connect)} {onFocus} onSave={keep} {onDone} />
-		{:else if mod.id === 'phrases'}
-			<PhrasePractice {isFa} {onSkip} phrases={content.phrases} initial={asPhraseRecord(loaded(), content.phrases)} afterIntro={introPlay} {onFocus} onSave={keep} {onDone} />
-		{:else if mod.id === 'traps'}
-			<Traps {isFa} {onSkip} traps={content.traps} initial={asTrapsRecord(loaded(), content.traps)} {onFocus} onSave={keep} {onDone} />
-		{:else if mod.id === 'say-in-english'}
-			<SayInEnglish {isFa} {onSkip} items={content.say} initial={asSayInEnglishRecord(loaded(), content.say)} {onFocus} onSave={keep} {onDone} />
-		{:else if mod.id === 'voice-messages'}
-			<VoiceMessages {isFa} {onSkip} messages={content.messages} initial={asVoiceRecord(loaded(), content.messages)} {onFocus} onSave={keep} {onDone} />
-		{:else if mod.id === 'listen-retell' && content.story}
-			<ListenRetell {isFa} {onSkip} piece={content.story} voice={content.story.voice} initial={asRetellRun(loaded())} {onFocus} onSave={keep} {onDone} />
-		{:else if mod.id === 'choose-persuade'}
-			<ChoosePersuade {isFa} {onSkip} set={content.choice} initial={asPersuadeRecord(loaded())} {onFocus} onSave={keep} {onDone} />
-		{:else if mod.id === 'scenario'}
-			<RolePlay {isFa} {onSkip} scene={content.scene} initial={asRolePlayRecord(loaded(), content.scene)} {onFocus} onSave={keep} {onDone} />
-		{:else if mod.id === 'group-chat'}
-			<GroupChat {isFa} {onSkip} scene={content.chat} initial={asChatRecord(loaded(), content.chat)} {onFocus} onSave={keep} {onDone} />
-		{:else if mod.id === 'say-it-better'}
-			<SayItBetter {isFa} {onSkip} prompt={mod.sayPrompt} initial={asSayRecord(loaded())} {onFocus} onSave={keep} {onDone} />
-		{:else}
-			<p>{T('This step is not ready yet.', 'این مرحله هنوز آماده نیست.')}</p>
-			<ActionBar label={T('Continue', 'ادامه')} onclick={() => onDone()} />
-		{/if}
+		<ChapterModule dayId={day.id} {mod} {track} {isFa} {name} initial={loaded()} afterIntro={introPlay} onSave={keep} {onFocus} {onSkip} {onDone} />
 	</div>
 	{#if labAccess}<p class="small">{T(`Owner: ${step} · ${track}`, `مدیر: ${step}`)}</p>{/if}
 

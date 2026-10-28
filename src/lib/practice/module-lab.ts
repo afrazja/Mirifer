@@ -7,6 +7,7 @@ import type { DisplayText } from './hotel';
 export interface LabModule { id: string; name: DisplayText; /** A page where it can be tried now. */ href?: string }
 
 export const LAB_MODULES: LabModule[] = [
+	{ id: 'chapters', name: { en: 'Chapters: try any step', fa: 'فصل‌ها: هر مرحله را امتحان کن' }, href: '/practice/english/lab/chapters' },
 	{ id: 'group-chat', name: { en: 'Group chat', fa: 'چت گروهی' }, href: '/practice/english/lab/group-chat' },
 	{ id: 'role-play-twist', name: { en: 'Role-play with a surprise', fa: 'نقش‌آفرینی با غافلگیری' }, href: '/practice/english/lab/role-play' },
 	{ id: 'choose-persuade', name: { en: 'Choose and persuade', fa: 'انتخاب کن و قانع کن' }, href: '/practice/english/lab/choose-persuade' },

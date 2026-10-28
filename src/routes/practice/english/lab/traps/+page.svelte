@@ -9,10 +9,10 @@
 	import { asTrapsRecord } from '$lib/practice/traps';
 	import { trapsFor } from '$lib/practice/day-content';
 	import LabSetPicker from '$lib/components/LabSetPicker.svelte';
-	import { LAB_SETS, saveLabSet, savedLabSet, type LabSet } from '$lib/practice/lab-sets';
+	import { LAB_CHAPTER_SETS, saveLabSet, savedLabSet, type LabSet } from '$lib/practice/lab-sets';
 
 	/** One set of traps per day (both versions share Day 2's). */
-	const SETS: LabSet[] = [LAB_SETS[0], { ...LAB_SETS[1], name: { en: 'Day 2', fa: 'روز ۲' } }];
+	const SETS: LabSet[] = LAB_CHAPTER_SETS;
 	const remembered = typeof localStorage === 'undefined' ? SETS[0] : savedLabSet('traps');
 	let set = $state<LabSet>(SETS.find(item => item.day === remembered.day) ?? SETS[0]);
 	const traps = $derived(trapsFor(set.day, true));

@@ -9,10 +9,10 @@
 	import { asVoiceRecord } from '$lib/practice/voice-messages';
 	import { voiceMessagesFor, voiceMessagesIntro } from '$lib/practice/day-content';
 	import LabSetPicker from '$lib/components/LabSetPicker.svelte';
-	import { LAB_SETS, saveLabSet, savedLabSet, type LabSet } from '$lib/practice/lab-sets';
+	import { LAB_CHAPTER_SETS, saveLabSet, savedLabSet, type LabSet } from '$lib/practice/lab-sets';
 
 	/** One set of messages per day (both versions share Day 2's). */
-	const SETS: LabSet[] = [LAB_SETS[0], { ...LAB_SETS[1], name: { en: 'Day 2', fa: 'روز ۲' } }];
+	const SETS: LabSet[] = LAB_CHAPTER_SETS;
 	const remembered = typeof localStorage === 'undefined' ? SETS[0] : savedLabSet('voice-messages');
 	let set = $state<LabSet>(SETS.find(item => item.day === remembered.day) ?? SETS[0]);
 	const messages = $derived(voiceMessagesFor(set.day, true));
