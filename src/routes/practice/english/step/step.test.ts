@@ -20,9 +20,9 @@ const intermediate = chapterSteps(DAY_ONE, 'intermediate');
 const doneAll = (steps: string[], day = 1) => Object.fromEntries(steps.map(s => [s, ['i', day]]));
 
 describe('step page', () => {
-	it('is only for learners on the step path; others keep the daily lesson', async () => {
-		await expect(load(fixture({}, {}, { email: 'someone@m.test' }).event())).rejects.toMatchObject({ location: '/practice/english/today' });
-		expect(await actions.result(fixture({}, { step: intermediate[0], outcome: 'done' }, { email: 'someone@m.test' }).event())).toMatchObject({ status: 403 });
+	it('is for every learner now, not only the test accounts', async () => {
+		expect(await load(fixture({}, {}, { email: 'someone@m.test' }).event())).toMatchObject({ step: intermediate[0] });
+		expect(await actions.result(fixture({}, { step: intermediate[0], outcome: 'done' }, { email: 'someone@m.test' }).event())).toMatchObject({ goalJustMet: true });
 	});
 	it('opens a new learner’s first step', async () => {
 		expect(await load(fixture().event())).toMatchObject({ step: 'day-1:listen-act', index: 0, total: 5, replay: false, startedAt: null });

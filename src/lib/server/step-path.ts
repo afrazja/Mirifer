@@ -1,8 +1,7 @@
 /**
  * The step path (docs/goal-path-plan.md) on the server: who has it yet, and the events a step adds.
  *
- * Rolled out to the owner's test accounts first; everyone else keeps the daily lessons until the
- * owner has tried it on a phone. Events keep the names the admin reports already read: a chapter is
+ * On for everyone since 2026-10-28 (the owner's test accounts had it first; they also see pilot chapters). Events keep the names the admin reports already read: a chapter is
  * a "lesson" (`lesson_started` at its first step, `lesson_completed` when it ends) and each step is a
  * `lesson_progress` row, now with `replay` for a step done again.
  */
@@ -14,7 +13,12 @@ import { lessonAttemptId } from '$lib/server/lesson-events';
 import type { DayPack, ModuleId, Track } from '$lib/practice/day';
 import type { Preview } from '$lib/practice/path';
 
-export const usesStepPath = (user: Pick<User, 'email' | 'email_confirmed_at'> | null | undefined): boolean => canResetEnglish(user);
+/**
+ * The step path is for everyone (owner, 2026-10-28). Set this to false to bring back the daily
+ * lessons for everyone but the test accounts (a rollback: the old progress records are still kept).
+ */
+export const STEP_PATH_FOR_EVERYONE = true;
+export const usesStepPath = (user: Pick<User, 'email' | 'email_confirmed_at'> | null | undefined): boolean => STEP_PATH_FOR_EVERYONE || canResetEnglish(user);
 
 /** Which unreleased chapters a learner sees: the owner's tools show them all; the test accounts see pilots. */
 export const previewFor = (user: Pick<User, 'email' | 'email_confirmed_at'> | null | undefined, ownerTools: boolean): Preview =>

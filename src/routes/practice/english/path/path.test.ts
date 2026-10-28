@@ -18,10 +18,11 @@ describe('Your path', () => {
 		expect(data.chapters[0].finished).toBe(true);
 		expect(data.chapters[1].steps.map((s: any) => s.state)).toEqual(['done', 'skipped', 'next', 'locked', 'locked']);
 	});
-	it('shows a new learner Chapter 1 only, and sends learners not on the path to their lessons', async () => {
+	it('shows a new learner Chapter 1 only, and and every learner has it', async () => {
 		const data = await load(event({})) as any;
 		expect(data.chapters).toHaveLength(1);
 		expect(data.chapters[0].steps[0].state).toBe('next');
-		await expect(load(event({}, 'someone@m.test'))).rejects.toMatchObject({ location: '/practice/english/finished' });
+		// Every learner has the path now.
+		expect((await load(event({}, 'someone@m.test')) as any).chapters[0].steps[0].state).toBe('next');
 	});
 });
