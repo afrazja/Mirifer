@@ -47,6 +47,15 @@ export const SAY_PROMPTS = {
 		rules: 'Never "fix" a name, a place or a job title, and never comment on where they are from, what they do or what they chose to share.',
 		ideas: ['Where are you from?', 'What do you do?', 'What do you like doing?'],
 		betterLabel: { en: 'What you said, a bit better', fa: 'حرف‌هایت، کمی بهتر' }
+	},
+	'weekend-plans': {
+		id: 'weekend-plans',
+		question: 'Jake, your neighbor, asks: "Want to get pizza this weekend?" Tell him your plans for Saturday and Sunday, say which day doesn\'t work, and suggest one that does.',
+		onTopic: 'says what they are doing or plan to do this weekend or soon (any plans, including staying home or resting), says when they can or can\'t meet, or suggests a time',
+		priorities: 'present continuous or "going to" for a plan ("I\'m meeting my sister on Saturday", not "I meet my sister on Saturday"), a clear no with another time ("I can\'t on Saturday, but Sunday works", not "maybe"), on + day and at + time ("on Saturday at 7", not "in Saturday"; no preposition before "this" or "next": "this Sunday", not "in this Sunday"), "go" + -ing ("go shopping", not "go to shopping"), articles ("to the park", "go home", not "to park" or "to home"), word order in questions',
+		rules: 'Never "fix" a name, a place or an activity, and never comment on what they plan to do or with whom. Don\'t fix correct "will" or "going to", "on the weekend" or "at the weekend", or "me and my friends".',
+		ideas: ['What are you doing on Saturday?', 'And on Sunday?', 'Which day works for pizza?'],
+		betterLabel: { en: 'What you said, a bit better', fa: 'حرف‌هایت، کمی بهتر' }
 	}
 } satisfies Record<string, SayPrompt>;
 export type SayPromptId = keyof typeof SAY_PROMPTS;

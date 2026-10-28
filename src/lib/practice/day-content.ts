@@ -18,6 +18,7 @@ import * as dayOne from './days/day-1';
 import * as dayTwo from './days/day-2';
 import * as dayThree from './days/day-3';
 import * as everydayOne from './days/everyday-1';
+import * as everydayTwo from './days/everyday-2';
 import * as dayFour from './days/day-4';
 import type { Track } from './day';
 
@@ -42,7 +43,7 @@ export interface DayContent {
 }
 
 /** Every later day's content, by day id. */
-export const DAY_CONTENT: Record<string, DayContent> = { 'day-1': dayOne, 'day-2': dayTwo, 'day-3': dayThree, 'day-4': dayFour, 'everyday-1': everydayOne };
+export const DAY_CONTENT: Record<string, DayContent> = { 'day-1': dayOne, 'day-2': dayTwo, 'day-3': dayThree, 'day-4': dayFour, 'everyday-1': everydayOne, 'everyday-2': everydayTwo };
 const contentOf = (dayId: string): DayContent => DAY_CONTENT[dayId] ?? {};
 const LATER: DayContent[] = Object.values(DAY_CONTENT);
 /** This version's set, or the day's other version's. */

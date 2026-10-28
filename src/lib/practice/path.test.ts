@@ -191,7 +191,10 @@ describe('size', () => {
 		for (const day of DAYS) for (const track of ['intermediate', 'professional'] as const) for (const step of chapterSteps(day, track)) path = applyStep(path, { step, outcome: 'done' }, track, 21000);
 		path = startStep(path, 'day-1:phrases', 'intermediate');
 		expect(PathSchema.safeParse(path).success).toBe(true);
-		expect(JSON.stringify(path).length).toBeLessThan(1500);
+		// It rides in the learner's metadata (and so in their session cookie): about 280 bytes a chapter.
+		// Past a dozen chapters it should move to its own table.
+		expect(JSON.stringify(path).length).toBeLessThan(300 * DAYS.length);
+		expect(DAYS.length).toBeLessThanOrEqual(12);
 	});
 	it('stops adding new steps at the cap', () => {
 		const done = Object.fromEntries(Array.from({ length: MAX_DONE }, (_, i) => [`k${i}`, ['i', 1]]));

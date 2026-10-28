@@ -86,7 +86,7 @@ describe('Module lab: any step of any chapter', () => {
 		}
 	});
 	it('the per-chapter pickers list each chapter once, Everyday 1 included', () => {
-		expect(LAB_CHAPTER_SETS.map(s => s.day)).toEqual(['day-1', 'day-2', 'day-3', 'day-4', 'everyday-1']);
-		expect(LAB_CHAPTER_SETS.map(s => s.name.en)).toEqual(['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Everyday 1']);
+		expect(LAB_CHAPTER_SETS.map(s => s.day)).toEqual(['day-1', 'day-2', 'day-3', 'day-4', 'everyday-1', 'everyday-2']);
+		expect(LAB_CHAPTER_SETS.map(s => s.name.en)).toEqual(['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Everyday 1', 'Everyday 2']);
 	});
 });
