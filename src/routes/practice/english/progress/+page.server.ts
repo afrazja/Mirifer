@@ -5,7 +5,7 @@ import { readEnglishProgress } from '$lib/practice/english-progress';
 import { readEnglishProfile } from '$lib/practice/english-profile';
 import { lessonDates, stepDates, type LessonEventRow } from '$lib/practice/learner-stats';
 import { trackFor } from '$lib/practice/day';
-import { chapterNumber, nextStep, readPath, replayPick, stepsDone, type NextStep, type Preview } from '$lib/practice/path';
+import { chapterNumber, nextStep, readPath, stepInfo, stepsDone, type NextStep, type Preview } from '$lib/practice/path';
 import { minutesOf } from '$lib/practice/day';
 import { previewFor, usesStepPath } from '$lib/server/step-path';
 
@@ -82,7 +82,8 @@ async function pathDashboard(locals: App.Locals, user: { id: string; user_metada
 	const path = readPath(user.user_metadata, track);
 	const reason = profile?.reason ?? null;
 	const next = nextStep(path, track, preview, reason);
-	const shown = next ?? replayPick(path, track, preview, reason);
+	// With nothing new left, the card says new practice is coming (a replay under way still shows).
+	const shown = next ?? (path.current ? stepInfo(path.current.step, track) : null);
 	let rows: LessonEventRow[] = [];
 	let eventsLoaded = true;
 	try {
@@ -105,8 +106,10 @@ async function pathDashboard(locals: App.Locals, user: { id: string; user_metada
 		path: {
 			stepsDone: stepsDone(path),
 			step: shown ? stepCard(shown, preview, reason) : null,
-			/** Nothing new left: the card offers a step to practise again. */
-			replay: !next && !!shown,
+			/** Every released step is done: new practice is coming soon (any step can be practised again from the path). */
+			comingSoon: !next,
+			/** The card's step is one done before (a replay under way). */
+			replay: !!shown && !!path.done[shown.step],
 			/** The step on the card was opened and not finished. */
 			underWay: !!shown && path.current?.step === shown.step,
 			/** The learner's local day of their latest step (the goal shows done even if its event was lost). */
