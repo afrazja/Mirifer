@@ -34,7 +34,7 @@ describe('the admin’s English report', () => {
 	it('counts each learner’s visits, the days they came, and their last visit and sign-in', () => {
 		const sara = report.learners.find(l => l.id === 'learner')!;
 		expect(sara).toMatchObject({ name: 'Sara', visits: 3, daysActive: 2, lastVisit: iso(now - DAY), lastSignIn: iso(now - 2 * DAY), finished: 1, level: 'Professional', reason: 'Travel', source: 'instagram' });
-		expect(sara.status).toBe('In Day 2 · step 2 of 5');
+		expect(sara.status).toBe('In Ch 2 · step 2 of 5');
 		expect(sara.minutes).toBe(2);
 		expect(sara.cost).toBeCloseTo(2 * 0.006 + 0.002);
 		expect(sara.timeline[0]).toMatchObject({ name: 'visit_started' });

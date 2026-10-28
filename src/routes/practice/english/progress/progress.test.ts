@@ -1,4 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
+// These tests cover the daily lessons, now the rollback mode: only the test accounts get the step path.
+vi.mock('$lib/server/step-path', async original => {
+	const real = await original<typeof import('$lib/server/step-path')>();
+	const { canResetEnglish } = await import('$lib/server/test-accounts');
+	return { ...real, usesStepPath: (user: Parameters<typeof real.usesStepPath>[0]) => canResetEnglish(user) };
+});
 import { load } from './+page.server';
 import { load as loadFinished } from '../finished/+page.server';
 import { DAY_TWO, sessionModules, startSession } from '$lib/practice/day';

@@ -9,7 +9,8 @@
  */
 import { DAY_MS, type StoredEvent } from './contract';
 import { buildEnglishLessonReport } from './english-lessons-report';
-import { DaySessionSchema, caughtUp, dayById, finishedDays, furthestDayId, nextDay, sessionModules, trackFor } from '$lib/practice/day';
+import { DaySessionSchema, finishedDays, trackFor } from '$lib/practice/day';
+import { chapterModules, chapterNumber, nextStep, readPath, splitStep, stepsDone, type StepId } from '$lib/practice/path';
 import { readEnglishProgress } from '$lib/practice/english-progress';
 import { readEnglishProfile } from '$lib/practice/english-profile';
 import { lessonDates, streak } from '$lib/practice/learner-stats';
@@ -45,19 +46,22 @@ const utcDate = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 const isLesson = (e: StoredEvent) => e.metadata.course === 'en' && ['lesson_started', 'lesson_progress', 'lesson_completed'].includes(e.event_name);
 const REASONS: Record<string, string> = { travel: 'Travel', work: 'Work and interviews', exam: 'A speaking exam', abroad: 'Living abroad', everyday: 'Everyday confidence', unsure: 'Not sure yet' };
 
-/** Where a learner is in the course right now, in a few words. */
+/** Where a learner is on the step path right now, in a few words ("In Ch 2 · step 3 of 5"). */
 function status(meta: Record<string, unknown>): string {
-	if (!readEnglishProfile(meta)) return 'Not onboarded';
-	const progress = readEnglishProgress(meta);
-	const saved = DaySessionSchema.safeParse(meta.english_day_v1);
-	if (saved.success && saved.data.stage !== 'done') {
-		const session = saved.data, steps = sessionModules(session).length + 1;
-		const step = session.stage === 'recap' ? steps : Math.min(session.done.length + session.skipped.length + 1, steps);
-		return `In Day ${dayById(session.day)?.number ?? '?'} · step ${step} of ${steps}`;
-	}
-	if (!finishedDays(progress).length) return saved.success ? 'Not finished a lesson' : 'Not started';
-	if (caughtUp(progress)) return 'Caught up';
-	return `Next: Day ${nextDay(furthestDayId(progress)).number}`;
+	const profile = readEnglishProfile(meta);
+	if (!profile) return 'Not onboarded';
+	const track = trackFor(profile), reason = profile.reason ?? null;
+	const path = readPath(meta, track);
+	const where = (step: StepId) => {
+		const parts = splitStep(step);
+		if (!parts) return '';
+		const modules = chapterModules(parts.day, track);
+		return `Ch ${chapterNumber(parts.day, false, reason)} · step ${modules.findIndex(m => m.id === parts.module) + 1} of ${modules.length}`;
+	};
+	if (path.current) return `In ${where(path.current.step)}`;
+	const next = nextStep(path, track, false, reason);
+	if (!stepsDone(path)) return next && next.index > 0 ? `Next: ${where(next.step)}` : 'Not started';
+	return next ? `Next: ${where(next.step)}` : 'Caught up · practising again';
 }
 
 export function buildEnglishInsights(input: InsightInput) {
