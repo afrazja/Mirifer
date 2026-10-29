@@ -54,7 +54,7 @@
 		void (async () => {
 			if (!startedAt) {
 				try {
-					const body = new FormData(); body.set('step', step);
+					const body = new FormData(); body.set('step', step); body.set('utcOffset', String(-new Date().getTimezoneOffset()));
 					const response = await fetch('?/start', { method: 'POST', body, headers: { 'x-sveltekit-action': 'true' } });
 					const reply = deserialize(await response.text());
 					const value = reply.type === 'success' ? reply.data?.startedAt : null;

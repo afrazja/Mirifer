@@ -1,13 +1,14 @@
 <script lang="ts">
 	/**
-	 * Admin: the English app at a glance (src/lib/analytics/english-insights.ts). Five views:
-	 * Overview (the funnel and day by day), Learners (one sortable, filterable table of every account,
-	 * with its details and the account actions: test account, reset password, delete),
-	 * Lessons (steps done, skipped, where lessons stop), AI cost, Audience (levels, reasons, sources).
+	 * Admin: the English app at a glance (src/lib/analytics/english-insights.ts and
+	 * english-usage-report.ts). Five views: Overview (who practises, how much, who comes back, the
+	 * funnel), Learners (one sortable, filterable table of every account, with its details and the
+	 * account actions), Steps (each step: done, skipped, left, time, rating), AI (cost and health:
+	 * what the AI routes sent, providers failing, clips without text, device problems), Audience.
 	 */
 	import type { PageData, ActionData } from './$types';
 	import { tick } from 'svelte';
-	import EnglishLessons from '$components/EnglishLessons.svelte';
+	import EnglishSteps from '$components/EnglishSteps.svelte';
 	import '$components/insights-analysis.css';
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 	let tab = $state('overview');
@@ -17,13 +18,14 @@
 	let selectedId = $state('');
 	/** The learners table: filters, then the chosen sort (most recently active first by default). */
 	type Learner = NonNullable<typeof report>['learners'][number];
-	const STAGES = ['Not onboarded', 'Not started', 'In a lesson', 'Between lessons', 'Caught up'];
-	const stageOf = (l: Learner) => (l.status.startsWith('In Day') ? 'In a lesson' : l.status.startsWith('Next:') ? 'Between lessons' : l.status === 'Not finished a lesson' ? 'Not started' : l.status);
+	const STAGES = ['Not onboarded', 'Not started', 'On a step', 'Between steps', 'Caught up'];
+	/** The path's status words (english-insights.ts, status()) in five groups. */
+	const stageOf = (l: Learner) => (l.status.startsWith('In ') ? 'On a step' : l.status.startsWith('Next:') ? 'Between steps' : l.status.startsWith('Caught up') ? 'Caught up' : l.status);
 	let stage = $state(''), level = $state(''), activeOnly = $state(false);
 	const COLUMNS: { key: keyof Learner; label: string }[] = [
 		{ key: 'name', label: 'Learner' }, { key: 'status', label: 'Where they are' }, { key: 'level', label: 'Level' }, { key: 'reason', label: 'Reason' },
-		{ key: 'signedUp', label: 'Signed up' }, { key: 'lastActive', label: 'Last visit' }, { key: 'visits', label: 'Visits' }, { key: 'daysActive', label: 'Days' },
-		{ key: 'finished', label: 'Lessons' }, { key: 'streak', label: 'Streak' }, { key: 'cost', label: 'AI cost' }, { key: 'source', label: 'Source' }
+		{ key: 'signedUp', label: 'Signed up' }, { key: 'lastActive', label: 'Last active' }, { key: 'steps', label: 'Steps' }, { key: 'practiceDays', label: 'Practice days' },
+		{ key: 'visits', label: 'Visits' }, { key: 'cost', label: 'AI cost' }, { key: 'source', label: 'Source' }
 	];
 	let sortKey = $state<keyof Learner>('lastActive'), sortDir = $state<1 | -1>(-1);
 	function sortBy(key: keyof Learner) {
@@ -44,7 +46,7 @@
 			return (x > y ? 1 : -1) * sortDir;
 		}));
 	const selected = $derived(report?.learners.find(l => l.id === selectedId) ?? null);
-	const TABS = [{ id: 'overview', name: 'Overview' }, { id: 'learners', name: 'Learners' }, { id: 'lessons', name: 'Lessons' }, { id: 'cost', name: 'AI cost' }, { id: 'audience', name: 'Audience' }];
+	const TABS = [{ id: 'overview', name: 'Overview' }, { id: 'learners', name: 'Learners' }, { id: 'steps', name: 'Steps' }, { id: 'cost', name: 'AI' }, { id: 'audience', name: 'Audience' }];
 
 	const pct = (n: number, d: number) => (d ? `${Math.round((n / d) * 100)}%` : '–');
 	const money = (n: number) => `$${n < 10 ? n.toFixed(2) : Math.round(n)}`;
@@ -56,12 +58,18 @@
 	};
 	const stamp = (iso: string) => new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) + ' UTC';
 	const MODULES: Record<string, string> = { 'listen-act': 'Listen and connect', 'listen-retell': 'Listen and retell', phrases: 'Natural phrases', traps: 'Persian-speaker traps', 'say-in-english': 'Say it in English', 'voice-messages': 'Voice messages', 'say-it-better': 'Tell your story', 'choose-persuade': 'Choose and persuade', scenario: 'Role-play', 'group-chat': 'Group chat' };
-	function eventLabel(e: { name: string; day: number | null; track: unknown; module: unknown; outcome: unknown; done: unknown; skipped: unknown }) {
+	const chapterOf = (day: number | null) => (day && day > 100 ? `Everyday ${day - 100}` : `Travel ${day}`);
+	const secs = (s: unknown) => (typeof s === 'number' ? (s < 60 ? ` · ${s} s` : ` · ${Math.round(s / 60)} min`) : '');
+	function eventLabel(e: { name: string; day: number | null; track: unknown; module: unknown; outcome: unknown; done: unknown; skipped: unknown; replay?: boolean; seconds?: unknown; code?: unknown; route?: unknown; result?: unknown }) {
 		const version = e.track === 'professional' ? 'Professional' : 'Intermediate';
+		const step = `${MODULES[String(e.module)] ?? e.module} (${chapterOf(e.day)})`;
 		if (e.name === 'visit_started') return 'Opened the app';
-		if (e.name === 'lesson_started') return `Started Day ${e.day} (${version})`;
-		if (e.name === 'lesson_completed') return `Finished Day ${e.day} · ${e.done} done, ${e.skipped} skipped`;
-		if (e.name === 'lesson_progress') return `${MODULES[String(e.module)] ?? e.module}: ${e.outcome === 'skipped' ? 'skipped' : 'done'}`;
+		if (e.name === 'lesson_started') return `Started ${chapterOf(e.day)} (${version})`;
+		if (e.name === 'lesson_completed') return `Finished ${chapterOf(e.day)} · ${e.done} done, ${e.skipped} skipped`;
+		if (e.name === 'step_opened') return `Opened ${step}${e.replay ? ' again' : ''}`;
+		if (e.name === 'lesson_progress') return `${step}: ${e.outcome === 'skipped' ? 'skipped' : e.replay ? 'done again' : 'done'}${secs(e.seconds)}`;
+		if (e.name === 'obstacle') return `Problem: ${String(e.code).replace(/_/g, ' ')}`;
+		if (e.name === 'english_ai_outcome') return `AI (${e.route}): ${e.result === 'fallback' ? 'a prepared line was sent' : 'no reply, an error was shown'}`;
 		return e.name;
 	}
 	async function open(id: string) {
@@ -111,21 +119,30 @@
 			<section class="panel"><h2>The report isn’t available</h2><p class="muted">{data.insights?.reason}</p></section>
 
 		{:else if tab === 'overview'}
+			{@const u = report.usage}
+			{@const who = (id: string) => { const l = report.learners.find(x => x.id === id); return l ? l.name || l.email : id; }}
 			<div class="metrics">
-				<article class="panel metric"><span>New sign-ups</span><strong>{report.totals.signups}</strong></article>
-				<article class="panel metric"><span>Active learners</span><strong>{report.totals.active}</strong><small>Opened the app in the period</small></article>
-				<article class="panel metric"><span>Lessons finished</span><strong>{report.totals.lessonsFinished}<em> / {report.totals.lessonsStarted}</em></strong><small>{pct(report.totals.lessonsFinished, report.totals.lessonsStarted)} of lessons started</small></article>
-				<article class="panel metric"><span>Came back next day</span><strong>{pct(report.totals.nextDay.returned, report.totals.nextDay.eligible)}</strong><small>{report.totals.nextDay.returned} of {report.totals.nextDay.eligible} after their first lesson</small></article>
+				<article class="panel metric"><span>Practised</span><strong>{u.totals.practised}</strong><small>Did a step in the period · {u.totals.practisedWeek} in the last 7 days · {u.totals.visited} opened the app</small></article>
+				<article class="panel metric"><span>Steps done</span><strong>{u.totals.stepsDone}</strong><small>{u.totals.stepsSkipped} skipped · {u.totals.replays} done again{#if u.totals.stepsPerDay !== null} · {u.totals.stepsPerDay} a day per learner{/if}</small></article>
+				<article class="panel metric"><span>Practice time</span><strong>{u.totals.practiceMinutes}<em> min</em></strong><small>{u.totals.timedSteps} of {u.totals.doneSteps} steps done had a time (kept since 29 Oct)</small></article>
+				<article class="panel metric"><span>Came back another day</span><strong>{u.totals.cameBack.returned}<em> / {u.totals.cameBack.eligible}</em></strong><small>{pct(u.totals.cameBack.returned, u.totals.cameBack.eligible)} practised again within a week of their first day{#if u.totals.cameBack.pending} · {u.totals.cameBack.pending} too new to count{/if}</small></article>
+			</div>
+			{#if u.totals.cameBack.eligible && u.totals.cameBack.eligible < 20}
+				<p class="muted">Came back: {u.totals.cameBack.learners.filter(l => l.back).map(l => who(l.id)).join(', ') || 'nobody yet'}. Didn’t: {u.totals.cameBack.learners.filter(l => !l.back).map(l => who(l.id)).join(', ') || 'nobody'}.</p>
+			{/if}
+			<div class="metrics two-up">
+				<article class="panel metric attention"><span>Opened their first step and left</span><strong>{u.totals.leftFirstStep}</strong><small>New accounts in the period: a step opened over a day ago, and no step finished or skipped</small></article>
+				<article class="panel metric"><span>Paused now</span><strong>{u.totals.pausedNow}</strong><small>A step under way for over a day (see Steps)</small></article>
 			</div>
 
 			<section class="panel">
 				<h2>Where people drop off</h2>
-				<p class="muted">Accounts created in the last {report.days} days, and how far each got.</p>
+				<p class="muted">Accounts created in the last {report.days} days, and how far each got. Learners too new for a row (it needs more days since they signed up) are counted apart.</p>
 				<ol class="funnel">
-					{#each report.funnel as stage, i}
+					{#each u.funnel as stage, i}
 						<li>
-							<div class="funnel-row"><span>{stage.label}</span><b>{stage.count}</b><small>{i ? pct(stage.count, funnelTop) : ''}</small></div>
-							<div class="track"><div class="fill" style="width:{funnelTop ? Math.max(stage.count ? 2 : 0, (stage.count / funnelTop) * 100) : 0}%"></div></div>
+							<div class="funnel-row"><span>{stage.label}</span><b>{stage.count}</b><small>{i ? pct(stage.count, u.funnel[0].count) : ''}{stage.tooNew ? ` · ${stage.tooNew} too new` : ''}</small></div>
+							<div class="track"><div class="fill" style="width:{u.funnel[0].count ? Math.max(stage.count ? 2 : 0, (stage.count / u.funnel[0].count) * 100) : 0}%"></div></div>
 						</li>
 					{/each}
 				</ol>
@@ -133,20 +150,21 @@
 
 			<div class="two">
 				<section class="panel">
-					<h2>Active learners per day</h2>
-					<div class="chart" role="img" aria-label="Active learners per day">
-						{#each bars(report.series.map(s => s.active)) as h, i}<span class="bar" style="height:{h}%" title="{report.series[i].date}: {report.series[i].active} active"></span>{/each}
+					<h2>Learners who practised, per day</h2>
+					<div class="chart" role="img" aria-label="Learners who did a step, per day">
+						{#each bars(u.series.map(s => s.practised)) as h, i}<span class="bar" style="height:{h}%" title="{u.series[i].date}: {u.series[i].practised} practised, {u.series[i].visited} opened the app"></span>{/each}
 					</div>
-					<p class="axis"><span>{report.series[0]?.date}</span><span>Today</span></p>
+					<p class="axis"><span>{u.series[0]?.date}</span><span>Today</span></p>
 				</section>
 				<section class="panel">
-					<h2>Lessons finished per day</h2>
-					<div class="chart" role="img" aria-label="Lessons finished per day">
-						{#each bars(report.series.map(s => s.finished)) as h, i}<span class="bar" style="height:{h}%" title="{report.series[i].date}: {report.series[i].finished} finished, {report.series[i].started} started"></span>{/each}
+					<h2>Steps done per day</h2>
+					<div class="chart" role="img" aria-label="Steps done per day">
+						{#each bars(u.series.map(s => s.steps)) as h, i}<span class="bar" style="height:{h}%" title="{u.series[i].date}: {u.series[i].steps} steps, {u.series[i].minutes} min"></span>{/each}
 					</div>
-					<p class="axis"><span>{report.series[0]?.date}</span><span>Today</span></p>
+					<p class="axis"><span>{u.series[0]?.date}</span><span>Today</span></p>
 				</section>
 			</div>
+			<p class="muted">With this few learners, read the numbers as signals, and the learners’ timelines (Learners tab) as the story.</p>
 
 		{:else if tab === 'learners'}
 			<div class="table-filters">
@@ -178,11 +196,10 @@
 								<td>{l.level ?? '–'}</td>
 								<td class="wrap">{l.reason ?? '–'}</td>
 								<td>{when(l.signedUp)}</td>
-								<td>{when(l.lastVisit ?? l.lastSignIn)}</td>
+								<td>{when(l.lastActive)}</td>
+								<td class="num">{l.steps}</td>
+								<td class="num">{l.practiceDays}</td>
 								<td class="num">{l.visits}</td>
-								<td class="num">{l.daysActive}</td>
-								<td class="num">{l.finished}</td>
-								<td class="num">{l.streak}</td>
 								<td class="num">{l.cost ? money(l.cost) : '–'}</td>
 								<td>{l.source ?? '–'}</td>
 							</tr>
@@ -203,8 +220,8 @@
 						<div><dt>Last visit</dt><dd>{selected.lastVisit ? stamp(selected.lastVisit) : '–'}</dd></div>
 						<div><dt>Last sign-in</dt><dd>{selected.lastSignIn ? stamp(selected.lastSignIn) : '–'}</dd></div>
 						<div><dt>Level · reason</dt><dd>{selected.level ?? '–'} · {selected.reason ?? '–'}</dd></div>
-						<div><dt>Lessons finished</dt><dd>{selected.finished}{selected.lastLesson ? ` · last on ${selected.lastLesson}` : ''}</dd></div>
-						<div><dt>Streak</dt><dd>{selected.streak} days</dd></div>
+						<div><dt>Steps done</dt><dd>{selected.steps}{selected.lastPractised ? ` · last on ${stamp(selected.lastPractised)}` : ''}</dd></div>
+						<div><dt>Days with a step done</dt><dd>{selected.practiceDays}</dd></div>
 						<div><dt>AI use (period)</dt><dd>{selected.minutes} min speech · {selected.aiRequests} AI requests · about {money(selected.cost)}</dd></div>
 						<div><dt>Came from</dt><dd>{selected.source ?? '–'}</dd></div>
 					</dl>
@@ -246,15 +263,15 @@
 				</section>
 			{/if}
 
-		{:else if tab === 'lessons'}
-			<EnglishLessons report={report.lessons} ratings={report.ratings} />
+		{:else if tab === 'steps'}
+			<EnglishSteps usage={report.usage} lessons={report.lessons} />
 
 		{:else if tab === 'cost'}
 			<div class="metrics">
 				<article class="panel metric"><span>Estimated cost</span><strong>{money(report.totals.cost)}</strong><small>Last {report.days} days</small></article>
 				<article class="panel metric"><span>Speech turned into text</span><strong>{report.totals.minutes}<em> min</em></strong><small>About ${(0.006).toFixed(3)} a minute</small></article>
 				<article class="panel metric"><span>AI feedback requests</span><strong>{report.totals.aiRequests}</strong><small>About $0.002 each</small></article>
-				<article class="panel metric"><span>Per lesson finished</span><strong>{report.totals.lessonsFinished ? money(report.totals.cost / report.totals.lessonsFinished) : '–'}</strong></article>
+				<article class="panel metric"><span>Per step done</span><strong>{report.usage.totals.stepsDone ? money(report.totals.cost / report.usage.totals.stepsDone) : '–'}</strong></article>
 			</div>
 			<section class="panel">
 				<h2>Cost per day</h2>
@@ -271,6 +288,34 @@
 				</table></div>
 				<p class="muted">Reached a daily limit: {report.limitHits.length ? report.limitHits.map(h => `${report.learners.find(l => l.id === h.id)?.email ?? h.id} on ${h.date}`).join(', ') : 'nobody'}. Prices are estimates; check the providers’ bills for exact amounts.</p>
 			</section>
+
+			{@const h = report.aiHealth}
+			<section class="panel">
+				<h2>AI health</h2>
+				<p class="muted">What each AI route sent the learner: the model’s reply, its rewrite after a refused first try, a prepared line (the model’s reply failed the checks twice), or an error. Kept since 29 Oct.</p>
+				<div class="table-wrap"><table>
+					<thead><tr><th>Route</th><th>Calls</th><th>Reply</th><th>Rewrite</th><th>Prepared line</th><th>Error</th><th>Time (median)</th></tr></thead>
+					<tbody>{#each h.routes as r}<tr><td>{r.route}</td><td>{r.calls}</td><td>{r.ok}</td><td>{r.retried}</td><td class:warn={r.fallback > 0}>{r.fallback} <small>{pct(r.fallback, r.calls)}</small></td><td class:warn={r.failed > 0}>{r.failed}</td><td>{r.ms === null ? '–' : `${(r.ms / 1000).toFixed(1)} s`}</td></tr>{:else}<tr><td colspan="7" class="muted">No AI calls recorded in this period.</td></tr>{/each}</tbody>
+				</table></div>
+				<p class="muted">Answered by: {h.providers.map(p => `${p.provider === 'none' ? 'nobody' : p.provider} ${p.count}`).join(' · ') || '–'}. The first provider failed: {h.firstFails.map(f => `${f.fail.replace('http_', 'HTTP ')} ${f.count}`).join(' · ') || 'never'}.</p>
+			</section>
+			<div class="two">
+				<section class="panel">
+					<h2>Voice clips without text</h2>
+					<div class="table-wrap"><table>
+						<thead><tr><th>Where</th><th>Clips</th><th>No text back</th></tr></thead>
+						<tbody>{#each h.clips as c}<tr><td>{c.route}</td><td>{c.clips}</td><td class:warn={c.failed > 0}>{c.failed} <small>{pct(c.failed, c.clips)}</small></td></tr>{:else}<tr><td colspan="3" class="muted">No clips in this period.</td></tr>{/each}</tbody>
+					</table></div>
+					<p class="muted">Failures are kept from 29 Oct.</p>
+				</section>
+				<section class="panel">
+					<h2>Problems learners’ devices reported</h2>
+					<div class="table-wrap"><table>
+						<thead><tr><th>Problem</th><th>Times</th><th>Learners</th></tr></thead>
+						<tbody>{#each h.obstacles as o}<tr><td>{o.code.replace(/_/g, ' ')}</td><td>{o.count}</td><td>{o.learners}</td></tr>{:else}<tr><td colspan="3" class="muted">None in this period.</td></tr>{/each}</tbody>
+					</table></div>
+				</section>
+			</div>
 
 		{:else if tab === 'audience'}
 			<div class="two">
@@ -308,6 +353,9 @@
 	.check { display: flex; align-items: center; gap: 8px; }
 	.tabs { display: flex; gap: 22px; border-bottom: 1px solid #34443e; margin: 8px 0 22px; overflow-x: auto; scrollbar-width: none; }
 	.tabs button { border: 0; border-bottom: 2px solid transparent; background: transparent; color: #a9b4b0; padding: 14px 0 12px; white-space: nowrap; font-size: .92rem; }
+	.warn { color: #ffb37a; font-weight: 600; }
+	.metric.attention strong { color: #ffb37a; }
+	.metrics.two-up { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
 	.tabs button.current { color: #b6dd94; border-bottom-color: #b6dd94; }
 	.panel { background: #18231f; border: 1px solid #34443e; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
 	.metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }

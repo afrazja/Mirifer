@@ -27,4 +27,19 @@ describe('analytics ingestion boundary', () => {
 			const test = call({ user_id: uid, events }); expect((await test.result).status).toBe(400); expect(test.upsert).not.toHaveBeenCalled();
 		}
 	});
+	it('drops events only the server writes, so nobody can add steps or AI use to the admin’s numbers', async () => {
+		const forged = [
+			{ ...event(), event_name: 'step_opened', metadata: { course: 'en', module: 'traps' } },
+			{ ...event(), event_name: 'lesson_progress', metadata: { course: 'en', module: 'traps', outcome: 'done' } },
+			{ ...event(), event_name: 'english_ai_outcome', metadata: { course: 'en', route: 'chat', ai_result: 'ok' } }
+		];
+		// The German lessons still send their own lesson events from the browser.
+		const german = { ...event(), event_name: 'lesson_progress', metadata: { sequence: 3 } };
+		const { result, upsert } = call({ user_id: uid, events: [...forged, german] });
+		expect(await (await result).json()).toEqual({ accepted: 1 });
+		expect(upsert.mock.calls[0][0]).toEqual([expect.objectContaining({ event_id: german.event_id, event_name: 'lesson_progress' })]);
+		const only = call({ user_id: uid, events: forged });
+		expect(await (await only.result).json()).toEqual({ accepted: 0 });
+		expect(only.upsert).not.toHaveBeenCalled();
+	});
 });

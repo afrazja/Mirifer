@@ -224,3 +224,32 @@ describe('the AI provider chain', () => {
 		expect(fetchMock.mock.calls.filter(call => String(call[0]).includes('googleapis'))).toHaveLength(1);
 	});
 });
+
+describe('AI health', () => {
+	const outcomes = (f: ReturnType<typeof fixture>) => f.insert.mock.calls.map(call => call[0]).filter(row => row.event_name === 'english_ai_outcome').map(row => row.metadata);
+	it('records what the chat sent: the model’s reply, its rewrite, or a prepared line', async () => {
+		respond({});
+		let f = turn(); await POST(f.event);
+		expect(outcomes(f)).toEqual([{ course: 'en', route: 'chat', ai_result: 'ok', provider: 'openai', ms: expect.any(Number) }]);
+		fetchMock.mockReset();
+		fetchMock.mockResolvedValueOnce(openAi({ messages: [{ from: 'nina', text: 'hi' }] })).mockResolvedValueOnce(openAi({}));
+		f = turn(); await POST(f.event);
+		expect(outcomes(f)[0]).toMatchObject({ ai_result: 'retried' });
+		fetchMock.mockReset();
+		fetchMock.mockImplementation(() => Promise.resolve(openAi({ messages: [{ from: 'nina', text: 'hi' }] })));
+		f = turn(); await POST(f.event);
+		expect(outcomes(f)[0]).toMatchObject({ ai_result: 'fallback' });
+	});
+	it('names the provider that answered and why the first one didn’t; a failed call too', async () => {
+		env.GEMINI_API_KEY = 'g'; env.GEMINI_MODEL = 'gemini-flash-latest';
+		fetchMock.mockImplementation((url: string) => Promise.resolve(url.includes('googleapis') ? new Response('{}', { status: 503 }) : openAi({})));
+		let f = turn(); await POST(f.event);
+		expect(outcomes(f)[0]).toMatchObject({ ai_result: 'ok', provider: 'openai', first_fail: 'http_5xx' });
+		fetchMock.mockImplementation(() => Promise.resolve(new Response('{}', { status: 500 })));
+		f = turn();
+		expect((await POST(f.event)).status).toBe(502);
+		expect(outcomes(f)[0]).toMatchObject({ ai_result: 'failed', provider: 'none', first_fail: 'http_5xx' });
+		// Nothing the learner wrote is in it.
+		expect(JSON.stringify(outcomes(f))).not.toContain('in!');
+	});
+});

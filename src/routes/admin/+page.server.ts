@@ -16,14 +16,15 @@ import { UUID } from '$lib/analytics/contract';
 import { serviceClient } from '$lib/server/supabase-admin';
 
 /** The admin's views of the English app. */
-const TABS = ['overview', 'learners', 'lessons', 'cost', 'audience'] as const;
+const TABS = ['overview', 'learners', 'steps', 'cost', 'audience'] as const;
 
 export const load: PageServerLoad = async ({ parent, url, locals }) => {
 	const { authorized } = await parent();
 	if (!authorized) return { authorized: false as const, insights: null, tab: 'overview' };
 	const days = [7, 14, 30, 90].includes(Number(url.searchParams.get('days'))) ? Number(url.searchParams.get('days')) : 30;
 	const includeTests = url.searchParams.get('tests') === '1';
-	const asked = url.searchParams.get('tab') ?? '';
+	// The Steps tab was called Lessons before the step path.
+	const asked = url.searchParams.get('tab') === 'lessons' ? 'steps' : url.searchParams.get('tab') ?? '';
 	const tab = (TABS as readonly string[]).includes(asked) ? asked : 'overview';
 	return { authorized: true as const, tab, selfId: locals.user?.id ?? null, insights: await loadEnglishInsights(serviceClient(), { days, includeTests }) };
 };

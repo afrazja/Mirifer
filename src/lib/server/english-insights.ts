@@ -7,9 +7,10 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { StoredEvent } from '$lib/analytics/contract';
 import { buildEnglishInsights, type InsightUser } from '$lib/analytics/english-insights';
 import { isAdminEmail } from '$lib/server/admin-auth';
+import { RESET_ENGLISH_EMAILS } from '$lib/server/test-accounts';
 
 /** The events the report reads (visits, the lessons, and the AI the lessons use). */
-const EVENT_NAMES = ['visit_started', 'lesson_started', 'lesson_progress', 'lesson_completed', 'english_clip_transcribed', 'english_ai_requested', 'english_practice_ai', 'step_rated'];
+const EVENT_NAMES = ['visit_started', 'lesson_started', 'lesson_progress', 'lesson_completed', 'english_clip_transcribed', 'english_ai_requested', 'english_practice_ai', 'step_rated', 'step_opened', 'english_ai_outcome', 'obstacle'];
 
 /** Reads every page of a query (Supabase returns at most 1,000 rows at a time). */
 async function readAll<T>(query: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>, cap = 200_000): Promise<T[]> {
@@ -42,7 +43,8 @@ export async function loadEnglishInsights(db: SupabaseClient | null, opts: { day
 			for (const u of result.data.users) users.push({
 				id: u.id, email: u.email ?? '', created_at: u.created_at, last_sign_in_at: u.last_sign_in_at ?? null,
 				meta: (u.user_metadata ?? {}) as Record<string, unknown>,
-				isAdmin: isAdminEmail(u.email) || admins.has(u.id), excluded: excluded.has(u.id)
+				// The owner's test accounts count as test accounts without marking them by hand.
+				isAdmin: isAdminEmail(u.email) || admins.has(u.id), excluded: excluded.has(u.id) || (RESET_ENGLISH_EMAILS as readonly string[]).includes((u.email ?? '').toLowerCase())
 			});
 			if (!result.data.nextPage || result.data.users.length < 1000) break;
 		}

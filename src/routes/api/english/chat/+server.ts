@@ -24,7 +24,7 @@ import {
 } from '$lib/practice/group-chat';
 import { chatSceneById } from '$lib/practice/chats';
 import { firstName } from '$lib/practice/learner-name';
-import { askChain, englishLearner, spendAllowance } from '$lib/server/english-ai';
+import { askChain, englishLearner, recordAiOutcome, spendAllowance, type ChainOutcome } from '$lib/server/english-ai';
 import { chatLineProblem, provenGoals, signGoals, signJamieLine } from '$lib/server/jamie-line';
 
 const MessageSchema = z.object({ from: z.string().max(20), text: z.string().trim().min(1).max(400), voice: z.boolean().optional() }).strip();
@@ -123,22 +123,26 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		met, twistSaid, last, stalled: (parsed.data.quiet ?? 0) >= 2,
 		learnerName: firstName(typeof user.user_metadata?.display_name === 'string' ? user.user_metadata.display_name : '') || null
 	});
+	let outcome: ChainOutcome | null = null;
 	const ask = (text: string) => askChain({
-		label: 'English group chat', system, user: text, schema: ReplySchema, ...schemasFor(ids, scene.played), shape: SHAPE, temperature: 0.7, maxTokens: 500
+		label: 'English group chat', system, user: text, schema: ReplySchema, ...schemasFor(ids, scene.played), shape: SHAPE, temperature: 0.7, maxTokens: 500,
+		onOutcome: o => { outcome = o; }
 	});
 	const previous = [...messages].reverse().find(m => m.from !== LEARNER)?.text;
 	let result = await ask(transcript);
-	if (!result) return json({ error: 'AI temporarily unavailable' }, { status: 502 });
+	if (!result) { await recordAiOutcome(locals, user, 'chat', 'failed', outcome); return json({ error: 'AI temporarily unavailable' }, { status: 502 }); }
 	const linesOf = (r: NonNullable<typeof result>) => r.messages.map(m => ({ from: m.from, text: clean(m.text) }));
 	// Numbers the learner said ("how about after 7?") may come back in the friends' answer.
 	const learnerSaid = said.map(m => m.text).join('\n');
 	let problem = roundProblem(scene, variant, linesOf(result), previous, twistSaid, learnerSaid);
+	const retried = !!problem;
 	if (problem) {
 		console.error(`English group chat: round rejected (${problem}); retrying`);
 		const retry = await ask(`${transcript}\n\n(Your last attempt could not be used because ${problem}. Write the friends' messages again, following every rule.)`);
 		if (retry) { result = retry; problem = roundProblem(scene, variant, linesOf(retry), previous, twistSaid, learnerSaid); }
 		if (problem) console.error(`English group chat: retry rejected too (${problem}); using a fallback line`);
 	}
+	await recordAiOutcome(locals, user, 'chat', problem ? 'fallback' : retried ? 'retried' : 'ok', outcome);
 
 	// Goals only accumulate, and only with the learner's own words as evidence.
 	const reached = new Set<string>([...met, ...evidencedGoals(scene, messages, result.goals)]);

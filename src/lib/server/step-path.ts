@@ -33,12 +33,24 @@ export interface StepEventInput {
 	chapterStarted: boolean;
 	/** The chapter just finished with this step: its done and skipped counts. */
 	chapterCompleted: { done: number; skipped: number } | null;
+	/** Seconds from opening the step to this result, when it was opened in one sitting (MAX_STEP_SECONDS). */
+	seconds?: number | null;
+}
+
+/** Longer than this from opening to the result isn't one sitting (a step left open for days): no time is kept. */
+export const MAX_STEP_SECONDS = 30 * 60;
+/** Seconds from the step's start to now, or null if it wasn't opened in one sitting. */
+export function stepSeconds(startedAt: string | null | undefined, now: Date): number | null {
+	const start = startedAt ? Date.parse(startedAt) : NaN;
+	if (!Number.isFinite(start)) return null;
+	const seconds = Math.round((now.getTime() - start) / 1000);
+	return seconds >= 0 && seconds <= MAX_STEP_SECONDS ? seconds : null;
 }
 
 export function stepEvents(userId: string, input: StepEventInput, now: Date, utcOffsetMin: number | null): AnalyticsRecord[] {
 	// One attempt per chapter and version, so the admin groups a chapter's steps together.
 	const attempt = lessonAttemptId(userId, `path|${input.day.id}|${input.track}`);
-	const base = { course: 'en', track: input.track, ...(utcOffsetMin === null ? {} : { utc_offset_min: utcOffsetMin }) };
+	const base = { course: 'en', flow: 'path', track: input.track, ...(utcOffsetMin === null ? {} : { utc_offset_min: utcOffsetMin }) };
 	const event = (event_name: AnalyticsRecord['event_name'], metadata: Record<string, unknown>): AnalyticsRecord => ({
 		event_id: randomUUID(), session_id: attempt, attempt_id: attempt, event_name, day: input.day.number,
 		occurred_at: now.toISOString(), schema_version: SCHEMA_VERSION, metadata: safeMetadata({ ...base, ...metadata })
@@ -46,9 +58,19 @@ export function stepEvents(userId: string, input: StepEventInput, now: Date, utc
 	const rows: AnalyticsRecord[] = [];
 	if (input.chapterStarted && !input.replay) rows.push(event('lesson_started', { total: input.total }));
 	const percentage = input.score && input.score.total > 0 ? Math.round(Math.min(input.score.correct, input.score.total) / input.score.total * 100) : null;
-	rows.push(event('lesson_progress', { module: input.module, outcome: input.outcome, index: input.index, ...(input.replay ? { replay: true } : {}), ...(percentage === null ? {} : { percentage }) }));
+	rows.push(event('lesson_progress', { module: input.module, outcome: input.outcome, index: input.index, ...(input.replay ? { replay: true } : {}), ...(percentage === null ? {} : { percentage }), ...(typeof input.seconds === 'number' ? { seconds: input.seconds } : {}) }));
 	if (input.chapterCompleted) rows.push(event('lesson_completed', { ...input.chapterCompleted, total: input.total }));
 	return rows;
+}
+
+/** A step opened (it became the one under way): with the results, it shows the steps learners leave. */
+export function openedEvent(userId: string, day: DayPack, track: Track, module: ModuleId, index: number, replay: boolean, now: Date, utcOffsetMin: number | null): AnalyticsRecord {
+	const attempt = lessonAttemptId(userId, `path|${day.id}|${track}`);
+	return {
+		event_id: randomUUID(), session_id: attempt, attempt_id: attempt, event_name: 'step_opened', day: day.number,
+		occurred_at: now.toISOString(), schema_version: SCHEMA_VERSION,
+		metadata: safeMetadata({ course: 'en', flow: 'path', track, module, index, ...(replay ? { replay: true } : {}), ...(utcOffsetMin === null ? {} : { utc_offset_min: utcOffsetMin }) })
+	};
 }
 
 /** One learner's rating of a step they did (1–5, how much they liked it). */
@@ -56,6 +78,6 @@ export function ratingEvent(userId: string, day: DayPack, track: Track, module: 
 	const attempt = lessonAttemptId(userId, `path|${day.id}|${track}`);
 	return {
 		event_id: randomUUID(), session_id: attempt, attempt_id: attempt, event_name: 'step_rated', day: day.number,
-		occurred_at: now.toISOString(), schema_version: SCHEMA_VERSION, metadata: safeMetadata({ course: 'en', track, module, rating })
+		occurred_at: now.toISOString(), schema_version: SCHEMA_VERSION, metadata: safeMetadata({ course: 'en', flow: 'path', track, module, rating })
 	};
 }

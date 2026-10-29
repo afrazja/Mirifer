@@ -15,7 +15,7 @@ import type { RequestHandler } from './$types';
 import { MAX_REPLY, MAX_TURNS } from '$lib/practice/hotel';
 import { HOTEL_SCENE, goalIdsOf, type RoleScene } from '$lib/practice/roleplay';
 import { roleSceneById } from '$lib/practice/day-content';
-import { askChain, englishLearner, spendAllowance } from '$lib/server/english-ai';
+import { askChain, englishLearner, recordAiOutcome, spendAllowance, type ChainOutcome } from '$lib/server/english-ai';
 import { provenGoals, signBetter } from '$lib/server/jamie-line';
 
 const RequestSchema = z.object({
@@ -78,10 +78,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (refused) return refused;
 
 	const transcript = turns.map(turn => `${turn.speaker === 'learner' ? scene.labels.learner : scene.labels.character}: ${turn.text.replace(/\s+/g, ' ')}`).join('\n');
+	let outcome: ChainOutcome | null = null;
 	const result = await askChain({
 		label: 'English review', system: systemFor(scene), user: transcript, schema: ReviewSchema,
-		openAiSchema, geminiSchema, shape: SHAPE, temperature: 0.4, maxTokens: 900
+		openAiSchema, geminiSchema, shape: SHAPE, temperature: 0.4, maxTokens: 900, onOutcome: o => { outcome = o; }
 	});
+	await recordAiOutcome(locals, user, 'review', result ? 'ok' : 'failed', outcome);
 	if (!result) return json({ error: 'AI temporarily unavailable' }, { status: 502 });
 
 	// Keep only upgrades of things the learner actually said, that really change something.
