@@ -15,6 +15,8 @@ import { readEnglishProgress } from '$lib/practice/english-progress';
 import { readEnglishProfile } from '$lib/practice/english-profile';
 import { lessonDates, streak } from '$lib/practice/learner-stats';
 import { summarizeRatings } from '$lib/practice/step-feedback';
+import { buildAiHealth, buildUsageReport, isStepResult } from './english-usage-report';
+import { localDay } from './english-lessons-report';
 
 /** Rough prices, for an estimate only: speech to text per minute, and one AI feedback request. */
 export const COST = { transcribePerMinute: 0.006, aiRequest: 0.002 } as const;
@@ -86,7 +88,10 @@ export function buildEnglishInsights(input: InsightInput) {
 		const ai = own.filter(e => (e.event_name === 'english_ai_requested' || e.event_name === 'english_practice_ai') && inPeriod(e));
 		const audioSeconds = clips.reduce((sum, e) => sum + (typeof e.metadata.audio_seconds === 'number' ? e.metadata.audio_seconds : 0), 0);
 		const finishedOn = lessonDates(own.map(e => ({ event_name: e.event_name, occurred_at: e.occurred_at, metadata: e.metadata })));
-		const lastActive = Math.max(own.length ? at(own[own.length - 1]) : 0, u.last_sign_in_at ? Date.parse(u.last_sign_in_at) : 0, Date.parse(u.created_at));
+		// Last active: the last visit or step (a sign-in alone isn't activity); a new account its sign-up.
+		const lastActive = Math.max(own.length ? at(own[own.length - 1]) : 0, Date.parse(u.created_at));
+		const practice = own.filter(e => isStepResult(e) && e.metadata.outcome !== 'skipped');
+		const pathNow = profile ? readPath(u.meta, trackFor(profile)) : null;
 		return {
 			id: u.id,
 			name: typeof u.meta.display_name === 'string' ? u.meta.display_name.slice(0, 40) : '',
@@ -105,13 +110,20 @@ export function buildEnglishInsights(input: InsightInput) {
 			streak: streak(finishedOn, today),
 			lastLesson: finishedOn.at(-1) ?? null,
 			status: status(u.meta),
+			/** Steps done, from the saved path (it survives lost analytics). */
+			steps: pathNow ? stepsDone(pathNow) : 0,
+			/** The learner's own calendar days with a step done. */
+			practiceDays: new Set(practice.map(localDay)).size,
+			lastPractised: practice.length ? practice[practice.length - 1].occurred_at : null,
 			minutes: Math.round(audioSeconds / 6) / 10,
 			aiRequests: ai.length,
 			cost: audioSeconds / 60 * COST.transcribePerMinute + ai.length * COST.aiRequest,
 			test: u.isAdmin || u.excluded,
 			admin: u.isAdmin,
-			timeline: own.filter(e => e.event_name === 'visit_started' || isLesson(e)).slice(-40).reverse()
-				.map(e => ({ at: e.occurred_at, name: e.event_name, day: e.day, track: e.metadata.track ?? null, module: e.metadata.module ?? null, outcome: e.metadata.outcome ?? null, done: e.metadata.done ?? null, skipped: e.metadata.skipped ?? null }))
+			timeline: own.filter(e => e.event_name === 'visit_started' || isLesson(e) || e.event_name === 'step_opened' || e.event_name === 'obstacle'
+				|| (e.event_name === 'english_ai_outcome' && (e.metadata.ai_result === 'fallback' || e.metadata.ai_result === 'failed'))).slice(-60).reverse()
+				.map(e => ({ at: e.occurred_at, name: e.event_name, day: e.day, track: e.metadata.track ?? null, module: e.metadata.module ?? null, outcome: e.metadata.outcome ?? null, done: e.metadata.done ?? null, skipped: e.metadata.skipped ?? null,
+					replay: e.metadata.replay === true, seconds: typeof e.metadata.seconds === 'number' ? e.metadata.seconds : null, code: e.metadata.code ?? null, route: e.metadata.route ?? null, result: e.metadata.ai_result ?? null }))
 		};
 	}).sort((a, b) => Date.parse(b.lastActive) - Date.parse(a.lastActive));
 
@@ -149,15 +161,15 @@ export function buildEnglishInsights(input: InsightInput) {
 	}
 
 	// Who reached a daily limit (a learner on a UTC day).
-	const usage = new Map<string, { clips: number; seconds: number; ai: number }>();
+	const dailyUse = new Map<string, { clips: number; seconds: number; ai: number }>();
 	for (const e of events.filter(inPeriod)) {
 		const k = `${e.user_id}|${utcDate(at(e))}`;
-		const u = usage.get(k) ?? { clips: 0, seconds: 0, ai: 0 };
+		const u = dailyUse.get(k) ?? { clips: 0, seconds: 0, ai: 0 };
 		if (e.event_name === 'english_clip_transcribed') { u.clips++; u.seconds += typeof e.metadata.audio_seconds === 'number' ? e.metadata.audio_seconds : 0; }
 		if (e.event_name === 'english_ai_requested') u.ai++;
-		usage.set(k, u);
+		dailyUse.set(k, u);
 	}
-	const limitHits = [...usage.entries()].filter(([, u]) => u.clips >= LIMITS.clips || u.seconds >= LIMITS.audioSeconds || u.ai >= LIMITS.aiRequests)
+	const limitHits = [...dailyUse.entries()].filter(([, u]) => u.clips >= LIMITS.clips || u.seconds >= LIMITS.audioSeconds || u.ai >= LIMITS.aiRequests)
 		.map(([k, u]) => { const [id, date] = k.split('|'); return { id, date, ...u }; });
 
 	// Who the learners are (everyone onboarded) and where the period's sign-ups came from.
@@ -166,6 +178,8 @@ export function buildEnglishInsights(input: InsightInput) {
 		for (const v of values) if (v) map.set(v, (map.get(v) ?? 0) + 1);
 		return [...map.entries()].map(([label, n]) => ({ label, count: n })).sort((a, b) => b.count - a.count);
 	};
+	const usage = buildUsageReport({ events, users: users.map(u => ({ id: u.id, created_at: u.created_at, meta: u.meta })), since, now });
+	const aiHealth = buildAiHealth(events, since, now);
 	const lessons = buildEnglishLessonReport(events, users.map(u => ({ id: u.id, created_at: u.created_at, is_admin: u.isAdmin })), since, now);
 	const periodLearners = learners.filter(l => l.lastActive && Date.parse(l.lastActive) >= since);
 	return {
@@ -180,7 +194,7 @@ export function buildEnglishInsights(input: InsightInput) {
 			aiRequests: series.reduce((s, r) => s + r.aiRequests, 0),
 			cost: series.reduce((s, r) => s + r.cost, 0)
 		},
-		funnel, series, lessons, learners, periodLearners: periodLearners.length, limitHits,
+		funnel, series, lessons, learners, usage, aiHealth, periodLearners: periodLearners.length, limitHits,
 		/** How learners rate each step (latest rating per learner), lowest first. */
 		ratings: summarizeRatings(events.filter(e => e.event_name === 'step_rated' && e.metadata.course === 'en' && inPeriod(e))),
 		audience: { levels: count(learners.map(l => l.level)), reasons: count(learners.map(l => l.reason)) },

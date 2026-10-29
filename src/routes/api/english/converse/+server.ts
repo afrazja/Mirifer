@@ -23,7 +23,7 @@ import type { RequestHandler } from './$types';
 import { MAX_REPLY, MAX_TURNS } from '$lib/practice/hotel';
 import { HOTEL_SCENE, fallbackFor, goalIdsOf, missedGoals, twistSaid, twistWithLead, type RoleScene } from '$lib/practice/roleplay';
 import { roleSceneById } from '$lib/practice/day-content';
-import { askChain, englishLearner, spendAllowance } from '$lib/server/english-ai';
+import { askChain, englishLearner, recordAiOutcome, spendAllowance, type ChainOutcome } from '$lib/server/english-ai';
 import { provenGoals, sceneLineProblem, signGoals, signJamieLine } from '$lib/server/jamie-line';
 
 /** The character's turns are 'reception' in every scene (the hotel came first). */
@@ -60,8 +60,8 @@ const schemasFor = (ids: string[]) => ({
 });
 const SHAPE = '\nReturn only JSON: {"reply": string, "goalsMet": array of goal ids, "done": boolean, "improved": string or null, "noteEn": string or null, "noteFa": string or null}. Never omit a key.';
 
-const converse = (scene: RoleScene, system: string, transcript: string) => askChain({
-	label: 'English converse', system, user: transcript, schema: ReplySchema, ...schemasFor(goalIdsOf(scene)), shape: SHAPE, temperature: 0.6, maxTokens: 500
+const converse = (scene: RoleScene, system: string, transcript: string, onOutcome?: (outcome: ChainOutcome) => void) => askChain({
+	label: 'English converse', system, user: transcript, schema: ReplySchema, ...schemasFor(goalIdsOf(scene)), shape: SHAPE, temperature: 0.6, maxTokens: 500, onOutcome
 });
 
 export const POST: RequestHandler = async ({ request, locals }) => {
@@ -101,17 +101,21 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const missed = missedGoals(scene, met, learnerLines);
 	const twistDue = !!scene.twist && !twistBefore && scene.twist.after.every(goal => met.includes(goal) || missed.includes(goal));
 	const system = scene.prompt(variant, met, { missed, twistDue });
-	let result = await converse(scene, system, transcript);
-	if (!result) return json({ error: 'AI temporarily unavailable' }, { status: 502 });
+	let outcome: ChainOutcome | null = null;
+	const heard = (o: ChainOutcome) => { outcome = o; };
+	let result = await converse(scene, system, transcript, heard);
+	if (!result) { await recordAiOutcome(locals, user, 'converse', 'failed', outcome); return json({ error: 'AI temporarily unavailable' }, { status: 502 }); }
 	// A line that fails the checks gets one rewrite with the reason, so the character
 	// still answers what was said; the prepared fallback is the last resort.
 	let problem = problemOf(result.reply);
+	const retried = !!problem;
 	if (problem) {
 		console.error(`English converse: ${character}'s line rejected (${problem}); retrying`);
-		const retry = await converse(scene, system, `${transcript}\n\n(Your last attempt at ${character}'s reply could not be used because ${problem}. Write ${character}'s reply again, following every rule.)`);
+		const retry = await converse(scene, system, `${transcript}\n\n(Your last attempt at ${character}'s reply could not be used because ${problem}. Write ${character}'s reply again, following every rule.)`, heard);
 		if (retry) { result = retry; problem = problemOf(retry.reply); }
 		if (problem) console.error(`English converse: retry rejected too (${problem}); using a fallback line`);
 	}
+	await recordAiOutcome(locals, user, 'converse', problem ? 'fallback' : retried ? 'retried' : 'ok', outcome);
 
 	// Goals only accumulate; some need another first (confirming needs a decision to confirm).
 	const reached = new Set<string>([...met, ...ids.filter(id => result.goalsMet.includes(id))]);

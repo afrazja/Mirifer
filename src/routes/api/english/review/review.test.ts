@@ -36,7 +36,11 @@ describe('/api/english/review', () => {
 		expect(body.upgrades).toHaveLength(2);
 		expect(body.upgrades[0]).toMatchObject({ original: grab.original, better: grab.better, why: { en: grab.whyEn, fa: grab.whyFa } });
 		expect(verifyJamieLine(grab.better, body.upgrades[0].voiceSig)).toBe(true);
-		expect(f.insert).toHaveBeenCalledOnce();
+		// Counted once against the allowance; then one AI health row (ids and numbers only).
+		const names = f.insert.mock.calls.map(call => call[0].event_name);
+		expect(names.filter(name => name === 'english_ai_requested')).toHaveLength(1);
+		expect(f.insert.mock.calls.find(call => call[0].event_name === 'english_ai_outcome')?.[0].metadata).toMatchObject({ course: 'en', route: 'review', ai_result: 'ok' });
+		expect(JSON.stringify(f.insert.mock.calls)).not.toContain('pick up');
 		expect(JSON.stringify(fetchMock.mock.calls[0][1].body)).toContain('Guest: Yes. I also go and pick up');
 	});
 

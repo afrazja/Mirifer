@@ -10,7 +10,7 @@ export const EVENT_NAMES = [
 	'mic_requested', 'mic_ready', 'obstacle', 'audio_fallback',
 	'free_turn_offered', 'free_turn_begun', 'free_turn_completed',
 	'exam_completed', 'review_started', 'conversation_started', 'conversation_completed', 'english_ai_requested',
-	'english_clip_transcribed', 'english_practice_ai', 'step_rated'
+	'english_clip_transcribed', 'english_practice_ai', 'step_rated', 'step_opened', 'english_ai_outcome'
 ] as const;
 export type AnalyticsEvent = typeof EVENT_NAMES[number];
 export const OBSTACLES = {
@@ -38,7 +38,19 @@ export interface StoredEvent extends AnalyticsRecord {
 	created_at: string;
 }
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const numericKeys = new Set(['sequence', 'index', 'total', 'sentenceCount', 'estimateMinutes', 'actualSeconds', 'secondsOnOverlay', 'score', 'percentage', 'week', 'count', 'length', 'done', 'skipped', 'audio_seconds', 'rating', 'points']);
+/** The English AI routes the admin's AI health counts. */
+export const AI_ROUTES = ['chat', 'chat-review', 'converse', 'review'] as const;
+export type AiRoute = (typeof AI_ROUTES)[number];
+
+/**
+ * Events only our server writes (the step path, the AI and clip budgets): the browser's analytics
+ * batches may not send them, so nobody can add steps or AI use to the admin's numbers.
+ */
+const SERVER_ONLY = new Set<string>(['step_opened', 'step_rated', 'english_ai_requested', 'english_clip_transcribed', 'english_practice_ai', 'english_ai_outcome']);
+export const serverOnly = (e: Pick<AnalyticsRecord, 'event_name' | 'metadata'>) =>
+	SERVER_ONLY.has(e.event_name) || (['lesson_started', 'lesson_progress', 'lesson_completed'].includes(e.event_name) && (e.metadata?.course === 'en' || e.metadata?.flow === 'path'));
+
+const numericKeys = new Set(['sequence', 'index', 'total', 'sentenceCount', 'estimateMinutes', 'actualSeconds', 'secondsOnOverlay', 'score', 'percentage', 'week', 'count', 'length', 'done', 'skipped', 'audio_seconds', 'rating', 'points', 'seconds', 'ms']);
 const choices: Record<string, readonly string[]> = {
 	page: ['home', 'languages', 'onboarding', 'practice', 'lesson', 'review', 'basics', 'vocabulary', 'progress', 'profile', 'settings', 'exam', 'sprechen', 'hoeren', 'lesen', 'schreiben', 'other'],
 	device: ['mobile', 'tablet', 'desktop'],
@@ -52,7 +64,15 @@ const choices: Record<string, readonly string[]> = {
 	// The English daily lessons (src/lib/server/lesson-events.ts); a test keeps these in step with day.ts.
 	track: ['intermediate', 'professional'],
 	module: ['listen-act', 'scenario', 'phrases', 'say-it-better', 'say-in-english', 'traps', 'voice-messages', 'listen-retell', 'choose-persuade', 'group-chat'],
-	outcome: ['done', 'skipped']
+	outcome: ['done', 'skipped'],
+	// The step path's own events (src/lib/server/step-path.ts), apart from the old daily lessons'.
+	flow: ['path'],
+	// AI health (src/lib/server/english-ai.ts, recordAiOutcome): which route, which provider answered,
+	// what the route sent, and why the first provider failed.
+	route: AI_ROUTES,
+	provider: ['gemini', 'deepseek', 'openai', 'none'],
+	ai_result: ['ok', 'retried', 'fallback', 'failed'],
+	first_fail: ['http_404', 'http_4xx', 'http_5xx', 'timeout', 'invalid']
 };
 export function safeMetadata(input: unknown): AnalyticsRecord['metadata'] {
 	const output: AnalyticsRecord['metadata'] = {};
@@ -64,7 +84,7 @@ export function safeMetadata(input: unknown): AnalyticsRecord['metadata'] {
 		else if (key === 'utc_offset_min' && typeof value === 'number' && Number.isInteger(value) && Math.abs(value) <= 840) output[key] = value;
 		else if (key === 'active_ms' && typeof value === 'number' && Number.isFinite(value) && value > 0 && value <= 15_000) output[key] = Math.round(value);
 		else if (numericKeys.has(key) && typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1_000_000) output[key] = value;
-		else if ((key === 'correct' || key === 'resumed' || key === 'replay' || key === 'ai_rescued') && typeof value === 'boolean') output[key] = value;
+		else if ((key === 'correct' || key === 'resumed' || key === 'replay' || key === 'ai_rescued' || key === 'failed') && typeof value === 'boolean') output[key] = value;
 		else if (typeof value === 'string' && choices[key]?.includes(value)) output[key] = value;
 	}
 	return output;

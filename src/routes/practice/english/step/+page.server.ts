@@ -9,7 +9,7 @@ import {
 	replayPick, splitStep, startStep, chapterModules, type Path, type Preview, type StepId
 } from '$lib/practice/path';
 import { canUseLab } from '$lib/server/lab-access';
-import { previewFor, ratingEvent, stepEvents, usesStepPath } from '$lib/server/step-path';
+import { openedEvent, previewFor, ratingEvent, stepEvents, stepSeconds, usesStepPath } from '$lib/server/step-path';
 import { isRating } from '$lib/practice/step-feedback';
 
 /**
@@ -90,14 +90,24 @@ export const actions: Actions = {
 	start: async ({ locals, request }) => {
 		const me = await learner(locals);
 		if ('status' in me) return me;
-		const step = allowed(me.path, me.track, me.preview, (await request.formData()).get('step'), me.reason);
+		const form = await request.formData();
+		const step = allowed(me.path, me.track, me.preview, form.get('step'), me.reason);
 		if (!step) return fail(400, { error: 'invalid' });
+		// Opened again (a reload, a second tab): the same start, and no second "opened".
 		if (me.path.current?.step === step) return { startedAt: me.path.current.startedAt };
 		const path = startStep(me.path, step, me.track);
 		try {
 			const { error } = await locals.supabase.auth.updateUser({ data: { english_path_v1: path } });
 			if (error) return fail(503, { error: 'save_failed' });
 		} catch { return fail(503, { error: 'save_failed' }); }
+		// Analytics never fail the step.
+		try {
+			const { day, module } = splitStep(step)!;
+			const offset = Number(form.get('utcOffset'));
+			const event = openedEvent(me.user.id, day, me.track, module, chapterModules(day, me.track).findIndex(item => item.id === module), !!me.path.done[step],
+				new Date(path.current!.startedAt), Number.isInteger(offset) && Math.abs(offset) <= 840 ? offset : null);
+			await locals.supabase.from('events').insert([{ ...event, user_id: me.user.id }]);
+		} catch { /* best effort */ }
 		return { startedAt: path.current!.startedAt };
 	},
 
@@ -146,6 +156,7 @@ export const actions: Actions = {
 			const steps = chapterSteps(day, me.track);
 			const rows = stepEvents(me.user.id, {
 				day, track: me.track, module: moduleId, index: modules.indexOf(module), total: modules.length, outcome, replay, score,
+				seconds: before.current?.step === step ? stepSeconds(before.current.startedAt, now) : null,
 				chapterStarted: startedChapter,
 				chapterCompleted: finishedNow ? { done: steps.filter(item => path.done[item]).length, skipped: steps.filter(item => path.skipped.includes(item)).length } : null
 			}, now, utcOffsetMin);

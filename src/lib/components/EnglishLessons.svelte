@@ -1,10 +1,8 @@
 <script lang="ts">
-	/** Admin: the English daily lessons (src/lib/analytics/english-lessons-report.ts). */
+	/** Admin: the English daily lessons, before the step path (src/lib/analytics/english-lessons-report.ts). */
 	import type { EnglishLessonReport } from '$lib/analytics/english-lessons-report';
 	import { rate } from '$lib/analytics/statistics';
-	import { DAYS } from '$lib/practice/day';
-	let { report, ratings = [] }: { report: EnglishLessonReport; ratings?: { day: number; track: string; module: string; counts: number[]; count: number; average: number }[] } = $props();
-	const chapterName = (day: number) => { const pack = DAYS.find(d => d.number === day); return pack ? (pack.arc && pack.arc !== 'travel' ? pack.theme.en : `Day ${day}`) : `Day ${day}`; };
+	let { report }: { report: EnglishLessonReport } = $props();
 	const NAMES: Record<string, string> = {
 		'listen-act': 'Listen and connect', 'listen-retell': 'Listen and retell', phrases: 'Natural phrases', traps: 'Persian-speaker traps',
 		'say-in-english': 'Say it in English', 'voice-messages': 'Voice messages', 'say-it-better': 'Tell your story / Say it better',
@@ -27,12 +25,6 @@
 	<div class="analysis-table"><table><caption class="sr-only">Lessons started and finished by day and version</caption><thead><tr><th>Lesson</th><th>Started</th><th>Finished</th></tr></thead><tbody>
 		{#each report.days as row}<tr><td>Day {row.day} <small>{version(row.track)}</small></td><td>{row.started}</td><td>{row.completed} <small>{rate(row.completed, row.started)}</small></td></tr>
 		{:else}<tr><td colspan="3" class="analysis-empty">No English lesson has started in this period.</td></tr>{/each}
-	</tbody></table></div>
-
-	<div class="analysis-heading"><div><h3>How learners rate each step</h3><p>"Did you enjoy this step?" at the end of a step on the step path (1 = not at all, 5 = loved it). Each learner's latest rating counts once. Lowest first.</p></div></div>
-	<div class="analysis-table"><table><caption class="sr-only">Average rating per step</caption><thead><tr><th>Step</th><th>Average</th><th>Ratings</th><th>1 · 2 · 3 · 4 · 5</th></tr></thead><tbody>
-		{#each ratings as row}<tr><td>{NAMES[row.module] ?? row.module} <small>{chapterName(row.day)} · {version(row.track)}</small></td><td><strong>{row.average.toFixed(1)}</strong></td><td>{row.count}</td><td><small>{row.counts.join(' · ')}</small></td></tr>
-		{:else}<tr><td colspan="4" class="analysis-empty">No step has been rated in this period.</td></tr>{/each}
 	</tbody></table></div>
 
 	<div class="analysis-heading"><div><h3>Steps: done or skipped</h3></div></div>

@@ -41,6 +41,34 @@ describe('step page', () => {
 		expect(again.supabase.auth.updateUser).not.toHaveBeenCalled();
 		expect(await actions.start(fixture({}, { step: intermediate[3] }).event())).toMatchObject({ status: 400 });
 	});
+	it('counts a step opened once (for the admin’s "left" and "time in step"), never on a reload', async () => {
+		const f = fixture({}, { step: intermediate[0], utcOffset: '210' });
+		const { startedAt } = await actions.start(f.event()) as { startedAt: string };
+		expect(f.inserted).toHaveLength(1);
+		expect(f.inserted[0]).toMatchObject({ event_name: 'step_opened', day: 1, occurred_at: startedAt, user_id: 'u1' });
+		expect(f.inserted[0].metadata).toEqual({ course: 'en', flow: 'path', track: 'intermediate', module: 'listen-act', index: 0, utc_offset_min: 210 });
+		const again = fixture({ english_path_v1: f.saved().english_path_v1 }, { step: intermediate[0] });
+		await actions.start(again.event());
+		expect(again.inserted).toEqual([]);
+		// A done step opened again is marked as a replay.
+		const replay = fixture({ english_path_v1: { done: doneAll([intermediate[0]]), skipped: [], current: null } }, { step: intermediate[0] });
+		await actions.start(replay.event());
+		expect(replay.inserted[0].metadata).toMatchObject({ module: 'listen-act', replay: true });
+	});
+	it('keeps the seconds in a step done in one sitting, and none for a step left open for days', async () => {
+		const started = new Date(Date.now() - 95_000).toISOString();
+		const sitting = { english_path_v1: { done: {}, skipped: [], current: { step: intermediate[0], track: 'intermediate', startedAt: started, replay: false } } };
+		const f = fixture(sitting, { step: intermediate[0], outcome: 'done' });
+		await actions.result(f.event());
+		const progress = f.inserted.find(row => row.event_name === 'lesson_progress');
+		expect(progress.metadata.flow).toBe('path');
+		expect(progress.metadata.seconds).toBeGreaterThanOrEqual(94);
+		expect(progress.metadata.seconds).toBeLessThanOrEqual(100);
+		const days = { english_path_v1: { ...sitting.english_path_v1, current: { ...sitting.english_path_v1.current, startedAt: new Date(Date.now() - 3 * 86_400_000).toISOString() } } };
+		const g = fixture(days, { step: intermediate[0], outcome: 'done' });
+		await actions.result(g.event());
+		expect(g.inserted.find(row => row.event_name === 'lesson_progress').metadata.seconds).toBeUndefined();
+	});
 	it('saves a step done, meets the daily goal once, and keeps the old progress record current', async () => {
 		const f = fixture({}, { step: intermediate[0], outcome: 'done', score: JSON.stringify({ correct: 5, total: 6 }), utcOffset: '210' });
 		expect(await actions.result(f.event())).toEqual({ goalJustMet: true, chapterDone: false, skippedHere: [], next: intermediate[1], nextIsReplay: false });

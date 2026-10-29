@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { parseEvent } from '$lib/analytics/contract';
+import { parseEvent, serverOnly } from '$lib/analytics/contract';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
 	// Same-origin, authenticated writes only. No service key at this boundary.
@@ -14,10 +14,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (body?.user_id !== user.id || !Array.isArray(body.events) || body.events.length < 1 || body.events.length > 50) return json({ error: 'Invalid batch' }, { status: 400 });
 	const events = body.events.map((event: unknown) => parseEvent(event));
 	if (events.some((event: unknown) => event === null)) return json({ error: 'Invalid event' }, { status: 400 });
+	// Events only the server writes are dropped (they would add steps or AI use to the admin's numbers).
+	const allowed = events.filter((event: NonNullable<ReturnType<typeof parseEvent>>) => !serverOnly(event));
+	if (!allowed.length) return json({ accepted: 0 });
 	const { error } = await locals.supabase.from('events').upsert(
-		events.map((event: object) => ({ ...event, user_id: user.id })),
+		allowed.map((event: object) => ({ ...event, user_id: user.id })),
 		{ onConflict: 'event_id', ignoreDuplicates: true }
 	);
 	if (error) return json({ error: 'Collection unavailable' }, { status: 503 });
-	return json({ accepted: events.length });
+	return json({ accepted: allowed.length });
 };

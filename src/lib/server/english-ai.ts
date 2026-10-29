@@ -10,6 +10,7 @@ import type { z } from 'zod';
 import type { User } from '@supabase/supabase-js';
 import { isAdminEmail } from '$lib/server/admin-auth';
 import { transcribe } from '$lib/server/transcribe';
+import { safeMetadata, type AiRoute } from '$lib/analytics/contract';
 
 /** A conversation is roughly 6–12 turns, so this allows a few full runs a day. */
 export const MAX_DAILY_TURNS = 40;
@@ -79,12 +80,13 @@ export async function checkClipBudget(locals: Locals, user: User): Promise<Respo
 }
 
 /** Counts one clip and its audio length against today's voice budget. */
-export async function recordClip(locals: Locals, user: User, route: string, audioSeconds: number): Promise<void> {
+export async function recordClip(locals: Locals, user: User, route: string, audioSeconds: number, failed = false): Promise<void> {
 	try {
 		await locals.supabase.from('events').insert({
 			user_id: user.id, event_id: crypto.randomUUID(), session_id: crypto.randomUUID(), attempt_id: null,
 			event_name: CLIP_EVENT, day: null, occurred_at: new Date().toISOString(), schema_version: 2,
-			metadata: { course: 'en', route, audio_seconds: Math.round(Math.max(0, audioSeconds) * 10) / 10 }
+			// `failed`: no transcript came back (the admin's AI health counts these).
+			metadata: { course: 'en', route, audio_seconds: Math.round(Math.max(0, audioSeconds) * 10) / 10, ...(failed ? { failed: true } : {}) }
 		});
 	} catch { /* the budget is best effort; the clip was already sent */ }
 }
@@ -102,7 +104,7 @@ export async function meteredTranscribe(
 	if (refused) return refused;
 	let billed: number | null = null;
 	const transcript = await transcribe(audio, label, context, { ...options, onUsage: seconds => { billed = seconds; } });
-	await recordClip(locals, user, route, billed ?? reportedSeconds);
+	await recordClip(locals, user, route, billed ?? reportedSeconds, transcript === null);
 	return transcript === null ? json({ error: 'Transcription unavailable' }, { status: 502 }) : transcript;
 }
 
@@ -162,60 +164,90 @@ export interface ChainRequest<T> {
 	shape: string;
 	temperature: number;
 	maxTokens: number;
+	/** Hears how the call went (which provider answered; the first failure), for AI health. */
+	onOutcome?: (outcome: ChainOutcome) => void;
 }
 
 /** Google's always-current Flash model, used when the configured one is gone. */
 const GEMINI_FALLBACK_MODEL = 'gemini-flash-latest';
-/** A provider's answer when the model asked for doesn't exist (404). */
-const MODEL_GONE = Symbol('model gone');
 
-async function requestProvider<T>(req: ChainRequest<T>, name: string, url: string, headers: Record<string, string>, body: unknown, extract: (data: any) => string | undefined): Promise<T | null>;
-async function requestProvider<T>(req: ChainRequest<T>, name: string, url: string, headers: Record<string, string>, body: unknown, extract: (data: any) => string | undefined, reportGone: true): Promise<T | null | typeof MODEL_GONE>;
-async function requestProvider<T>(req: ChainRequest<T>, name: string, url: string, headers: Record<string, string>, body: unknown, extract: (data: any) => string | undefined, reportGone = false): Promise<T | null | typeof MODEL_GONE> {
+/** Why a provider gave no usable reply. */
+export type ProviderFail = 'http_404' | 'http_4xx' | 'http_5xx' | 'timeout' | 'invalid';
+/** How one chain call went (for the admin's AI health): who answered, why the first provider didn't, how long it took. */
+export interface ChainOutcome { provider: 'gemini' | 'deepseek' | 'openai' | null; firstFail: ProviderFail | null; ms: number }
+type Attempt<T> = { data: T } | { fail: ProviderFail };
+
+async function requestProvider<T>(req: ChainRequest<T>, name: string, url: string, headers: Record<string, string>, body: unknown, extract: (data: any) => string | undefined): Promise<Attempt<T>> {
 	const controller = new AbortController();
 	const timeout = setTimeout(() => controller.abort(), 12_000);
 	try {
 		const response = await fetch(url, { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: controller.signal });
-		if (!response.ok) { console.error(`${req.label}: ${name} failed: ${response.status}`); return reportGone && response.status === 404 ? MODEL_GONE : null; }
+		if (!response.ok) {
+			console.error(`${req.label}: ${name} failed: ${response.status}`);
+			return { fail: response.status === 404 ? 'http_404' : response.status >= 500 ? 'http_5xx' : 'http_4xx' };
+		}
 		const raw = extract(await response.json());
 		const parsed = raw ? req.schema.safeParse(JSON.parse(raw)) : null;
-		if (!parsed?.success) { console.error(`${req.label}: ${name} returned an invalid reply`); return null; }
-		return parsed.data;
+		if (!parsed?.success) { console.error(`${req.label}: ${name} returned an invalid reply`); return { fail: 'invalid' }; }
+		return { data: parsed.data };
 	} catch (err) {
 		console.error(`${req.label}: ${name}: ${(err as Error).message}`);
-		return null;
+		return { fail: (err as Error).name === 'AbortError' ? 'timeout' : (err as Error).name === 'SyntaxError' ? 'invalid' : 'http_5xx' };
 	} finally { clearTimeout(timeout); }
 }
 
-/** Tries each configured provider in turn; null if none returned a valid reply. */
+/** Tries each configured provider in turn; null if none returned a valid reply. `onOutcome` hears how it went. */
 export async function askChain<T>(req: ChainRequest<T>): Promise<T | null> {
+	const started = Date.now();
+	let firstFail: ProviderFail | null = null;
+	const done = (provider: ChainOutcome['provider'], data: T | null) => {
+		try { req.onOutcome?.({ provider, firstFail, ms: Date.now() - started }); } catch { /* reporting never fails the call */ }
+		return data;
+	};
+	const tried = <R>(attempt: Attempt<R>) => { if ('fail' in attempt) firstFail ??= attempt.fail; return attempt; };
 	if (env.GEMINI_API_KEY) {
 		const gemini = (model: string) => requestProvider(req, 'Gemini', `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, { 'x-goog-api-key': env.GEMINI_API_KEY! }, {
 			systemInstruction: { parts: [{ text: req.system + req.shape }] }, contents: [{ role: 'user', parts: [{ text: req.user }] }],
 			generationConfig: { temperature: req.temperature, maxOutputTokens: req.maxTokens, responseMimeType: 'application/json', responseSchema: req.geminiSchema, thinkingConfig: { thinkingBudget: 0 } }
-		}, data => data?.candidates?.[0]?.content?.parts?.map((part: { text?: string }) => part.text ?? '').join(''), true);
+		}, data => data?.candidates?.[0]?.content?.parts?.map((part: { text?: string }) => part.text ?? '').join(''));
 		const configured = env.GEMINI_MODEL || GEMINI_FALLBACK_MODEL;
-		let result = await gemini(configured);
+		let result = tried(await gemini(configured));
 		// Google retires model versions: when the configured one is gone (404), its current Flash model.
-		if (result === MODEL_GONE && configured !== GEMINI_FALLBACK_MODEL) {
+		if ('fail' in result && result.fail === 'http_404' && configured !== GEMINI_FALLBACK_MODEL) {
 			console.error(`${req.label}: Gemini model "${configured}" not found; using ${GEMINI_FALLBACK_MODEL} (update GEMINI_MODEL)`);
 			result = await gemini(GEMINI_FALLBACK_MODEL);
 		}
-		if (result && result !== MODEL_GONE) return result;
+		if ('data' in result) return done('gemini', result.data);
 	}
 	if (env.DEEPSEEK_API_KEY) {
-		const result = await requestProvider(req, 'DeepSeek', 'https://api.deepseek.com/chat/completions', { Authorization: `Bearer ${env.DEEPSEEK_API_KEY}` }, {
+		const result = tried(await requestProvider(req, 'DeepSeek', 'https://api.deepseek.com/chat/completions', { Authorization: `Bearer ${env.DEEPSEEK_API_KEY}` }, {
 			model: env.DEEPSEEK_MODEL || 'deepseek-flash', messages: [{ role: 'system', content: req.system + req.shape }, { role: 'user', content: req.user }],
 			max_tokens: req.maxTokens, temperature: req.temperature, response_format: { type: 'json_object' }
-		}, data => data?.choices?.[0]?.message?.content);
-		if (result) return result;
+		}, data => data?.choices?.[0]?.message?.content));
+		if ('data' in result) return done('deepseek', result.data);
 	}
 	if (env.OPENAI_API_KEY) {
-		return requestProvider(req, 'OpenAI', 'https://api.openai.com/v1/chat/completions', { Authorization: `Bearer ${env.OPENAI_API_KEY}` }, {
+		const result = tried(await requestProvider(req, 'OpenAI', 'https://api.openai.com/v1/chat/completions', { Authorization: `Bearer ${env.OPENAI_API_KEY}` }, {
 			model: env.OPENAI_MODEL || 'gpt-4o-mini', messages: [{ role: 'system', content: req.system }, { role: 'user', content: req.user }],
 			max_tokens: req.maxTokens, temperature: req.temperature,
 			response_format: { type: 'json_schema', json_schema: { name: 'reply', strict: true, schema: req.openAiSchema } }
-		}, data => data?.choices?.[0]?.message?.content);
+		}, data => data?.choices?.[0]?.message?.content));
+		if ('data' in result) return done('openai', result.data);
 	}
-	return null;
+	return done(null, null);
+}
+
+/**
+ * One row of the admin's AI health: what a route sent after its AI call(s). `ok`: the model's reply;
+ * `retried`: its rewrite after a refused first try; `fallback`: a prepared line; `failed`: no reply
+ * (the learner saw an error). Ids and numbers only. Never fails the route.
+ */
+export async function recordAiOutcome(locals: Locals, user: User, route: AiRoute, result: 'ok' | 'retried' | 'fallback' | 'failed', outcome: ChainOutcome | null): Promise<void> {
+	try {
+		await locals.supabase.from('events').insert({
+			user_id: user.id, event_id: crypto.randomUUID(), session_id: crypto.randomUUID(), attempt_id: null,
+			event_name: 'english_ai_outcome', day: null, occurred_at: new Date().toISOString(), schema_version: 2,
+			metadata: safeMetadata({ course: 'en', route, ai_result: result, provider: outcome?.provider ?? 'none', ...(outcome?.firstFail ? { first_fail: outcome.firstFail } : {}), ...(outcome ? { ms: outcome.ms } : {}) })
+		});
+	} catch { /* best effort */ }
 }

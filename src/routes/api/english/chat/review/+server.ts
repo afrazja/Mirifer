@@ -12,7 +12,7 @@ import { z } from 'zod';
 import type { RequestHandler } from './$types';
 import { LEARNER, MAX_CHAT_MESSAGE, MAX_REWRITES, REWRITE_KINDS, chatTurns, learnerMessages, normaliseWords, rewriteAddsFacts } from '$lib/practice/group-chat';
 import { chatSceneById } from '$lib/practice/chats';
-import { askChain, englishLearner, spendAllowance } from '$lib/server/english-ai';
+import { askChain, englishLearner, recordAiOutcome, spendAllowance, type ChainOutcome } from '$lib/server/english-ai';
 
 const RequestSchema = z.object({
 	scene: z.string().max(40),
@@ -88,10 +88,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const transcript = messages.map(m => m.from === LEARNER
 		? `You (${++n}, ${m.voice ? 'voice' : 'typed'}): ${m.text.replace(/\s+/g, ' ')}` : `${name(m.from)}: ${m.text.replace(/\s+/g, ' ')}`).join('\n');
 	const a2 = scene.level === 'a2';
+	let outcome: ChainOutcome | null = null;
 	const result = await askChain({
 		label: 'English group chat review', system: systemFor(scene.review, a2), user: transcript, schema: ReviewSchema,
-		openAiSchema, geminiSchema, shape: SHAPE, temperature: 0.3, maxTokens: 700
+		openAiSchema, geminiSchema, shape: SHAPE, temperature: 0.3, maxTokens: 700, onOutcome: o => { outcome = o; }
 	});
+	await recordAiOutcome(locals, user, 'chat-review', result ? 'ok' : 'failed', outcome);
 	if (!result) return json({ error: 'AI temporarily unavailable' }, { status: 502 });
 
 	// Only rewrites of what the learner really said, that change something, and stay short and theirs.
