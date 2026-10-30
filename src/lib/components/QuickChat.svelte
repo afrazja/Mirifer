@@ -8,15 +8,15 @@
 	 *   after a short quiet. "Can't talk now? Type" is always there; a blocked mic switches to typing.
 	 *   The next question follows from the answer (AI, the topic and level in the prompt), or is a
 	 *   ready-made one. An answer that doesn't fit is asked again once.
-	 * - The end: one thing to fix, with "Say it again" (or, with no mistakes, a fuller answer); then
-	 *   "That's it" with Continue, and "See all your answers" for those who want more.
+	 * - After each answer (owner's phone test): its feedback on its own screen: what they said, said
+	 *   correctly (the changes in bold), and a fuller answer; then "Next question".
+	 * - The end: "That's it", and every answer with its corrections.
 	 * Recordings are sent once to be turned into text and never kept.
 	 */
 	import { onDestroy, onMount } from 'svelte';
 	import ActionBar from '$lib/components/ActionBar.svelte';
-	import SayAgain from '$lib/components/SayAgain.svelte';
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
-	import { AI_WAIT_MS, changedParts, emptyQuickFire, fallbackQuestion, newTurn, sameAnswer, type Opener, type QuickChatRecord } from '$lib/practice/quick-fire';
+	import { changedParts, emptyQuickFire, fallbackQuestion, newTurn, sameAnswer, type Opener, type QuickChatRecord } from '$lib/practice/quick-fire';
 	import { chatQuestions, topicOpeners, type Topic, type TopicLevelId } from '$lib/practice/topics';
 	import type { DisplayText } from '$lib/practice/hotel';
 	import { playAudioPromise, stopAllAudio } from '$services/tts';
@@ -48,10 +48,14 @@
 	// svelte-ignore state_referenced_locally
 	let record = $state<QuickChatRecord>(initial ?? { ...emptyQuickFire(0, OPENERS), talkSeconds: 0, reviewed: false });
 	// svelte-ignore state_referenced_locally
-	let stage = $state<'ready' | 'chat' | 'fix' | 'end'>(initial?.done ? (initial.reviewed ? 'end' : 'fix') : 'ready');
-	type Status = 'asking' | 'answer' | 'recording' | 'listening' | 'thinking' | 'missed' | 'failed';
+	let stage = $state<'ready' | 'chat' | 'end'>(initial?.done ? 'end' : 'ready');
+	type Status = 'asking' | 'answer' | 'recording' | 'listening' | 'thinking' | 'feedback' | 'missed' | 'failed';
+	/** The next question, once the AI has written it (null: a ready-made one). */
+	let upcoming: string | null = null;
+	/** How long the feedback can take before the answer's screen shows without it. */
+	const FEEDBACK_WAIT_MS = 12_000;
 	let status = $state<Status>('asking');
-	let typing = $state(false), draft = $state(''), notice = $state<DisplayText | null>(null), showAll = $state(false);
+	let typing = $state(false), draft = $state(''), notice = $state<DisplayText | null>(null);
 	let recording: Recording | null = null;
 	let alive = true, generation = 0;
 	const current = $derived(record.turns[record.turns.length - 1]);
@@ -138,15 +142,17 @@
 		const call = fetch('/api/english/quick-fire', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
 			kind: 'turn', mode: 'path', topic: topic.id, level, turns: done, asked: record.turns.map(t => t.question), last
 		}) }).then(r => (r.ok ? r.json() : null)).catch(() => null) as Promise<{ onTopic: boolean; next: string | null; fixed: string | null; better: string | null } | null>;
-		// Whenever it comes, the feedback is kept for the end.
+		upcoming = null;
+		// Whenever it comes, the feedback is kept (a late one still shows on the answer's screen and at the end).
 		void call.then(reply => {
 			const turn = record.turns[index];
 			if (!alive || !reply || !turn || turn.answer !== answer) return;
+			if (mine === generation) upcoming = reply.next;
 			const turns = [...record.turns];
 			turns[index] = { ...turn, fixed: reply.fixed ?? turn.fixed, better: reply.better ?? turn.better, offTopic: reply.onTopic === false };
 			record = { ...record, turns }; persist();
 		});
-		const reply = await Promise.race([call, new Promise<null>(resolve => setTimeout(() => resolve(null), last ? AI_WAIT_MS * 1.5 : AI_WAIT_MS))]);
+		const reply = await Promise.race([call, new Promise<null>(resolve => setTimeout(() => resolve(null), FEEDBACK_WAIT_MS))]);
 		if (!alive || mine !== generation || stage !== 'chat') return;
 		// Not an answer to the question: asked again once.
 		if (reply?.onTopic === false && !record.turns[index].retried) {
@@ -157,8 +163,16 @@
 			if (alive && stage === 'chat') void ask(true);
 			return;
 		}
-		if (last) { finishChat(); return; }
-		const question = reply?.next ?? fallbackQuestion(record.opener, record.turns.map(t => t.question), OPENERS);
+		// The answer's own screen: what they said, corrected, and a fuller answer.
+		upcoming = reply?.next ?? upcoming;
+		status = 'feedback';
+	}
+	/** "Next question" (or, after the last one, the end). */
+	function goOn() {
+		stopAllAudio();
+		if (record.turns.length >= TOTAL) { finishChat(); return; }
+		const question = upcoming ?? fallbackQuestion(record.opener, record.turns.map(t => t.question), OPENERS);
+		upcoming = null;
 		record = { ...record, turns: [...record.turns, newTurn(question)] }; persist();
 		void ask();
 	}
@@ -169,26 +183,38 @@
 	}
 	function finishChat() {
 		recording?.cancel(); stopAllAudio();
-		record = { ...record, done: true }; persist();
-		stage = 'fix';
+		record = { ...record, done: true, reviewed: true }; persist();
+		stage = 'end';
 		void say('That’s it. Nice chat!');
 	}
 
-	// The end: one thing to fix (their own mistake first; else a fuller answer), once the replies are in.
-	let waited = $state(false);
-	$effect(() => { if (stage === 'fix') { const t = setTimeout(() => (waited = true), 6000); return () => clearTimeout(t); } });
-	const fix = $derived(record.turns.find(t => t.answer && t.fixed && !sameAnswer(t.fixed, t.answer)) ?? null);
-	const fuller = $derived(fix ? null : record.turns.find(t => t.answer && t.better && !t.offTopic) ?? null);
-	const pending = $derived(record.turns.some(t => t.answer && !t.fixed && !t.better));
 	const plain = (better: string) => better.replace(/\[([^\]]*)\]/g, '$1').replace(/\s+/g, ' ').trim();
-	$effect(() => { if (stage === 'fix' && !fix && !fuller && (waited || !pending)) { stage = 'end'; record = { ...record, reviewed: true }; persist(); } });
-	function toEnd() { stopAllAudio(); stage = 'end'; record = { ...record, reviewed: true }; persist(); }
+	const hasFix = (turn: { answer: string | null; fixed: string | null }) => !!turn.answer && !!turn.fixed && !sameAnswer(turn.fixed, turn.answer);
+	const fixes = $derived(record.turns.filter(hasFix).length);
 
 	const answeredCount = $derived(record.turns.filter(t => t.answer).length);
 	const talk = $derived(record.talkSeconds < 50 ? T(`You spoke for about ${Math.max(5, Math.round(record.talkSeconds / 5) * 5)} seconds.`, `حدود ${N(Math.max(5, Math.round(record.talkSeconds / 5) * 5))} ثانیه صحبت کردی.`)
 		: T(`You spoke for about ${Math.round(record.talkSeconds / 60) || 1} minute${Math.round(record.talkSeconds / 60) > 1 ? 's' : ''}.`, `حدود ${N(Math.round(record.talkSeconds / 60) || 1)} دقیقه صحبت کردی.`));
 	function finish() { stopAllAudio(); onDone({ correct: answeredCount, total: TOTAL }, $state.snapshot(record)); }
 </script>
+
+{#snippet feedback(turn: { answer: string | null; fixed: string | null; better: string | null; offTopic: boolean })}
+	<div class="feedback">
+		<p class="said" lang="en" dir="ltr"><span class="who">{T('You said', 'گفتی')}</span>{turn.answer}</p>
+		{#if hasFix(turn)}
+			<p class="better" lang="en" dir="ltr"><span class="who">{T('Say it like this', 'این‌طور بگو')}</span>{#each changedParts(turn.answer ?? '', turn.fixed ?? '') as part, i}{i ? ' ' : ''}{#if part.changed}<strong>{part.text}</strong>{:else}{part.text}{/if}{/each}</p>
+		{:else if turn.fixed}
+			<p class="good">{T('No mistakes ✓', 'بدون اشتباه ✓')}</p>
+		{/if}
+		{#if turn.better}
+			<p class="fuller" lang="en" dir="ltr"><span class="who">{turn.offTopic ? T('You could answer', 'می‌توانستی بگویی') : T('A fuller answer', 'یک جواب کامل‌تر')}</span>{plain(turn.better)}</p>
+			<button type="button" class="quiet" onclick={() => { stopAllAudio(); void say(plain(turn.better ?? '')); }}><span aria-hidden="true">🔊</span> {T('Hear it', 'بشنو')}</button>
+		{/if}
+		{#if !turn.fixed && !turn.better}
+			<p class="hint">{T('I couldn’t check this answer. Let’s keep going.', 'نتوانستم این جواب را بررسی کنم. ادامه بدهیم.')}</p>
+		{/if}
+	</div>
+{/snippet}
 
 <section class="chat" dir={isFa ? 'rtl' : 'ltr'}>
 	{#if stage === 'ready'}
@@ -198,12 +224,16 @@
 	{:else if stage === 'chat'}
 		<p class="label">{T(`Question ${number} of ${TOTAL}`, `سؤال ${N(number)} از ${N(TOTAL)}`)}</p>
 		<div class="dots" aria-hidden="true">{#each Array(TOTAL) as _, i}<span class:done={i < number - 1} class:now={i === number - 1}></span>{/each}</div>
+		{#if status === 'feedback'}
+			<p class="small" lang="en" dir="ltr">{current.question}</p>
+		{:else}
 		<p class="question" lang="en" dir="ltr">{current.question}</p>
-		{#if CALM && number === 1 && LEVEL.ideas?.length}
+		{/if}
+		{#if CALM && number === 1 && status !== 'feedback' && LEVEL.ideas?.length}
 			<ul class="ideas" aria-label={T('Some ideas', 'چند ایده')}>{#each LEVEL.ideas as idea}<li><span lang="en" dir="ltr">{idea.en}</span><small lang="fa" dir="rtl">{idea.fa}</small></li>{/each}</ul>
 		{/if}
 		{#if notice}<p class="note" role="status">{text(notice)}</p>{/if}
-		{#if status !== 'recording' && status !== 'listening' && status !== 'thinking'}
+		{#if status !== 'recording' && status !== 'listening' && status !== 'thinking' && status !== 'feedback'}
 			<button type="button" class="quiet" onclick={hearAgain}><span aria-hidden="true">🔊</span> {T('Hear again', 'دوباره بشنو')}</button>
 		{/if}
 
@@ -221,52 +251,30 @@
 		{:else if status === 'recording'}
 			<p class="rec" role="status"><span class="dot" aria-hidden="true"></span>{CALM ? T('Your turn', 'نوبت توست') : T('Your turn: answer now', 'نوبت توست: جواب بده')}</p>
 			<ActionBar label={T('Done', 'تمام')} icon="stop" recording onclick={() => recording?.stop()} />
+		{:else if status === 'feedback'}
+			{@render feedback(current)}
+			<ActionBar label={number >= TOTAL ? T('See how you did', 'نتیجه را ببین') : T('Next question', 'سؤال بعدی')} onclick={goOn} />
 		{:else if status === 'listening' || status === 'thinking'}
-			<p class="hint" role="status">{status === 'listening' ? T('Mira is listening…', 'میرا دارد گوش می‌دهد…') : T('Mira is thinking…', 'میرا دارد فکر می‌کند…')}</p>
+			<p class="hint" role="status">{status === 'listening' ? T('Mira is listening…', 'میرا دارد گوش می‌دهد…') : T('Mira is checking your answer…', 'میرا دارد جوابت را بررسی می‌کند…')}</p>
 			<ActionBar label={T('One moment…', 'یک لحظه…')} disabled onclick={() => {}} />
 		{:else if status === 'missed' || status === 'failed'}
 			<p class="note" role="status">{status === 'missed' ? T('I didn’t hear an answer.', 'جوابی نشنیدم.') : T('I couldn’t catch that. Check your connection.', 'متوجه نشدم. اینترنت را بررسی کن.')}</p>
 			<ActionBar label={T('Try again', 'دوباره امتحان کن')} icon="mic" onclick={() => void answer()} secondary={{ label: T('Skip this question', 'از این سؤال بگذر'), onclick: skipQuestion }} />
 		{/if}
 
-	{:else if stage === 'fix'}
-		{#if fix}
-			<h2 class="title">{T('One thing to fix', 'یک نکته برای درست کردن')}</h2>
-			<p class="small" lang="en" dir="ltr">{fix.question}</p>
-			<p class="said" lang="en" dir="ltr"><span class="who">{T('You said', 'گفتی')}</span>{fix.answer}</p>
-			<p class="better" lang="en" dir="ltr"><span class="who">{T('Say it like this', 'این‌طور بگو')}</span>{#each changedParts(fix.answer ?? '', fix.fixed ?? '') as part, i}{i ? ' ' : ''}{#if part.changed}<strong>{part.text}</strong>{:else}{part.text}{/if}{/each}</p>
-			<SayAgain sentence={fix.fixed ?? ''} {isFa} />
-			<ActionBar label={T('Continue', 'ادامه')} onclick={toEnd} />
-		{:else if fuller}
-			<h2 class="title">{T('Say it again, and add a reason', 'دوباره بگو، و یک دلیل اضافه کن')}</h2>
-			<p class="small" lang="en" dir="ltr">{fuller.question}</p>
-			<p class="better" lang="en" dir="ltr"><span class="who">{T('A fuller answer', 'یک جواب کامل‌تر')}</span>{plain(fuller.better ?? '')}</p>
-			<SayAgain sentence={plain(fuller.better ?? '')} {isFa} />
-			<ActionBar label={T('Continue', 'ادامه')} onclick={toEnd} />
-		{:else}
-			<p class="hint" role="status">{T('Mira is looking at your answers…', 'میرا دارد جواب‌هایت را نگاه می‌کند…')}</p>
-			<ActionBar label={T('One moment…', 'یک لحظه…')} disabled onclick={() => {}} secondary={{ label: T('Skip', 'رد شو'), onclick: toEnd }} />
-		{/if}
-
 	{:else}
 		<h2 class="title">{T('That’s it.', 'تمام شد.')}</h2>
 		<p class="lead">{T(`You answered ${answeredCount} of ${TOTAL} questions.`, `به ${N(answeredCount)} سؤال از ${N(TOTAL)} جواب دادی.`)}{record.talkSeconds > 0 ? ` ${talk}` : ''}</p>
-		{#if showAll}
-			<ol class="turns">
-				{#each record.turns as turn}
-					<li>
-						<p class="q" lang="en" dir="ltr">{turn.question}</p>
-						{#if turn.answer}
-							<p class="said" lang="en" dir="ltr">{turn.answer}</p>
-							{#if turn.fixed && !sameAnswer(turn.fixed, turn.answer)}<p class="better" lang="en" dir="ltr"><span class="who">{T('Corrected', 'درست‌شده')}</span>{#each changedParts(turn.answer, turn.fixed) as part, i}{i ? ' ' : ''}{#if part.changed}<strong>{part.text}</strong>{:else}{part.text}{/if}{/each}</p>{/if}
-							{#if turn.better}<p class="better" lang="en" dir="ltr"><span class="who">{T('A fuller answer', 'یک جواب کامل‌تر')}</span>{plain(turn.better)}</p>{/if}
-						{:else}<p class="said">{T('No answer', 'بدون جواب')}</p>{/if}
-					</li>
-				{/each}
-			</ol>
-		{/if}
-		<ActionBar label={T('Continue', 'ادامه')} onclick={finish}
-			secondary={showAll ? null : { label: T('See all your answers', 'همهٔ جواب‌هایت را ببین'), onclick: () => (showAll = true) }} />
+		{#if fixes}<p class="small">{T(`${fixes} ${fixes === 1 ? 'answer has' : 'answers have'} something to fix. Here they all are.`, `${N(fixes)} جواب نکته‌ای برای درست کردن دارد. همه این‌جا هستند.`)}</p>{/if}
+		<ol class="turns">
+			{#each record.turns as turn, i}
+				<li>
+					<p class="q" lang="en" dir="ltr">{N(i + 1)}. {turn.question}</p>
+					{#if turn.answer}{@render feedback(turn)}{:else}<p class="said">{T('No answer', 'بدون جواب')}</p>{/if}
+				</li>
+			{/each}
+		</ol>
+		<ActionBar label={T('Continue', 'ادامه')} onclick={finish} />
 	{/if}
 </section>
 
@@ -296,6 +304,9 @@
 	.said { background: var(--paper-sunken); }
 	.better { background: var(--paper-raised); border: 1px solid var(--accent); }
 	.better strong { color: var(--accent-deep); }
+	.fuller { margin: 0; padding: 10px 14px; border-radius: 12px; line-height: 1.55; text-align: left; background: var(--accent-wash); }
+	.good { margin: 0; font-weight: 700; color: var(--leaf-deep, var(--accent-deep)); }
+	.feedback { display: grid; gap: 10px; }
 	.who { display: block; font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-soft); }
 	:global([dir='rtl']) .who { letter-spacing: normal; }
 	.turns { margin: 0; padding: 0; list-style: none; display: grid; gap: 14px; }
