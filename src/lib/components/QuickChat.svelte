@@ -195,25 +195,49 @@
 	const fixes = $derived(record.turns.filter(hasFix).length);
 
 	const answeredCount = $derived(record.turns.filter(t => t.answer).length);
-	const talk = $derived(record.talkSeconds < 50 ? T(`You spoke for about ${Math.max(5, Math.round(record.talkSeconds / 5) * 5)} seconds.`, `حدود ${N(Math.max(5, Math.round(record.talkSeconds / 5) * 5))} ثانیه صحبت کردی.`)
-		: T(`You spoke for about ${Math.round(record.talkSeconds / 60) || 1} minute${Math.round(record.talkSeconds / 60) > 1 ? 's' : ''}.`, `حدود ${N(Math.round(record.talkSeconds / 60) || 1)} دقیقه صحبت کردی.`));
+	/** How long they spoke, short: "45 s", "2 min". */
+	const spoke = $derived(record.talkSeconds < 60 ? T(`${Math.max(5, Math.round(record.talkSeconds / 5) * 5)} s`, `${N(Math.max(5, Math.round(record.talkSeconds / 5) * 5))} ثانیه`)
+		: T(`${Math.round(record.talkSeconds / 60)} min`, `${N(Math.round(record.talkSeconds / 60))} دقیقه`));
 	function finish() { stopAllAudio(); onDone({ correct: answeredCount, total: TOTAL }, $state.snapshot(record)); }
 </script>
 
-<!-- `practise`: the answer's own screen, where they say the better sentence again (not the end's list). -->
+<!-- Icons for the cards: each kind of card has its own colour and icon, so it reads without its label. -->
+{#snippet icon(kind: 'you' | 'fix' | 'ok' | 'more')}
+	<span class="icon {kind}" aria-hidden="true">
+		{#if kind === 'you'}<svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-4 0-7 2-7 4.5V20h14v-1.5C19 16 16 14 12 14Z" fill="currentColor"/></svg>
+		{:else if kind === 'fix' || kind === 'ok'}<svg viewBox="0 0 24 24" width="18" height="18"><path d="M9.5 16.2 5.3 12l-1.4 1.4 5.6 5.6L20.1 8.4 18.7 7z" fill="currentColor"/></svg>
+		{:else}<svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 2l2.2 6.3L20.5 10l-6.3 2.2L12 18.5l-2.2-6.3L3.5 10l6.3-1.7zM19 15l1 2.6 2.6 1-2.6 1L19 22l-1-2.4-2.6-1 2.6-1z" fill="currentColor"/></svg>{/if}
+	</span>
+{/snippet}
+
+<!-- One answer as cards: what they said (mistakes marked red), the correct way (changes green), and a fuller answer.
+     `practise`: the answer's own screen, where they say the better sentence again (not the end's list). -->
 {#snippet feedback(turn: { answer: string | null; fixed: string | null; better: string | null; offTopic: boolean }, practise = false)}
-	<div class="feedback">
-		<p class="said" lang="en" dir="ltr"><span class="who">{T('You said', 'گفتی')}</span>{turn.answer}</p>
+	<div class="cards">
+		<article class="card you-card">
+			<header>{@render icon('you')}<span class="tag">{T('You said', 'تو گفتی')}</span></header>
+			<p class="text" lang="en" dir="ltr">{#if hasFix(turn)}{#each changedParts(turn.fixed ?? '', turn.answer ?? '') as part, i}{i ? ' ' : ''}{#if part.changed}<mark class="wrong">{part.text}</mark>{:else}{part.text}{/if}{/each}{:else}{turn.answer}{/if}</p>
+		</article>
 		{#if hasFix(turn)}
-			<p class="better" lang="en" dir="ltr"><span class="who">{T('Say it like this', 'این‌طور بگو')}</span>{#each changedParts(turn.answer ?? '', turn.fixed ?? '') as part, i}{i ? ' ' : ''}{#if part.changed}<strong>{part.text}</strong>{:else}{part.text}{/if}{/each}</p>
-			{#if practise}<SayAgain sentence={turn.fixed ?? ''} {isFa} />{/if}
+			<article class="card fix-card">
+				<header>{@render icon('fix')}<span class="tag">{T('Correct way', 'شکل درست')}</span></header>
+				<p class="text" lang="en" dir="ltr">{#each changedParts(turn.answer ?? '', turn.fixed ?? '') as part, i}{i ? ' ' : ''}{#if part.changed}<mark class="right">{part.text}</mark>{:else}{part.text}{/if}{/each}</p>
+				{#if practise}<div class="card-actions"><SayAgain sentence={turn.fixed ?? ''} {isFa} /></div>{/if}
+			</article>
 		{:else if turn.fixed}
-			<p class="good">{T('No mistakes ✓', 'بدون اشتباه ✓')}</p>
+			<article class="card ok-card">
+				<header>{@render icon('ok')}<span class="tag">{T('No mistakes', 'بدون اشتباه')}</span></header>
+			</article>
 		{/if}
 		{#if turn.better}
-			<p class="fuller" lang="en" dir="ltr"><span class="who">{turn.offTopic ? T('You could answer', 'می‌توانستی بگویی') : T('A fuller answer', 'یک جواب کامل‌تر')}</span>{plain(turn.better)}</p>
-			{#if practise && !hasFix(turn)}<SayAgain sentence={plain(turn.better)} {isFa} />
-			{:else}<button type="button" class="quiet" onclick={() => { stopAllAudio(); void say(plain(turn.better ?? '')); }}><span aria-hidden="true">🔊</span> {T('Hear it', 'بشنو')}</button>{/if}
+			<article class="card more-card">
+				<header>{@render icon('more')}<span class="tag">{turn.offTopic ? T('You could say', 'می‌توانستی بگویی') : T('Say more', 'کامل‌تر بگو')}</span></header>
+				<p class="text serif" lang="en" dir="ltr">{plain(turn.better)}</p>
+				<div class="card-actions">
+					{#if practise && !hasFix(turn)}<SayAgain sentence={plain(turn.better)} {isFa} />
+					{:else}<button type="button" class="hear" onclick={() => { stopAllAudio(); void say(plain(turn.better ?? '')); }}><span aria-hidden="true">▶</span> {T('Hear it', 'بشنو')}</button>{/if}
+				</div>
+			</article>
 		{/if}
 		{#if !turn.fixed && !turn.better}
 			<p class="hint">{T('I couldn’t check this answer. Let’s keep going.', 'نتوانستم این جواب را بررسی کنم. ادامه بدهیم.')}</p>
@@ -230,7 +254,7 @@
 		<p class="label">{T(`Question ${number} of ${TOTAL}`, `سؤال ${N(number)} از ${N(TOTAL)}`)}</p>
 		<div class="dots" aria-hidden="true">{#each Array(TOTAL) as _, i}<span class:done={i < number - 1} class:now={i === number - 1}></span>{/each}</div>
 		{#if status === 'feedback'}
-			<p class="small" lang="en" dir="ltr">{current.question}</p>
+			<div class="asked"><span class="mira" aria-hidden="true">M</span><p lang="en" dir="ltr"><span class="sr-only">{T('Mira asked: ', 'میرا پرسید: ')}</span>{current.question}</p></div>
 		{:else}
 		<p class="question" lang="en" dir="ltr">{current.question}</p>
 		{/if}
@@ -269,13 +293,16 @@
 
 	{:else}
 		<h2 class="title">{T('That’s it.', 'تمام شد.')}</h2>
-		<p class="lead">{T(`You answered ${answeredCount} of ${TOTAL} questions.`, `به ${N(answeredCount)} سؤال از ${N(TOTAL)} جواب دادی.`)}{record.talkSeconds > 0 ? ` ${talk}` : ''}</p>
-		{#if fixes}<p class="small">{T(`${fixes} ${fixes === 1 ? 'answer has' : 'answers have'} something to fix. Here they all are.`, `${N(fixes)} جواب نکته‌ای برای درست کردن دارد. همه این‌جا هستند.`)}</p>{/if}
+		<div class="stats">
+			<div class="stat"><span class="stat-value">{N(answeredCount)}/{N(TOTAL)}</span><span class="stat-label">{T('answered', 'جواب دادی')}</span></div>
+			{#if record.talkSeconds > 0}<div class="stat"><span class="stat-value">{spoke}</span><span class="stat-label">{T('you spoke', 'صحبت کردی')}</span></div>{/if}
+			<div class="stat" class:warn={fixes > 0}><span class="stat-value">{N(fixes)}</span><span class="stat-label">{T('to fix', 'برای درست کردن')}</span></div>
+		</div>
 		<ol class="turns">
 			{#each record.turns as turn, i}
-				<li>
-					<p class="q" lang="en" dir="ltr">{N(i + 1)}. {turn.question}</p>
-					{#if turn.answer}{@render feedback(turn)}{:else}<p class="said">{T('No answer', 'بدون جواب')}</p>{/if}
+				<li class="turn">
+					<div class="asked"><span class="num" aria-hidden="true">{N(i + 1)}</span><p lang="en" dir="ltr"><span class="sr-only">{T(`Question ${i + 1}: `, `سؤال ${i + 1}: `)}</span>{turn.question}</p></div>
+					{#if turn.answer}{@render feedback(turn)}{:else}<p class="hint">{T('No answer', 'بدون جواب')}</p>{/if}
 				</li>
 			{/each}
 		</ol>
@@ -305,17 +332,39 @@
 	textarea { inline-size: 100%; resize: vertical; min-height: 80px; padding: 10px 12px; border: 1px solid var(--control-border); border-radius: 10px; background: var(--paper); color: var(--ink); font: inherit; }
 	.title { margin: 0; font-family: var(--font-display); font-size: 1.4rem; line-height: 1.3; }
 	.lead { margin: 0; line-height: 1.6; }
-	.said, .better { margin: 0; padding: 10px 14px; border-radius: 12px; line-height: 1.55; text-align: left; }
-	.said { background: var(--paper-sunken); }
-	.better { background: var(--paper-raised); border: 1px solid var(--accent); }
-	.better strong { color: var(--accent-deep); }
-	.fuller { margin: 0; padding: 10px 14px; border-radius: 12px; line-height: 1.55; text-align: left; background: var(--accent-wash); }
-	.good { margin: 0; font-weight: 700; color: var(--leaf-deep, var(--accent-deep)); }
-	.feedback { display: grid; gap: 10px; }
-	.who { display: block; font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-soft); }
-	:global([dir='rtl']) .who { letter-spacing: normal; }
-	.turns { margin: 0; padding: 0; list-style: none; display: grid; gap: 14px; }
-	.turns li { display: grid; gap: 6px; }
-	.q { margin: 0; font-weight: 700; text-align: left; }
+	/* Mira's question: a bubble with her avatar. */
+	.asked { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; }
+	.asked p { margin: 0; padding: 10px 14px; border-radius: 4px 16px 16px 16px; background: var(--paper-raised); border: 1px solid var(--line); font-family: var(--font-display); font-size: 1.12rem; line-height: 1.4; text-align: left; }
+	.mira, .num { display: grid; place-items: center; inline-size: 34px; block-size: 34px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-family: var(--font-display); font-weight: 700; }
+	.num { background: var(--ink); color: var(--paper); font-family: var(--font-body); font-size: .9rem; }
+
+	/* The answer's cards: each kind its own colour, stripe and icon. */
+	.cards { display: grid; gap: 12px; }
+	.card { display: grid; gap: 8px; padding: 12px 14px 14px; border-radius: var(--radius-card, 18px); background: var(--paper-raised); border: 1px solid var(--line); border-inline-start: 5px solid var(--stripe); box-shadow: var(--paper-shadow); }
+	.card header { display: flex; align-items: center; gap: 8px; }
+	.tag { font-size: .78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--stripe-ink); }
+	:global([dir='rtl']) .tag { letter-spacing: normal; }
+	.icon { display: grid; place-items: center; inline-size: 28px; block-size: 28px; border-radius: 50%; background: var(--stripe); color: #fff; flex: none; }
+	.text { margin: 0; font-size: 1.06rem; line-height: 1.6; text-align: left; color: var(--ink); }
+	.serif { font-family: var(--font-display); font-size: 1.14rem; font-style: italic; }
+	.you-card { --stripe: var(--ink-faint); --stripe-ink: var(--ink-soft); background: var(--paper-sunken); box-shadow: none; }
+	.fix-card { --stripe: var(--leaf); --stripe-ink: var(--leaf-deep); background: linear-gradient(var(--leaf-wash), var(--leaf-wash)), var(--paper-raised); }
+	.ok-card { --stripe: var(--leaf); --stripe-ink: var(--leaf-deep); background: linear-gradient(var(--leaf-wash), var(--leaf-wash)), var(--paper-raised); }
+	.more-card { --stripe: var(--info); --stripe-ink: var(--info); background: linear-gradient(var(--info-wash), var(--info-wash)), var(--paper-raised); }
+	mark { padding: 0 3px; border-radius: 4px; color: inherit; }
+	mark.wrong { background: color-mix(in srgb, var(--miss) 16%, transparent); text-decoration: line-through 2px var(--miss); }
+	mark.right { background: color-mix(in srgb, var(--leaf) 22%, transparent); font-weight: 700; color: var(--leaf-deep); }
+	.card-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+	.hear { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 16px; border: 1.5px solid var(--info); border-radius: 999px; background: var(--paper-raised); color: var(--info); font: inherit; font-weight: 700; cursor: pointer; }
+	.hear:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+	/* The end: three tiles, then each question with its cards. */
+	.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 10px; }
+	.stat { display: grid; gap: 2px; padding: 12px; border-radius: 14px; background: var(--paper-raised); border: 1px solid var(--line); box-shadow: var(--paper-shadow); text-align: center; }
+	.stat-value { font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; color: var(--accent-deep); }
+	.stat.warn .stat-value { color: var(--attention); }
+	.stat-label { font-size: .8rem; color: var(--ink-soft); }
+	.turns { margin: 0; padding: 0; list-style: none; display: grid; gap: 26px; }
+	.turn { display: grid; gap: 12px; }
 	button:focus-visible, textarea:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 </style>
