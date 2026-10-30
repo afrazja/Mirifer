@@ -9,12 +9,14 @@
 	 *   The next question follows from the answer (AI, the topic and level in the prompt), or is a
 	 *   ready-made one. An answer that doesn't fit is asked again once.
 	 * - After each answer (owner's phone test): its feedback on its own screen: what they said, said
-	 *   correctly (the changes in bold), and a fuller answer; then "Next question".
+	 *   correctly (the changes in bold), and a fuller answer; "Say it again" for the corrected sentence
+	 *   (or, with no mistakes, the fuller answer); then "Next question".
 	 * - The end: "That's it", and every answer with its corrections.
 	 * Recordings are sent once to be turned into text and never kept.
 	 */
 	import { onDestroy, onMount } from 'svelte';
 	import ActionBar from '$lib/components/ActionBar.svelte';
+	import SayAgain from '$lib/components/SayAgain.svelte';
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
 	import { changedParts, emptyQuickFire, fallbackQuestion, newTurn, sameAnswer, type Opener, type QuickChatRecord } from '$lib/practice/quick-fire';
 	import { chatQuestions, topicOpeners, type Topic, type TopicLevelId } from '$lib/practice/topics';
@@ -198,17 +200,20 @@
 	function finish() { stopAllAudio(); onDone({ correct: answeredCount, total: TOTAL }, $state.snapshot(record)); }
 </script>
 
-{#snippet feedback(turn: { answer: string | null; fixed: string | null; better: string | null; offTopic: boolean })}
+<!-- `practise`: the answer's own screen, where they say the better sentence again (not the end's list). -->
+{#snippet feedback(turn: { answer: string | null; fixed: string | null; better: string | null; offTopic: boolean }, practise = false)}
 	<div class="feedback">
 		<p class="said" lang="en" dir="ltr"><span class="who">{T('You said', 'گفتی')}</span>{turn.answer}</p>
 		{#if hasFix(turn)}
 			<p class="better" lang="en" dir="ltr"><span class="who">{T('Say it like this', 'این‌طور بگو')}</span>{#each changedParts(turn.answer ?? '', turn.fixed ?? '') as part, i}{i ? ' ' : ''}{#if part.changed}<strong>{part.text}</strong>{:else}{part.text}{/if}{/each}</p>
+			{#if practise}<SayAgain sentence={turn.fixed ?? ''} {isFa} />{/if}
 		{:else if turn.fixed}
 			<p class="good">{T('No mistakes ✓', 'بدون اشتباه ✓')}</p>
 		{/if}
 		{#if turn.better}
 			<p class="fuller" lang="en" dir="ltr"><span class="who">{turn.offTopic ? T('You could answer', 'می‌توانستی بگویی') : T('A fuller answer', 'یک جواب کامل‌تر')}</span>{plain(turn.better)}</p>
-			<button type="button" class="quiet" onclick={() => { stopAllAudio(); void say(plain(turn.better ?? '')); }}><span aria-hidden="true">🔊</span> {T('Hear it', 'بشنو')}</button>
+			{#if practise && !hasFix(turn)}<SayAgain sentence={plain(turn.better)} {isFa} />
+			{:else}<button type="button" class="quiet" onclick={() => { stopAllAudio(); void say(plain(turn.better ?? '')); }}><span aria-hidden="true">🔊</span> {T('Hear it', 'بشنو')}</button>{/if}
 		{/if}
 		{#if !turn.fixed && !turn.better}
 			<p class="hint">{T('I couldn’t check this answer. Let’s keep going.', 'نتوانستم این جواب را بررسی کنم. ادامه بدهیم.')}</p>
@@ -252,7 +257,7 @@
 			<p class="rec" role="status"><span class="dot" aria-hidden="true"></span>{CALM ? T('Your turn', 'نوبت توست') : T('Your turn: answer now', 'نوبت توست: جواب بده')}</p>
 			<ActionBar label={T('Done', 'تمام')} icon="stop" recording onclick={() => recording?.stop()} />
 		{:else if status === 'feedback'}
-			{@render feedback(current)}
+			{@render feedback(current, true)}
 			<ActionBar label={number >= TOTAL ? T('See how you did', 'نتیجه را ببین') : T('Next question', 'سؤال بعدی')} onclick={goOn} />
 		{:else if status === 'listening' || status === 'thinking'}
 			<p class="hint" role="status">{status === 'listening' ? T('Mira is listening…', 'میرا دارد گوش می‌دهد…') : T('Mira is checking your answer…', 'میرا دارد جوابت را بررسی می‌کند…')}</p>
