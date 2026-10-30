@@ -8,7 +8,7 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import AppHeader from '$lib/components/AppHeader.svelte';
-	import { DAYS, TRACKS, TRACK_NAMES, arcOf, dayById, minutesOf, type DayPack, type Track } from '$lib/practice/day';
+	import { CHAPTERS, DAYS, TRACKS, TRACK_NAMES, arcOf, dayById, minutesOf, type DayPack, type Track } from '$lib/practice/day';
 	import { chapterModules } from '$lib/practice/path';
 	import { getLanguage } from '$services/data-layer';
 
@@ -17,11 +17,11 @@
 	const T = (en: string, fa: string) => (isFa ? fa : en);
 	const KEY = 'mirifer_lab_chapter';
 
-	const ARC_NAMES: Record<string, { en: string; fa: string }> = { travel: { en: 'Travel', fa: 'سفر' }, everyday: { en: 'Everyday', fa: 'روزمره' } };
+	const ARC_NAMES: Record<string, { en: string; fa: string }> = { travel: { en: 'Travel', fa: 'سفر' }, everyday: { en: 'Everyday', fa: 'روزمره' }, topics: { en: 'Quick chat', fa: 'گپ کوتاه' } };
 	/** "Travel 2", "Everyday 1": the chapter's place in its own story. */
 	const label = (day: DayPack) => {
 		const arc = arcOf(day);
-		const n = DAYS.filter(d => arcOf(d) === arc).indexOf(day) + 1;
+		const n = CHAPTERS.filter(d => arcOf(d) === arc).indexOf(day) + 1;
 		const name = ARC_NAMES[arc] ?? { en: arc, fa: arc };
 		return isFa ? `${name.fa} ${n.toLocaleString('fa-IR')}` : `${name.en} ${n}`;
 	};
@@ -62,7 +62,7 @@
 	<p class="small">{T('Open any step of any chapter on its own. Your path doesn’t change.', 'هر مرحله از هر فصل را جداگانه باز کن. مسیرت تغییری نمی‌کند.')}</p>
 
 	<div class="pills" role="group" aria-label={T('Chapter', 'فصل')}>
-		{#each DAYS as option}
+		{#each CHAPTERS as option}
 			<button type="button" aria-pressed={option.id === day.id} onclick={() => choose({ day: option.id })}>{label(option)}</button>
 		{/each}
 	</div>

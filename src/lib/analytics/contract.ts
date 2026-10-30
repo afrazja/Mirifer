@@ -39,7 +39,7 @@ export interface StoredEvent extends AnalyticsRecord {
 }
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** The English AI routes the admin's AI health counts. */
-export const AI_ROUTES = ['chat', 'chat-review', 'converse', 'review'] as const;
+export const AI_ROUTES = ['chat', 'chat-review', 'converse', 'review', 'quick-chat'] as const;
 export type AiRoute = (typeof AI_ROUTES)[number];
 
 /**
@@ -63,7 +63,7 @@ const choices: Record<string, readonly string[]> = {
 	course: ['en', 'de', 'fr'], scenario: ['hotel-quiet-room-v1'],
 	// The English daily lessons (src/lib/server/lesson-events.ts); a test keeps these in step with day.ts.
 	track: ['intermediate', 'professional'],
-	module: ['listen-act', 'scenario', 'phrases', 'say-it-better', 'say-in-english', 'traps', 'voice-messages', 'listen-retell', 'choose-persuade', 'group-chat'],
+	module: ['listen-act', 'scenario', 'phrases', 'say-it-better', 'say-in-english', 'traps', 'voice-messages', 'listen-retell', 'choose-persuade', 'group-chat', 'quick-fire'],
 	outcome: ['done', 'skipped'],
 	// The step path's own events (src/lib/server/step-path.ts), apart from the old daily lessons'.
 	flow: ['path'],

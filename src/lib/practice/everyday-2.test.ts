@@ -46,7 +46,7 @@ describe('Everyday 2: the chapter', () => {
 		expect(EVERYDAY_TWO.checkIn!.story.en).toMatch(/^Remember Sara\?.*a few neighbors\.$/);
 	});
 	it('comes after Chapter 1 for the test accounts, and not for learners', () => {
-		const pilot = releasedChapters('pilot', 'everyday').map(d => d.id);
+		const pilot = releasedChapters('pilot', 'everyday').filter(d => !d.topic).map(d => d.id);
 		expect(pilot.indexOf('everyday-2')).toBe(pilot.indexOf('everyday-1') + 1);
 		expect(releasedChapters(false, 'everyday').map(d => d.id)).not.toContain('everyday-2');
 		expect(chapterModules(EVERYDAY_TWO, 'intermediate')).toHaveLength(5);

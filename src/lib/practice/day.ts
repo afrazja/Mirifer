@@ -12,14 +12,17 @@ import { z } from 'zod';
 import type { DisplayText } from './hotel';
 import { EVERYDAY_ONE } from './days/everyday-1/pack';
 import { EVERYDAY_TWO } from './days/everyday-2/pack';
+import { TOPICS, chatMinutes, type Topic } from './topics';
 
 /** Every day's id, in order. */
-export const DAY_IDS = ['day-1', 'day-2', 'day-3', 'day-4', 'everyday-1', 'everyday-2'] as const;
+export const DAY_IDS = ['day-1', 'day-2', 'day-3', 'day-4', 'everyday-1', 'everyday-2',
+	// Topic steps (topics.ts, TOPIC_IDS): one small chapter each.
+	'topic-food', 'topic-morning', 'topic-where-you-live', 'topic-free-time', 'topic-weekend', 'topic-weather', 'topic-shopping', 'topic-getting-around', 'topic-trips', 'topic-learning-english'] as const;
 export type DayId = (typeof DAY_IDS)[number];
 /** Day 1's id (kept for older callers). */
 export const DAY_ID: DayId = 'day-1';
 /** Every module type a day can use. */
-export const MODULE_IDS = ['listen-act', 'scenario', 'phrases', 'say-it-better', 'say-in-english', 'traps', 'voice-messages', 'listen-retell', 'choose-persuade', 'group-chat'] as const;
+export const MODULE_IDS = ['listen-act', 'scenario', 'phrases', 'say-it-better', 'say-in-english', 'traps', 'voice-messages', 'listen-retell', 'choose-persuade', 'group-chat', 'quick-fire'] as const;
 export type ModuleId = (typeof MODULE_IDS)[number];
 export const LENGTHS = [15, 20] as const;
 export type Length = (typeof LENGTHS)[number];
@@ -33,7 +36,8 @@ export const DEFAULT_LENGTH: Length = 15;
  * The stories a goal starts with (docs/goal-path-plan.md): each chapter belongs to one. A learner's
  * goal decides which arc comes first; the others follow. Only Travel exists so far.
  */
-export const ARCS = ['travel', 'everyday', 'abroad', 'work', 'exam'] as const;
+/** The stories, and `topics`: the topic steps, which the path puts between the stories' chapters. */
+export const ARCS = ['travel', 'everyday', 'abroad', 'work', 'exam', 'topics'] as const;
 export type ArcId = (typeof ARCS)[number];
 export const TRACKS = ['intermediate', 'professional'] as const;
 export type Track = (typeof TRACKS)[number];
@@ -98,6 +102,8 @@ export interface DayPack {
 	arc?: ArcId;
 	/** Not ready, but shown to the owner's test accounts on the step path (a pilot before release). */
 	pilot?: boolean;
+	/** A topic step (topics.ts): one Quick chat, no story; `arc` is 'topics'. */
+	topic?: string;
 	checkInMinutes: number;
 	recapMinutes: number;
 	/** The modules, for a day with one version (Day 1). */
@@ -344,11 +350,39 @@ export const DAY_FOUR: DayPack = {
 };
 
 /** Every chapter, Travel's first (the daily lessons only ever use Travel's). */
+/**
+ * A topic step as a small chapter of one step: a Quick chat about the learner's own life
+ * (docs/english-topic-steps.md). A pilot for the owner's test accounts until the owner's phone test.
+ */
+export function topicPack(topic: Topic, index: number): DayPack {
+	const chat = (level: 'a2' | 'b1'): DayModule => ({
+		id: 'quick-fire', title: topic.title, short: { en: 'Chat', fa: 'گپ' },
+		does: { en: `A quick chat about ${topic.about.en}: short questions about you.`, fa: `یک گپ کوتاه دربارهٔ ${topic.about.fa}: چند سؤال کوتاه دربارهٔ خودت.` },
+		skill: 'speaking', minutes: { 15: chatMinutes(level), 20: chatMinutes(level) }, built: true,
+		intro: level === 'a2'
+			? { en: `A break from the story. Let’s chat about ${topic.about.en}: four short questions about you. Take your time.`, fa: `یک استراحت از داستان. بیا دربارهٔ ${topic.about.fa} گپ بزنیم: چهار سؤال کوتاه دربارهٔ خودت. عجله نکن.` }
+			: { en: `A break from the story: a quick chat about ${topic.about.en}. Answer like you would to a friend, and say why.`, fa: `یک استراحت از داستان: یک گپ کوتاه دربارهٔ ${topic.about.fa}. همان‌طور جواب بده که به یک دوست جواب می‌دهی، و بگو چرا.` }
+	});
+	return {
+		id: `topic-${topic.id}` as DayId, number: 201 + index, arc: 'topics', topic: topic.id, ready: false, pilot: true,
+		theme: topic.title, themePhrase: 'quick chat', question: topic.b1.opener,
+		goal: { en: `You’ve chatted about ${topic.about.en}.`, fa: `دربارهٔ ${topic.about.fa} گپ زدی.` },
+		checkInMinutes: 0, recapMinutes: 0, modules: [],
+		tracks: { intermediate: [chat('a2')], professional: [chat('b1')] }
+	};
+}
+export const TOPIC_PACKS: DayPack[] = TOPICS.map(topicPack);
+
+/** Every story chapter, Travel's first (the daily lessons only ever use Travel's). */
 export const DAYS: DayPack[] = [DAY_ONE, DAY_TWO, DAY_THREE, DAY_FOUR, EVERYDAY_ONE, EVERYDAY_TWO];
+/** Every chapter on the step path: the stories', then the topic steps (the path puts them in between). */
+export const CHAPTERS: DayPack[] = [...DAYS, ...TOPIC_PACKS];
+/** A topic step's small chapter (not a story chapter). */
+export const isTopic = (day: DayPack) => !!day.topic;
 /** A chapter's story. */
 export const arcOf = (day: DayPack): ArcId => day.arc ?? 'travel';
 export function dayById(id: string | null | undefined): DayPack | null {
-	return DAYS.find(day => day.id === id) ?? null;
+	return CHAPTERS.find(day => day.id === id) ?? null;
 }
 /**
  * The day to do next: the first one after the last finished day. Learners stop at a day that

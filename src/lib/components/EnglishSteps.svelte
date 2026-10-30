@@ -8,20 +8,21 @@
 	import type { UsageReport } from '$lib/analytics/english-usage-report';
 	import type { EnglishLessonReport } from '$lib/analytics/english-lessons-report';
 	import EnglishLessons from '$components/EnglishLessons.svelte';
-	import { DAYS } from '$lib/practice/day';
+	import { CHAPTERS } from '$lib/practice/day';
 
 	let { usage, lessons }: { usage: UsageReport; lessons: EnglishLessonReport } = $props();
 	const NAMES: Record<string, string> = {
 		'listen-act': 'Listen and connect', 'listen-retell': 'Listen and retell', phrases: 'Natural phrases', traps: 'Persian-speaker traps',
 		'say-in-english': 'Say it in English', 'voice-messages': 'Voice messages', 'say-it-better': 'Say it again, better',
-		'choose-persuade': 'Choose and persuade', scenario: 'Role-play', 'group-chat': 'Group chat'
+		'choose-persuade': 'Choose and persuade', scenario: 'Role-play', 'group-chat': 'Group chat', 'quick-fire': 'Quick chat'
 	};
 	/** "Travel 2", "Everyday 1": a chapter by its place in its own story. */
 	function chapter(day: number) {
-		const pack = DAYS.find(d => d.number === day);
+		const pack = CHAPTERS.find(d => d.number === day);
 		if (!pack) return `Day ${day}`;
+		if (pack.topic) return `Quick chat · ${pack.theme.en}`;
 		const arc = pack.arc ?? 'travel';
-		const n = DAYS.filter(d => (d.arc ?? 'travel') === arc).indexOf(pack) + 1;
+		const n = CHAPTERS.filter(d => (d.arc ?? 'travel') === arc).indexOf(pack) + 1;
 		return `${arc === 'travel' ? 'Travel' : arc === 'everyday' ? 'Everyday' : arc} ${n}`;
 	}
 	const version = (track: string) => (track === 'professional' ? 'Professional' : 'Intermediate');

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DAYS, DAY_ONE, DAY_TWO, DAY_THREE, DAY_FOUR, startSession, finishModule } from './day';
+import { DAYS, TOPIC_PACKS, DAY_ONE, DAY_TWO, DAY_THREE, DAY_FOUR, startSession, finishModule } from './day';
 import { EMPTY_PROGRESS } from './english-progress';
 import {
 	EMPTY_PATH, MAX_DONE, PathSchema, arcOrder, chapterNumber, applyStep, chapterFinished, chapterSteps, doneOn, isOpenStep, isStepId, localDay,
@@ -15,7 +15,10 @@ describe('chapters and steps', () => {
 	});
 	it('opens the chapters up to the first one not ready, and all of them for the owner', () => {
 		expect(releasedChapters().map(day => day.id)).toEqual(DAYS.slice(0, DAYS.findIndex(day => !day.ready)).map(day => day.id));
-		expect(releasedChapters(true)).toEqual(DAYS);
+		// The owner sees every chapter, with a topic step after each one, then the rest of the topics.
+		expect(releasedChapters(true).filter(day => !day.topic)).toEqual(DAYS);
+		expect(releasedChapters(true).map(day => day.id).slice(0, 4)).toEqual(['day-1', 'topic-food', 'day-2', 'topic-morning']);
+		expect(releasedChapters(true)).toHaveLength(DAYS.length + TOPIC_PACKS.length);
 	});
 	it('only opens released steps of the learner’s version', () => {
 		expect(isOpenStep('day-2:traps', 'intermediate')).toBe(true);

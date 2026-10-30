@@ -30,7 +30,7 @@
 	{#each data.chapters as chapter (chapter.id)}
 		<details class="chapter" open={!chapter.finished}>
 			<summary>
-				<span class="chapter-name">{T(`Chapter ${chapter.number} · ${chapter.theme.en}`, `فصل ${n(chapter.number)}: ${chapter.theme.fa}`)}</span>
+				<span class="chapter-name">{chapter.topic ? T(`Quick chat · ${chapter.theme.en}`, `گپ کوتاه · ${chapter.theme.fa}`) : T(`Chapter ${chapter.number} · ${chapter.theme.en}`, `فصل ${n(chapter.number)}: ${chapter.theme.fa}`)}</span>
 				{#if chapter.finished}<span class="tick" aria-label={T('finished', 'تمام شد')}>✓</span>{/if}
 			</summary>
 			<ol class="steps">

@@ -1,7 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { Actions, PageServerLoad } from './$types';
-import { trackFor, type Track } from '$lib/practice/day';
+import { isTopic, trackFor, type Track } from '$lib/practice/day';
 import { readEnglishProgress, type EnglishProgress } from '$lib/practice/english-progress';
 import { readEnglishProfile } from '$lib/practice/english-profile';
 import {
@@ -139,12 +139,14 @@ export const actions: Actions = {
 		const replay = !!before.done[step];
 		const goalBefore = doneOn(before, today);
 		const wasFinished = chapterFinished(before, day, me.track);
-		const startedChapter = !replay && chapterSteps(day, me.track).every(item => !before.done[item] && !before.skipped.includes(item));
+		// A topic step (one Quick chat) neither starts nor ends a chapter: no chapter events, no chapter ending.
+		const topic = isTopic(day);
+		const startedChapter = !topic && !replay && chapterSteps(day, me.track).every(item => !before.done[item] && !before.skipped.includes(item));
 		const path = applyStep(before, { step, outcome }, me.track, today);
-		const finishedNow = chapterFinished(path, day, me.track) && !wasFinished;
+		const finishedNow = !topic && chapterFinished(path, day, me.track) && !wasFinished;
 
 		let progress = readEnglishProgress(me.user.user_metadata);
-		if (outcome === 'done') progress = recordStep(progress, day.id, score ? { skill: module.skill, ...score } : null, finishedNow, now);
+		if (outcome === 'done') progress = recordStep(progress, topic ? null : day.id, score ? { skill: module.skill, ...score } : null, finishedNow, now);
 		else if (finishedNow) progress = withFinishedDay(progress, day.id);
 		try {
 			const { error } = await locals.supabase.auth.updateUser({ data: { english_path_v1: path, english_progress_v1: progress } });
