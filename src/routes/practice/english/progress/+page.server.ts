@@ -69,6 +69,8 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 /** A step, as the dashboard's card shows it (the chapter numbered in this learner's journey). */
 const stepCard = (next: NextStep, preview: Preview, reason: string | null) => ({
 	id: next.step, chapter: chapterNumber(next.day, preview, reason), theme: next.day.theme, title: next.module.title,
+	/** A topic step (a Quick chat between chapters): the card says so, with no chapter number. */
+	topic: !!next.day.topic,
 	index: next.index, total: next.total, minutes: minutesOf(next.module, 20)
 });
 

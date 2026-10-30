@@ -15,6 +15,7 @@
 	import RolePlay from '$lib/components/RolePlay.svelte';
 	import SayItBetter from '$lib/components/SayItBetter.svelte';
 	import GroupChat from '$lib/components/GroupChat.svelte';
+	import QuickChat from '$lib/components/QuickChat.svelte';
 	import { asConnectRecord } from '$lib/practice/listen-connect';
 	import { asPhraseRecord } from '$lib/practice/phrases';
 	import { asTrapsRecord } from '$lib/practice/traps';
@@ -25,9 +26,11 @@
 	import { asRolePlayRecord } from '$lib/practice/roleplay';
 	import { asSayRecord } from '$lib/practice/say-better';
 	import { asChatRecord } from '$lib/practice/group-chat';
+	import { asQuickChat } from '$lib/practice/quick-fire';
+	import { topicById, topicLevel, topicOpeners } from '$lib/practice/topics';
 	import { chatSceneFor, connectSetFor, persuadeSetFor, phrasesFor, roleSceneFor, retellPieceFor, sayItemsFor, trapsFor, voiceMessagesFor } from '$lib/practice/day-content';
 	import { withName } from '$lib/practice/learner-name';
-	import type { DayModule, Track } from '$lib/practice/day';
+	import { dayById, type DayModule, type Track } from '$lib/practice/day';
 
 	let { dayId, mod, track, isFa = false, name = '', initial = null, afterIntro = null, onSave, onFocus, onSkip, onDone }: {
 		dayId: string;
@@ -51,8 +54,10 @@
 	const content = {
 		connect: connectSetFor(dayId, track), phrases: phrasesFor(dayId, track), traps: trapsFor(dayId), say: withName(sayItemsFor(dayId, track), name),
 		messages: withName(voiceMessagesFor(dayId), name), story: retellPieceFor(dayId), choice: persuadeSetFor(dayId), scene: roleSceneFor(dayId, track),
-		chat: chatSceneFor(dayId, track)
+		chat: chatSceneFor(dayId, track), topic: topicById(dayById(dayId)?.topic)
 	};
+	// svelte-ignore state_referenced_locally
+	const level = topicLevel(track);
 </script>
 
 {#if mod.id === 'listen-act'}
@@ -73,6 +78,8 @@
 	<RolePlay {isFa} {onSkip} scene={content.scene} initial={asRolePlayRecord(initial, content.scene)} {onFocus} {onSave} {onDone} />
 {:else if mod.id === 'group-chat'}
 	<GroupChat {isFa} {onSkip} scene={content.chat} initial={asChatRecord(initial, content.chat)} {onFocus} {onSave} {onDone} />
+{:else if mod.id === 'quick-fire' && content.topic}
+	<QuickChat {isFa} {onSkip} topic={content.topic} {level} initial={asQuickChat(initial, topicOpeners(content.topic, level))} {onFocus} {onSave} {onDone} />
 {:else if mod.id === 'say-it-better'}
 	<SayItBetter {isFa} {onSkip} prompt={mod.sayPrompt} initial={asSayRecord(initial)} {onFocus} {onSave} {onDone} />
 {:else}

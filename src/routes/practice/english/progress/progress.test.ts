@@ -7,7 +7,7 @@ vi.mock('$lib/server/step-path', async original => {
 });
 import { load } from './+page.server';
 import { load as loadFinished } from '../finished/+page.server';
-import { DAY_TWO, sessionModules, startSession } from '$lib/practice/day';
+import { DAY_TWO, TOPIC_PACKS, sessionModules, startSession } from '$lib/practice/day';
 
 function locals(meta: Record<string, unknown> | null, rows: unknown[] = [], readError: unknown = null) {
 	const query: any = { select: () => query, eq: vi.fn(() => query), in: () => query, order: () => query, limit: vi.fn().mockResolvedValue({ data: rows, error: readError }) };
@@ -93,11 +93,13 @@ describe('The dashboard on the step path', () => {
 		]);
 		const data = await load(event) as any;
 		expect(data.dates).toEqual(['2026-10-20', '2026-10-25']);
-		expect(data.path).toMatchObject({ stepsDone: 10, replay: false, underWay: false, step: { id: 'day-3:listen-act', chapter: 3, index: 0, total: 5 } });
+		// The test accounts get a topic step (a Quick chat) between the chapters: the card says so.
+		expect(data.path).toMatchObject({ stepsDone: 10, replay: false, underWay: false, step: { id: 'topic-food:quick-fire', topic: true, index: 0, total: 1 } });
 	});
 	it('says new practice is coming soon when every released step is done', async () => {
 		const all = { ...progress, lastThemeId: 'everyday-2', finishedDays: ['day-1', 'day-2', 'day-3', 'everyday-1', 'everyday-2'] }; // incl. the pilot chapters
-		const data = await load(tester(english({ english_progress_v1: all })).event) as any;
+		const skipped = TOPIC_PACKS.map(day => `${day.id}:quick-fire`);
+		const data = await load(tester(english({ english_progress_v1: all, english_path_v1: { done: {}, skipped, current: null } })).event) as any;
 		expect(data.path).toMatchObject({ comingSoon: true, step: null, stepsDone: 25 });
 	});
 	it('the finished-lessons list leads to the path', async () => {

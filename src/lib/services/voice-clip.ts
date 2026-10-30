@@ -38,7 +38,10 @@ export function canRecord(): boolean {
 }
 
 /** Starts recording. Call it inside a tap (phones need that for the microphone). */
-export async function startRecording(use: ClipUse): Promise<Recording | 'unsupported' | 'blocked'> {
+/** When a recording ends by itself (defaults: QUIET_STOP_SECONDS, NO_SPEECH_STOP_SECONDS); calm steps wait longer. */
+export interface RecordingTimings { quietStop?: number; noSpeechStop?: number }
+
+export async function startRecording(use: ClipUse, timings: RecordingTimings = {}): Promise<Recording | 'unsupported' | 'blocked'> {
 	if (!canRecord()) return 'unsupported';
 	let stream: MediaStream;
 	try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
@@ -57,7 +60,7 @@ export async function startRecording(use: ClipUse): Promise<Recording | 'unsuppo
 	const timer = setInterval(() => {
 		const elapsed = (performance.now() - startedAt) / 1000;
 		const spoke = level.voiced() >= MIN_VOICED_SECONDS;
-		if (elapsed >= limit || (spoke && level.quietFor() >= QUIET_STOP_SECONDS) || (!spoke && elapsed >= NO_SPEECH_STOP_SECONDS)) stop();
+		if (elapsed >= limit || (spoke && level.quietFor() >= (timings.quietStop ?? QUIET_STOP_SECONDS)) || (!spoke && elapsed >= (timings.noSpeechStop ?? NO_SPEECH_STOP_SECONDS))) stop();
 	}, 200);
 	// The phone locked, a call came in, or the learner left the tab: stop and keep what was said.
 	const onHidden = () => { if (document.visibilityState === 'hidden') stop(); };

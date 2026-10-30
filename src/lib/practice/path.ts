@@ -11,7 +11,7 @@
  * The old fields only grow, so reading them again is safe after a rollback or from a tab on old code.
  */
 import { z } from 'zod';
-import { DAYS, arcOf, type ArcId, DAY_IDS, DaySessionSchema, MODULE_IDS, TRACKS, currentModule, dayById, finishedDays, modulesFor, type DayModule, type DayPack, type ModuleId, type Track } from './day';
+import { DAYS, TOPIC_PACKS, arcOf, isTopic, type ArcId, DAY_IDS, DaySessionSchema, MODULE_IDS, TRACKS, currentModule, dayById, finishedDays, modulesFor, type DayModule, type DayPack, type ModuleId, type Track } from './day';
 import { RECENT_SESSIONS, readEnglishProgress, resultBand, type EnglishProgress, type FinishedModule } from './english-progress';
 
 /** `day-2:phrases`: a chapter and one of its modules. */
@@ -80,16 +80,29 @@ export const arcOrder = (reason: string | null | undefined): ArcId[] => ARC_ORDE
  * travel story always opens with its first chapter.
  */
 export function releasedChapters(preview: Preview = false, reason: string | null = null): DayPack[] {
-	return arcOrder(reason).flatMap(arc => {
+	const stories = arcOrder(reason).flatMap(arc => {
 		const days = DAYS.filter(day => arcOf(day) === arc);
 		// 'pilot': the owner's test accounts also get chapters marked `pilot`, before their release.
 		const firstClosed = days.findIndex(day => !day.ready && !(preview === 'pilot' && day.pilot));
 		if (preview === true || firstClosed === -1) return days;
 		return days.slice(0, arc === 'travel' ? Math.max(1, firstClosed) : firstClosed);
 	});
+	// The topic steps (docs/english-topic-steps.md): one after each story chapter, in their order;
+	// when the stories run out, the rest in a row. Released one by one (or as a pilot).
+	const topics = TOPIC_PACKS.filter(day => (preview === true || day.ready || (preview === 'pilot' && day.pilot)));
+	const chapters: DayPack[] = [];
+	stories.forEach((story, i) => { chapters.push(story); if (topics[i]) chapters.push(topics[i]); });
+	return [...chapters, ...topics.slice(stories.length)];
 }
-/** A chapter's number in this learner's journey (1 for the first story's first chapter). */
-export const chapterNumber = (day: DayPack, preview: Preview = false, reason: string | null = null) => releasedChapters(preview, reason).indexOf(day) + 1 || day.number;
+/**
+ * A chapter's number in this learner's journey (1 for the first story's first chapter). Topic steps
+ * aren't numbered (nothing shows this): one counts as the story chapter that comes after it.
+ */
+export function chapterNumber(day: DayPack, preview: Preview = false, reason: string | null = null): number {
+	const chapters = releasedChapters(preview, reason), at = chapters.indexOf(day);
+	if (at === -1) return day.number;
+	return chapters.slice(0, at).filter(item => !isTopic(item)).length + 1;
+}
 
 /** Whether a step can be opened: a released chapter, and a module of that chapter in this version. */
 export function isOpenStep(step: StepId, track: Track, preview: Preview = false, reason: string | null = null): boolean {
@@ -131,10 +144,13 @@ export function readPath(meta: Record<string, unknown> | null | undefined, track
 }
 
 const handled = (path: Path, step: StepId) => !!path.done[step] || path.skipped.includes(step);
-/** A chapter is finished when every step is done or skipped and at least one is done (as a daily lesson was). */
+/**
+ * A chapter is finished when every step is done or skipped and at least one is done (as a daily
+ * lesson was). A topic step is finished when done or skipped: skipping it moves on (it can be done later).
+ */
 export function chapterFinished(path: Path, day: DayPack, track: Track): boolean {
 	const steps = chapterSteps(day, track);
-	return steps.every(step => handled(path, step)) && steps.some(step => !!path.done[step]);
+	return steps.every(step => handled(path, step)) && (isTopic(day) || steps.some(step => !!path.done[step]));
 }
 
 export interface NextStep { step: StepId; day: DayPack; module: DayModule; index: number; total: number }
@@ -214,18 +230,19 @@ export const doneOn = (path: Path, day: number) => Object.values(path.done).some
 
 /**
  * Keeps `english_progress_v1` current, one step at a time: Mira's greeting, the coach and the course
- * list read it. A chapter goes into `finishedDays` only when it is finished.
+ * list read it. A chapter goes into `finishedDays` only when it is finished. `dayId` null (a topic
+ * step): the last chapter stays the story's.
  */
-export function recordStep(progress: EnglishProgress, dayId: string, finished: FinishedModule | null, chapterDone: boolean, now = new Date()): EnglishProgress {
+export function recordStep(progress: EnglishProgress, dayId: string | null, finished: FinishedModule | null, chapterDone: boolean, now = new Date()): EnglishProgress {
 	const tally = { listening: { correct: 0, total: 0 }, speaking: { correct: 0, total: 0 } };
 	if (finished) tally[finished.skill] = { correct: finished.correct, total: finished.total };
 	const days = progress.finishedDays ?? finishedDays(progress).map(day => day.id);
 	return {
 		sessionsCompleted: progress.sessionsCompleted + 1,
 		lastCompletedAt: now.toISOString(),
-		lastThemeId: dayId,
+		lastThemeId: dayId ?? progress.lastThemeId,
 		lastResult: finished ? resultBand(finished.correct, finished.total) : progress.lastResult,
 		recent: finished && finished.total > 0 ? [...progress.recent, tally].slice(-RECENT_SESSIONS) : progress.recent,
-		finishedDays: chapterDone && !days.includes(dayId) ? [...days, dayId] : days
+		finishedDays: chapterDone && dayId && !days.includes(dayId) ? [...days, dayId] : days
 	};
 }

@@ -22,8 +22,10 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 	const path = readPath(user.user_metadata, track);
 	const next = nextStep(path, track, preview, profile.reason)?.step ?? null;
 	// Numbered in this learner's journey: their goal's story comes first.
-	const chapters = releasedChapters(preview, profile.reason).map((day, index) => ({
-		id: day.id, number: index + 1, theme: day.theme, finished: chapterFinished(path, day, track),
+	// Topic steps (Quick chats between chapters) aren't numbered.
+	let story = 0;
+	const chapters = releasedChapters(preview, profile.reason).map(day => ({
+		id: day.id, number: day.topic ? 0 : ++story, topic: !!day.topic, theme: day.theme, finished: chapterFinished(path, day, track),
 		steps: chapterModules(day, track).map(module => {
 			const id = stepId(day, module);
 			const state = path.done[id] ? 'done' : path.skipped.includes(id) ? 'skipped' : id === next ? 'next' : 'locked';

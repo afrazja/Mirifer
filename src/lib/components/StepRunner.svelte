@@ -13,7 +13,7 @@
 	import ChapterModule from '$lib/components/ChapterModule.svelte';
 	import { loadRecord, saveRecord } from '$lib/practice/day-records';
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
-	import { dayById, minutesOf, DAY_ONE, type DayModule, type ModuleId, type Track } from '$lib/practice/day';
+	import { dayById, isTopic, minutesOf, DAY_ONE, type DayModule, type ModuleId, type Track } from '$lib/practice/day';
 	import { chapterModules, splitStep, type StepId } from '$lib/practice/path';
 	import type { DisplayText } from '$lib/practice/hotel';
 	import { playAudioPromise, stopAllAudio } from '$services/tts';
@@ -39,6 +39,10 @@
 	const story = first ? day.checkIn?.story ?? null : null;
 	/** Crowded modules (and a chapter's first step) open with Mira's note on its own screen. */
 	const BRIEF_FIRST = new Set(['phrases', 'choose-persuade', 'scenario', 'group-chat']);
+	/** A topic step (a Quick chat between the story's chapters): no chapter opening; Mira's note sits above the chat. */
+	const topic = isTopic(day);
+	// svelte-ignore state_referenced_locally
+	const briefFirst = (first && !topic) || BRIEF_FIRST.has(mod.id);
 
 	type Stage = 'loading' | 'brief' | 'module' | 'saving' | 'finished' | 'offer' | 'chapter';
 	let stage = $state<Stage>('loading');
@@ -50,7 +54,7 @@
 
 	onMount(() => {
 		// A new step has nothing saved yet: it shows at once, and its start is saved in the background.
-		if (!startedAt) stage = first || BRIEF_FIRST.has(mod.id) ? 'brief' : 'module';
+		if (!startedAt) stage = briefFirst ? 'brief' : 'module';
 		void (async () => {
 			if (!startedAt) {
 				try {
@@ -63,7 +67,7 @@
 			}
 			if (stage === 'loading') {
 				const resumed = !!startedAt && loadRecord(startedAt, mod.id) !== null;
-				stage = (first || BRIEF_FIRST.has(mod.id)) && !resumed ? 'brief' : 'module';
+				stage = briefFirst && !resumed ? 'brief' : 'module';
 			}
 		})();
 		say();
@@ -136,6 +140,8 @@
 	const comingSoon = $derived(!!result && (!result.next || result.nextIsReplay));
 	const nextLabel = $derived(!nextInfo ? T('Back to your progress', 'برگشت به پیشرفتت')
 		: result?.nextIsReplay ? T(`Practice again: ${nextInfo.module.title.en}`, `دوباره تمرین کن: ${nextInfo.module.title.fa}`)
+		: isTopic(nextInfo.day) ? T(`Next: Quick chat · ${nextInfo.day.theme.en} · ${nextInfo.minutes} min`, `بعدی: گپ کوتاه · ${nextInfo.day.theme.fa} · ${num(nextInfo.minutes)} دقیقه`)
+		: topic ? T(`Back to the story: ${nextInfo.module.title.en}`, `برگشت به داستان: ${nextInfo.module.title.fa}`)
 		: nextInfo.day.id !== day.id ? T('Start the next chapter', 'شروع فصل بعد')
 		: T(`Next: ${nextInfo.module.title.en} · ${nextInfo.minutes} min`, `بعدی: ${nextInfo.module.title.fa} · ${num(nextInfo.minutes)} دقیقه`));
 
@@ -165,7 +171,8 @@
 {/snippet}
 
 {#if stage === 'loading' || stage === 'brief' || stage === 'module' || stage === 'saving'}<p class="eyebrow">
-	{#if replay}{T(`PRACTICE AGAIN · ${day.themePhrase.toUpperCase()}`, `تمرین دوباره · ${day.theme.fa}`)}
+	{#if topic}{replay ? T('PRACTICE AGAIN · QUICK CHAT', 'تمرین دوباره · گپ کوتاه') : T('QUICK CHAT', 'گپ کوتاه')}
+	{:else if replay}{T(`PRACTICE AGAIN · ${day.themePhrase.toUpperCase()}`, `تمرین دوباره · ${day.theme.fa}`)}
 	{:else}{T(`${day.themePhrase.toUpperCase()} · STEP ${index + 1} OF ${total}`, `${day.theme.fa} · مرحلهٔ ${num(index + 1)} از ${num(total)}`)}{/if}
 </p>{/if}
 
@@ -182,7 +189,7 @@
 {:else if stage === 'module' || stage === 'saving'}
 	<h1>{text(mod.title)}</h1>
 	{#if saveFailed}<p class="warn" role="alert">{T('That didn’t save. Check your connection and try again.', 'ذخیره نشد. اتصال اینترنت را بررسی کن و دوباره امتحان کن.')}</p>{/if}
-	{#if intro === 'full' && !BRIEF_FIRST.has(mod.id) && !first}{@render note(mod)}{/if}
+	{#if intro === 'full' && !briefFirst}{@render note(mod)}{/if}
 	<div class:busy={stage === 'saving'}>
 		<ChapterModule dayId={day.id} {mod} {track} {isFa} {name} initial={loaded()} afterIntro={introPlay} onSave={keep} {onFocus} {onSkip} {onDone} />
 	</div>

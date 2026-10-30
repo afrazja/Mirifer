@@ -19,7 +19,8 @@ const COUNTS: Partial<Record<ModuleId, DisplayText>> = {
 	'voice-messages': { en: 'questions answered', fa: 'سؤال را جواب دادی' },
 	'choose-persuade': { en: 'points made', fa: 'نکته را گفتی' },
 	scenario: { en: 'goals reached', fa: 'هدف رسیدی' },
-	'group-chat': { en: 'goals reached', fa: 'هدف رسیدی' }
+	'group-chat': { en: 'goals reached', fa: 'هدف رسیدی' },
+	'quick-fire': { en: 'questions answered', fa: 'سؤال را جواب دادی' }
 };
 
 /** The score line for a step, or null when the step gives no score. */

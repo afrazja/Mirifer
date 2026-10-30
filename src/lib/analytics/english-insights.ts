@@ -57,6 +57,7 @@ function status(meta: Record<string, unknown>): string {
 	const where = (step: StepId) => {
 		const parts = splitStep(step);
 		if (!parts) return '';
+		if (parts.day.topic) return `Quick chat · ${parts.day.theme.en}`;
 		const modules = chapterModules(parts.day, track);
 		return `Ch ${chapterNumber(parts.day, false, reason)} · step ${modules.findIndex(m => m.id === parts.module) + 1} of ${modules.length}`;
 	};

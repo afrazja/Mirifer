@@ -66,7 +66,7 @@
 		: null);
 	const button = $derived(path
 		? (!path.step ? (path.comingSoon ? { label: isFa ? 'مسیرت را ببین' : 'See your path', href: '/practice/english/path' } : { label: isFa ? 'شروع' : 'Start', href: '/practice/english/step' })
-			: { label: path.underWay ? (isFa ? 'ادامه' : 'Continue') : path.replay ? (isFa ? 'دوباره تمرین کن' : 'Practice again') : (isFa ? `شروع مرحلهٔ ${n(path.step.index + 1)}` : `Start step ${path.step.index + 1}`), href: `/practice/english/step?step=${encodeURIComponent(path.step.id)}` })
+			: { label: path.underWay ? (isFa ? 'ادامه' : 'Continue') : path.replay ? (isFa ? 'دوباره تمرین کن' : 'Practice again') : path.step.topic ? (isFa ? 'شروع گپ' : 'Start the chat') : (isFa ? `شروع مرحلهٔ ${n(path.step.index + 1)}` : `Start step ${path.step.index + 1}`), href: `/practice/english/step?step=${encodeURIComponent(path.step.id)}` })
 		: lesson!.inProgress
 		? { label: isFa ? `ادامهٔ ${dayName(lesson!.lesson.number)}` : `Resume ${dayName(lesson!.lesson.number)}`, href: '/practice/english/today' }
 		: doneToday ? { label: isFa ? 'درس امروز را ببین' : 'See today’s lesson', href: '/practice/english/today' }
@@ -132,6 +132,11 @@
 		{#if path.comingSoon && !path.step}
 			<p class="big small-big">{isFa ? 'تمرین‌های تازه به‌زودی می‌آیند.' : 'New practice is coming soon.'}</p>
 			<p class="note">{isFa ? 'همهٔ مرحله‌ها را تا این‌جا انجام داده‌ای. هر مرحله‌ای را که بخواهی، از مسیرت دوباره تمرین کن.' : 'You’ve done every step so far. You can practise any step again from your path.'}</p>
+		{:else if path.step?.topic}
+			<p class="theme">{isFa ? 'گپ کوتاه' : 'Quick chat'}</p>
+			<p class="big">{isFa ? path.step.theme.fa : path.step.theme.en}</p>
+			<p class="note">{isFa ? `دربارهٔ خودت · ${n(path.step.minutes)} دقیقه` : `About you · ${path.step.minutes} min`}</p>
+			{#if path.replay}<p class="note">{isFa ? 'داری این مرحله را دوباره تمرین می‌کنی.' : 'You’re practising this step again.'}</p>{/if}
 		{:else if path.step}
 			<p class="theme">{isFa ? `فصل ${n(path.step.chapter)}: ${path.step.theme.fa}` : `Chapter ${path.step.chapter} · ${path.step.theme.en}`}</p>
 			{#if !path.replay}<p class="big">{isFa ? `مرحلهٔ ${n(path.step.index + 1)} از ${n(path.step.total)}` : `Step ${path.step.index + 1} of ${path.step.total}`}</p>{/if}

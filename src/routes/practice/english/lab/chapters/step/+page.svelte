@@ -34,7 +34,7 @@
 
 	/** As on the path: crowded modules (and a chapter's first step) open with Mira's note on its own screen. */
 	const BRIEF_FIRST = new Set(['phrases', 'choose-persuade', 'scenario', 'group-chat']);
-	const briefFirst = () => index === 0 || BRIEF_FIRST.has(data.moduleId);
+	const briefFirst = () => (index === 0 && !day.topic) || BRIEF_FIRST.has(data.moduleId);
 	// svelte-ignore state_referenced_locally
 	let stage = $state<'brief' | 'module' | 'done'>(briefFirst() ? 'brief' : 'module');
 	let intro = $state<'full' | 'compact' | 'hidden'>('full');

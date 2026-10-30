@@ -14,9 +14,12 @@ describe('Your path', () => {
 			english_progress_v1: { ...EMPTY_PROGRESS, lastThemeId: 'day-1', finishedDays: ['day-1'] },
 			english_path_v1: { done: { 'day-2:listen-act': ['i', 3] }, skipped: ['day-2:phrases'], current: null }
 		})) as any;
-		expect(data.chapters.map((c: any) => c.id)).toEqual(['day-1', 'day-2']);
+		// The test accounts see the topic steps (a pilot): a Quick chat after each chapter, not numbered.
+		expect(data.chapters.map((c: any) => c.id)).toEqual(['day-1', 'topic-food', 'day-2']);
+		expect(data.chapters.map((c: any) => [c.number, c.topic])).toEqual([[1, false], [0, true], [2, false]]);
 		expect(data.chapters[0].finished).toBe(true);
-		expect(data.chapters[1].steps.map((s: any) => s.state)).toEqual(['done', 'skipped', 'next', 'locked', 'locked']);
+		expect(data.chapters[1].steps.map((s: any) => s.state)).toEqual(['next']);
+		expect(data.chapters[2].steps.map((s: any) => s.state)).toEqual(['done', 'skipped', 'locked', 'locked', 'locked']);
 	});
 	it('shows a new learner Chapter 1 only, and and every learner has it', async () => {
 		const data = await load(event({})) as any;

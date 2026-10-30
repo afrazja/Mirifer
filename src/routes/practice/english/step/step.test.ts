@@ -3,7 +3,7 @@ vi.mock('$env/dynamic/private', () => ({ env: { ADMIN_EMAIL: 'owner@m.test' } })
 import { load, actions } from './+page.server';
 import { EMPTY_PROGRESS } from '$lib/practice/english-progress';
 import { chapterSteps } from '$lib/practice/path';
-import { DAY_ONE } from '$lib/practice/day';
+import { DAY_ONE, TOPIC_PACKS } from '$lib/practice/day';
 
 const PROFILE = { reason: 'travel', comfort: 'simple', minutes: 15, skipped: false, completedAt: '2026-10-01T10:00:00.000Z' };
 function fixture(meta: Record<string, unknown> = {}, form: Record<string, string> = {}, { email = 'afraz.jva@gmail.com', query = '' } = {}) {
@@ -83,19 +83,34 @@ describe('step page', () => {
 	it('ends the chapter, adds it to the finished days, and offers a step skipped in it', async () => {
 		const meta = { english_path_v1: { done: doneAll([intermediate[0], intermediate[1], intermediate[3]]), skipped: [intermediate[2]], current: null }, english_progress_v1: EMPTY_PROGRESS };
 		const f = fixture(meta, { step: intermediate[4], outcome: 'done' });
-		expect(await actions.result(f.event())).toMatchObject({ chapterDone: true, skippedHere: [intermediate[2]], next: 'day-2:listen-act' });
+		// For the test accounts, a topic step (a Quick chat) comes between the chapters.
+		expect(await actions.result(f.event())).toMatchObject({ chapterDone: true, skippedHere: [intermediate[2]], next: 'topic-food:quick-fire' });
 		expect(f.saved().english_progress_v1.finishedDays).toEqual(['day-1']);
 		expect(f.inserted.map(row => row.event_name)).toEqual(['lesson_progress', 'lesson_completed']);
 		expect(f.inserted[1].metadata).toMatchObject({ done: 4, skipped: 1, total: 5 });
 	});
 	it('marks a replay, and offers the next replay when nothing new is left', async () => {
 		const all = ['day-1', 'day-2', 'day-3', 'everyday-1', 'everyday-2']; // the test accounts also see the pilot Everyday chapters
-		const meta = { english_progress_v1: { ...EMPTY_PROGRESS, lastThemeId: 'day-3', finishedDays: all } };
+		const topics = TOPIC_PACKS.map(day => `${day.id}:quick-fire`); // topic steps skipped count as finished
+		const meta = { english_progress_v1: { ...EMPTY_PROGRESS, lastThemeId: 'day-3', finishedDays: all }, english_path_v1: { done: {}, skipped: topics, current: null } };
 		const f = fixture(meta, { step: intermediate[1], outcome: 'done' });
 		const result = await actions.result(f.event()) as any;
 		expect(result).toMatchObject({ goalJustMet: true, chapterDone: false, nextIsReplay: true });
 		expect(result.next).not.toBe(intermediate[1]);
 		expect(f.inserted[0].metadata).toMatchObject({ replay: true });
+	});
+	it('a topic step (a Quick chat) neither starts nor ends a chapter, and keeps the story’s place', async () => {
+		const meta = { english_progress_v1: { ...EMPTY_PROGRESS, sessionsCompleted: 5, lastThemeId: 'day-1', finishedDays: ['day-1'] } };
+		expect(await load(fixture(meta, {}, { query: '?step=topic-food:quick-fire' }).event())).toMatchObject({ step: 'topic-food:quick-fire', index: 0, total: 1 });
+		const f = fixture(meta, { step: 'topic-food:quick-fire', outcome: 'done', score: JSON.stringify({ correct: 4, total: 4 }) });
+		expect(await actions.result(f.event())).toMatchObject({ chapterDone: false, skippedHere: [], next: 'day-2:listen-act' });
+		expect(f.saved().english_progress_v1).toMatchObject({ sessionsCompleted: 6, lastThemeId: 'day-1', finishedDays: ['day-1'] });
+		expect(f.inserted.map(row => row.event_name)).toEqual(['lesson_progress']);
+		expect(f.inserted[0].metadata).toMatchObject({ module: 'quick-fire', outcome: 'done' });
+		// Learners don't get the topic steps yet (a pilot for the test accounts).
+		const learner = fixture(meta, { step: 'topic-food:quick-fire', outcome: 'done' }, { email: 'someone@m.test' });
+		expect(await actions.result(learner.event())).toMatchObject({ status: 400 });
+		expect(learner.saved()).toBeUndefined();
 	});
 	it('saves a rating (1–5) only for a step the learner did', async () => {
 		const meta = { english_path_v1: { done: doneAll([intermediate[0]]), skipped: [], current: null } };
