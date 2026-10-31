@@ -15,7 +15,7 @@
 	import SayAgain from '$lib/components/SayAgain.svelte';
 	import { ENGLISH_RATE, RECORDED_ENGLISH_RATE } from '$lib/practice/english-voice';
 	import {
-		LEARNER, MAX_CHAT_MESSAGE, chatChars, chatGoalIds, chatNote, chatTurns, chatTwistSent, learnerMessages, memberOf, startChat,
+		LEARNER, MAX_CHAT_MESSAGE, chatChars, chatGoalIds, chatNote, chatTurns, chatTwistSent, learnerMessages, meaningOk, memberOf, startChat,
 		type ChatMessage, type ChatRecord, type ChatScene, type ChatUpgrade
 	} from '$lib/practice/group-chat';
 	import type { DisplayText } from '$lib/practice/hotel';
@@ -57,6 +57,8 @@
 	let review = $state<'idle' | 'loading' | 'ready' | 'failed' | 'limit'>(initial?.review ? 'ready' : 'idle');
 	let rewrite = $state(0);
 	let openText = $state<Record<number, boolean>>({});
+	/** Friends' messages showing their Persian meaning (tap "Meaning"). */
+	let openMeaning = $state<Record<number, boolean>>({});
 	let playing = $state<number | null>(null);
 	let newBelow = $state(false);
 	let heading: HTMLElement | undefined = $state(), input: HTMLTextAreaElement | undefined = $state(), bottom: HTMLElement | undefined = $state();
@@ -116,7 +118,7 @@
 	function open(variant = record.variant) {
 		generation++; stopAllAudio(); recording?.cancel();
 		if (variant !== record.variant || record.settled) { record = startChat(scene, variant); shown = record.messages.length; }
-		problem = null; draft = ''; heard = ''; composer = 'voice'; review = 'idle'; rewrite = 0; openText = {};
+		problem = null; draft = ''; heard = ''; composer = 'voice'; review = 'idle'; rewrite = 0; openText = {}; openMeaning = {};
 		onFocus?.('hidden'); go('chat'); scrollDown(true);
 	}
 
@@ -191,7 +193,7 @@
 			const result = await response.json();
 			if (current !== generation || !alive) return;
 			const incoming: ChatMessage[] = Array.isArray(result.messages)
-				? result.messages.filter((m: any) => typeof m?.text === 'string' && memberOf(scene, m?.from)).map((m: any) => ({ from: m.from, text: m.text, ...(m.voice ? { voice: true } : {}) }))
+				? result.messages.filter((m: any) => typeof m?.text === 'string' && memberOf(scene, m?.from)).map((m: any) => ({ from: m.from, text: m.text, ...(m.voice ? { voice: true } : {}), ...(meaningOk(m.fa) ? { fa: m.fa } : {}) }))
 				: [];
 			if (!incoming.length || !Array.isArray(result.goals)) { unsend(mine, voice); problem = failure.unavailable; return; }
 			for (const m of result.messages) if (typeof m?.voiceSig === 'string') sigs[m.text] = m.voiceSig;
@@ -318,6 +320,12 @@
 						{:else}
 							<p lang="en">{message.text}</p>
 						{/if}
+						{#if message.fa}
+							<button type="button" class="meaning-toggle" aria-expanded={!!openMeaning[index]} onclick={() => (openMeaning = { ...openMeaning, [index]: !openMeaning[index] })}>
+								<span aria-hidden="true">🌐</span> {openMeaning[index] ? T('Hide meaning', 'پنهان کردن معنی') : T('Meaning', 'معنی')}
+							</button>
+							{#if openMeaning[index]}<p class="meaning" lang="fa" dir="rtl">{message.fa}</p>{/if}
+						{/if}
 					</div>
 				{/if}
 			{/each}
@@ -421,6 +429,9 @@
 	.bubble.you { align-self: flex-end; border-radius: 14px 14px 4px 14px; background: var(--accent-wash); }
 	.bubble p { margin: 0; line-height: 1.5; overflow-wrap: anywhere; }
 	.bubble .transcript { margin-block-start: 4px; }
+	.meaning-toggle { display: inline-flex; align-items: center; gap: 4px; min-height: 28px; margin-block-start: 4px; padding: 0 9px; border: 0; border-radius: 999px; background: var(--info-wash); color: var(--info); font: inherit; font-size: .76rem; font-weight: 700; cursor: pointer; }
+	.meaning-toggle:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+	.bubble .meaning { margin-block-start: 6px; padding: 6px 10px; border-radius: 10px; background: var(--info-wash); color: var(--ink); font-size: .95rem; text-align: right; }
 	/* New messages stop above the bottom bar, not behind it. */
 	.end { scroll-margin-block-end: 170px; }
 	.name { display: block; margin-block-end: 2px; font-size: .78rem; font-weight: 700; }

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-	LEARNER, asChatRecord, chatFallback, chatNote, chatPreparedLines, chatTwistSent, evidencedGoals, rewriteAddsFacts, startChat
+	LEARNER, asChatRecord, chatFallback, chatNote, chatPreparedLines, chatTwistSent, evidencedGoals, meaningOk, rewriteAddsFacts, startChat
 } from './group-chat';
 import { ALL_CHAT_SCENES, BIRTHDAY_A2, BIRTHDAY_B1, chatSceneById } from './chats';
 
@@ -42,7 +42,22 @@ describe('group chat scenes', () => {
 	it('lists every prepared line for the voice route', () => {
 		const lines = chatPreparedLines(BIRTHDAY_B1);
 		expect(lines).toContain(BIRTHDAY_B1.twist!.message.text);
-		expect(lines).toContain('so where? Taco Loco or a picnic in Lake Park?');
+		expect(lines).toContain('so where? dinner at Taco Loco (the Mexican place) or a picnic in Lake Park?');
+	});
+
+	it('says what the restaurant is whenever the places are offered (owner’s phone test)', () => {
+		expect(BIRTHDAY_A2.fallback('rosa').place.text).toBe("Where? Dinner at Rosa's (the Italian place) or a picnic in Riverside Park?");
+		expect(BIRTHDAY_B1.fallback('rosa').place.text).toContain("Rosa's (the Italian place)");
+		expect(BIRTHDAY_A2.prompt('rosa', { met: [], twistSaid: false, last: false, stalled: false, learnerName: null })).toContain("dinner at Rosa's (the Italian place) or a picnic in Riverside Park?");
+	});
+
+	it('gives every prepared line a Persian meaning', () => {
+		for (const scene of [BIRTHDAY_A2, BIRTHDAY_B1]) for (const variant of scene.variants) {
+			const lines = [...scene.opening(variant), ...Object.values(scene.fallback(variant)), ...Object.values(scene.reactions ?? {}), ...(scene.twist ? [scene.twist.message] : [])];
+			for (const line of lines) expect(meaningOk(line.fa), `${scene.id} ${line.text}`).toBe(true);
+		}
+		expect(meaningOk('Saturday at 5')).toBe(false);
+		expect(meaningOk('x'.repeat(10) + 'سلام'.repeat(100))).toBe(false);
 	});
 });
 
