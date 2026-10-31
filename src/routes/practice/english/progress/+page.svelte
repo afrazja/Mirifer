@@ -15,7 +15,7 @@
 	import ActionBar from '$lib/components/ActionBar.svelte';
 	import { onlyOpenCourse } from '$lib/courses';
 	import { getLanguage } from '$services/data-layer';
-	import { lastSevenDays, streak } from '$lib/practice/learner-stats';
+	import { calendarWeek, streak, weekStartDay } from '$lib/practice/learner-stats';
 	import { dashboardGreeting, greetingKind, type DashboardMoment } from '$lib/practice/dashboard-greeting';
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
 	import { playAudioPromise, stopAllAudio } from '$services/tts';
@@ -33,7 +33,10 @@
 	const n = (value: number) => (isFa ? value.toLocaleString('fa-IR') : String(value));
 	/** Today on the learner's own device (the week strip and the streak use their calendar). */
 	let today = $state<string | null>(null);
+	/** The first day of the learner's week (Saturday in Iran). */
+	let firstDay = $state(1);
 	onMount(() => {
+		try { firstDay = weekStartDay(Intl.DateTimeFormat().resolvedOptions().timeZone, navigator.language); } catch { /* Monday */ }
 		void getLanguage().then(value => { if (value === 'fa' || value === 'en') language = value; });
 		const now = new Date();
 		today = new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
@@ -41,7 +44,7 @@
 	/** A step saved today counts even if its event was lost. */
 	const goalDone = $derived(!!path && !!today && (data.dates.includes(today) || path.lastDoneDay === localDayNumber()));
 	const dates = $derived(goalDone && today && !data.dates.includes(today) ? [...data.dates, today] : data.dates);
-	const week = $derived(today ? lastSevenDays(dates, today) : []);
+	const week = $derived(today ? calendarWeek(dates, today, firstDay) : []);
 	const inARow = $derived(today ? streak(dates, today) : 0);
 	const weekday = (date: string) => new Date(`${date}T12:00:00Z`).toLocaleDateString(isFa ? 'fa-IR' : 'en-US', { weekday: 'narrow', timeZone: 'UTC' });
 	const weekdayLong = (date: string) => new Date(`${date}T12:00:00Z`).toLocaleDateString(isFa ? 'fa-IR' : 'en-US', { weekday: 'long', timeZone: 'UTC' });
@@ -163,7 +166,7 @@
 			<p class="streak">{streakLine}</p>
 			<ol class="week">
 				{#each week as day (day.date)}
-					<li class:active={day.active} class:today={day.date === today} aria-label={`${day.date === today ? (isFa ? 'امروز، ' : 'Today, ') : ''}${weekdayLong(day.date)}: ${day.active ? (isFa ? 'تمرین کردی' : 'practiced') : (isFa ? 'تمرین نکردی' : 'no lesson')}`} aria-current={day.date === today ? 'date' : undefined}>
+					<li class:active={day.active} class:today={day.date === today} class:future={day.future} aria-label={`${day.date === today ? (isFa ? 'امروز، ' : 'Today, ') : ''}${weekdayLong(day.date)}: ${day.active ? (isFa ? 'تمرین کردی' : 'practiced') : day.future ? (isFa ? 'هنوز نیامده' : 'still to come') : (isFa ? 'تمرین نکردی' : 'no lesson')}`} aria-current={day.date === today ? 'date' : undefined}>
 						<span class="dot" aria-hidden="true">{day.active ? '✓' : ''}</span>
 						<span class="weekday" aria-hidden="true">{weekday(day.date)}</span>
 					</li>
@@ -229,6 +232,9 @@
 	.week li.today.active .dot { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 0 3px #ffd65a; }
 	.weekday { font-size: .8rem; color: var(--ink-soft); }
 	.week li.today .weekday { color: var(--ink); font-weight: 700; }
+	/* Days still to come this week: faded, dashed. */
+	.week li.future .dot { background: transparent; border-style: dashed; opacity: .55; }
+	.week li.future .weekday { opacity: .6; }
 	.theme { margin: 0; font-weight: 600; }
 	.small-big { font-size: 1.6rem; }
 	.goal-line { margin: 6px 0 0; font-weight: 700; color: var(--ink); }

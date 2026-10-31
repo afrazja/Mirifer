@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { lastSevenDays, lessonDates, stepDates, localDate, streak, type LessonEventRow } from './learner-stats';
+import { calendarWeek, weekStartDay, lessonDates, stepDates, localDate, streak, type LessonEventRow } from './learner-stats';
 
 const row = (event_name: string, occurred_at: string, metadata: Record<string, unknown> = {}): LessonEventRow => ({ event_name, occurred_at, metadata });
 
@@ -29,12 +29,25 @@ describe('the learner’s progress numbers', () => {
 		expect(streak(dates, '2026-10-24')).toBe(0);
 		expect(streak([], '2026-10-24')).toBe(0);
 	});
-	it('marks the last seven days, oldest first', () => {
-		const week = lastSevenDays(['2026-10-20', '2026-10-22'], '2026-10-22');
-		expect(week).toHaveLength(7);
-		expect(week[0].date).toBe('2026-10-16');
-		expect(week.at(-1)).toEqual({ date: '2026-10-22', active: true });
+	it('shows this calendar week, and a new week starts empty', () => {
+		// Monday-first: Thu 22 Oct 2026 is in the week of Mon 19 to Sun 25.
+		const week = calendarWeek(['2026-10-16', '2026-10-20', '2026-10-22'], '2026-10-22', 1);
+		expect(week.map(d => d.date)).toEqual(['2026-10-19', '2026-10-20', '2026-10-21', '2026-10-22', '2026-10-23', '2026-10-24', '2026-10-25']);
 		expect(week.filter(d => d.active).map(d => d.date)).toEqual(['2026-10-20', '2026-10-22']);
+		expect(week.filter(d => d.future).map(d => d.date)).toEqual(['2026-10-23', '2026-10-24', '2026-10-25']);
+		// Last week's days don't come along into the next week.
+		const next = calendarWeek(['2026-10-19', '2026-10-20', '2026-10-21', '2026-10-22', '2026-10-23', '2026-10-24', '2026-10-25'], '2026-10-26', 1);
+		expect(next[0]).toEqual({ date: '2026-10-26', active: false, future: false });
+		expect(next.some(d => d.active)).toBe(false);
+	});
+	it('starts the week on Saturday in Iran', () => {
+		expect(weekStartDay('Asia/Tehran', 'en-US')).toBe(6);
+		// Sat 24 Oct to Fri 30 Oct 2026.
+		const week = calendarWeek([], '2026-10-27', 6);
+		expect(week[0].date).toBe('2026-10-24');
+		expect(week.at(-1)!.date).toBe('2026-10-30');
+		expect(calendarWeek([], '2026-10-24', 6)[0].date).toBe('2026-10-24');
+		expect([0, 1, 6]).toContain(weekStartDay('Europe/Berlin', 'de-DE'));
 	});
 });
 
