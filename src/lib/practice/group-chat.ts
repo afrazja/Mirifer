@@ -34,7 +34,10 @@ export interface ChatMember {
 	voice: 'a' | 'b' | 'c' | 'd';
 }
 
-export type ChatLine = { from: string; text: string; voice?: boolean };
+/** A message. `fa`: its meaning in Persian, shown when the learner taps "Meaning" (prepared lines and the AI's). */
+export type ChatLine = { from: string; text: string; voice?: boolean; fa?: string };
+/** A Persian meaning is used only if it is Persian and short. */
+export const meaningOk = (fa: unknown): fa is string => typeof fa === 'string' && /[\u0600-\u06FF]/.test(fa) && fa.trim().length > 0 && fa.length <= 300;
 
 /** What has been agreed so far, as the model reads the chat (it decides only whether the twist clashes). */
 export interface ChatPlan { day: string | null; time: number | null; place: string | null }

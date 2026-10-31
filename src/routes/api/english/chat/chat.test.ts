@@ -50,9 +50,19 @@ describe('/api/english/chat', () => {
 		const messages = [...A2_START, { from: 'maya', text: 'What time on Saturday? 4 or 5?' }, you('Saturday at 5 is good for me')];
 		const body = await (await POST(turn(BIRTHDAY_A2, messages).event)).json();
 		expect(body.goals).toEqual(['time']);
-		expect(body.messages[0]).toEqual({ from: 'leo', text: 'Works for me! 👍' });
+		expect(body.messages[0]).toEqual({ from: 'leo', text: 'Works for me! 👍', fa: 'برای من خوب است! 👍' });
 		expect(provenGoals('u1', 'rosa', body.goals, body.proof, ['time', 'place', 'task'], 'birthday-a2')).toEqual(['time']);
 		expect(body.quiet).toBe(0);
+	});
+
+	it('passes on the Persian meaning of each message, and drops one that isn’t Persian', async () => {
+		respond({ messages: [{ from: 'maya', text: 'Yay! What time on Saturday? 4 or 5?', fa: 'آخ جون! شنبه ساعت چند؟ ۴ یا ۵؟' }] });
+		const body = await (await POST(turn().event)).json();
+		expect(body.messages[0]).toEqual({ from: 'maya', text: 'Yay! What time on Saturday? 4 or 5?', fa: 'آخ جون! شنبه ساعت چند؟ ۴ یا ۵؟' });
+		expect(sent().response_format.json_schema.schema.properties.messages.items.required).toEqual(['from', 'text', 'fa']);
+		expect(sent().messages[0].content).toContain('"fa" is what it means in simple, natural Persian');
+		respond({ messages: [{ from: 'maya', text: 'Yay! What time on Saturday? 4 or 5?', fa: 'Saturday at 4 or 5?' }] });
+		expect((await (await POST(turn().event)).json()).messages[0]).toEqual({ from: 'maya', text: 'Yay! What time on Saturday? 4 or 5?' });
 	});
 
 	it('keeps proven goals and ignores forged ones', async () => {

@@ -12,9 +12,13 @@ const MAYA: ChatMember = { id: 'maya', name: 'Maya', color: 'violet', voice: 'd'
 const LEO: ChatMember = { id: 'leo', name: 'Leo', color: 'orange', voice: 'c' };
 
 /** The two runs: the same plan, other places. */
-const PLACES: Record<string, { food: string; restaurant: string; restaurantLine: string; park: string; parkShort: string }> = {
-	rosa: { food: 'Italian food', restaurant: 'Rosa\'s', restaurantLine: 'Rosa\'s, a small Italian restaurant on Elm Street', park: 'a picnic in Riverside Park', parkShort: 'the park' },
-	tacos: { food: 'Mexican food', restaurant: 'Taco Loco', restaurantLine: 'Taco Loco, a fun Mexican restaurant on Main Street', park: 'a picnic in Lake Park', parkShort: 'the park' }
+/**
+ * `restaurantAsk`: how the friends offer the restaurant, saying what it is (a learner can't know that
+ * "Rosa's" is a restaurant; owner's phone test). `fa`: the two choices in Persian, for the meanings.
+ */
+const PLACES: Record<string, { food: string; restaurant: string; restaurantLine: string; restaurantAsk: string; park: string; parkShort: string; restaurantFa: string; parkFa: string }> = {
+	rosa: { food: 'Italian food', restaurant: 'Rosa\'s', restaurantLine: 'Rosa\'s, a small Italian restaurant on Elm Street', restaurantAsk: 'dinner at Rosa\'s (the Italian place)', park: 'a picnic in Riverside Park', parkShort: 'the park', restaurantFa: 'شام در «رُزا» (رستوران ایتالیایی)', parkFa: 'پیک‌نیک در پارک ریورساید' },
+	tacos: { food: 'Mexican food', restaurant: 'Taco Loco', restaurantLine: 'Taco Loco, a fun Mexican restaurant on Main Street', restaurantAsk: 'dinner at Taco Loco (the Mexican place)', park: 'a picnic in Lake Park', parkShort: 'the park', restaurantFa: 'شام در «تاکو لوکو» (رستوران مکزیکی)', parkFa: 'پیک‌نیک در پارک لیک' }
 };
 const placesOf = (variant: string) => PLACES[variant] ?? PLACES.rosa;
 
@@ -70,7 +74,7 @@ ${b1
 - ${turn.learnerName ? `Use the learner's first name (${turn.learnerName}) at most once in the whole chat, as written.` : 'Don\'t use a name for the learner.'} Never guess whether they are a man or a woman: no "bro", "dude", "girl", "man", "sis".
 
 THE LEARNER DECIDES
-- Never pick the day, time, place or the learner's job for them, and never answer your own question. Ask about the open goals one at a time, in this order: ${open.join(', ') || 'none'}, and offer the choices on the fact sheet ("${p.restaurant} or ${p.park}?").
+- Never pick the day, time, place or the learner's job for them, and never answer your own question. Ask about the open goals one at a time, in this order: ${open.join(', ') || 'none'}, and offer the choices on the fact sheet ("${p.restaurantAsk} or ${p.park}?"). Whenever you offer the places, say what ${p.restaurant} is, as in that example: the learner doesn't know the name.
 - If they say "you choose", "anything is fine" or "whatever you want": the first time, "haha no, you pick! 😄" with the two choices. The second time, Maya picks one from the fact sheet and asks "ok?".
 - If they suggest something not on the fact sheet, say it's a nice idea and ask about the fact-sheet choices. Never invent hours, prices, menus, drinks or addresses.
 - When they offer a job, thank them and let them keep it.${b1 ? ' Leo takes a job only after the learner has chosen theirs, and never the same one.' : ''}
@@ -135,32 +139,32 @@ export const BIRTHDAY_A2: ChatScene = {
 	level: 'a2',
 	played: ['maya'],
 	opening: () => [
-		{ from: 'maya', text: 'Hi! Nina turns 30 on Saturday 🎂' },
-		{ from: 'leo', text: 'Let’s do a surprise for her! 🎉' },
-		{ from: 'maya', text: 'Yes! Are you in?' }
+		{ from: 'maya', text: 'Hi! Nina turns 30 on Saturday 🎂', fa: 'سلام! نینا شنبه سی ساله می‌شود 🎂' },
+		{ from: 'leo', text: 'Let’s do a surprise for her! 🎉', fa: 'بیایید برایش یک جشن غافلگیری بگیریم! 🎉' },
+		{ from: 'maya', text: 'Yes! Are you in?', fa: 'آره! تو هم هستی؟' }
 	],
 	fallback: variant => {
 		const p = placesOf(variant);
 		return {
-			time: { from: 'maya', text: 'What time on Saturday? 4 or 5?' },
-			place: { from: 'maya', text: `Where? ${p.restaurant} or a picnic in the park?` },
-			task: { from: 'maya', text: 'What can you do? The cake, the decorations, or getting Nina there?' },
-			done: { from: 'maya', text: 'Great, it’s a plan! Can’t wait 🎉' },
-			end: { from: 'maya', text: 'I have to go now. Let’s talk tomorrow! 😊' }
+			time: { from: 'maya', text: 'What time on Saturday? 4 or 5?', fa: 'شنبه ساعت چند؟ ۴ یا ۵؟' },
+			place: { from: 'maya', text: `Where? ${p.restaurantAsk[0].toUpperCase()}${p.restaurantAsk.slice(1)} or ${p.park}?`, fa: `کجا؟ ${p.restaurantFa} یا ${p.parkFa}؟` },
+			task: { from: 'maya', text: 'What can you do? The cake, the decorations, or getting Nina there?', fa: 'تو چه کاری می‌توانی بکنی؟ کیک، تزئینات، یا آوردن نینا به آن‌جا؟' },
+			done: { from: 'maya', text: 'Great, it’s a plan! Can’t wait 🎉', fa: 'عالی، قرارمان قطعی شد! بی‌صبرانه منتظرم 🎉' },
+			end: { from: 'maya', text: 'I have to go now. Let’s talk tomorrow! 😊', fa: 'الان باید بروم. فردا حرف بزنیم! 😊' }
 		};
 	},
 	facts: variant => facts(variant, 'a2'),
 	prompt: prompt('a2'),
 	banned: new RegExp(`${ALWAYS_BANNED.source}|${ABBREVIATIONS.source}`, 'i'),
 	reactions: {
-		time: { from: 'leo', text: 'Works for me! 👍' },
-		place: { from: 'leo', text: 'Yes! Great choice 😄' },
-		task: { from: 'leo', text: 'Thank you! 🙌' }
+		time: { from: 'leo', text: 'Works for me! 👍', fa: 'برای من خوب است! 👍' },
+		place: { from: 'leo', text: 'Yes! Great choice 😄', fa: 'آره! انتخاب عالی‌ای است 😄' },
+		task: { from: 'leo', text: 'Thank you! 🙌', fa: 'ممنون! 🙌' }
 	}
 };
 
 /** The B1 twist: Nina works Saturday until 6, so a Saturday plan before 7 has to move. */
-const TWIST_LINE: ChatLine = { from: 'leo', text: 'wait… Nina just told me she’s working Saturday till 6 😬', voice: true };
+const TWIST_LINE: ChatLine = { from: 'leo', text: 'wait… Nina just told me she’s working Saturday till 6 😬', voice: true, fa: 'صبر کنید… نینا همین الان به من گفت شنبه تا ساعت ۶ سر کار است 😬' };
 
 /** B1: Maya and Leo both played by the model, and Leo's news if the plan clashes with it. */
 export const BIRTHDAY_B1: ChatScene = {
@@ -169,19 +173,19 @@ export const BIRTHDAY_B1: ChatScene = {
 	level: 'b1',
 	played: ['maya', 'leo'],
 	opening: () => [
-		{ from: 'maya', text: 'ok so Nina turns 30 on Saturday 🎂' },
-		{ from: 'maya', text: 'surprise party?? who’s in' },
-		{ from: 'leo', text: 'me obviously 🙋' }
+		{ from: 'maya', text: 'ok so Nina turns 30 on Saturday 🎂', fa: 'خب، نینا شنبه سی ساله می‌شود 🎂' },
+		{ from: 'maya', text: 'surprise party?? who’s in', fa: 'جشن غافلگیری؟؟ کی پایه است؟' },
+		{ from: 'leo', text: 'me obviously 🙋', fa: 'معلوم است، من! 🙋' }
 	],
 	fallback: variant => {
 		const p = placesOf(variant);
 		return {
-			time: { from: 'maya', text: 'ok what time works for you on Sat? 4 or 5?' },
-			'after-twist': { from: 'maya', text: 'ugh 😅 so later on Saturday, or Sunday? what works for you?' },
-			place: { from: 'maya', text: `so where? ${p.restaurant} or ${p.park}?` },
-			task: { from: 'leo', text: 'ok who’s doing what 😅 cake, decorations or getting Nina there? I’m terrible at baking lol' },
-			done: { from: 'maya', text: 'perfect, it’s a plan! 🎉 can’t wait' },
-			end: { from: 'maya', text: 'ok I have to run! let’s finish this tomorrow 😊' }
+			time: { from: 'maya', text: 'ok what time works for you on Sat? 4 or 5?', fa: 'خب، شنبه چه ساعتی برایت خوب است؟ ۴ یا ۵؟' },
+			'after-twist': { from: 'maya', text: 'ugh 😅 so later on Saturday, or Sunday? what works for you?', fa: 'ای بابا 😅 پس شنبه دیرتر، یا یکشنبه؟ برای تو کدام خوب است؟' },
+			place: { from: 'maya', text: `so where? ${p.restaurantAsk} or ${p.park}?`, fa: `خب کجا؟ ${p.restaurantFa} یا ${p.parkFa}؟` },
+			task: { from: 'leo', text: 'ok who’s doing what 😅 cake, decorations or getting Nina there? I’m terrible at baking lol', fa: 'خب کی چه کار می‌کند 😅 کیک، تزئینات، یا آوردن نینا؟ من در شیرینی‌پزی افتضاحم، ها‌ها' },
+			done: { from: 'maya', text: 'perfect, it’s a plan! 🎉 can’t wait', fa: 'عالی، قرارمان قطعی شد! 🎉 بی‌صبرانه منتظرم' },
+			end: { from: 'maya', text: 'ok I have to run! let’s finish this tomorrow 😊', fa: 'خب، باید بروم! فردا تمامش کنیم 😊' }
 		};
 	},
 	facts: variant => facts(variant, 'b1'),

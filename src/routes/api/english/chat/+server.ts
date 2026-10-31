@@ -19,7 +19,7 @@ import { json } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { RequestHandler } from './$types';
 import {
-	LEARNER, MAX_CHAT_MESSAGE, chatChars, chatFallback, chatGoalIds, chatTurns, chatTwistSent, evidencedGoals, learnerMessages,
+	LEARNER, MAX_CHAT_MESSAGE, chatChars, chatFallback, chatGoalIds, chatTurns, chatTwistSent, evidencedGoals, learnerMessages, meaningOk,
 	type ChatLine, type ChatPlan, type ChatScene
 } from '$lib/practice/group-chat';
 import { chatSceneById } from '$lib/practice/chats';
@@ -43,7 +43,7 @@ const RequestSchema = z.object({
  */
 const GoalClaimSchema = z.object({ id: z.string().max(20), msg: z.coerce.number().int().min(1).max(30), quote: z.string().max(200) }).strip();
 const ReplySchema = z.object({
-	messages: z.array(z.object({ from: z.string().max(20), text: z.string().max(600) }).strip()).min(1).max(3),
+	messages: z.array(z.object({ from: z.string().max(20), text: z.string().max(600), fa: z.string().max(600).optional().catch(undefined) }).strip()).min(1).max(3),
 	goals: z.array(z.unknown()).max(10).catch([]).transform(items => items.flatMap(item => { const claim = GoalClaimSchema.safeParse(item); return claim.success ? [claim.data] : []; })),
 	plan: z.object({
 		day: z.string().max(10).nullable().catch(null),
@@ -55,20 +55,22 @@ const ReplySchema = z.object({
 const fields = ['messages', 'goals', 'plan', 'close'];
 const schemasFor = (ids: string[], played: string[]) => ({
 	openAiSchema: { type: 'object', additionalProperties: false, required: fields, properties: {
-		messages: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['from', 'text'], properties: { from: { type: 'string', enum: played }, text: { type: 'string' } } } },
+		messages: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['from', 'text', 'fa'], properties: { from: { type: 'string', enum: played }, text: { type: 'string' }, fa: { type: 'string' } } } },
 		goals: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['id', 'msg', 'quote'], properties: { id: { type: 'string', enum: ids }, msg: { type: 'integer' }, quote: { type: 'string' } } } },
 		plan: { type: 'object', additionalProperties: false, required: ['day', 'time', 'place'], properties: { day: { type: ['string', 'null'] }, time: { type: ['number', 'null'] }, place: { type: ['string', 'null'] } } },
 		close: { type: 'boolean' }
 	} },
 	geminiSchema: { type: 'OBJECT', required: fields, properties: {
-		messages: { type: 'ARRAY', items: { type: 'OBJECT', required: ['from', 'text'], properties: { from: { type: 'STRING' }, text: { type: 'STRING' } } } },
+		messages: { type: 'ARRAY', items: { type: 'OBJECT', required: ['from', 'text', 'fa'], properties: { from: { type: 'STRING' }, text: { type: 'STRING' }, fa: { type: 'STRING' } } } },
 		goals: { type: 'ARRAY', items: { type: 'OBJECT', required: ['id', 'msg', 'quote'], properties: { id: { type: 'STRING' }, msg: { type: 'INTEGER' }, quote: { type: 'STRING' } } } },
 		plan: { type: 'OBJECT', required: ['day', 'time', 'place'], properties: { day: { type: 'STRING', nullable: true }, time: { type: 'NUMBER', nullable: true }, place: { type: 'STRING', nullable: true } } },
 		close: { type: 'BOOLEAN' }
 	} }
 });
-const SHAPE = '\nReturn only JSON: {"messages": [{"from": friend id, "text": string}] (1 or 2), "goals": [{"id": goal id, "msg": learner message number, "quote": their exact words}], "plan": {"day": string or null, "time": number or null, "place": string or null}, "close": boolean}. Never omit a key.';
+const SHAPE = '\nReturn only JSON: {"messages": [{"from": friend id, "text": string, "fa": the same message\'s meaning in simple, natural Persian (Farsi) for the learner to check; keep names and emoji as they are}] (1 or 2), "goals": [{"id": goal id, "msg": learner message number, "quote": their exact words}], "plan": {"day": string or null, "time": number or null, "place": string or null}, "close": boolean}. Never omit a key.';
 
+/** Every friend's message comes with its meaning in Persian, which the learner can open with a tap. */
+const MEANING = '\n\nMEANING\n- For each message, "fa" is what it means in simple, natural Persian (Farsi), as a friend would say it, so the learner can check they understood. Keep names, numbers and emoji as they are. Never add anything that isn\'t in the English.';
 const clean = (text: string) => text.replace(/\s+/g, ' ').trim();
 const asks = (text: string) => text.includes('?');
 
@@ -122,16 +124,16 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const system = scene.prompt(variant, {
 		met, twistSaid, last, stalled: (parsed.data.quiet ?? 0) >= 2,
 		learnerName: firstName(typeof user.user_metadata?.display_name === 'string' ? user.user_metadata.display_name : '') || null
-	});
+	}) + MEANING;
 	let outcome: ChainOutcome | null = null;
 	const ask = (text: string) => askChain({
-		label: 'English group chat', system, user: text, schema: ReplySchema, ...schemasFor(ids, scene.played), shape: SHAPE, temperature: 0.7, maxTokens: 500,
+		label: 'English group chat', system, user: text, schema: ReplySchema, ...schemasFor(ids, scene.played), shape: SHAPE, temperature: 0.7, maxTokens: 800,
 		onOutcome: o => { outcome = o; }
 	});
 	const previous = [...messages].reverse().find(m => m.from !== LEARNER)?.text;
 	let result = await ask(transcript);
 	if (!result) { await recordAiOutcome(locals, user, 'chat', 'failed', outcome); return json({ error: 'AI temporarily unavailable' }, { status: 502 }); }
-	const linesOf = (r: NonNullable<typeof result>) => r.messages.map(m => ({ from: m.from, text: clean(m.text) }));
+	const linesOf = (r: NonNullable<typeof result>) => r.messages.map(m => ({ from: m.from, text: clean(m.text), ...(meaningOk(m.fa) ? { fa: clean(m.fa) } : {}) }));
 	// Numbers the learner said ("how about after 7?") may come back in the friends' answer.
 	const learnerSaid = said.map(m => m.text).join('\n');
 	let problem = roundProblem(scene, variant, linesOf(result), previous, twistSaid, learnerSaid);
