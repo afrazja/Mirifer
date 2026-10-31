@@ -65,10 +65,32 @@ export function streak(dates: string[], today: string): number {
 	return count;
 }
 
-/** The last seven days, oldest first, each marked active or not (for the week strip). */
-export function lastSevenDays(dates: string[], today: string): { date: string; active: boolean }[] {
+const dayAfter = (date: string) => new Date(Date.parse(`${date}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
+
+/**
+ * This calendar week, for the week strip: seven days from the week's first day (0 Sunday … 6
+ * Saturday; Iran's week starts on Saturday), each marked active or not, and the days still to come.
+ * A new week starts empty (owner's phone test: a rolling "last seven days" never started a new week).
+ */
+export function calendarWeek(dates: string[], today: string, firstDay = 1): { date: string; active: boolean; future: boolean }[] {
 	const set = new Set(dates);
-	const days: string[] = [today];
-	while (days.length < 7) days.unshift(dayBefore(days[0]));
-	return days.map(date => ({ date, active: set.has(date) }));
+	let start = today;
+	while (new Date(`${start}T00:00:00Z`).getUTCDay() !== ((firstDay % 7) + 7) % 7) start = dayBefore(start);
+	const days = [start];
+	while (days.length < 7) days.push(dayAfter(days[days.length - 1]));
+	return days.map(date => ({ date, active: set.has(date), future: date > today }));
+}
+
+/**
+ * The first day of the learner's week (0 Sunday … 6 Saturday): Saturday in Iran, else the device's
+ * locale (Monday when it can't tell).
+ */
+export function weekStartDay(timeZone?: string, locale?: string): number {
+	if (timeZone === 'Asia/Tehran') return 6;
+	try {
+		const loc = new Intl.Locale(locale ?? 'en-US') as Intl.Locale & { getWeekInfo?: () => { firstDay: number }; weekInfo?: { firstDay: number } };
+		const first = loc.getWeekInfo?.().firstDay ?? loc.weekInfo?.firstDay;
+		if (typeof first === 'number' && first >= 1 && first <= 7) return first % 7;
+	} catch { /* older browsers */ }
+	return 1;
 }
