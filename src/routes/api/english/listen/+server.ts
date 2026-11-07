@@ -14,17 +14,19 @@ import { createLimiter, tooMany } from '$lib/server/rate-limit';
 import { CLIP_SECONDS, CLIP_USES, isClipUse, maxClipBytes, type ClipUse } from '$lib/practice/voice-clip';
 
 // Longer than the transcriber's own 40-second wait, so a slow answer isn't cut off after it was paid for.
-export const config = { maxDuration: 45 };
+export const config = { maxDuration: 70 };
 const MAX_AUDIO_BYTES = Math.max(...CLIP_USES.map(maxClipBytes));
 const perMinute = createLimiter(20, 60_000);
 
 /** What the transcriber is told. Never the sentence they should say: it would make the model "hear" it. */
 const CONTEXT: Record<ClipUse, string> = {
 	greeting: 'They are answering a friendly question from their coach, or saying one short sentence to check their microphone.',
-	'role-play': 'They are a traveler in a short role-play conversation with someone who works at a hotel, an airport or a taxi company.',
+	'role-play': 'They are speaking in a short role-play conversation: for example a traveler at a hotel, an airport or a taxi company, a new neighbor, or a candidate in a job interview.',
 	'say-again': 'They are repeating one short sentence after their coach.',
 	'group-chat': 'They are sending a short, casual voice note to a group chat with friends, about plans (a day, a time, a place, what to bring).',
-	'quick-chat': 'They are answering a short personal question about their everyday life in a friendly chat with their coach.'
+	'quick-chat': 'They are answering a short personal question about their everyday life in a friendly chat with their coach.',
+	pitch: 'They are practicing their answer to "Tell me about yourself" for a job interview: what they do now, their experience or studies, or why they want the job.',
+	'pitch-full': 'They are saying their whole answer to "Tell me about yourself" for a job interview: what they do now, their experience or studies, and why they want the job.'
 };
 
 export const POST: RequestHandler = async ({ request, locals }) => {

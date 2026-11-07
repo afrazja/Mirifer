@@ -6,16 +6,17 @@ vi.mock('$env/dynamic/private', () => ({ env }));
 import { POST } from './+server';
 import { signGoals, verifyJamieLine, provenGoals } from '$lib/server/jamie-line';
 import { FALLBACK_LINES, GOAL_IDS, GREETING } from '$lib/practice/hotel';
+import { CALLS } from '$lib/practice/days/interview-1';
 
 const fetchMock = vi.fn();
 type Body = { variant?: string; turns?: { speaker: string; text: string }[]; goals?: string[]; proof?: string | null };
 const TURNS = [{ speaker: 'reception', text: GREETING }, { speaker: 'learner', text: 'The music from the bar is so loud that I can’t sleep.' }];
 
-function fixture(body: Body = {}, { target = 'en', user = true, count = 0 } = {}) {
+function fixture(body: Body & { scene?: string } = {}, { target = 'en', user = true, count = 0, meta = {} as Record<string, unknown> } = {}) {
 	const insert = vi.fn().mockResolvedValue({ error: null });
 	const query: any = { select: () => query, eq: () => query, gte: () => Promise.resolve({ count, error: null }), insert };
 	const profileQuery: any = { select: () => profileQuery, eq: () => profileQuery, maybeSingle: () => Promise.resolve({ data: { is_admin: false }, error: null }) };
-	const supabase = { auth: { getUser: vi.fn().mockResolvedValue({ data: { user: user ? { id: 'u1', email: 'learner@example.com', user_metadata: { target_language: target } } : null }, error: null }) }, from: vi.fn((table: string) => table === 'events' ? query : profileQuery) };
+	const supabase = { auth: { getUser: vi.fn().mockResolvedValue({ data: { user: user ? { id: 'u1', email: 'learner@example.com', user_metadata: { target_language: target, ...meta } } : null }, error: null }) }, from: vi.fn((table: string) => table === 'events' ? query : profileQuery) };
 	const request = new Request('http://localhost/api/english/converse', { method: 'POST', headers: { Origin: 'http://localhost' }, body: JSON.stringify({ variant: 'lift', turns: TURNS, goals: [], proof: null, ...body }) });
 	return { event: { request, locals: { supabase } } as any, insert };
 }
@@ -172,5 +173,18 @@ describe('/api/english/converse', () => {
 			expect((await POST(call(first, { variant: 'lift' }).event)).status).toBe(400);
 			expect((await POST(call(first, { scene: 'nope' }).event)).status).toBe(400);
 		});
+	});
+	it('tells the interviewer the learner’s field and career stage (enums only), and nothing when they skipped it', async () => {
+		env.OPENAI_API_KEY = 'o';
+		const scene = CALLS.intermediate!;
+		const turns = [{ speaker: 'reception', text: scene.greeting }, { speaker: 'learner', text: 'Hi Erin, nice to meet you. Yes, I took the bus.' }];
+		fetchMock.mockImplementation(() => Promise.resolve(openAi({ reply: 'Great, I’m glad. So, tell me a little about yourself.' })));
+		const work = { english_work_v1: { field: 'healthcare', seniority: 'junior', updatedAt: '2026-11-07T10:00:00.000Z' } };
+		await POST(fixture({ scene: scene.id, variant: scene.variants[0], turns }, { meta: work }).event);
+		expect(fetchMock.mock.calls[0][1].body).toContain('junior healthcare role');
+		await POST(fixture({ scene: scene.id, variant: scene.variants[0], turns }).event);
+		const generic = fetchMock.mock.calls.at(-1)![1].body as string;
+		expect(generic).toContain('this role');
+		expect(generic).not.toContain('healthcare role');
 	});
 });

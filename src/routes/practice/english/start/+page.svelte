@@ -9,6 +9,7 @@
 	import type { DisplayText } from '$lib/practice/hotel';
 	import { DAY_ONE, lessonMinutes, trackFor } from '$lib/practice/day';
 	import LevelCheck from '$lib/components/LevelCheck.svelte';
+	import { FIELDS, FIELD_LABELS, SENIORITY, SENIORITY_LABELS, type Field, type Seniority } from '$lib/practice/work-profile';
 
 	let { data }: PageProps = $props();
 	let language = $state<'en' | 'fa'>('en');
@@ -43,8 +44,6 @@
 		{ id: 'simple', label: { en: 'I can manage simple conversations', fa: 'از پس گفت‌وگوهای ساده برمی‌آیم' } },
 		{ id: 'natural', label: { en: 'I can talk, but I want to sound more natural', fa: 'می‌توانم حرف بزنم، ولی می‌خواهم طبیعی‌تر حرف بزنم' } }
 	];
-	/** The questions, then the ready screen. */
-	const QUESTIONS = 3;
 
 	// svelte-ignore state_referenced_locally
 	const saved = data.profile;
@@ -53,6 +52,12 @@
 	let name = $state(data.name);
 	let reason = $state<Reason | null>(saved?.reason ?? null);
 	let comfort = $state<Comfort | null>(saved?.comfort ?? null);
+	/** The questions, then the ready screen. The work goal adds two (field, career stage), after the level. */
+	const QUESTIONS = $derived(reason === 'work' ? 5 : 3);
+	// svelte-ignore state_referenced_locally
+	let field = $state<Field | null>(data.work?.field ?? null);
+	// svelte-ignore state_referenced_locally
+	let seniority = $state<Seniority | null>(data.work?.seniority ?? null);
 	type LevelSource = NonNullable<EnglishProfileAnswers['levelSource']>;
 	let levelSource = $state<LevelSource>(saved?.levelSource ?? 'self');
 	/** "I'm not sure": the level check runs inside question 3. */
@@ -77,7 +82,10 @@
 				if (REASON_OPTIONS.some(option => option.id === draft.reason)) reason = draft.reason;
 				if (COMFORT_OPTIONS.some(option => option.id === draft.comfort)) comfort = draft.comfort;
 				if (['self', 'check', 'skipped'].includes(draft.levelSource)) levelSource = draft.levelSource;
-				const furthest = reason ? (comfort || levelSource === 'skipped' ? QUESTIONS + 1 : 3) : 2;
+				if ((FIELDS as readonly string[]).includes(draft.field)) field = draft.field;
+				if ((SENIORITY as readonly string[]).includes(draft.seniority)) seniority = draft.seniority;
+				// Field and career stage can be skipped, so the furthest screen after the level is the next question.
+				const furthest = reason ? (comfort || levelSource === 'skipped' ? (reason === 'work' ? Math.max(4, Number(draft.step) || 4) : QUESTIONS + 1) : 3) : 2;
 				checking = draft.checking === true && furthest === 3;
 				if (Number.isInteger(draft.step)) step = Math.max(1, Math.min(draft.step, furthest));
 			}
@@ -85,7 +93,7 @@
 		restored = true;
 	});
 	$effect(() => {
-		const draft = JSON.stringify({ step, name, reason, comfort, levelSource, checking });
+		const draft = JSON.stringify({ step, name, reason, comfort, levelSource, checking, field, seniority });
 		if (!restored) return;
 		try { localStorage.setItem(DRAFT_KEY, draft); } catch { /* private mode: no resume */ }
 	});
@@ -120,6 +128,7 @@
 		try {
 			const body = new FormData();
 			body.set('answers', JSON.stringify({ reason, comfort, minutes, skipped: false, levelSource } satisfies EnglishProfileAnswers));
+			if (reason === 'work') body.set('work', JSON.stringify({ field, seniority }));
 			if (cleanName) body.set('name', cleanName);
 			const response = await fetch('?/save', { method: 'POST', body, headers: { 'x-sveltekit-action': 'true' } });
 			const result = await response.json().catch(() => null);
@@ -194,6 +203,31 @@
 			<p class="reassure">{isFa ? 'لازم نیست دقیق جواب بدهی. این فقط نقطهٔ شروع است.' : 'You don’t need to get this exactly right. It’s only a starting point.'}</p>
 		</section>
 
+	{:else if step === 4 && reason === 'work'}
+		<section class="screen" aria-labelledby="q4">
+			<h1 id="q4" tabindex="-1" bind:this={heading}>{isFa ? 'در چه زمینه‌ای کار می‌کنی؟' : 'What’s your field?'}</h1>
+			<p class="note top-note">{isFa ? 'تا تمرین‌های مصاحبه دربارهٔ کار خودت باشد.' : 'So your interview practice is about your own work.'}</p>
+			<div class="options two" role="group" aria-labelledby="q4">
+				{#each FIELDS as id}
+					<button class="option" class:selected={field === id} type="button" aria-pressed={field === id} onclick={() => choose(() => (field = id))}>
+						<span class="icon" aria-hidden="true">{FIELD_LABELS[id].icon}</span>{text(FIELD_LABELS[id].label)}
+					</button>
+				{/each}
+			</div>
+			<button class="text-link" type="button" onclick={() => choose(() => (field = null))}>{isFa ? 'رد شو' : 'Skip'}</button>
+		</section>
+
+	{:else if step === 5 && reason === 'work'}
+		<section class="screen" aria-labelledby="q5">
+			<h1 id="q5" tabindex="-1" bind:this={heading}>{isFa ? 'الان کجای مسیر کاری‌ات هستی؟' : 'Where are you in your career?'}</h1>
+			<div class="options" role="group" aria-labelledby="q5">
+				{#each SENIORITY as id}
+					<button class="option" class:selected={seniority === id} type="button" aria-pressed={seniority === id} onclick={() => choose(() => (seniority = id))}>{text(SENIORITY_LABELS[id])}</button>
+				{/each}
+			</div>
+			<button class="text-link" type="button" onclick={() => choose(() => (seniority = null))}>{isFa ? 'رد شو' : 'Skip'}</button>
+		</section>
+
 	{:else}
 		<section class="screen done" aria-labelledby="done">
 			<p class="check" aria-hidden="true">✓</p>
@@ -230,6 +264,9 @@
 	.intro { margin: 0; color: var(--accent-deep); font-weight: 600; }
 	h1 { margin: 0 0 6px; font-family: var(--font-display); font-weight: 500; font-size: clamp(1.6rem, 6vw, 2.2rem); line-height: 1.2; outline: none; }
 	.options { display: grid; gap: 10px; }
+	/* The field list: two columns on wider phones, so eleven choices fit without much scrolling. */
+	@media (min-width: 400px) { .options.two { grid-template-columns: 1fr 1fr; } .options.two .option { min-height: 64px; font-size: .96rem; } }
+	.top-note { margin: -8px 0 4px; }
 	.option { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 14px 16px; border: 1.5px solid var(--control-border); border-radius: 14px; background: var(--paper-raised); color: var(--ink); font: inherit; font-size: 1.02rem; font-weight: 500; text-align: start; cursor: pointer; transition: border-color .15s, background .15s; }
 	.option:hover { border-color: var(--accent); }
 	.option.unsure { border-style: dashed; color: var(--accent-deep); }

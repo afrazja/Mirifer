@@ -17,7 +17,7 @@
 	const T = (en: string, fa: string) => (isFa ? fa : en);
 	const KEY = 'mirifer_lab_chapter';
 
-	const ARC_NAMES: Record<string, { en: string; fa: string }> = { travel: { en: 'Travel', fa: 'سفر' }, everyday: { en: 'Everyday', fa: 'روزمره' }, topics: { en: 'Quick chat', fa: 'گپ کوتاه' } };
+	const ARC_NAMES: Record<string, { en: string; fa: string }> = { travel: { en: 'Travel', fa: 'سفر' }, everyday: { en: 'Everyday', fa: 'روزمره' }, work: { en: 'Interview', fa: 'مصاحبه' }, topics: { en: 'Quick chat', fa: 'گپ کوتاه' } };
 	/** "Travel 2", "Everyday 1": the chapter's place in its own story. */
 	const label = (day: DayPack) => {
 		const arc = arcOf(day);

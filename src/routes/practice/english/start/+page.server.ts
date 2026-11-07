@@ -2,6 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { Actions, PageServerLoad } from './$types';
 import { EnglishProfileAnswersSchema, readEnglishProfile } from '$lib/practice/english-profile';
+import { WorkAnswersSchema, readWorkProfile } from '$lib/practice/work-profile';
 import { usesStepPath } from '$lib/server/step-path';
 
 /** The name sign-up gave us (ours, or Google's), for the first question. */
@@ -22,7 +23,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	const profile = readEnglishProfile(user.user_metadata);
 	if (profile && url.searchParams.get('edit') !== '1') redirect(303, '/practice/english/today');
 	// After the questions: the first step on the step path, else the first daily lesson.
-	return { name: nameOf(user.user_metadata), profile, next: usesStepPath(user) ? '/practice/english/step' : '/practice/english/today' };
+	return { name: nameOf(user.user_metadata), profile, work: readWorkProfile(user.user_metadata), next: usesStepPath(user) ? '/practice/english/step' : '/practice/english/today' };
 };
 
 export const actions: Actions = {
@@ -42,9 +43,20 @@ export const actions: Actions = {
 		const name = rawName === null ? null : NameSchema.safeParse(rawName);
 		if (name && !name.success) return fail(400, { error: 'invalid' });
 		const displayName = name?.success ? name.data : null;
+		// The work goal's two optional questions (field, career stage), kept in their own record.
+		const rawWork = form.get('work');
+		let work: { field: string | null; seniority: string | null; updatedAt: string } | null = null;
+		if (typeof rawWork === 'string' && answers.data.reason === 'work') {
+			if (rawWork.length > 200) return fail(400, { error: 'invalid' });
+			let workValue: unknown;
+			try { workValue = JSON.parse(rawWork); } catch { return fail(400, { error: 'invalid' }); }
+			const parsedWork = WorkAnswersSchema.safeParse(workValue);
+			if (!parsedWork.success) return fail(400, { error: 'invalid' });
+			work = { ...parsedWork.data, updatedAt: new Date().toISOString() };
+		}
 		const profile = { ...answers.data, completedAt: new Date().toISOString() };
 		try {
-			const { error: saveError } = await locals.supabase.auth.updateUser({ data: { english_profile_v1: profile, ...(displayName ? { display_name: displayName } : {}) } });
+			const { error: saveError } = await locals.supabase.auth.updateUser({ data: { english_profile_v1: profile, ...(work ? { english_work_v1: work } : answers.data.reason !== 'work' ? { english_work_v1: null } : {}), ...(displayName ? { display_name: displayName } : {}) } });
 			if (saveError) return fail(503, { error: 'save_failed' });
 		} catch { return fail(503, { error: 'save_failed' }); }
 		// The settings page reads the name from the profile row; a failure here only delays it there.
