@@ -26,7 +26,22 @@ const LETTER: Record<Track, 'i' | 'p'> = { intermediate: 'i', professional: 'p' 
 export const MAX_DONE = 150;
 export const MAX_SKIPPED = 60;
 
-export const PathSchema = z.object({
+/**
+ * Step ids this code doesn't know (a chapter or step type added later, read after a rollback or from
+ * an older tab) are dropped, not fatal: one unknown id must never make the whole path unreadable, or
+ * the next save would write an empty path over the learner's real one.
+ */
+function knownStepsOnly(value: unknown): unknown {
+	if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+	const path = value as { done?: unknown; skipped?: unknown; current?: unknown };
+	const done = path.done && typeof path.done === 'object' && !Array.isArray(path.done)
+		? Object.fromEntries(Object.entries(path.done).filter(([step]) => isStepId(step))) : path.done;
+	const skipped = Array.isArray(path.skipped) ? path.skipped.filter(isStepId) : path.skipped;
+	const current = path.current && typeof path.current === 'object' && !isStepId((path.current as { step?: unknown }).step) ? null : path.current;
+	return { ...path, done, skipped, current };
+}
+
+export const PathSchema = z.preprocess(knownStepsOnly, z.object({
 	/** Each step done at least once: the version, and the learner's local day it was last done (replays move it; 0 = before the path). */
 	done: z.partialRecord(StepIdSchema, z.tuple([z.enum(['i', 'p']), z.number().int().min(0).max(1_000_000)]))
 		.refine(done => Object.keys(done).length <= MAX_DONE),
@@ -34,7 +49,7 @@ export const PathSchema = z.object({
 	skipped: z.array(StepIdSchema).max(MAX_SKIPPED),
 	/** The one step under way: its start keys the answers kept in the browser and the events. */
 	current: z.object({ step: StepIdSchema, track: z.enum(TRACKS), startedAt: z.string().datetime(), replay: z.boolean() }).strict().nullable()
-}).strict();
+}).strict());
 export type Path = z.infer<typeof PathSchema>;
 
 export const EMPTY_PATH: Path = { done: {}, skipped: [], current: null };
