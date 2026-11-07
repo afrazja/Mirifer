@@ -9,6 +9,20 @@ import {
 const progressWith = (finished: string[]) => ({ english_progress_v1: { ...EMPTY_PROGRESS, lastThemeId: finished.at(-1) ?? null, finishedDays: finished } });
 const doneAll = (path: Path, steps: StepId[], day = 1) => steps.reduce((p, step) => applyStep(p, { step, outcome: 'done' }, 'intermediate', day), path);
 
+describe('reading a saved path with steps this code does not know', () => {
+	it('drops the unknown steps and keeps the rest (a rollback must never empty the path)', () => {
+		const saved = {
+			done: { 'day-1:listen-act': ['i', 5], 'later-chapter:listen-act': ['i', 6], 'day-1:new-step-type': ['p', 7] },
+			skipped: ['day-1:phrases', 'later-chapter:phrases'],
+			current: { step: 'later-chapter:phrases', track: 'intermediate', startedAt: '2026-11-07T10:00:00.000Z', replay: false }
+		};
+		const parsed = PathSchema.safeParse(saved);
+		expect(parsed.success).toBe(true);
+		expect(parsed.data).toEqual({ done: { 'day-1:listen-act': ['i', 5] }, skipped: ['day-1:phrases'], current: null });
+		expect(readPath({ english_path_v1: saved }, 'intermediate').done['day-1:listen-act']).toEqual(['i', 5]);
+	});
+});
+
 describe('chapters and steps', () => {
 	it('gives every chapter five steps in each version', () => {
 		for (const day of DAYS) for (const track of ['intermediate', 'professional'] as const) expect(chapterSteps(day, track)).toHaveLength(5);
