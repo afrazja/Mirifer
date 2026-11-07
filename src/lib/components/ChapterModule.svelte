@@ -16,6 +16,8 @@
 	import SayItBetter from '$lib/components/SayItBetter.svelte';
 	import GroupChat from '$lib/components/GroupChat.svelte';
 	import QuickChat from '$lib/components/QuickChat.svelte';
+	import PitchBuilder from '$lib/components/PitchBuilder.svelte';
+	import { asPitchRecord } from '$lib/practice/pitch';
 	import { asConnectRecord } from '$lib/practice/listen-connect';
 	import { asPhraseRecord } from '$lib/practice/phrases';
 	import { asTrapsRecord } from '$lib/practice/traps';
@@ -28,7 +30,7 @@
 	import { asChatRecord } from '$lib/practice/group-chat';
 	import { asQuickChat } from '$lib/practice/quick-fire';
 	import { topicById, topicLevel, topicOpeners } from '$lib/practice/topics';
-	import { chatSceneFor, connectSetFor, persuadeSetFor, phrasesFor, roleSceneFor, retellPieceFor, sayItemsFor, trapsFor, voiceMessagesFor } from '$lib/practice/day-content';
+	import { chatSceneFor, pitchContentFor, connectSetFor, persuadeSetFor, phrasesFor, roleSceneFor, retellPieceFor, sayItemsFor, trapsFor, voiceMessagesFor } from '$lib/practice/day-content';
 	import { withName } from '$lib/practice/learner-name';
 	import { dayById, type DayModule, type Track } from '$lib/practice/day';
 
@@ -54,7 +56,7 @@
 	const content = {
 		connect: connectSetFor(dayId, track), phrases: phrasesFor(dayId, track), traps: trapsFor(dayId), say: withName(sayItemsFor(dayId, track), name),
 		messages: withName(voiceMessagesFor(dayId), name), story: retellPieceFor(dayId), choice: persuadeSetFor(dayId), scene: roleSceneFor(dayId, track),
-		chat: chatSceneFor(dayId, track), topic: topicById(dayById(dayId)?.topic)
+		chat: chatSceneFor(dayId, track), topic: topicById(dayById(dayId)?.topic), pitch: pitchContentFor(dayId, track)
 	};
 	// svelte-ignore state_referenced_locally
 	const level = topicLevel(track);
@@ -80,6 +82,8 @@
 	<GroupChat {isFa} {onSkip} scene={content.chat} initial={asChatRecord(initial, content.chat)} {onFocus} {onSave} {onDone} />
 {:else if mod.id === 'quick-fire' && content.topic}
 	<QuickChat {isFa} {onSkip} topic={content.topic} {level} initial={asQuickChat(initial, topicOpeners(content.topic, level))} {onFocus} {onSave} {onDone} />
+{:else if mod.id === 'pitch'}
+	<PitchBuilder {isFa} {onSkip} content={content.pitch} {track} initial={asPitchRecord(initial)} {onFocus} {onSave} {onDone} />
 {:else if mod.id === 'say-it-better'}
 	<SayItBetter {isFa} {onSkip} prompt={mod.sayPrompt} initial={asSayRecord(initial)} {onFocus} {onSave} {onDone} />
 {:else}

@@ -48,7 +48,7 @@ export async function startRecording(use: ClipUse, timings: RecordingTimings = {
 	catch { return 'blocked'; }
 	const mimeType = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm', 'audio/ogg;codecs=opus'].find(type => MediaRecorder.isTypeSupported(type));
 	let recorder: MediaRecorder;
-	try { recorder = new MediaRecorder(stream, { ...(mimeType ? { mimeType } : {}), audioBitsPerSecond: 64_000 }); }
+	try { recorder = new MediaRecorder(stream, { ...(mimeType ? { mimeType } : {}), audioBitsPerSecond: use === 'pitch-full' ? 32_000 : 64_000 }); }
 	catch { stream.getTracks().forEach(track => track.stop()); return 'unsupported'; }
 	const level: MicLevel = measureLevel(stream);
 	const chunks: Blob[] = [];
@@ -102,7 +102,8 @@ export async function transcribeClip(clip: Clip, use: ClipUse, signal?: AbortSig
 	const onAbort = () => controller.abort();
 	signal?.addEventListener('abort', onAbort);
 	// Longer than the server's own wait for the transcriber, so an answer it paid for isn't dropped.
-	const wait = setTimeout(() => controller.abort(), 45_000);
+	// The whole "Tell me about yourself" answer is long: on a slow phone connection its upload takes longer.
+	const wait = setTimeout(() => controller.abort(), use === 'pitch-full' ? 75_000 : 45_000);
 	try {
 		const response = await fetch('/api/english/listen', { method: 'POST', body, signal: controller.signal });
 		const data = await response.json().catch(() => null);

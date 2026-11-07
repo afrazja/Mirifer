@@ -97,10 +97,10 @@ describe('The dashboard on the step path', () => {
 		expect(data.path).toMatchObject({ stepsDone: 10, replay: false, underWay: false, step: { id: 'topic-food:quick-fire', topic: true, index: 0, total: 1 } });
 	});
 	it('says new practice is coming soon when every released step is done', async () => {
-		const all = { ...progress, lastThemeId: 'everyday-2', finishedDays: ['day-1', 'day-2', 'day-3', 'everyday-1', 'everyday-2'] }; // incl. the pilot chapters
+		const all = { ...progress, lastThemeId: 'everyday-2', finishedDays: ['day-1', 'day-2', 'day-3', 'everyday-1', 'everyday-2', 'interview-1'] }; // incl. the pilot chapters
 		const skipped = TOPIC_PACKS.map(day => `${day.id}:quick-fire`);
 		const data = await load(tester(english({ english_progress_v1: all, english_path_v1: { done: {}, skipped, current: null } })).event) as any;
-		expect(data.path).toMatchObject({ comingSoon: true, step: null, stepsDone: 25 });
+		expect(data.path).toMatchObject({ comingSoon: true, step: null, stepsDone: 30 });
 	});
 	it('the finished-lessons list leads to the path', async () => {
 		const { l } = tester(english());

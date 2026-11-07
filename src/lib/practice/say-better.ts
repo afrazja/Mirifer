@@ -48,6 +48,16 @@ export const SAY_PROMPTS = {
 		ideas: ['Where are you from?', 'What do you do?', 'What do you like doing?'],
 		betterLabel: { en: 'What you said, a bit better', fa: 'حرف‌هایت، کمی بهتر' }
 	},
+	// The interview path's "Tell me about yourself" (pitch.ts): the three parts joined.
+	'interview-pitch': {
+		id: 'interview-pitch',
+		question: 'Tell me about yourself. (A job interview: what they do now, their experience or studies, and why they want this job.)',
+		onTopic: 'says something about their work or studies now, their experience or studies before, or what job they want and why, in any field or situation (a student or someone between jobs counts)',
+		priorities: 'a/an with a job ("I\'m an engineer", not "I\'m engineer"), no "am" before a verb ("I work", not "I am work"), present perfect with for/since for how long ("I\'ve worked here for three years", not "I work here since three years"), "years of experience" with "of", past simple for a finished job ("I worked at…"), "I\'d like to" or "I\'m looking for" for what they want, prepositions (work at/for a company, in a field), he/she, word order',
+		rules: 'Never "fix" a name, a company, a place, a degree or a job title, and never comment on their job, experience or choices. Don\'t fix correct "I\'m working as" or "I work as".',
+		ideas: ['What do you do now?', 'What did you do before?', 'Why do you want this job?'],
+		betterLabel: { en: 'Your answer, a bit better', fa: 'جوابت، کمی بهتر' }
+	},
 	'weekend-plans': {
 		id: 'weekend-plans',
 		question: 'Jake, your neighbor, asks: "Want to get pizza this weekend?" Tell him your plans for Saturday and Sunday, say which day doesn\'t work, and suggest one that does.',

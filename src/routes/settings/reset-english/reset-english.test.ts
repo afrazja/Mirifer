@@ -30,7 +30,7 @@ describe('test-account English reset', () => {
 	it('clears the English progress of the signed-in account, keeping the history unless asked', async () => {
 		const { e, updateUser } = event('afraz.jva@gmail.com');
 		expect(await (await POST(e)).json()).toEqual({ ok: true, historyCleared: false });
-		expect(updateUser).toHaveBeenCalledWith({ data: { english_profile_v1: null, english_progress_v1: null, english_day_v1: null, english_path_v1: null } });
+		expect(updateUser).toHaveBeenCalledWith({ data: { english_profile_v1: null, english_progress_v1: null, english_day_v1: null, english_path_v1: null, english_work_v1: null } });
 		expect(svc.from).not.toHaveBeenCalled();
 	});
 	it('also clears the activity history when asked', async () => {

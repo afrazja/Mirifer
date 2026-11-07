@@ -4,11 +4,12 @@
  * which transcribes them (OpenAI) like every other speaking module. Shared by the page and the
  * server, so both agree on the limits.
  */
-export const CLIP_USES = ['greeting', 'role-play', 'say-again', 'group-chat', 'quick-chat'] as const;
+export const CLIP_USES = ['greeting', 'role-play', 'say-again', 'group-chat', 'quick-chat', 'pitch', 'pitch-full'] as const;
 export type ClipUse = (typeof CLIP_USES)[number];
 
 /** The longest recording for each use, in seconds. */
-export const CLIP_SECONDS: Record<ClipUse, number> = { greeting: 20, 'role-play': 30, 'say-again': 12, 'group-chat': 30, 'quick-chat': 30 };
+/** `pitch`: one part of "Tell me about yourself"; `pitch-full`: the whole answer, said once. */
+export const CLIP_SECONDS: Record<ClipUse, number> = { greeting: 20, 'role-play': 30, 'say-again': 12, 'group-chat': 30, 'quick-chat': 30, pitch: 40, 'pitch-full': 100 };
 
 export const isClipUse = (value: unknown): value is ClipUse => typeof value === 'string' && (CLIP_USES as readonly string[]).includes(value);
 

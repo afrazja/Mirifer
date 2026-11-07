@@ -90,7 +90,7 @@ describe('step page', () => {
 		expect(f.inserted[1].metadata).toMatchObject({ done: 4, skipped: 1, total: 5 });
 	});
 	it('marks a replay, and offers the next replay when nothing new is left', async () => {
-		const all = ['day-1', 'day-2', 'day-3', 'everyday-1', 'everyday-2']; // the test accounts also see the pilot Everyday chapters
+		const all = ['day-1', 'day-2', 'day-3', 'everyday-1', 'everyday-2', 'interview-1']; // the test accounts also see the pilot Everyday chapters
 		const topics = TOPIC_PACKS.map(day => `${day.id}:quick-fire`); // topic steps skipped count as finished
 		const meta = { english_progress_v1: { ...EMPTY_PROGRESS, lastThemeId: 'day-3', finishedDays: all }, english_path_v1: { done: {}, skipped: topics, current: null } };
 		const f = fixture(meta, { step: intermediate[1], outcome: 'done' });

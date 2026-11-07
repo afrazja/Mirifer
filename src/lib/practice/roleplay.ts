@@ -6,12 +6,21 @@
  * The hotel ("A quieter room", Jamie) was the pilot; each day can bring its own scene (Day 2's
  * phone call is in days/day-2.ts). The conversation, voice and review routes all read the scene.
  */
+import type { LearnerWork } from './work-profile';
 import {
 	FALLBACK_LINES as HOTEL_FALLBACK, GOALS as HOTEL_GOALS, GREETING as HOTEL_GREETING, HOTEL_ID, MAX_REPLY, MAX_TURNS, hotelFacts,
 	type Correction, type DisplayText, type Turn, type Variant as HotelVariant
 } from './hotel';
 
 export interface RoleGoal { id: string; label: DisplayText; meaning: string }
+
+/** What the character's instructions get each turn, besides the variant and the goals met. */
+export interface RoleTurn {
+	missed?: readonly string[];
+	twistDue?: boolean;
+	/** The learner's field and career stage (work-profile.ts), for the interview scenes; others ignore it. */
+	learner?: LearnerWork | null;
+}
 
 export interface RoleScene {
 	id: string;
@@ -28,7 +37,7 @@ export interface RoleScene {
 	 * The character's instructions for the model. `turn`: first-try goals already missed, and whether
 	 * the twist may come after this reply (so the character answers briefly, with no question).
 	 */
-	prompt: (variant: string, met: readonly string[], turn?: { missed?: readonly string[]; twistDue?: boolean }) => string;
+	prompt: (variant: string, met: readonly string[], turn?: RoleTurn) => string;
 	/** How each side is labelled in the transcript the model reads. */
 	labels: { learner: string; character: string };
 	/** A goal that only counts once another one is reached (the hotel's confirm needs a solution). */

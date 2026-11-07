@@ -23,6 +23,7 @@ import type { RequestHandler } from './$types';
 import { MAX_REPLY, MAX_TURNS } from '$lib/practice/hotel';
 import { HOTEL_SCENE, fallbackFor, goalIdsOf, missedGoals, twistSaid, twistWithLead, type RoleScene } from '$lib/practice/roleplay';
 import { roleSceneById } from '$lib/practice/day-content';
+import { readWorkProfile } from '$lib/practice/work-profile';
 import { askChain, englishLearner, recordAiOutcome, spendAllowance, type ChainOutcome } from '$lib/server/english-ai';
 import { provenGoals, sceneLineProblem, signGoals, signJamieLine } from '$lib/server/jamie-line';
 
@@ -100,7 +101,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const learnerLines = turns.filter(turn => turn.speaker === 'learner').map(turn => turn.text);
 	const missed = missedGoals(scene, met, learnerLines);
 	const twistDue = !!scene.twist && !twistBefore && scene.twist.after.every(goal => met.includes(goal) || missed.includes(goal));
-	const system = scene.prompt(variant, met, { missed, twistDue });
+	const system = scene.prompt(variant, met, { missed, twistDue, learner: readWorkProfile(user.user_metadata) });
 	let outcome: ChainOutcome | null = null;
 	const heard = (o: ChainOutcome) => { outcome = o; };
 	let result = await converse(scene, system, transcript, heard);

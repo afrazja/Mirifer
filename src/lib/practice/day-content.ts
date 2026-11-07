@@ -14,12 +14,14 @@ import { HOTEL_SCENE, type RoleScene } from './roleplay';
 import type { ChatScene } from './group-chat';
 import { BIRTHDAY_A2, BIRTHDAY_B1 } from './chats';
 import type { DisplayText } from './hotel';
+import { DEFAULT_PITCH, type PitchContent } from './pitch';
 import * as dayOne from './days/day-1';
 import * as dayTwo from './days/day-2';
 import * as dayThree from './days/day-3';
 import * as everydayOne from './days/everyday-1';
 import * as everydayTwo from './days/everyday-2';
 import * as dayFour from './days/day-4';
+import * as interviewOne from './days/interview-1';
 import type { Track } from './day';
 
 /** One later day's content: every part optional; a version without its own set uses the other's. */
@@ -40,10 +42,12 @@ export interface DayContent {
 	CALLS?: Partial<Record<Track, RoleScene>>;
 	/** A group chat per version (group-chat.ts). */
 	CHATS?: Partial<Record<Track, ChatScene>>;
+	/** "Tell me about yourself": the three parts per version (pitch.ts). */
+	PITCH?: Partial<Record<Track, PitchContent>>;
 }
 
 /** Every later day's content, by day id. */
-export const DAY_CONTENT: Record<string, DayContent> = { 'day-1': dayOne, 'day-2': dayTwo, 'day-3': dayThree, 'day-4': dayFour, 'everyday-1': everydayOne, 'everyday-2': everydayTwo };
+export const DAY_CONTENT: Record<string, DayContent> = { 'day-1': dayOne, 'day-2': dayTwo, 'day-3': dayThree, 'day-4': dayFour, 'everyday-1': everydayOne, 'everyday-2': everydayTwo, 'interview-1': interviewOne };
 const contentOf = (dayId: string): DayContent => DAY_CONTENT[dayId] ?? {};
 const LATER: DayContent[] = Object.values(DAY_CONTENT);
 /** This version's set, or the day's other version's. */
@@ -120,6 +124,11 @@ export function roleSceneFor(dayId: string, track: Track = 'intermediate'): Role
 export const ALL_ROLE_SCENES: RoleScene[] = [HOTEL_SCENE, ...LATER.flatMap(day => [...(day.CALL ? [day.CALL] : []), ...Object.values(day.CALLS ?? {})])];
 export function roleSceneById(id: string | null | undefined): RoleScene | null {
 	return ALL_ROLE_SCENES.find(scene => scene.id === (id ?? HOTEL_SCENE.id)) ?? null;
+}
+
+/** "Tell me about yourself": the chapter's three parts for this version (the default ones when it has none). */
+export function pitchContentFor(dayId: string, track: Track = 'intermediate'): PitchContent {
+	return either(contentOf(dayId).PITCH, track) ?? DEFAULT_PITCH[track];
 }
 
 /** Group chat: the chapter's chat for this version (Nina's 30th when the chapter has none). */

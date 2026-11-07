@@ -12,17 +12,18 @@ import { z } from 'zod';
 import type { DisplayText } from './hotel';
 import { EVERYDAY_ONE } from './days/everyday-1/pack';
 import { EVERYDAY_TWO } from './days/everyday-2/pack';
+import { INTERVIEW_ONE } from './days/interview-1/pack';
 import { TOPICS, chatMinutes, type Topic } from './topics';
 
 /** Every day's id, in order. */
-export const DAY_IDS = ['day-1', 'day-2', 'day-3', 'day-4', 'everyday-1', 'everyday-2',
+export const DAY_IDS = ['day-1', 'day-2', 'day-3', 'day-4', 'everyday-1', 'everyday-2', 'interview-1',
 	// Topic steps (topics.ts, TOPIC_IDS): one small chapter each.
 	'topic-food', 'topic-morning', 'topic-where-you-live', 'topic-free-time', 'topic-weekend', 'topic-weather', 'topic-shopping', 'topic-getting-around', 'topic-trips', 'topic-learning-english'] as const;
 export type DayId = (typeof DAY_IDS)[number];
 /** Day 1's id (kept for older callers). */
 export const DAY_ID: DayId = 'day-1';
 /** Every module type a day can use. */
-export const MODULE_IDS = ['listen-act', 'scenario', 'phrases', 'say-it-better', 'say-in-english', 'traps', 'voice-messages', 'listen-retell', 'choose-persuade', 'group-chat', 'quick-fire'] as const;
+export const MODULE_IDS = ['listen-act', 'scenario', 'phrases', 'say-it-better', 'say-in-english', 'traps', 'voice-messages', 'listen-retell', 'choose-persuade', 'group-chat', 'quick-fire', 'pitch'] as const;
 export type ModuleId = (typeof MODULE_IDS)[number];
 export const LENGTHS = [15, 20] as const;
 export type Length = (typeof LENGTHS)[number];
@@ -374,13 +375,25 @@ export function topicPack(topic: Topic, index: number): DayPack {
 export const TOPIC_PACKS: DayPack[] = TOPICS.map(topicPack);
 
 /** Every story chapter, Travel's first (the daily lessons only ever use Travel's). */
-export const DAYS: DayPack[] = [DAY_ONE, DAY_TWO, DAY_THREE, DAY_FOUR, EVERYDAY_ONE, EVERYDAY_TWO];
+export const DAYS: DayPack[] = [DAY_ONE, DAY_TWO, DAY_THREE, DAY_FOUR, EVERYDAY_ONE, EVERYDAY_TWO, INTERVIEW_ONE];
 /** Every chapter on the step path: the stories', then the topic steps (the path puts them in between). */
 export const CHAPTERS: DayPack[] = [...DAYS, ...TOPIC_PACKS];
 /** A topic step's small chapter (not a story chapter). */
 export const isTopic = (day: DayPack) => !!day.topic;
 /** A chapter's story. */
 export const arcOf = (day: DayPack): ArcId => day.arc ?? 'travel';
+const ARC_LABELS: Record<ArcId, string> = { travel: 'Travel', everyday: 'Everyday', abroad: 'Abroad', work: 'Interview', exam: 'Exam', topics: 'Quick chat' };
+/**
+ * A chapter's name for the admin's reports, by its number: "Travel 2", "Everyday 1", "Interview 1",
+ * "Quick chat · Food you love" (its place in its own story).
+ */
+export function chapterLabel(number: number | null | undefined): string {
+	const pack = CHAPTERS.find(day => day.number === number);
+	if (!pack) return number ? `Day ${number}` : '';
+	if (pack.topic) return `Quick chat · ${pack.theme.en}`;
+	const arc = arcOf(pack);
+	return `${ARC_LABELS[arc]} ${CHAPTERS.filter(day => arcOf(day) === arc).indexOf(pack) + 1}`;
+}
 export function dayById(id: string | null | undefined): DayPack | null {
 	return CHAPTERS.find(day => day.id === id) ?? null;
 }

@@ -12,4 +12,4 @@ export function canResetEnglish(user: Pick<User, 'email' | 'email_confirmed_at'>
 }
 
 /** Everything the English course keeps in the learner's metadata; null clears it. */
-export const ENGLISH_STATE_KEYS = ['english_profile_v1', 'english_progress_v1', 'english_day_v1', 'english_path_v1'] as const;
+export const ENGLISH_STATE_KEYS = ['english_profile_v1', 'english_progress_v1', 'english_day_v1', 'english_path_v1', 'english_work_v1'] as const;
