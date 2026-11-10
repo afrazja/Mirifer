@@ -15,7 +15,7 @@
 	<link rel="alternate" hreflang="x-default" href="https://www.mirifer.com/" />
 	<meta property="og:title" content={c.title} />
 	<meta property="og:description" content={c.description} />
-	<meta property="og:image" content="https://www.mirifer.com/og-image.jpg" />
+	<meta property="og:image" content="https://www.mirifer.com/og-image.jpg?v=en1" />
 	<meta property="og:url" content="https://www.mirifer.com/" />
 	<meta property="og:type" content="website" />
 	<meta property="og:site_name" content="Mirifer" />
@@ -23,7 +23,7 @@
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="twitter:title" content={c.title} />
 	<meta name="twitter:description" content={c.description} />
-	<meta name="twitter:image" content="https://www.mirifer.com/og-image.jpg" />
+	<meta name="twitter:image" content="https://www.mirifer.com/og-image.jpg?v=en1" />
 	{@html landingStructuredData('en')}
 </svelte:head>
 
