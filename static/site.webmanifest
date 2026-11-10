@@ -1,16 +1,19 @@
 {
     "id": "/",
-    "name": "Mirifer — Learn German",
+    "name": "Mirifer: English speaking practice",
     "short_name": "Mirifer",
-    "description": "Learn German through real conversations — voice practice, daily lessons, weekly exams and spaced repetition. English and Persian support.",
-    "start_url": "/languages",
+    "description": "Practice speaking English out loud with Mira, your AI coach: short daily steps, feedback in English and Persian.",
+    "start_url": "/practice/english/progress",
     "scope": "/",
     "display": "standalone",
     "orientation": "portrait-primary",
     "theme_color": "#1a1a2e",
     "background_color": "#1a1a2e",
     "lang": "en",
-    "categories": ["education", "productivity"],
+    "categories": [
+        "education",
+        "productivity"
+    ],
     "icons": [
         {
             "src": "/brand/mirifer-icon-192.png?v=mirifer-v3",
@@ -33,18 +36,28 @@
     ],
     "shortcuts": [
         {
-            "name": "Today's Session",
-            "short_name": "Lesson",
-            "description": "Warm-up reviews + today's lesson",
-            "url": "/lesson",
-            "icons": [{ "src": "/brand/mirifer-icon-192.png?v=mirifer-v3", "sizes": "192x192" }]
+            "name": "Next step",
+            "short_name": "Next step",
+            "description": "Your next English speaking step",
+            "url": "/practice/english/step",
+            "icons": [
+                {
+                    "src": "/brand/mirifer-icon-192.png?v=mirifer-v3",
+                    "sizes": "192x192"
+                }
+            ]
         },
         {
-            "name": "Review",
-            "short_name": "Review",
-            "description": "Spaced-repetition review",
-            "url": "/review",
-            "icons": [{ "src": "/brand/mirifer-icon-192.png?v=mirifer-v3", "sizes": "192x192" }]
+            "name": "Your path",
+            "short_name": "Path",
+            "description": "Every chapter and step",
+            "url": "/practice/english/path",
+            "icons": [
+                {
+                    "src": "/brand/mirifer-icon-192.png?v=mirifer-v3",
+                    "sizes": "192x192"
+                }
+            ]
         }
     ]
 }

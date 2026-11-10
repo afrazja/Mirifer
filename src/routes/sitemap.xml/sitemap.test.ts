@@ -1,8 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { _buildSitemap } from './+server';
 
-const KEYS = ['articles', 'cases', 'numbers'];
-const xml = _buildSitemap(KEYS, '2026-08-14');
+const xml = _buildSitemap('2026-08-14');
 
 const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
 
@@ -22,9 +21,14 @@ describe('sitemap', () => {
 		expect(locs).toContain('https://www.mirifer.com/fa');
 	});
 
-	it('lists both basics indexes', () => {
-		expect(locs).toContain('https://www.mirifer.com/fa/basics');
-		expect(locs).toContain('https://www.mirifer.com/basics');
+	it('lists the English sample in both languages', () => {
+		expect(locs).toContain('https://www.mirifer.com/try');
+		expect(locs).toContain('https://www.mirifer.com/fa/try');
+	});
+
+	it('leaves out the paused German pages', () => {
+		// The grammar pages and the speaking drill are German; English learners must not land there from search.
+		expect(locs.filter((l) => /\/basics|\/drill/.test(l))).toEqual([]);
 	});
 
 	it('does not advertise routes that no longer exist', () => {
@@ -32,13 +36,6 @@ describe('sitemap', () => {
 		// A sitemap pointing at a 404 is worse than one that omits the page.
 		expect(locs).not.toContain('https://www.mirifer.com/placement');
 		expect(locs).not.toContain('https://www.mirifer.com/fa/test');
-	});
-
-	it('emits both language variants of every category', () => {
-		for (const k of KEYS) {
-			expect(locs).toContain(`https://www.mirifer.com/fa/basics/${k}`);
-			expect(locs).toContain(`https://www.mirifer.com/basics/${k}`);
-		}
 	});
 
 	it('has no duplicate loc', () => {
@@ -81,14 +78,5 @@ describe('sitemap', () => {
 	it('tags the fa alternates fa and the en alternates en', () => {
 		expect(xml).toMatch(/hreflang="fa" href="https:\/\/www\.mirifer\.com\/fa"/);
 		expect(xml).toMatch(/hreflang="en" href="https:\/\/www\.mirifer\.com\/"/);
-		expect(xml).toMatch(/hreflang="fa" href="https:\/\/www\.mirifer\.com\/fa\/basics\/articles"/);
-		expect(xml).toMatch(/hreflang="en" href="https:\/\/www\.mirifer\.com\/basics\/articles"/);
-	});
-
-	it('survives an empty category list', () => {
-		// Supabase failing must degrade to the static pages, not to a 500.
-		const bare = _buildSitemap([], '2026-08-14');
-		expect(bare).toContain('<loc>https://www.mirifer.com/fa</loc>');
-		expect(bare).not.toContain('/fa/basics/');
 	});
 });

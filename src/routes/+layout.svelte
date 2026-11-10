@@ -180,7 +180,7 @@
      replaces this one rather than stacking with it; the previous fallback
      lived in app.html, outside svelte:head, which is why it always won. -->
 <svelte:head>
-	<title>Mirifer — Learn German</title>
+	<title>Mirifer: English speaking practice</title>
 	{#if googleVerification}
 		<meta name="google-site-verification" content={googleVerification} />
 	{/if}
