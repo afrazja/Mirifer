@@ -8,8 +8,9 @@ Updated: 2026-10-21.
   daily-lesson method: `available: false` in `src/lib/courses.ts`. The language list shows it as
   "Coming soon"; German learners are sent to the list with a note that their progress is saved.
   All German content, code and progress stay; set `available` back to `true` to reopen it.
-- The landing page (`/`, `/fa`), the guest demo (`/try`) and the grammar pages (`/basics`) are
-  still the German ones until the landing page is redone for English (owner: later).
+- The landing page (`/`, `/fa`) and the guest demo (`/try`, a 2-minute English sample) are
+  English since 2026-10-21 (commits a8990ab, 40b449e). Only the grammar pages (`/basics`,
+  `/fa/basics`) are still German; the landing page doesn't link to them.
 - English: daily lessons in two versions (`src/lib/practice/day.ts`); the plan to make them less
   predictable is `docs/english-variety-plan.md`. **Days 1–3 are released to learners** (2026-10-21);
   learners never skip a day that isn't ready (`nextDay`), and after Day 3 the recap says new days are on the way.

@@ -3,7 +3,8 @@
 Status: **approved direction (owner, 2026-10-21); copy and mock-up next.** Mirifer is now an English
 course: practice speaking and listening with an AI coach, for real situations, real challenges
 (interviews, presenting, persuading, describing) and IELTS-style speaking tests. German is paused
-(`src/lib/courses.ts`), but the landing page, the guest demo (`/try`) and `/basics` are still German.
+(`src/lib/courses.ts`). Built 2026-10-21: the landing page (`/`, `/fa`) and the 2-minute sample
+(`/try`) are English; only `/basics` is still German.
 
 ## The owner's decisions
 
