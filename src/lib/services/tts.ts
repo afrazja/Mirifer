@@ -184,8 +184,24 @@ export function engineRate(shortLang: string, rate: number): { engine: number; p
 	return { engine, playback: target / engine };
 }
 
+/** Voice names browsers use for women and men (iOS, macOS, Android, Windows, Chrome). */
+const FEMALE_VOICE = /samantha|victoria|karen|moira|tessa|fiona|allison|ava|susan|zira|aria|jenny|emma|serena|kate|nicky|female|woman|google us english|google uk english female/i;
+const MALE_VOICE = /daniel|alex|fred|aaron|arthur|david|mark|guy|ryan|tom\b|male|man\b|google uk english male/i;
+/**
+ * The phone's own voice for a speaker, when every neural voice failed: a woman's for Mira and the
+ * women (b, d), a man's for the men (a, c), so Mira never suddenly becomes a man. Null: the default.
+ */
+function browserVoice(lang: string, voice: TTSVoice | undefined): SpeechSynthesisVoice | null {
+	if (!voice) return null;
+	const prefix = lang.split('-')[0];
+	const voices = window.speechSynthesis.getVoices().filter(v => v.lang.toLowerCase().startsWith(prefix));
+	const female = voice === 'b' || voice === 'd';
+	const wanted = voices.filter(v => (female ? FEMALE_VOICE.test(v.name) && !/\bmale\b/i.test(v.name) : MALE_VOICE.test(v.name) && !/female/i.test(v.name)));
+	return wanted.find(v => v.lang.toLowerCase() === 'en-us') ?? wanted[0] ?? null;
+}
+
 /** Browser speech synthesis fallback */
-function _browserTTS(text: string, lang: string, rate?: number): Promise<void> {
+function _browserTTS(text: string, lang: string, rate?: number, voice?: TTSVoice): Promise<void> {
 	if (!window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') {
 		trackObstacle('audio_failed', { engine: 'browser' });
 		return Promise.resolve();
@@ -195,6 +211,8 @@ function _browserTTS(text: string, lang: string, rate?: number): Promise<void> {
 		window.speechSynthesis.cancel();
 		const u = new SpeechSynthesisUtterance(text);
 		u.lang = lang === 'fa' ? 'fa-IR' : lang === 'en' ? 'en-US' : lang;
+		const chosen = browserVoice(u.lang, voice);
+		if (chosen) u.voice = chosen;
 		const r = rate || 0.9;
 		u.rate = isFinite(r) && r > 0 ? r : 1.0;
 
@@ -310,7 +328,7 @@ function playWebAudio(
 			}
 			// Browser TTS does its own rate handling — give it the full
 			// rate, not the residual left over after engine speed.
-			_browserTTS(text, lang, paceFor(shortLang, requestedRate)).then(resolve);
+			_browserTTS(text, lang, paceFor(shortLang, requestedRate), voice).then(resolve);
 		};
 
 		const audio = player();

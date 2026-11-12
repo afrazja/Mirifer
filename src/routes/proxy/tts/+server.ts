@@ -41,7 +41,7 @@ const ELEVEN_MODEL_ID = env.ELEVENLABS_MODEL_ID || 'eleven_multilingual_v2';
 const AUDIO_CACHE_CONTROL = 'public, max-age=31536000, immutable';
 
 /**
- * Generate German audio via ElevenLabs. Returns the audio bytes, or null on any
+ * Generate audio via ElevenLabs (German's fallback, and English's when Edge fails). Returns the audio bytes, or null on any
  * failure (missing key, quota exceeded, timeout) so the caller falls back.
  */
 async function tryElevenLabs(
@@ -435,11 +435,10 @@ export const GET: RequestHandler = async ({ url, request, locals, getClientAddre
 	if (lang === 'en') {
 		const rawRate = parseFloat(url.searchParams.get('rate') || '1');
 		const rate = isFinite(rawRate) ? rawRate : 1;
-		const edgeEn = await tryEdge(
-			text,
-			EDGE_VOICES_EN[url.searchParams.get('voice') ?? 'a'] ?? EDGE_VOICE_EN_A,
-			rate
-		);
+		const voiceKey = url.searchParams.get('voice') ?? 'a';
+		const edgeVoice = EDGE_VOICES_EN[voiceKey] ?? EDGE_VOICE_EN_A;
+		// Edge's free endpoint sometimes refuses a request (403) and accepts the next one: one retry.
+		const edgeEn = (await tryEdge(text, edgeVoice, rate)) ?? (await tryEdge(text, edgeVoice, rate));
 		if (edgeEn) {
 			return new Response(edgeEn, {
 				status: 200,
@@ -448,6 +447,25 @@ export const GET: RequestHandler = async ({ url, request, locals, getClientAddre
 					'Content-Length': edgeEn.byteLength.toString(),
 					'Cache-Control': AUDIO_CACHE_CONTROL,
 					'X-TTS-Source': 'edge',
+					...corsHeaders(origin)
+				}
+			});
+		}
+		// Edge unavailable → ElevenLabs for signed-in learners, so Mira never turns into the phone's
+		// robotic (often male) voice: a woman's voice for Mira and the women (b, d), a man's for the
+		// men (a, c). Cached for a day only, so the usual Edge voice comes back once Edge does.
+		// Google (the next fallback) can't read lines this long.
+		const female = voiceKey === 'b' || voiceKey === 'd';
+		const elevenSpeed = Math.round(Math.min(1.2, Math.max(0.7, rate)) * 100) / 100;
+		const elevenEn = !(await paidAllowed()) ? null : await tryElevenLabs(text, female ? ELEVEN_VOICE_B : ELEVEN_VOICE_A, elevenSpeed);
+		if (elevenEn) {
+			return new Response(elevenEn, {
+				status: 200,
+				headers: {
+					'Content-Type': 'audio/mpeg',
+					'Content-Length': elevenEn.byteLength.toString(),
+					'Cache-Control': 'public, max-age=86400',
+					'X-TTS-Source': 'elevenlabs',
 					...corsHeaders(origin)
 				}
 			});
