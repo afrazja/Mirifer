@@ -140,6 +140,7 @@ Mirifer is mobile-first and minimal. Every screen has one focused thing to do:
 - Go step by step: one message, one action, then the next screen (for example Mira's greeting: her line and Next; then the sentence to say with the mic and Skip; then the result; then today's plan).
 - One primary button per screen, at the bottom, in thumb reach; secondary actions are quiet text buttons.
 - Navigation and other modules (tabs, menus) stay off focused flows.
+- Short, visual instructions (owner, 2026-11-12): show, don't explain. Mira's note is one short sentence (about 12 words or fewer); the rest is shown with icons, chips, cards and examples, not paragraphs. Details go behind a quiet "More" or come at the moment they're needed.
 Reviewers judge every screen against this.
 
 ---
