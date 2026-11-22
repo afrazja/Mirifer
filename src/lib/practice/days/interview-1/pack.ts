@@ -32,6 +32,7 @@ export const INTERVIEW_ONE: DayPack = {
 		}
 	},
 	checkIn: {
+		storyLine: { en: 'Crestview Group · Your first interview', fa: 'Crestview Group · اولین مصاحبه‌ات' },
 		story: {
 			en: 'This is a new story: work. Imagine you’ve applied for a job at Crestview Group, a company in Riverton. Today is the first interview, and it starts with a question many people hear: “Tell me about yourself.”',
 			fa: 'این یک داستان تازه است: کار. فرض کن برای یک شغل در Crestview Group، شرکتی در ریورتون، درخواست داده‌ای. امروز اولین مصاحبه است و با سؤالی شروع می‌شود که خیلی‌ها می‌شنوند: «Tell me about yourself.»'
@@ -49,7 +50,12 @@ export const INTERVIEW_ONE: DayPack = {
 		intermediate: [
 			{ id: 'listen-act', title: { en: 'Listen and connect', fa: 'گوش بده و وصل کن' }, short: { en: 'Listen', fa: 'گوش دادن' }, skill: 'listening', minutes: { 15: 4, 20: 4 }, built: true,
 				does: { en: 'Hear another candidate’s first minutes in a job interview, then answer a few questions.', fa: 'اولین دقیقه‌های مصاحبهٔ کاری یک متقاضی دیگر را بشنو و بعد به چند سؤال جواب بده.' },
-				intro: { en: 'Elena, another candidate, has an interview at Greenway Foods. Listen for the three parts of her answer to “Tell me about yourself”: what she does now, what she did before, and what she wants next.', fa: 'النا، یک متقاضی دیگر، در Greenway Foods مصاحبه دارد. به سه بخش جوابش به «Tell me about yourself» گوش بده: الان چه کار می‌کند، قبلاً چه کار می‌کرد، و حالا دنبال چه چیزی است.' } },
+				intro: { en: 'Listen to Elena, another candidate. Find the three parts of her answer.', fa: 'به اِلنا، یک متقاضی دیگر، گوش بده. سه بخش جوابش را پیدا کن.' },
+				cues: [
+					{ icon: 'now', label: { en: 'Now', fa: 'الان' } },
+					{ icon: 'before', label: { en: 'Before', fa: 'قبلاً' } },
+					{ icon: 'goal', label: { en: 'Goal', fa: 'هدف' } }
+				] },
 			{ id: 'phrases', title: { en: 'Natural phrases', fa: 'عبارت‌های طبیعی' }, short: { en: 'Phrases', fa: 'عبارت‌ها' }, skill: 'speaking', minutes: { 15: 4, 20: 4 }, built: true,
 				does: { en: 'Hear five things you can say in the first minutes of an interview, and say each one after Mira.', fa: 'پنج جمله بشنو که می‌توانی در دقیقه‌های اول مصاحبه بگویی، و هر کدام را بعد از میرا تکرار کن.' },
 				intro: { en: 'Imagine you have an interview at Crestview Group today. Here are five things you can say in the first few minutes. Listen, then say each one after me. I only check the phrase in bold.', fa: 'فرض کن امروز در Crestview Group مصاحبه داری. این پنج جمله را می‌توانی در همان چند دقیقهٔ اول بگویی. گوش بده و هر جمله را بعد از من تکرار کن. من فقط عبارت پررنگ را بررسی می‌کنم.' } },

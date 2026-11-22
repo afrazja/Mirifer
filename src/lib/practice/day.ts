@@ -10,6 +10,7 @@
  */
 import { z } from 'zod';
 import type { DisplayText } from './hotel';
+import type { IntroChip } from './step-intro';
 import { EVERYDAY_ONE } from './days/everyday-1/pack';
 import { EVERYDAY_TWO } from './days/everyday-2/pack';
 import { INTERVIEW_ONE } from './days/interview-1/pack';
@@ -66,6 +67,8 @@ export interface DayModule {
 	built: boolean;
 	/** Mira's spoken introduction, as a teacher would say it (shown and read aloud). */
 	intro: DisplayText;
+	/** What to look or listen for, shown as icon chips under Mira's note (step-intro.ts). */
+	cues?: IntroChip[];
 	/** Say it again, better: the chapter's question (`SAY_PROMPTS`; Day 1's trip problem when missing). */
 	sayPrompt?: string;
 }
@@ -77,6 +80,8 @@ export interface DayModule {
 export interface DayCheckIn {
 	/** After her hello: where the story is now (true to the last day's content). */
 	story: DisplayText;
+	/** The story card at a chapter's first step, a few words ("Crestview Group · Your first interview"); the chapter's theme when missing. */
+	storyLine?: DisplayText;
 	/** Her casual, personal question, linked to today's theme. Its English is the day's `question`. */
 	question: DisplayText;
 	/** Her reply when the AI can't answer in time. */
