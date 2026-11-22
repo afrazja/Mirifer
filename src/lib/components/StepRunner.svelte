@@ -11,9 +11,10 @@
 	import StepRating from '$lib/components/StepRating.svelte';
 	import { phraseScore, scoreLine, type StepScore } from '$lib/practice/step-feedback';
 	import ChapterModule from '$lib/components/ChapterModule.svelte';
+	import StepIntro from '$lib/components/StepIntro.svelte';
 	import { loadRecord, saveRecord } from '$lib/practice/day-records';
 	import { COACH_RATE, COACH_VOICE } from '$lib/practice/coach';
-	import { dayById, isTopic, minutesOf, DAY_ONE, type DayModule, type ModuleId, type Track } from '$lib/practice/day';
+	import { dayById, isTopic, minutesOf, DAY_ONE, type ModuleId, type Track } from '$lib/practice/day';
 	import { chapterModules, splitStep, type StepId } from '$lib/practice/path';
 	import type { DisplayText } from '$lib/practice/hotel';
 	import { playAudioPromise, stopAllAudio } from '$services/tts';
@@ -35,8 +36,8 @@
 	const mod = chapterModules(day, track).find(item => item.id === moduleId)!;
 	// svelte-ignore state_referenced_locally
 	const first = index === 0 && !replay;
-	/** Where the chapter's story is now: Mira's first line at a chapter's first step. */
-	const story = first ? day.checkIn?.story ?? null : null;
+	/** A chapter's first step opens with a small card for its story, in a few words. */
+	const story = first && !isTopic(day) ? day.checkIn?.storyLine ?? day.theme : null;
 	/** Crowded modules (and a chapter's first step) open with Mira's note on its own screen. */
 	const BRIEF_FIRST = new Set(['phrases', 'choose-persuade', 'scenario', 'group-chat']);
 	/** A topic step (a Quick chat between the story's chapters): no chapter opening; Mira's note sits above the chat. */
@@ -78,8 +79,7 @@
 	let introPlay = $state<Promise<void> | null>(null);
 	function say() {
 		stopAllAudio();
-		const line = `${story && stage === 'brief' ? `${story.en} ` : ''}${mod.intro.en}`;
-		introPlay = playAudioPromise(line, COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {});
+		introPlay = playAudioPromise(mod.intro.en, COACH_RATE, 'en-US', undefined, COACH_VOICE).catch(() => {});
 	}
 	function endBrief() { stopAllAudio(); stage = 'module'; }
 
@@ -150,6 +150,10 @@
 	const onDone = (score?: { correct: number; total: number }, record?: unknown) => void finish('done', score, record);
 	const onSkip = () => void finish('skipped');
 	const onFocus = (mode: 'full' | 'compact' | 'hidden') => (intro = mode);
+	const eyebrow = $derived(topic ? (replay ? T('PRACTICE AGAIN · QUICK CHAT', 'تمرین دوباره · گپ کوتاه') : T('QUICK CHAT', 'گپ کوتاه'))
+		: replay ? T(`PRACTICE AGAIN · ${day.themePhrase.toUpperCase()}`, `تمرین دوباره · ${day.theme.fa}`)
+		: T(`${day.themePhrase.toUpperCase()} · STEP ${index + 1} OF ${total}`, `${day.theme.fa} · مرحلهٔ ${num(index + 1)} از ${num(total)}`));
+	const minutes = minutesOf(mod, 20);
 </script>
 
 {#snippet endOfStep()}
@@ -160,36 +164,17 @@
 	<StepRating {step} {isFa} />
 {/snippet}
 
-{#snippet note(m: DayModule)}
-	<div class="brief">
-		<span class="avatar" aria-hidden="true">M</span>
-		<div class="brief-text" lang={isFa ? 'fa' : 'en'}>
-			{#if story && stage === 'brief'}<p class="brief-line story">{text(story)}</p>{/if}
-			<p class="brief-line">{text(m.intro)}</p>
-		</div>
-	</div>
-{/snippet}
-
-{#if stage === 'loading' || stage === 'brief' || stage === 'module' || stage === 'saving'}<p class="eyebrow">
-	{#if topic}{replay ? T('PRACTICE AGAIN · QUICK CHAT', 'تمرین دوباره · گپ کوتاه') : T('QUICK CHAT', 'گپ کوتاه')}
-	{:else if replay}{T(`PRACTICE AGAIN · ${day.themePhrase.toUpperCase()}`, `تمرین دوباره · ${day.theme.fa}`)}
-	{:else}{T(`${day.themePhrase.toUpperCase()} · STEP ${index + 1} OF ${total}`, `${day.theme.fa} · مرحلهٔ ${num(index + 1)} از ${num(total)}`)}{/if}
-</p>{/if}
-
 {#if stage === 'loading'}
-	<h1>{text(mod.title)}</h1>
+	<StepIntro moduleId={mod.id} {eyebrow} title={text(mod.title)} {minutes} {isFa} mode="header" />
 
 {:else if stage === 'brief'}
-	<h1>{text(mod.title)}</h1>
-	{@render note(mod)}
-	<!-- Phones may block Mira's voice when the step opens on its own; this tap always plays it. -->
-	<button class="hear" type="button" onclick={say}><span aria-hidden="true">🔊</span> {T('Hear Mira', 'شنیدن صدای میرا')}</button>
+	<!-- Phones may block Mira's voice when the step opens on its own; her speaker button always plays it. -->
+	<StepIntro moduleId={mod.id} {eyebrow} title={text(mod.title)} {minutes} {isFa} note={mod.intro} {story} cues={mod.cues} onHear={say} />
 	<ActionBar label={T('Next', 'بعدی')} onclick={endBrief} secondary={{ label: T('Skip this step', 'این مرحله را رد کن'), onclick: onSkip }} />
 
 {:else if stage === 'module' || stage === 'saving'}
-	<h1>{text(mod.title)}</h1>
+	<StepIntro moduleId={mod.id} {eyebrow} title={text(mod.title)} {minutes} {isFa} mode="header" note={intro === 'full' && !briefFirst ? mod.intro : null} onHear={say} />
 	{#if saveFailed}<p class="warn" role="alert">{T('That didn’t save. Check your connection and try again.', 'ذخیره نشد. اتصال اینترنت را بررسی کن و دوباره امتحان کن.')}</p>{/if}
-	{#if intro === 'full' && !briefFirst}{@render note(mod)}{/if}
 	<div class:busy={stage === 'saving'}>
 		<ChapterModule dayId={day.id} {mod} {track} {isFa} {name} initial={loaded()} afterIntro={introPlay} onSave={keep} {onFocus} {onSkip} {onDone} />
 	</div>
@@ -227,11 +212,6 @@
 	.eyebrow { font-size: .76rem; letter-spacing: .12em; font-weight: 600; color: var(--accent-deep); margin: 18px 0 10px; }
 	h1 { font-family: var(--font-display); font-weight: 500; font-size: clamp(1.7rem, 5vw, 2.4rem); line-height: 1.2; margin: 0 0 14px; }
 	p { line-height: 1.65; }
-	.brief { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start; margin: 8px 0 16px; padding: 14px; border-radius: 16px; background: var(--paper-raised); border: 1px solid var(--line); }
-	.avatar { display: grid; place-items: center; inline-size: 40px; block-size: 40px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-family: var(--font-display); font-weight: 700; }
-	.brief-text { display: grid; gap: 10px; }
-	.brief-line { margin: 0; font-size: 1.04rem; line-height: 1.55; }
-	.story { color: var(--ink-soft); }
 	.goal { font-size: 1.1rem; font-weight: 600; color: var(--leaf-deep, var(--accent-deep)); margin: 0 0 12px; }
 	.small { color: var(--ink-soft); font-size: .9rem; }
 	.warn { color: var(--attention); font-weight: 600; }
@@ -243,6 +223,4 @@
 	.score { display: flex; align-items: baseline; gap: 10px; margin: 12px 0 0; }
 	.score-value { font-family: var(--font-display); font-size: 2rem; font-weight: 600; color: var(--accent-deep); }
 	.score-label { color: var(--ink-soft); }
-	.hear { display: inline-flex; gap: 8px; align-items: center; min-height: 44px; padding: 8px 14px; border: 1.5px solid var(--control-border); border-radius: 999px; background: var(--paper-raised); color: var(--accent-deep); font: inherit; font-weight: 600; cursor: pointer; }
-	.hear:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 </style>
