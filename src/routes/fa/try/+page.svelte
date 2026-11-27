@@ -6,10 +6,10 @@
 <svelte:head>
 	<title>یک نمونهٔ دودقیقه‌ای از تمرین مکالمهٔ انگلیسی | میریفر</title>
 	<meta name="description" content="یک گفت‌وگوی روزمره در فرودگاه بشنو، به یک سؤال جواب بده، یک جمله بگو و صدای خودت را بشنو. بدون ثبت‌نام و بدون نصب." />
-	<link rel="canonical" href="https://www.mirifer.com/fa/try" />
-	<link rel="alternate" hreflang="en" href="https://www.mirifer.com/try" />
-	<link rel="alternate" hreflang="fa" href="https://www.mirifer.com/fa/try" />
-	<link rel="alternate" hreflang="x-default" href="https://www.mirifer.com/try" />
+	<link rel="canonical" href="https://mirifer.vercel.app/fa/try" />
+	<link rel="alternate" hreflang="en" href="https://mirifer.vercel.app/try" />
+	<link rel="alternate" hreflang="fa" href="https://mirifer.vercel.app/fa/try" />
+	<link rel="alternate" hreflang="x-default" href="https://mirifer.vercel.app/try" />
 </svelte:head>
 
 <main id="main-content" class="try" lang="fa" dir="rtl">

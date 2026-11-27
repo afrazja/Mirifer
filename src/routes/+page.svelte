@@ -9,21 +9,21 @@
 <svelte:head>
 	<title>{c.title}</title>
 	<meta name="description" content={c.description} />
-	<link rel="canonical" href="https://www.mirifer.com/" />
-	<link rel="alternate" hreflang="en" href="https://www.mirifer.com/" />
-	<link rel="alternate" hreflang="fa" href="https://www.mirifer.com/fa" />
-	<link rel="alternate" hreflang="x-default" href="https://www.mirifer.com/" />
+	<link rel="canonical" href="https://mirifer.vercel.app/" />
+	<link rel="alternate" hreflang="en" href="https://mirifer.vercel.app/" />
+	<link rel="alternate" hreflang="fa" href="https://mirifer.vercel.app/fa" />
+	<link rel="alternate" hreflang="x-default" href="https://mirifer.vercel.app/" />
 	<meta property="og:title" content={c.title} />
 	<meta property="og:description" content={c.description} />
-	<meta property="og:image" content="https://www.mirifer.com/og-image.jpg?v=en1" />
-	<meta property="og:url" content="https://www.mirifer.com/" />
+	<meta property="og:image" content="https://mirifer.vercel.app/og-image.jpg?v=en1" />
+	<meta property="og:url" content="https://mirifer.vercel.app/" />
 	<meta property="og:type" content="website" />
 	<meta property="og:site_name" content="Mirifer" />
 	<meta property="og:locale" content="en_US" />
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="twitter:title" content={c.title} />
 	<meta name="twitter:description" content={c.description} />
-	<meta name="twitter:image" content="https://www.mirifer.com/og-image.jpg?v=en1" />
+	<meta name="twitter:image" content="https://mirifer.vercel.app/og-image.jpg?v=en1" />
 	{@html landingStructuredData('en')}
 </svelte:head>
 

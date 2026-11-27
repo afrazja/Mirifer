@@ -47,9 +47,9 @@
 		name="description"
 		content={`${title} در گرامر آلمانی، توضیح‌داده‌شده به فارسی${desc ? ' — ' + desc : ''}. جدول، مثال و ترجمه. رایگان و بدون ثبت‌نام.`}
 	/>
-	<link rel="canonical" href={`https://www.mirifer.com/fa/basics/${key}`} />
-	<link rel="alternate" hreflang="fa" href={`https://www.mirifer.com/fa/basics/${key}`} />
-	<link rel="alternate" hreflang="en" href={`https://www.mirifer.com/basics/${key}`} />
+	<link rel="canonical" href={`https://mirifer.vercel.app/fa/basics/${key}`} />
+	<link rel="alternate" hreflang="fa" href={`https://mirifer.vercel.app/fa/basics/${key}`} />
+	<link rel="alternate" hreflang="en" href={`https://mirifer.vercel.app/basics/${key}`} />
 </svelte:head>
 
 <div class="wrap" lang="fa" dir="rtl">

@@ -5,7 +5,7 @@ const json = (value: unknown) => `<script type="application/ld+json">${JSON.stri
 
 export function landingStructuredData(lang: LandingLang): string {
 	const c = LANDING[lang];
-	const url = lang === 'fa' ? 'https://www.mirifer.com/fa' : 'https://www.mirifer.com/';
+	const url = lang === 'fa' ? 'https://mirifer.vercel.app/fa' : 'https://mirifer.vercel.app/';
 	return json({
 		'@context': 'https://schema.org', '@type': 'WebApplication', name: 'Mirifer', url, inLanguage: lang,
 		applicationCategory: 'EducationalApplication', operatingSystem: 'Web', description: c.description,

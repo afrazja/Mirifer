@@ -13,4 +13,4 @@ Disallow: /onboarding
 # search for no reason. The Persian versions under /fa/basics are the ones
 # meant to rank; both are allowed and paired with hreflang.
 
-Sitemap: https://www.mirifer.com/sitemap.xml
+Sitemap: https://mirifer.vercel.app/sitemap.xml
