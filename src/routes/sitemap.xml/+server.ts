@@ -13,7 +13,7 @@
 
 import type { RequestHandler } from './$types';
 
-const ORIGIN = 'https://www.mirifer.com';
+const ORIGIN = 'https://mirifer.vercel.app';
 
 interface StaticPage {
 	path: string;

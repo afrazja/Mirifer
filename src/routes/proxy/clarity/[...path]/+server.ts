@@ -114,7 +114,7 @@ export const POST: RequestHandler = async ({ params, url, request }) => {
 
 		// Forward essential headers — Origin must match the project domain
 		const upstreamHeaders: Record<string, string> = {
-			'Origin': 'https://www.mirifer.com',
+			'Origin': 'https://mirifer.vercel.app',
 		};
 		const ct = request.headers.get('content-type');
 		if (ct) upstreamHeaders['Content-Type'] = ct;

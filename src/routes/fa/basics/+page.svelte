@@ -29,9 +29,9 @@
 		name="description"
 		content="مرجع رایگان گرامر آلمانی با توضیح فارسی: حروف تعریف، صرف فعل، حالت‌ها، حروف اضافه، اعداد و رنگ‌ها. مناسب برای شروع از صفر و آمادگی آزمون گوته A1."
 	/>
-	<link rel="canonical" href="https://www.mirifer.com/fa/basics" />
-	<link rel="alternate" hreflang="fa" href="https://www.mirifer.com/fa/basics" />
-	<link rel="alternate" hreflang="en" href="https://www.mirifer.com/basics" />
+	<link rel="canonical" href="https://mirifer.vercel.app/fa/basics" />
+	<link rel="alternate" hreflang="fa" href="https://mirifer.vercel.app/fa/basics" />
+	<link rel="alternate" hreflang="en" href="https://mirifer.vercel.app/basics" />
 </svelte:head>
 
 <div class="wrap" lang="fa" dir="rtl">

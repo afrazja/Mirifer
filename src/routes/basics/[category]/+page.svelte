@@ -393,9 +393,9 @@
 	<title>{catTitle} - Mirifer</title>
 	<!-- Reciprocal with /fa/basics/[category]; Google drops one-directional
 	     hreflang, which would void the Persian annotation as well. -->
-	<link rel="canonical" href={`https://www.mirifer.com/basics/${category?.key ?? ''}`} />
-	<link rel="alternate" hreflang="en" href={`https://www.mirifer.com/basics/${category?.key ?? ''}`} />
-	<link rel="alternate" hreflang="fa" href={`https://www.mirifer.com/fa/basics/${category?.key ?? ''}`} />
+	<link rel="canonical" href={`https://mirifer.vercel.app/basics/${category?.key ?? ''}`} />
+	<link rel="alternate" hreflang="en" href={`https://mirifer.vercel.app/basics/${category?.key ?? ''}`} />
+	<link rel="alternate" hreflang="fa" href={`https://mirifer.vercel.app/fa/basics/${category?.key ?? ''}`} />
 </svelte:head>
 
 <main class="category-container">

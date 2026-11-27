@@ -17,13 +17,13 @@ describe('sitemap', () => {
 	});
 
 	it('lists both language landing pages', () => {
-		expect(locs).toContain('https://www.mirifer.com/');
-		expect(locs).toContain('https://www.mirifer.com/fa');
+		expect(locs).toContain('https://mirifer.vercel.app/');
+		expect(locs).toContain('https://mirifer.vercel.app/fa');
 	});
 
 	it('lists the English sample in both languages', () => {
-		expect(locs).toContain('https://www.mirifer.com/try');
-		expect(locs).toContain('https://www.mirifer.com/fa/try');
+		expect(locs).toContain('https://mirifer.vercel.app/try');
+		expect(locs).toContain('https://mirifer.vercel.app/fa/try');
 	});
 
 	it('leaves out the paused German pages', () => {
@@ -34,8 +34,8 @@ describe('sitemap', () => {
 	it('does not advertise routes that no longer exist', () => {
 		// /placement and /fa/test were removed with the evaluation feature.
 		// A sitemap pointing at a 404 is worse than one that omits the page.
-		expect(locs).not.toContain('https://www.mirifer.com/placement');
-		expect(locs).not.toContain('https://www.mirifer.com/fa/test');
+		expect(locs).not.toContain('https://mirifer.vercel.app/placement');
+		expect(locs).not.toContain('https://mirifer.vercel.app/fa/test');
 	});
 
 	it('has no duplicate loc', () => {
@@ -48,7 +48,7 @@ describe('sitemap', () => {
 		// They are pinned. Stamping every crawl with today's date is false and
 		// teaches Google to ignore the dates on the pages that do change.
 		for (const path of ['/privacy', '/terms']) {
-			const block = xml.slice(xml.indexOf(`<loc>https://www.mirifer.com${path}</loc>`));
+			const block = xml.slice(xml.indexOf(`<loc>https://mirifer.vercel.app${path}</loc>`));
 			const lastmod = /<lastmod>([^<]+)<\/lastmod>/.exec(block)?.[1];
 			expect(lastmod, `${path} lastmod`).toBe('2026-02-24');
 		}
@@ -76,7 +76,7 @@ describe('sitemap', () => {
 	});
 
 	it('tags the fa alternates fa and the en alternates en', () => {
-		expect(xml).toMatch(/hreflang="fa" href="https:\/\/www\.mirifer\.com\/fa"/);
-		expect(xml).toMatch(/hreflang="en" href="https:\/\/www\.mirifer\.com\/"/);
+		expect(xml).toMatch(/hreflang="fa" href="https:\/\/mirifer\.vercel\.app\/fa"/);
+		expect(xml).toMatch(/hreflang="en" href="https:\/\/mirifer\.vercel\.app\/"/);
 	});
 });

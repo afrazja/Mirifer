@@ -1,7 +1,7 @@
 <svelte:head>
 	<title>Privacy Policy | Mirifer – Learn German Online</title>
 	<meta name="description" content="Mirifer privacy policy. Learn how we handle your data, what we collect, and how we protect your information." />
-	<link rel="canonical" href="https://www.mirifer.com/privacy" />
+	<link rel="canonical" href="https://mirifer.vercel.app/privacy" />
 </svelte:head>
 
 <main class="legal-page">

@@ -26,8 +26,6 @@ const MAX_AUDIO_BYTES = 2_000_000;
 
 const ALLOWED_ORIGINS = [
 	'https://mirifer.vercel.app',
-	'https://www.mirifer.com',
-	'https://mirifer.com',
 	'http://localhost:5173',
 	'http://localhost:3000'
 ];

@@ -1,7 +1,7 @@
 <svelte:head>
 	<title>Terms of Service | Mirifer – Learn German Online</title>
 	<meta name="description" content="Mirifer terms of service. Rules and guidelines for using the Mirifer German learning platform." />
-	<link rel="canonical" href="https://www.mirifer.com/terms" />
+	<link rel="canonical" href="https://mirifer.vercel.app/terms" />
 </svelte:head>
 
 <main class="legal-page">
